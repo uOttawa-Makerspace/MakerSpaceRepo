@@ -3,9 +3,6 @@ module GoogleCalendar
     VALID_LOCATIONS = ["STM 124", "STM 126"].freeze
     # Time zone in which an all-day event starts and ends at midnight.
     ALL_DAY_TIME_ZONE = "America/Toronto"
-    # Owner of a mirrored booking whose Google creator has no account. Configurable with the
-    # "google_calendar_fallback_email" setting or the GOOGLE_CALENDAR_FALLBACK_EMAIL environment variable.
-    DEFAULT_FALLBACK_EMAIL = "avend029@uottawa.ca"
 
     def self.process(event)
       Rails.logger.info "[GCAL] Processing event #{event.id} - #{event.summary}"
@@ -76,14 +73,15 @@ module GoogleCalendar
       Time.find_zone!(ALL_DAY_TIME_ZONE).parse(event_date_time.date.to_s)
     end
 
+    # The creator's account, else the account named by the "google_calendar_fallback_email" setting or the
+    # GOOGLE_CALENDAR_FALLBACK_EMAIL environment variable, else nobody: the booking is imported without an owner.
     def self.booking_owner(event)
-      User.find_by(email: event.creator&.email) || User.find_by(email: fallback_email)
+      User.find_by(email: event.creator&.email) || fallback_owner
     end
 
-    def self.fallback_email
-      Setting.get("google_calendar_fallback_email").presence ||
-        ENV["GOOGLE_CALENDAR_FALLBACK_EMAIL"].presence ||
-        DEFAULT_FALLBACK_EMAIL
+    def self.fallback_owner
+      email = Setting.get("google_calendar_fallback_email").presence || ENV["GOOGLE_CALENDAR_FALLBACK_EMAIL"].presence
+      User.find_by(email: email) if email
     end
 
     def self.report(error, event)

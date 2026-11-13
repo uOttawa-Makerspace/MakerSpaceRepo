@@ -215,6 +215,17 @@ Setting.set("chat_message_extra_recipients", "")                    # nobody ext
 
 The change applies to the next message. A user id that no longer exists is skipped.
 
+## Google Calendar: owner of imported events
+
+The Google Calendar sync turns room events into bookings owned by the user whose email is the event creator's. When the creator has no account (or the event has no creator), the owner is the user whose email is in the setting `google_calendar_fallback_email`, else in the `GOOGLE_CALENDAR_FALLBACK_EMAIL` environment variable of the `web` and `worker` containers. There is no built-in address: when neither is set, or the address names no user, the booking is imported with no owner. It still blocks the room and appears in the booking admin panel with an empty owner cell, but the room calendar does not show it. In a Rails console:
+
+```ruby
+Setting.get("google_calendar_fallback_email")                      # nil or "" means the environment variable, then nobody
+Setting.set("google_calendar_fallback_email", "bookings@example.com")
+```
+
+The owner is worked out again each time an event is synced, so a change applies to events created or changed after it; bookings already imported keep their owner until their event changes. Earlier releases used a built-in address when nothing was set: to keep the same owner for these events after upgrading, set the setting to that account's email before the deploy.
+
 ## Deleted repositories and their files
 
 Deleting a repository hides it (`repositories.deleted`); nothing is removed, and an admin can restore it from the admin page "Deleted Repositories". The photos and files of a hidden repository stop being served by the site (Active Storage links answer 404, except to a signed-in admin), but hiding is not a purge. Copies already cached by a browser or a CDN (proxy responses are public with a very long lifetime) and storage-service links already issued (valid for about five minutes) stay usable until they expire. The stored files stay in the storage service until someone removes them on purpose; the application never does so for a hidden repository. `repositories.hidden_reason` records why a repository is hidden (0 deleted by the owner or a member, 1 by an admin, 2 because its owner's account was deleted); restoring an account brings back only reason 2. Rows hidden before the column existed have a NULL reason and are treated as deleted on purpose, so only an admin restores them from "Deleted Repositories". If a file has to disappear for good, that is a separate manual step on the storage service and a CDN purge.
