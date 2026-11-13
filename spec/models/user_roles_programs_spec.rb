@@ -136,6 +136,17 @@ RSpec.describe User do
       expect(UoengProfile.where(user: other).count).to eq(1)
     end
 
+    it "keeps the uOEng record when a later step of the deletion fails" do
+      actor = create(:user, :admin)
+      target = create(:user, :regular_user)
+      UoengProfile.create!(user: target, source: "email", checked_at: Time.current)
+      allow(target).to receive(:soft_delete!).and_raise(ActiveRecord::StatementInvalid, "write failed")
+
+      expect { User.delete_account!(target, actor: actor) }.to raise_error(ActiveRecord::StatementInvalid)
+      expect(UoengProfile.where(user: target).count).to eq(1)
+      expect(target.reload.deleted).to be(false)
+    end
+
     it "keeps the uOEng record when the deletion is refused" do
       create(:user, :admin)
       target = create(:user, :regular_user)
