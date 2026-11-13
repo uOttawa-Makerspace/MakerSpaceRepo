@@ -1,5 +1,4 @@
 <% user = current_user %>
-<% level_name = ->(level) { t(level.to_s.downcase, scope: 'volunteer_area.levels', default: level.to_s) } %>
 
 <div class="py-3 py-md-4">
   <!-- Top Navigation & Header -->
@@ -252,7 +251,7 @@
                                   </div>
                                   <div class="small w-100 min-w-0">
                                     <div class="d-flex align-items-center justify-content-between">
-                                      <span class="fw-bold"><%= t('volunteer_area.stats.certified', level: level_name.(badge.level)) %></span>
+                                      <span class="fw-bold"><%= t('volunteer_area.stats.certified', level: training_level_name(badge.level)) %></span>
                                       <i class="fa-solid fa-circle-check text-success"></i>
                                     </div>
                                     <% if skills_list.any? %>
@@ -275,7 +274,7 @@
                                 <div class="d-flex align-items-center justify-content-between mb-2">
                                   <span class="small fw-semibold text-body-emphasis d-flex align-items-center gap-1">
                                     <i class="fa-solid fa-arrow-trend-up text-primary"></i>
-                                    <span><%= t('volunteer_area.stats.next', level: level_name.(next_level)) %></span>
+                                    <span><%= t('volunteer_area.stats.next', level: training_level_name(next_level)) %></span>
                                   </span>
                                   <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle small">
                                     <%= t('volunteer_area.stats.milestone') %>
@@ -310,7 +309,7 @@
 
                                 <% if next_projects_total.zero? && next_modules_total.zero? %>
                                   <div class="text-body-secondary small fst-italic">
-                                    <i class="fa-solid fa-chalkboard-user me-1 text-primary"></i> <%= t('volunteer_area.stats.workshop_required', level: level_name.(next_level)) %>
+                                    <i class="fa-solid fa-chalkboard-user me-1 text-primary"></i> <%= t('volunteer_area.stats.workshop_required', level: training_level_name(next_level)) %>
                                   </div>
                                 <% end %>
                               </div>
@@ -325,7 +324,7 @@
                           <!-- Target Practice Footer for Next Level -->
                           <% if next_level.present? && next_target_hours.to_i > 0 %>
                             <div class="pt-2 border-top border-secondary-subtle d-flex align-items-center justify-content-between small text-body-secondary">
-                              <span><%= t('volunteer_area.stats.practice_for', level: level_name.(next_level)) %></span>
+                              <span><%= t('volunteer_area.stats.practice_for', level: training_level_name(next_level)) %></span>
                               <span class="badge bg-body-secondary text-body-emphasis border border-secondary-subtle">
                                 <%= t('volunteer_area.stats.practice_hours', count: next_target_hours) %>
                               </span>
