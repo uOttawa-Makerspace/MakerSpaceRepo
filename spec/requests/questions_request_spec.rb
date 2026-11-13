@@ -65,6 +65,21 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(response.body).not_to include("Other space question")
     end
 
+    it "lists a question that has no author with the deleted user label" do
+      create(:question, description: "Orphan question here now please", user: nil, trainings: [training])
+      get questions_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Orphan question here")
+      expect(response.body).to include("Deleted user")
+    end
+
+    it "lists a question that has no author with the deleted user label in French" do
+      create(:question, description: "Orphan question here now please", user: nil, trainings: [training])
+      get questions_path(locale: "fr")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Utilisateur supprimé")
+    end
+
     it "lists several questions with their trainings and authors in a fixed number of queries" do
       second = create(:training, spaces: [space])
       3.times { |i| create(:question, description: "Listed #{i}", level: "Beginner", trainings: [training, second]) }
