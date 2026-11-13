@@ -1,0 +1,29 @@
+# Known axe violations of the browser page crawl (spec/support/page_crawl_browser.rb):
+# view (or route, for a page no view renders) => axe rule => number of
+# violating nodes. This list may only shrink. A violation that is not listed
+# fails the crawl, and so does a listed one that no longer occurs: after a fix,
+# lower or remove its entry.
+"/learning_area/:id/scorm_assets/*path":
+  document-title: 1
+  html-has-lang: 1
+questions/edit.html.erb:
+  label: 2
+  select-name: 1
+questions/new.html.erb:
+  aria-input-field-name: 4
+  label: 2
+  select-name: 1
+repositories/edit.html.erb:
+  image-alt: 1
+users/show.html.erb:
+  aria-required-children: 2
+volunteer_tasks/edit.html.erb:
+  label: 1
+  select-name: 3
+volunteer_tasks/index.html.erb:
+  aria-input-field-name: 2
+  select-name: 3
+volunteer_tasks/new.html.erb:
+  select-name: 3
+volunteers/new_event.html.erb:
+  select-name: 1
