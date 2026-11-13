@@ -88,7 +88,7 @@ class RfidController < SessionsController
     # --- Resolve space ---
     # A staff tap names its space with space_id and never takes it from a reader's mac_address; a reader tap
     # (no session) takes it from the registered reader.
-    space = staff ? staff_requested_space : pi_reader&.space
+    space = staff ? staff_requested_space : pi_reader.space
     return if staff_space_refused?(space)
 
     space_id = space&.id
