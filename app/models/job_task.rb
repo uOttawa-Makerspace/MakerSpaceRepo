@@ -84,6 +84,14 @@ class JobTask < ApplicationRecord
     JobTaskOption.where(job_task_id: id).each(&:prefix_file_names)
   end
 
+  # For each of the given options, the lowest-id other task of the order that has it selected, as
+  # { job_option_id => task id }. Options no other task selected are absent.
+  def other_task_ids_using(option_ids)
+    job_order.job_tasks.where.not(id: id).joins(:job_task_options)
+             .where(job_task_options: { job_option_id: option_ids })
+             .group("job_task_options.job_option_id").minimum("job_tasks.id")
+  end
+
   private
 
   # A listed service must be in a group of the task's job type; a custom one must be the one just made for this task
