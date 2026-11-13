@@ -22,11 +22,11 @@ module LiteralTextScan
   end
 
   # Text-bearing HTML attributes written out in the markup, such as alt="Logo" or placeholder="Email". A value
-  # written all in lower case (value="events") is a form code that is submitted, not shown.
+  # that is one lower-case token (value="events", value="brunsfield-centre") is a form code that is submitted, not shown.
   def self.literal_attributes(source)
     markup = source.gsub(/<%#.*?%>/m, "").gsub(/<%.*?%>/m, "")
     found = markup.scan(/\b(alt|title|aria-label|placeholder|value|label)=(["'])([^"']*[A-Za-z]{2}[^"']*)\2/)
-    found.reject { |name, _, text| name == "value" && text == text.downcase }.map(&:last) - ALLOWED_LITERALS
+    found.reject { |name, _, text| name == "value" && text.match?(/\A[a-z0-9_-]+\z/) }.map(&:last) - ALLOWED_LITERALS
   end
 
   def self.literal_arguments(source)

@@ -45,6 +45,8 @@ RSpec.describe LiteralTextScan do
     expect(described_class.visible_literals(%(<input data-action="input->search#filter"><p>Hi</p>))).to eq(["Hi"])
     expect(described_class.visible_literals(%(<!-- The user's list --><p>Hi</p>))).to eq(["Hi"])
     expect(described_class.literal_attributes(%(<option value="events">))).to eq([])
+    expect(described_class.literal_attributes(%(<option value="training-card-">))).to eq([])
+    expect(described_class.literal_attributes(%(<input type="submit" value="send now">))).to eq(["send now"])
     expect(described_class.literal_attributes(%(<input type="submit" value="Send">))).to eq(["Send"])
   end
 end

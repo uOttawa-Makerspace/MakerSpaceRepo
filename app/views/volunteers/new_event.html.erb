@@ -59,8 +59,7 @@
                     <i class="fa-solid fa-location-dot"></i>
                   </span>
                   <select name="space" id="space_input" class="form-select" required>
-                    <option value="makerspace"><%= t('volunteer_area.shared.makerspace') %></option>
-                    <option value="brunsfield centre"><%= t('volunteer_area.shared.brunsfield_centre') %></option>
+                    <%= options_for_select([[t('volunteer_area.shared.makerspace'), 'makerspace'], [t('volunteer_area.shared.brunsfield_centre'), 'brunsfield centre']]) %>
                   </select>
                 </div>
                 <div class="form-text text-body-secondary small"><%= t('volunteer_area.new_event.space_hint') %></div>
