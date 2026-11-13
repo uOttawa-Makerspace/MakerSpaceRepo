@@ -56,13 +56,13 @@ class StaffSpace < ApplicationRecord
 
   # The calendar staff of a space for an event proposed at `occurrences` (RecurringSeries::Occurrence), each with the
   # starts of the occurrences they are unavailable for (StaffUnavailability.clashes): available staff first, each part
-  # by name. With no occurrences, all are available.
+  # by name with accents read as their letter. With no occurrences, all are available.
   def self.conflicts(space_id, occurrences)
     colors = colors_in(space_id)
     staff = calendar_staff(space_id).to_a
     clashes = StaffUnavailability.clashes(staff, occurrences)
     rows = staff.map { |member| { id: member.id, name: member.name, color: colors[member.id], unavailableStarts: clashes.fetch(member.id, []) } }
-    available, unavailable = rows.sort_by { |row| row[:name].to_s.downcase }.partition { |row| row[:unavailableStarts].empty? }
+    available, unavailable = rows.sort_by { |row| I18n.transliterate(row[:name].to_s).downcase }.partition { |row| row[:unavailableStarts].empty? }
     available + unavailable
   end
 

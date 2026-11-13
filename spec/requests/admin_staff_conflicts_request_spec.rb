@@ -58,6 +58,13 @@ RSpec.describe "Admin calendar staff conflicts", type: :request do
       ])
     end
 
+    it "sorts a name with an accent with its letter, as the browser did" do
+      emile = create(:user, :staff, name: "Émile")
+      zoe = create(:user, :staff, name: "Zoe")
+      [emile, zoe].each { |member| StaffSpace.create!(user: member, space: space, color: "#0000ff") }
+      expect(conflicts("2026-03-31T09:30", "2026-03-31T10:00").map { |member| member["name"] }).to eq(%w[Ada Bob Émile Zoe])
+    end
+
     it "checks every occurrence of a repeating event over four weeks, across the clock change" do
       rule = "DTSTART;TZID=America/Toronto:20260302T140000\nRRULE:FREQ=WEEKLY;BYDAY=MO"
       # 14:00 in Toronto: 19:00Z before the change, 18:00Z after it
