@@ -9,8 +9,7 @@ module Api
       before_action :require_staff!
 
       # Same set as RfidController#get_unset_rfids: unlinked cards last tapped on a
-      # reader in the staff member's assigned space (every space's readers when none
-      # is assigned), newest first, at most 5.
+      # reader in a space the caller may work in (every space for an admin), newest first, at most 5.
       def index
         unless params[:linked].to_s == "false"
           return render_error(:validation_failed, "Validation failed", status: :unprocessable_content,

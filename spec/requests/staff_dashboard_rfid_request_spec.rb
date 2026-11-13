@@ -197,6 +197,7 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
     end
 
     it "shows the unlinked card in the staff member's own unset list, wherever they last signed in" do
+      StaffSpace.find_or_create_by!(user: staff, space: space_b)
       staff.update!(space: space_b)
       sign_in_session(staff, space_a, sign_out_in: 1.hour)
 

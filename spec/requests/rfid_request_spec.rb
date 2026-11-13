@@ -532,6 +532,7 @@ RSpec.describe "RFID endpoints", type: :request do
 
     it "lists unset cards of the staff member's space as JSON" do
       staff = log_in!(create(:user, :staff))
+      StaffSpace.find_or_create_by!(user: staff, space: space)
       staff.update!(space: space)
       get rfid_get_unset_rfids_path
       expect(response).to have_http_status(:ok)
@@ -556,6 +557,7 @@ RSpec.describe "RFID endpoints", type: :request do
 
       it "returns at most 5 cards, newest first, only those tapped at the staff member's space readers" do
         staff = log_in!(create(:user, :staff))
+        StaffSpace.find_or_create_by!(user: staff, space: space)
         staff.update!(space: space)
 
         get rfid_get_unset_rfids_path
@@ -567,6 +569,7 @@ RSpec.describe "RFID endpoints", type: :request do
 
       it "scopes a staff member of the other space to that space's readers" do
         staff = log_in!(create(:user, :staff))
+        StaffSpace.find_or_create_by!(user: staff, space: other_space)
         staff.update!(space: other_space)
 
         get rfid_get_unset_rfids_path

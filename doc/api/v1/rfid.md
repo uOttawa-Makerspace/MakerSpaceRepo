@@ -4,7 +4,7 @@ Student-card taps, linking cards to users, and the phone NFC tap. Replaces `GET 
 
 ## GET /api/v1/rfid_cards?linked=false
 
-Unlinked cards that were tapped on a reader of the caller's assigned space (readers of every space when none is assigned), most recently tapped first, at most 5: the set `get_unset_rfids` returns. Only `linked=false` is supported.
+Unlinked cards that were tapped on a reader of a space the caller may work in (the spaces they are assigned to; every space for an admin; none for staff with no assignment), most recently tapped first, at most 5: the set `get_unset_rfids` returns. Only `linked=false` is supported.
 
 200:
 

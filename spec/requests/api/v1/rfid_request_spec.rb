@@ -40,6 +40,7 @@ RSpec.describe "/api/v1 RFID", type: :request do
     end
 
     it "lists the assigned space's unlinked cards, newest first, as exactly {card_number, tapped_at} (ISO 8601)" do
+      StaffSpace.create!(user: staff, space: space_a)
       staff.update_columns(space_id: space_a.id)
       api_get "/api/v1/rfid_cards", as: staff, params: { linked: "false" }
       expect(response).to have_http_status(:ok)
@@ -49,11 +50,12 @@ RSpec.describe "/api/v1 RFID", type: :request do
       expect(Time.iso8601(body.first["tapped_at"])).to be_within(1.second).of(newer_a.updated_at)
     end
 
-    it "gives the same set as the legacy get_unset_rfids, for staff and admin (every space when none is assigned)" do
-      [staff, admin].each do |caller|
-        api_get "/api/v1/rfid_cards", as: caller, params: { linked: "false" }
-        expect(body.map { |c| c["card_number"] }).to match_array([newer_a, card_a, card_b].map(&:card_number))
-      end
+    it "lists every space's unlinked cards for an admin, and none for staff with no assignment" do
+      api_get "/api/v1/rfid_cards", as: admin, params: { linked: "false" }
+      expect(body.map { |c| c["card_number"] }).to match_array([newer_a, card_a, card_b].map(&:card_number))
+      staff.update_columns(space_id: space_a.id)
+      api_get "/api/v1/rfid_cards", as: staff, params: { linked: "false" }
+      expect(body).to eq([])
     end
 
     it "caps the list at 5" do
@@ -253,6 +255,7 @@ RSpec.describe "/api/v1 RFID", type: :request do
     end
 
     it "then lists the card among the unlinked taps of the staff member's assigned space" do
+      StaffSpace.create!(user: staff, space: space_a)
       staff.update_columns(space_id: space_a.id)
       api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff
       api_get "/api/v1/rfid_cards", as: staff, params: { linked: "false" }
