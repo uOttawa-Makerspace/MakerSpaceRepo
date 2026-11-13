@@ -496,6 +496,7 @@ en:
       comments_from_staff: "Comments from Staff"
       files_from_client: "Client Files"
       files_from_staff: "Files from Staff"
+      order_files: "Order Files"
       none_yet: "None yet"
       no_files: "No files uploaded for this order."
       send: "Send"

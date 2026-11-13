@@ -48,6 +48,32 @@ RSpec.describe "Job order file downloads", type: :request do
         expect(response.body).to include(%(href="#{job_order_file_path(order, attachment)}"))
       end
       expect(response.body).not_to include("/rails/active_storage/")
+      expect(response.body).not_to include("Order Files")
+    end
+  end
+
+  describe "the order's own files" do
+    before do
+      order.user_files.attach(io: StringIO.new("brief"), filename: "order-brief.txt", content_type: "text/plain")
+      order.staff_files.attach(io: StringIO.new("notes"), filename: "order-staff-notes.txt", content_type: "text/plain")
+    end
+
+    it "are listed on the order page for the owner and staff, linked to the order's file route" do
+      [owner, staff].each do |user|
+        session_login!(user)
+        get job_order_path(order)
+
+        expect(response.body).to include("Order Files", "order-brief.txt", "order-staff-notes.txt")
+        [order.user_files.first, order.staff_files.first].each do |attachment|
+          expect(response.body).to include(%(href="#{job_order_file_path(order, attachment)}"))
+        end
+        expect(response.body).not_to include("/rails/active_storage/")
+      end
+    end
+
+    it "can be downloaded by the owner through that route" do
+      session_login!(owner)
+      expect_download(order.reload.user_files.first)
     end
   end
 

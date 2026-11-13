@@ -187,6 +187,8 @@
         </div>
       <% end %>
 
+      <%= render 'order_files', job_order: @job_order %>
+
       <!-- Staff stuff -->
       <% if current_user.staff? %>
         <%= render 'staff_details', jo: @job_order %>
