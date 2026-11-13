@@ -104,11 +104,11 @@ module CalendarHelper
   def ics_recurrence(entry)
     text = RecurrenceRule.new(entry.series.rule, entry.starts_at).in_toronto_time.sub(ICS_DATE_UNTIL, 'UNTIL=\\1T235959')
     recurrence = { rrule: text }
-    recurrence[:duration] = (entry.ends_at - entry.starts_at).to_i * 1000 if entry.ends_at
+    recurrence[:duration] = (entry.ends_at - entry.starts_at).to_i * 1000 if entry.ends_at > entry.starts_at
     recurrence
   end
 
   def toronto_iso(time)
-    time&.in_time_zone(RecurrenceRule::ZONE)&.strftime("%Y-%m-%dT%H:%M:%S")
+    time.in_time_zone(RecurrenceRule::ZONE).strftime("%Y-%m-%dT%H:%M:%S")
   end
 end

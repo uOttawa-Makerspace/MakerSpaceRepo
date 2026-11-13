@@ -210,11 +210,12 @@ RSpec.describe CalendarHelper, type: :helper do
                                             calendar: Digest::MD5.hexdigest(url))
     end
 
-    it "gives a recurring event without an end no end time and no duration" do
+    # FullCalendar reads an end at the start as no end.
+    it "gives a recurring event without an end its start as end time and no duration" do
       body = ics(vevent("noend", ["DTSTART:20270115T150000Z", "SUMMARY:Open ended", "RRULE:FREQ=DAILY;COUNT=2"]))
       stub_request(:get, url).to_return(status: 200, body: body)
       event = parse_ics_calendar(url).first[:events].first
-      expect(event[:end]).to be_nil
+      expect(event[:end]).to eq("2027-01-15T10:00:00")
       expect(event[:start]).to eq("2027-01-15T10:00:00")
       expect(event).not_to have_key(:duration)
       expect(event[:rrule]).to start_with("DTSTART:20270115T100000")

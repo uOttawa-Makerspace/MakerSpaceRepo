@@ -56,8 +56,8 @@ class CalendarWindow
     list.select { |entry| entry.series || overlaps?(entry.starts_at, entry.ends_at) }
   end
 
-  # An entry with no end is a moment at its start.
+  # A moment (an end at its start) at the window's start is kept.
   def overlaps?(starts_at, ends_at)
-    starts_at < to && (ends_at || starts_at) >= from
+    starts_at < to && ends_at >= from
   end
 end

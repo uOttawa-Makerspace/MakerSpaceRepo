@@ -94,13 +94,13 @@ RSpec.describe CalendarWindow do
                                   starts_at: starts, ends_at: ends, series: series)
     end
 
-    it "keeps one-offs that overlap the window, one with no end at its start, and every series" do
+    it "keeps one-offs that overlap the window, a moment (an end at its start) at its start, and every series" do
       inside = entry(toronto.local(2027, 3, 15, 9), toronto.local(2027, 3, 15, 10))
-      moment = entry(toronto.local(2027, 3, 14), nil)
+      moment = entry(toronto.local(2027, 3, 14), toronto.local(2027, 3, 14))
       repeating = entry(toronto.local(2026, 1, 1, 9), toronto.local(2026, 1, 1, 10), series)
       before = entry(toronto.local(2027, 3, 13, 9), toronto.local(2027, 3, 13, 10))
       after = entry(toronto.local(2027, 3, 21), toronto.local(2027, 3, 21, 1))
-      earlier_moment = entry(toronto.local(2027, 3, 13, 23), nil)
+      earlier_moment = entry(toronto.local(2027, 3, 13, 23), toronto.local(2027, 3, 13, 23))
 
       expect(week.entries([inside, moment, repeating, before, after, earlier_moment])).to eq([inside, moment, repeating])
     end
