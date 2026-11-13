@@ -169,10 +169,6 @@ class Certification < ApplicationRecord
     highest
   end
 
-  def self.certification_highest_level(training_id, user_id)
-    highest_of(certifications_with_training(user_id).select { |cert| cert.training.id == training_id })
-  end
-
   # The user's certifications with each one's training loaded: through the training session, or
   # through the proficient project for a certification earned there.
   def self.certifications_with_training(user_id)
