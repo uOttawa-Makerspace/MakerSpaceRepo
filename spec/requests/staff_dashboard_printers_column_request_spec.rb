@@ -79,7 +79,7 @@ RSpec.describe "Staff dashboard printers column", type: :request do
 
     it "renders them in the live table broadcast" do
       expect { StaffDashboardChannel.broadcast_table_updates(space.id) }
-        .to have_broadcasted_to("signed_in_table_space_#{space.id}").from_channel(Turbo::StreamsChannel).with { |html| check_rows(html) }
+        .to have_broadcasted_to(StaffDashboardChannel.table_stream(space.id, :en)).from_channel(Turbo::StreamsChannel).with { |html| check_rows(html) }
     end
   end
 
