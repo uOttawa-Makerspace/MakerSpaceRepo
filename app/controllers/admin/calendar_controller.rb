@@ -75,7 +75,7 @@ class Admin::CalendarController < AdminAreaController
 
   def external_rows(staff, window)
     staff.staff_external_unavailabilities.flat_map do |external|
-      external.fetch_calendar(staff.name).feed_rows(window, prefix: "🚫 #{staff.name} - ", className: "unavailability")
+      external.fetch_calendar(name: StaffExternalUnavailability.display_name_for(staff.name)).feed_rows(window, prefix: "🚫 #{staff.name} - ", className: "unavailability")
     end
   end
 
