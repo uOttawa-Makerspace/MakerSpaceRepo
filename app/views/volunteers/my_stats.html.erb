@@ -205,11 +205,11 @@
                       next_target_hours   = nil
                       if next_level.present?
                         next_projects_total = training.proficient_projects.select { |p| p.level == next_level }.size
-                        next_projects_done  = @proficient_projects_awarded.call(training).where(level: next_level).size
+                        next_projects_done  = @proficient_projects_awarded.call(training).count { |p| p.level == next_level }
                         next_projects_pct   = next_projects_total.positive? ? (next_projects_done.to_f / next_projects_total * 100).round : 0
 
                         next_modules_total  = training.learning_modules.select { |m| m.level == next_level }.size
-                        next_modules_done   = @learning_modules_completed.call(training).where(level: next_level).size
+                        next_modules_done   = @learning_modules_completed.call(training).count { |m| m.level_name == next_level }
                         next_modules_pct    = next_modules_total.positive? ? (next_modules_done.to_f / next_modules_total * 100).round : 0
 
                         next_target_hours   = @recommended_hours.call(training, [next_level])

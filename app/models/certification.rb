@@ -161,36 +161,41 @@ class Certification < ApplicationRecord
     end
   end
 
+  # The user's highest certification in each training they hold one for, with the training and
+  # trainer each one shows loaded together.
   def self.highest_certifications(user_id)
-    # training_ids = joins(:training).pluck(:training_id)
-    # trainings = Training.where(id: training_ids)
-    trainings = []
-    user = User.including_deleted.find(user_id)
-    user_certs = user.certifications
-    user_certs.each do |cert|
-      trainings << cert.training unless trainings.include? cert.training
-    end
-    certs = []
-    trainings.each do |training|
-      certs << certification_highest_level(training.id, user_id)
-    end
-    certs
+    highest = certifications_with_training(user_id).group_by { |cert| cert.training.id }.values.map { |certs| highest_of(certs) }
+    preload_by_origin(highest, :user, :user)
+    highest
   end
 
-  def self.certification_highest_level(training_id, user_id)
-    user = User.including_deleted.find(user_id)
-    training_certs = []
-    user.certifications.each do |cert|
-      training_certs << cert if cert.training.id == training_id
-    end
-    
-    highest_cert = training_certs.first
-    training_certs.each do |cert|
-      highest_cert = cert if highest_cert.level == "Beginner" && cert.level == "Intermediate"
-      highest_cert = cert if cert.level == "Advanced"
-    end
-    highest_cert
+  # The user's certifications with each one's training loaded: through the training session, or
+  # through the proficient project for a certification earned there.
+  def self.certifications_with_training(user_id)
+    certs = User.including_deleted.find(user_id).certifications.to_a
+    preload_by_origin(certs, :training, { proficient_project: :training })
+    certs
   end
+  private_class_method :certifications_with_training
+
+  def self.preload_by_origin(certs, from_session, from_project_session)
+    from_session_records, from_project_records = certs.partition(&:training_session_id)
+    ActiveRecord::Associations::Preloader.new(records: from_session_records, associations: { training_session: from_session }).call
+    ActiveRecord::Associations::Preloader.new(records: from_project_records, associations: { proficient_project_session: from_project_session }).call
+  end
+  private_class_method :preload_by_origin
+
+  # Of the certifications of one training: Advanced wins (the last one), then Intermediate over a
+  # first Beginner, else the first.
+  def self.highest_of(certs)
+    highest = certs.first
+    certs.each do |cert|
+      highest = cert if highest.level == "Beginner" && cert.level == "Intermediate"
+      highest = cert if cert.level == "Advanced"
+    end
+    highest
+  end
+  private_class_method :highest_of
 
   def self.filter_by_attribute(value)
     if value.present?
