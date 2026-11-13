@@ -66,7 +66,6 @@
 2	app/javascript/entrypoints/contact_infos.js	TS2339	Property 'querySelectorAll' does not exist on type 'Node'.
 1	app/javascript/entrypoints/contact_infos.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 1	app/javascript/entrypoints/design_days.js	TS2339	Property 'href' does not exist on type 'HTMLElement'.
-1	app/javascript/entrypoints/design_days.js	TS2339	Property 'querySelector' does not exist on type 'Node'.
 1	app/javascript/entrypoints/design_days.js	TS2339	Property 'value' does not exist on type 'Element'.
 3	app/javascript/entrypoints/design_days.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
 1	app/javascript/entrypoints/design_days.js	TS2554	Expected 0 arguments, but got 1.
@@ -207,7 +206,6 @@
 5	app/javascript/entrypoints/sub_space_booking.js	TS2339	Property 'style' does not exist on type 'Element'.
 1	app/javascript/entrypoints/sub_space_booking.js	TS2339	Property 'value' does not exist on type 'EventTarget'.
 15	app/javascript/entrypoints/sub_space_booking.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
-1	app/javascript/entrypoints/sub_space_booking.js	TS2345	Argument of type 'HTMLElement' is not assignable to parameter of type 'string | TomInput'.
 2	app/javascript/entrypoints/sub_space_booking.js	TS2551	Property 'tomSelect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 2	app/javascript/entrypoints/tap_box_console.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
 1	app/javascript/entrypoints/teams.js	TS2353	Object literal may only specify known properties, and 'searchOnKeyUp' does not exist in type 'RecursivePartial<TomSettings>'.
@@ -289,7 +287,6 @@
 5	app/javascript/src/manage_calendar_events.js	TS2339	Property 'checked' does not exist on type 'Element'.
 3	app/javascript/src/manage_calendar_events.js	TS2339	Property 'checked' does not exist on type 'HTMLElement'.
 6	app/javascript/src/manage_calendar_events.js	TS2339	Property 'disabled' does not exist on type 'HTMLElement'.
-1	app/javascript/src/manage_calendar_events.js	TS2339	Property 'json' does not exist on type 'void | Response'.
 1	app/javascript/src/manage_calendar_events.js	TS2339	Property 'options' does not exist on type 'HTMLElement'.
 1	app/javascript/src/manage_calendar_events.js	TS2339	Property 'reset' does not exist on type 'Element'.
 1	app/javascript/src/manage_calendar_events.js	TS2339	Property 'selectedOptions' does not exist on type 'HTMLElement'.

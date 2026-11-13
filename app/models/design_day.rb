@@ -7,6 +7,8 @@ class DesignDay < ApplicationRecord
                                 reject_if: :all_blank
   validates_associated :design_day_schedules
 
+  validates :day, presence: true
+
   default_scope { order(day: :desc) }
 
   def self.instance
@@ -38,6 +40,16 @@ class DesignDay < ApplicationRecord
   def floorplan_titles
     if floorplans.attached?
       floorplans.map { |floorplan| floorplan.metadata[:floorplan_title] }
+    end
+  end
+
+  # Design day (1 or 2) each floorplan belongs to.
+  # Floorplans uploaded before days existed default to day 1.
+  def floorplan_days
+    if floorplans.attached?
+      floorplans.map do |floorplan|
+        (floorplan.metadata[:floorplan_day].presence || 1).to_i
+      end
     end
   end
 end
