@@ -115,6 +115,50 @@ RSpec.describe Question, type: :model do
     end
   end
 
+  describe "answer count in the question form" do
+    def question_with(count, correct_first: true)
+      build(:question, level: "Beginner").tap do |q|
+        count.times { |i| q.answers.build(correct: correct_first && i.zero?, description: "Answer #{i}") }
+      end
+    end
+
+    it "refuses a new question with fewer than two answers" do
+      [0, 1].each do |count|
+        question = question_with(count)
+        expect(question.save(context: :question_form)).to be(false)
+        expect(question.errors.full_messages).to include("A question needs at least two answers")
+      end
+      expect(Question.count).to eq(0)
+    end
+
+    it "accepts a new question with two answers" do
+      expect(question_with(2).save(context: :question_form)).to be(true)
+    end
+
+    it "refuses an edit that leaves one answer, and keeps the stored answers" do
+      question = create(:question, level: "Beginner")
+      Answer.create!(question: question, correct: true, description: "One")
+      expect(Question.find(question.id).update_from_form(description: "Changed?")).to be(false)
+      expect(Question.find(question.id).description).not_to eq("Changed?")
+    end
+
+    it "does not count an answer marked for removal" do
+      question = create(:question, level: "Beginner")
+      Answer.create!(question: question, correct: true, description: "One")
+      Answer.create!(question: question, correct: false, description: "Two")
+      fresh = Question.find(question.id)
+      fresh.answers.to_a.last.mark_for_destruction
+      expect(fresh.valid?(:question_form)).to be(false)
+      expect(fresh.errors.full_messages).to include("A question needs at least two answers")
+    end
+
+    it "does not check a question that is saved without the form rules" do
+      question = create(:question, level: "Beginner")
+      Answer.create!(question: question, correct: true, description: "One")
+      expect(question.save).to be(true)
+    end
+  end
+
   describe "Chunk 12: answers and exam responses" do
     it "response_for_exam returns the response recorded for that exam only" do
       q = create(:question)

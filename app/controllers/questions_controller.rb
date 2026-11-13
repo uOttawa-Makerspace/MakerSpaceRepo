@@ -66,9 +66,11 @@ class QuestionsController < AdminAreaController
   end
 
   def remove_answer
-    @question.answers.where(correct: false).find(params[:answer_id]).destroy
-    redirect_to edit_question_path(@question),
-                notice: I18n.t("questions.flash.answer_removed")
+    if @question.remove_answer(params[:answer_id])
+      redirect_to edit_question_path(@question), notice: I18n.t("questions.flash.answer_removed")
+    else
+      redirect_to edit_question_path(@question), alert: I18n.t("activerecord.errors.models.question.attributes.base.two_answers_required")
+    end
   end
 
   def update

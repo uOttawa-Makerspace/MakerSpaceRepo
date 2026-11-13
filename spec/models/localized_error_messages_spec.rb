@@ -154,6 +154,11 @@ RSpec.describe "Localized model error messages" do
     expect_messages(question, :base, "Every answer needs a description", "Chaque réponse doit avoir une description", :question_form)
   end
 
+  it "localizes the question answer count message" do
+    question = Question.new(answers: [Answer.new(correct: true, description: "Only")])
+    expect_messages(question, :base, "A question needs at least two answers", "Une question doit avoir au moins deux réponses", :question_form)
+  end
+
   it "localizes the quick access link messages" do
     admin = create(:user, :admin)
     QuickAccessLink.create!(user: admin, name: "Faq", path: "/faq")

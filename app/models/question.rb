@@ -6,6 +6,7 @@ class Question < ApplicationRecord
   has_many :answers, dependent: :destroy
 
   LEVELS = %w[Beginner Intermediate Advanced]
+  MINIMUM_ANSWERS = 2
 
   has_many :exam_responses, through: :exam_questions do
     def find_by_user(user)
@@ -24,6 +25,7 @@ class Question < ApplicationRecord
     validates :description, presence: true
     validates :level, inclusion: { in: LEVELS }
     validate :answers_have_text
+    validate :at_least_two_answers
     validate :exactly_one_correct_answer
   end
   has_many_attached :images
@@ -44,6 +46,17 @@ class Question < ApplicationRecord
     end
   end
 
+  # Removes one wrong answer, unless that would leave fewer than the minimum. The question row is
+  # locked so two removals at once cannot both pass the count. Returns whether the answer was removed.
+  def remove_answer(answer_id)
+    with_lock do
+      answer = answers.where(correct: false).find(answer_id)
+      next false unless answers.count > MINIMUM_ANSWERS
+      answer.destroy
+      true
+    end
+  end
+
   # Loads the stored answers with their texts together, so reading each text costs no query of its own.
   def preload_answer_texts
     ActiveRecord::Associations::Preloader.new(records: [self], associations: { answers: :rich_text_description }).call
@@ -61,6 +74,12 @@ class Question < ApplicationRecord
   def preload_answer_embeds
     texts = answers.target.filter_map(&:rich_text_description)
     ActiveRecord::Associations::Preloader.new(records: texts, associations: :embeds_attachments).call
+  end
+
+  # Counts the answers that remain once the ones marked for removal are gone.
+  def at_least_two_answers
+    return if answers.to_a.count { |answer| !answer.marked_for_destruction? } >= MINIMUM_ANSWERS
+    errors.add(:base, :two_answers_required)
   end
 
   def exactly_one_correct_answer

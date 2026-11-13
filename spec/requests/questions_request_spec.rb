@@ -185,6 +185,16 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(response.body).to include("A question must have exactly one correct answer")
     end
 
+    it "refuses a question with one answer, showing the error in English and French and creating nothing" do
+      params = valid_params
+      params[:question][:answers_attributes].delete("1")
+      expect { post questions_path, params: params }.not_to change(Question, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("A question needs at least two answers")
+      expect { post questions_path(locale: "fr"), params: params }.not_to change(Question, :count)
+      expect(response.body).to include("Une question doit avoir au moins deux réponses")
+    end
+
     it "refuses a question with no description, level or answer text, creating nothing" do
       params = { question: { description: "", level: "", answers_attributes: { "0" => { description: "" }, "1" => { description: "" } } } }
       expect { post questions_path, params: params }.not_to change(Question, :count)
@@ -286,11 +296,20 @@ RSpec.describe "Questions (admin question bank)", type: :request do
 
     # removal is a DELETE scoped to the question's own answers
     it "destroys the question's own answer and redirects to the edit form with a notice" do
+      Answer.create!(question: question, correct: false, description: "A third answer")
       victim = question.answers.where(correct: false).first
       expect { delete remove_answer_question_path(question, answer_id: victim.id) }.to change(Answer, :count).by(-1)
       expect(response).to redirect_to(edit_question_path(question))
       expect(flash[:notice]).to eq("Successfully removed answer")
       expect(Answer.exists?(victim.id)).to be(false)
+    end
+
+    it "refuses a removal that would leave one answer, in English and French, destroying nothing" do
+      expect { delete remove_answer_question_path(question, answer_id: question.answers.find_by!(correct: false).id) }.not_to change(Answer, :count)
+      expect(response).to redirect_to(edit_question_path(question))
+      expect(flash[:alert]).to eq("A question needs at least two answers")
+      expect { delete remove_answer_question_path(question, answer_id: question.answers.find_by!(correct: false).id, locale: "fr") }.not_to change(Answer, :count)
+      expect(flash[:alert]).to eq("Une question doit avoir au moins deux réponses")
     end
 
     it "404s and keeps the correct answer" do
@@ -360,6 +379,15 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(question.description).to eq("What is a kerf?")
       expect(question.trainings).to eq([training])
       expect(answer.reload.description.to_plain_text).to eq("A tool")
+    end
+
+    it "refuses an edit once removals leave one answer, in English and French, changing nothing" do
+      question.answers.find_by!(correct: false).destroy
+      patch question_path(question), params: { question: { description: "Changed?" } }
+      expect(flash[:alert]).to eq("The question was not updated. A question needs at least two answers")
+      patch question_path(question, locale: "fr"), params: { question: { description: "Changed?" } }
+      expect(flash[:alert]).to eq("La question n'a pas été modifiée. Une question doit avoir au moins deux réponses")
+      expect(question.reload.description).to eq("What is a kerf?")
     end
 
     it "refuses a level that is not one of the question levels" do

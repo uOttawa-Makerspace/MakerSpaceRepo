@@ -152,6 +152,7 @@ fr:
             base:
               one_correct_answer: "Une question doit avoir exactement une bonne réponse"
               answer_text_required: "Chaque réponse doit avoir une description"
+              two_answers_required: "Une question doit avoir au moins deux réponses"
         staff_unavailability:
           attributes:
             start_time:
