@@ -49,6 +49,23 @@ RSpec.describe "Volunteer pages with several rows", type: :request do
     expect(response.body.scan("fa-trash-can").size).to eq(8)
   end
 
+  it "lists only the shadowing shifts that have both a start and an end time" do
+    start = Time.zone.local(2030, 1, 7, 9)
+    ShadowingHour.create!(user: staff, space: makerspace, start_time: start, end_time: start + 3.hours, event_id: "full")
+    # Older rows can be stored without one of the times.
+    ShadowingHour.create!(user: staff, space: makerspace, start_time: start + 1.day, end_time: start + 25.hours, event_id: "no-end")
+                 .update_columns(end_time: nil)
+    ShadowingHour.create!(user: staff, space: makerspace, start_time: start + 2.days, end_time: start + 50.hours, event_id: "no-start")
+                 .update_columns(start_time: nil)
+    vol_login!(staff)
+
+    get shadowing_shifts_volunteers_path
+    expect(response).to have_http_status(:ok)
+    expect(response.body.scan("Monday, January 07, 2030").size).to eq(2)
+    expect(response.body).to include("9:00 AM", "12:00 PM", "about 3 hours")
+    expect(response.body).not_to include("event_id=no-end", "event_id=no-start")
+  end
+
   it "lists a volunteer's tasks in progress and completed" do
     volunteer = volunteers.first
     create(:volunteer_task_request, volunteer_task: tasks.first, user: volunteer, approval: nil)

@@ -122,8 +122,6 @@
               </thead>
               <tbody class="divide-y">
                 <% @shifts.each do |s| %>
-                  <% start_dt = s.start_time.is_a?(String) ? Time.zone.parse(s.start_time) : s.start_time %>
-                  <% end_dt = s.end_time.is_a?(String) ? Time.zone.parse(s.end_time) : s.end_time %>
                   <tr>
                     <!-- Space Badge -->
                     <td class="ps-3 ps-md-4 py-3">
@@ -144,11 +142,7 @@
                     <td class="py-3">
                       <div class="fw-semibold text-body-emphasis small">
                         <i class="fa-regular fa-calendar text-secondary me-1"></i>
-                        <%= begin
-                              l(start_dt, format: :volunteer_weekday)
-                            rescue StandardError
-                              s.start_time
-                            end %>
+                        <%= l(s.start_time, format: :volunteer_weekday) %>
                       </div>
                     </td>
 
@@ -156,25 +150,13 @@
                     <td class="py-3">
                       <span class="badge bg-body-secondary text-body-emphasis border border-secondary-subtle d-inline-flex align-items-center gap-1 py-1 px-2 small">
                         <i class="fa-regular fa-clock text-secondary"></i>
-                        <span><%= begin
-                                    l(start_dt, format: :volunteer_hour)
-                                  rescue StandardError
-                                    ""
-                                  end %> – <%= begin
-                                                                                     l(end_dt, format: :volunteer_hour)
-                                                                                   rescue StandardError
-                                                                                     ""
-                                                                                   end %></span>
+                        <span><%= l(s.start_time, format: :volunteer_hour) %> – <%= l(s.end_time, format: :volunteer_hour) %></span>
                       </span>
                     </td>
 
                     <!-- Duration -->
                     <td class="py-3 text-body-secondary small">
-                      <% if start_dt && end_dt %>
-                        <%= distance_of_time_in_words(start_dt, end_dt) %>
-                      <% else %>
-                        —
-                      <% end %>
+                      <%= distance_of_time_in_words(s.start_time, s.end_time) %>
                     </td>
 
                     <!-- Actions (Staff/Admin) -->
@@ -236,8 +218,6 @@
                 </thead>
                 <tbody class="divide-y">
                   <% @all_shifts.each do |s| %>
-                    <% start_dt = s.start_time.is_a?(String) ? Time.zone.parse(s.start_time) : s.start_time %>
-                    <% end_dt = s.end_time.is_a?(String) ? Time.zone.parse(s.end_time) : s.end_time %>
                     <tr>
                       <!-- Volunteer Info -->
                       <td class="ps-3 ps-md-4 py-3">
@@ -275,11 +255,7 @@
                       <td class="py-3">
                         <div class="fw-semibold text-body-emphasis small">
                           <i class="fa-regular fa-calendar text-secondary me-1"></i>
-                          <%= begin
-                                l(start_dt, format: :volunteer_weekday)
-                              rescue StandardError
-                                s.start_time
-                              end %>
+                          <%= l(s.start_time, format: :volunteer_weekday) %>
                         </div>
                       </td>
 
@@ -287,15 +263,7 @@
                       <td class="py-3">
                         <span class="badge bg-body-secondary text-body-emphasis border border-secondary-subtle d-inline-flex align-items-center gap-1 py-1 px-2 small">
                           <i class="fa-regular fa-clock text-secondary"></i>
-                          <span><%= begin
-                                      l(start_dt, format: :volunteer_hour)
-                                    rescue StandardError
-                                      ""
-                                    end %> – <%= begin
-                                                                                       l(end_dt, format: :volunteer_hour)
-                                                                                     rescue StandardError
-                                                                                       ""
-                                                                                     end %></span>
+                          <span><%= l(s.start_time, format: :volunteer_hour) %> – <%= l(s.end_time, format: :volunteer_hour) %></span>
                         </span>
                       </td>
 
