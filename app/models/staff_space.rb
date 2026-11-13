@@ -3,6 +3,7 @@ class StaffSpace < ApplicationRecord
   belongs_to :space, optional: true
 
   COLOR_FORMAT = /\A#\h{6}\z/
+  PLANNING_HORIZON = 4.weeks # how far ahead the event dialog ranks the staff for a planned event
 
   normalizes :color, with: ->(color) { color.strip.downcase }
 
@@ -54,22 +55,23 @@ class StaffSpace < ApplicationRecord
          .sort_by { |member| [member[:busy] ? 0 : 1, member[:name].to_s.downcase] }
   end
 
-  # The staff ranked (conflicts) for an event planned at the times of `window`, repeating by `rule` (nil: once), over 4 weeks.
+  # The staff ranked (conflicts) for an event planned at the times of `window`, repeating by `rule` (nil: once).
   def self.conflicts_for(space_id, rule:, window:)
     proposal = RecurringSeries.new(rule: rule, starts_at: window.from, ends_at: window.to)
-    conflicts(space_id, proposal.occurrences_in(CalendarWindow.new(window.from, window.from + 4.weeks)))
+    conflicts(space_id, proposal.occurrences_in(CalendarWindow.new(window.from, window.from + PLANNING_HORIZON)))
   end
 
-  # The calendar staff of a space for an event proposed at `occurrences` (RecurringSeries::Occurrence), each with the
-  # starts of the occurrences they are unavailable for (StaffUnavailability.clashes): available staff first, each part
-  # by name with accents read as their letter. With no occurrences, all are available.
+  # The calendar staff of a space for an event proposed at `occurrences`, each with the starts of those they are
+  # unavailable for (StaffUnavailability.clashes): available first, each part by name (accents read as their letter).
   def self.conflicts(space_id, occurrences)
     colors = colors_in(space_id)
     staff = calendar_staff(space_id).to_a
     clashes = StaffUnavailability.clashes(staff, occurrences)
-    rows = staff.map { |member| { id: member.id, name: member.name, color: colors[member.id], unavailableStarts: clashes.fetch(member.id, []).map { |clash| clash.starts_at.utc.iso8601 } } }
-    available, unavailable = rows.sort_by { |row| I18n.transliterate(row[:name].to_s).downcase }.partition { |row| row[:unavailableStarts].empty? }
-    available + unavailable
+    rows = staff.map do |member|
+      starts = clashes.fetch(member.id, []).map { |clash| clash.starts_at.utc.iso8601 }
+      { id: member.id, name: member.name, color: colors[member.id], unavailableStarts: starts }
+    end
+    rows.sort_by { |row| I18n.transliterate(row[:name].to_s).downcase }.partition { |row| row[:unavailableStarts].empty? }.flatten(1)
   end
 
   # A colour passed in is kept; a blank one gets the first palette entry still free in the space.

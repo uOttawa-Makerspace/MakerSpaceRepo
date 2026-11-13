@@ -11,10 +11,9 @@ class StaffUnavailability < ApplicationRecord
       errors.add(:start_time, :before_end_time)
   end
 
-  # The occurrences of this unavailability in the window (a CalendarWindow), as the calendar pages draw them: `row`
-  # (the title and the page's own properties) with each occurrence's times and id, and what the dialogs edit it by:
-  # the type that makes it editable, its staff member, the record id, whether an admin made it, and what they show
-  # of a series' repeat (nil for a single entry). An imported (ICS) entry carries none of these.
+  # Its occurrences in the window (a CalendarWindow) as the calendar pages draw them: `row` (title, page properties) with
+  # each occurrence's times and id, plus what the dialogs edit it by: type, staff member, record id, whether an admin
+  # made it, and a series' repeat (nil for a single entry). An imported (ICS) entry carries none of these.
   def feed_rows(window, row)
     repeating = recurrence_rule.present?
     series = RecurrenceRule.new(recurrence_rule, start_time).dialog_fields if repeating
@@ -26,8 +25,7 @@ class StaffUnavailability < ApplicationRecord
   # Its occurrences that overlap the window (a CalendarWindow), expanded by RecurringSeries.
   def occurrences_in(window) = RecurringSeries.for_record(self).occurrences_in(window)
 
-  # The `occurrences` of an event being planned that overlap an unavailability of each of
-  # `user_ids` (ids or users), by user id (a user with none may be missing).
+  # The `occurrences` of a planned event that overlap an unavailability of each of `user_ids` (ids or users), by user id.
   def self.clashes(user_ids, occurrences)
     return {} if occurrences.empty?
 
@@ -37,8 +35,7 @@ class StaffUnavailability < ApplicationRecord
     end
   end
 
-  # The unavailability occurrences in the window of each of `user_ids`, by user id: their stored unavailabilities
-  # and their external calendars.
+  # The occurrences in the window of each of `user_ids`' stored unavailabilities and external calendars, by user id.
   def self.occurrences_for(user_ids, window)
     sources = window.records(where(user_id: user_ids)).to_a + StaffExternalUnavailability.where(user_id: user_ids).to_a
     sources.group_by(&:user_id).transform_values { |of_user| of_user.flat_map { |source| source.occurrences_in(window) } }
