@@ -71,6 +71,12 @@ RSpec.describe "Translated templates" do
     app/views/locker_rentals/_rental_data_table.html.erb
     app/views/locker_rentals/_staff_actions.html.erb
     app/views/users/tabs/_lockers.html.erb
+    app/views/locker_mailer/locker_assigned.html.erb
+    app/views/locker_mailer/locker_cancelled.html.erb
+    app/views/locker_mailer/locker_checkout.html.erb
+    app/views/locker_mailer/locker_moved.html.erb
+    app/views/locker_mailer/locker_requested.html.erb
+    app/views/locker_mailer/rental_expired.html.erb
   ].freeze
 
   TRANSLATED_TEMPLATES.each do |path|

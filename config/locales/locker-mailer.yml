@@ -1,0 +1,104 @@
+en:
+  date:
+    formats:
+      locker_mail: "%B %d, %Y" # November 03, 2026
+  time:
+    formats:
+      locker_mail: "%B %d, %Y %H:%M" # November 03, 2026 14:30
+  locker_mailer:
+    shared:
+      hello: "Hello %{name},"
+      view_rental: "View Locker Rental"
+      requested_why_received: "You have received this email because you have requested a locker."
+    locker_requested:
+      subject: "New locker request"
+      subject_student: "New locker request for a GNG project"
+      preheader: "MakerRepo - New locker request %{id}"
+      why_received: "You have received this email someone has submitted a locker request."
+      request: "A user has submitted a request for a locker."
+      request_student: "A user has submitted a request for a locker for course %{course}, section %{section}, team %{team}."
+      view_request: "View the request here."
+    locker_assigned:
+      subject: "Locker %{specifier} has been assigned for you"
+      preheader: "MakerRepo - Your Locker Has Been Assigned"
+      body_html: "Your request has been completed, and you have been assigned a locker. Your locker is <b>%{specifier}</b>."
+      valid_until_html: "This locker is valid until <b>%{date}</b>."
+    locker_checkout:
+      subject: "Your locker rental for locker %{specifier} is ready for checkout"
+      preheader: "MakerRepo - Your Locker Request Has Been Approved"
+      body: "Your locker request has been approved, and is pending payment to be assigned."
+    locker_cancelled:
+      subject_with_locker: "Your locker rental for locker %{specifier} has been cancelled"
+      subject_without_locker: "Your locker rental request has been cancelled"
+      preheader: "MakerRepo - Your locker rental has been cancelled"
+      why_received_with_locker: "You have received this email because you have a locker assigned to you."
+      why_received_without_locker: "You have received this email because you have made a locker request."
+      cancelled_html: "Your rental for locker <b>%{specifier}</b> has been cancelled."
+      cancelled_on_html: "Your rental for locker <b>%{specifier}</b> has been cancelled on %{date}."
+      rejected: "Your locker request, created on %{date}, has been rejected."
+    rental_expired:
+      subject: "Your locker rental for Locker %{specifier} has expired - Please clear your locker"
+      preheader: "MakerRepo - Your Locker Rental Has Ended"
+      why_received: "You have received this email because your locker rental period has ended."
+      period_html: "Your rental period for locker <strong>%{specifier}</strong> ended on <strong>%{date}</strong>."
+      clear_locker: "Please remove all personal belongings and clear the locker promptly. If you need an extension or have questions, please contact the makerspace staff."
+    locker_moved:
+      subject: "Your locker rental for Locker %{specifier} has been modified"
+      preheader: "MakerRepo - Your locker rental has been modified"
+      why_received: "You have received this email because you have a locker occupied."
+      modified_html: "Your rental details for locker <b>%{specifier}</b> have been modified."
+      moved_html: "Your rental has been moved from locker %{from} to locker <b> %{to}</b>."
+      active_until: "Your rental is now active until %{date}."
+      view_details: "View Your Locker Details"
+fr:
+  date:
+    formats:
+      locker_mail: "%-d %B %Y" # 3 novembre 2026
+  time:
+    formats:
+      locker_mail: "%-d %B %Y à %H:%M" # 3 novembre 2026 à 14:30
+  locker_mailer:
+    shared:
+      hello: "Bonjour %{name},"
+      view_rental: "Voir la location de casier"
+      requested_why_received: "Vous avez reçu ce courriel parce que vous avez demandé un casier."
+    locker_requested:
+      subject: "Nouvelle demande de casier"
+      subject_student: "Nouvelle demande de casier pour un projet GNG"
+      preheader: "MakerRepo - Nouvelle demande de casier %{id}"
+      why_received: "Vous avez reçu ce courriel parce que quelqu'un a soumis une demande de casier."
+      request: "Un utilisateur a soumis une demande de casier."
+      request_student: "Un utilisateur a soumis une demande de casier pour le cours %{course}, la section %{section}, l'équipe %{team}."
+      view_request: "Voir la demande ici."
+    locker_assigned:
+      subject: "Le casier %{specifier} vous a été assigné"
+      preheader: "MakerRepo - Un casier vous a été assigné"
+      body_html: "Votre demande a été traitée et un casier vous a été assigné. Votre casier est le <b>%{specifier}</b>."
+      valid_until_html: "Ce casier est valide jusqu'au <b>%{date}</b>."
+    locker_checkout:
+      subject: "Votre location du casier %{specifier} est prête pour le paiement"
+      preheader: "MakerRepo - Votre demande de casier a été approuvée"
+      body: "Votre demande de casier a été approuvée. Le paiement est en attente pour que le casier vous soit assigné."
+    locker_cancelled:
+      subject_with_locker: "Votre location du casier %{specifier} a été annulée"
+      subject_without_locker: "Votre demande de location de casier a été annulée"
+      preheader: "MakerRepo - Votre location de casier a été annulée"
+      why_received_with_locker: "Vous avez reçu ce courriel parce qu'un casier vous est assigné."
+      why_received_without_locker: "Vous avez reçu ce courriel parce que vous avez fait une demande de casier."
+      cancelled_html: "Votre location du casier <b>%{specifier}</b> a été annulée."
+      cancelled_on_html: "Votre location du casier <b>%{specifier}</b> a été annulée le %{date}."
+      rejected: "Votre demande de casier, créée le %{date}, a été refusée."
+    rental_expired:
+      subject: "Votre location du casier %{specifier} est expirée - Veuillez vider votre casier"
+      preheader: "MakerRepo - Votre location de casier est terminée"
+      why_received: "Vous avez reçu ce courriel parce que la période de location de votre casier est terminée."
+      period_html: "Votre période de location du casier <strong>%{specifier}</strong> s'est terminée le <strong>%{date}</strong>."
+      clear_locker: "Veuillez retirer tous vos effets personnels et vider le casier sans tarder. Si vous avez besoin d'une prolongation ou si vous avez des questions, veuillez communiquer avec le personnel du makerspace."
+    locker_moved:
+      subject: "Votre location du casier %{specifier} a été modifiée"
+      preheader: "MakerRepo - Votre location de casier a été modifiée"
+      why_received: "Vous avez reçu ce courriel parce qu'un casier est occupé à votre nom."
+      modified_html: "Les détails de votre location du casier <b>%{specifier}</b> ont été modifiés."
+      moved_html: "Votre location a été déplacée du casier %{from} au casier <b>%{to}</b>."
+      active_until: "Votre location est maintenant active jusqu'au %{date}."
+      view_details: "Voir les détails de votre casier"

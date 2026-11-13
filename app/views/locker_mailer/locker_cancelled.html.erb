@@ -1,20 +1,20 @@
 <% content_for :preheader do %>
-    MakerRepo - Your locker rental has been cancelled
+  <%= t(".preheader") %>
 <% end %>
 
 <% content_for :why_received do %>
-    <% if @locker_rental.locker %>
-        You have received this email because you have a locker assigned to you.
-    <% else %>
-        You have received this email because you have made a locker request.
-    <% end %>
+  <%= @locker_rental.locker ? t(".why_received_with_locker") : t(".why_received_without_locker") %>
 <% end %>
 
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.name %>,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t("locker_mailer.shared.hello", name: @user.name) %></p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-    <% if @locker_rental.locker %>
-        Your rental for locker <b><%= @locker_rental.locker.specifier %></b> has been cancelled<%= " on #{@locker_rental.cancelled_at.to_date.to_formatted_s :long}" if @locker_rental.cancelled_at %>.
+  <% if @locker_rental.locker %>
+    <% if @locker_rental.cancelled_at %>
+      <%= t(".cancelled_on_html", specifier: @locker_rental.locker.specifier, date: l(@locker_rental.cancelled_at.to_date, format: :locker_mail)) %>
     <% else %>
-        Your locker request, created on <%= @locker_rental.created_at.to_fs :long %>, has been rejected.
+      <%= t(".cancelled_html", specifier: @locker_rental.locker.specifier) %>
     <% end %>
+  <% else %>
+    <%= t(".rejected", date: l(@locker_rental.created_at, format: :locker_mail)) %>
+  <% end %>
 </p>
