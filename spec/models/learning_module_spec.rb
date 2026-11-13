@@ -242,12 +242,18 @@ RSpec.describe LearningModule, type: :model do
       expect(lm.scorm_ready?).to be(false)
     end
 
-    it "scorm_enabled follows the attachment" do
+    it "scorm_enabled follows the attachment, also on a module just created with a package" do
       expect(create(:learning_module).scorm_enabled).to be(false)
-      # after_initialize runs before the attachment exists, so only a reload sees it
       lm = create(:learning_module, :with_scorm_object)
+      expect(lm.scorm_enabled).to be(true)
+      expect(LearningModule.find(lm.id).scorm_enabled).to be(true)
+    end
+
+    it "scorm_enabled answers the assigned value over the attachment" do
+      lm = create(:learning_module, :with_scorm_object)
+      lm.scorm_enabled = "0"
       expect(lm.scorm_enabled).to be(false)
-      expect(lm.reload.scorm_enabled).to be(true)
+      expect(LearningModule.new(scorm_enabled: "1").scorm_enabled).to be(true)
     end
 
     it "destroys its tracks" do
