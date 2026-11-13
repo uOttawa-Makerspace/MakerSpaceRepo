@@ -32,4 +32,19 @@ RSpec.describe LiteralTextScan do
     expect(described_class.visible_literals("<p>Hello <%= name %></p>")).to eq(["Hello"])
     expect(described_class.visible_literals("<p><%= t('x') %></p>")).to eq([])
   end
+
+  it "reports form builder labels and buttons, button_tag text and select prompts" do
+    expect(arguments(%(<%= f.label :joins, "Capacity", class: "x" %>))).to eq(["Capacity"])
+    expect(arguments(%(<%= f.submit "Send", class: "btn" %>))).to eq(["Send"])
+    expect(arguments(%(<%= button_tag "Save changes" %>))).to eq(["Save changes"])
+    expect(arguments(%(<%= f.select :x, list, { prompt: "Choose one" } %>))).to eq(["Choose one"])
+    expect(arguments(%(<%= f.label :title, class: "form-label" do %>))).to eq([])
+  end
+
+  it "reads past a > inside a quoted attribute and ignores lower-case form codes" do
+    expect(described_class.visible_literals(%(<input data-action="input->search#filter"><p>Hi</p>))).to eq(["Hi"])
+    expect(described_class.visible_literals(%(<!-- The user's list --><p>Hi</p>))).to eq(["Hi"])
+    expect(described_class.literal_attributes(%(<option value="events">))).to eq([])
+    expect(described_class.literal_attributes(%(<input type="submit" value="Send">))).to eq(["Send"])
+  end
 end

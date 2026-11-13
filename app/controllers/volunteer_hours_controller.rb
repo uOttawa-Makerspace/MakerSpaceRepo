@@ -27,7 +27,7 @@ class VolunteerHoursController < VolunteersController
     @volunteer_hour = VolunteerHour.new(user_id: @user.try(:id))
     if @volunteer_hour.save_hand_logged(volunteer_hour_params)
       redirect_to volunteer_hours_path
-      flash[:notice] = "You've successfully sent your volunteer working hours"
+      flash[:notice] = I18n.t("volunteer_area.flash.hours_sent")
     else
       redirect_to volunteer_hours_path,
                   alert: @volunteer_hour.errors.full_messages.to_sentence
@@ -53,7 +53,7 @@ class VolunteerHoursController < VolunteersController
   def update
     volunteer_hour = VolunteerHour.find(params[:id])
     if volunteer_hour.save_hand_logged(volunteer_hour_params)
-      flash[:notice] = "Volunteer hour updated"
+      flash[:notice] = I18n.t("volunteer_area.flash.hour_updated")
     else
       flash[:alert] = volunteer_hour.errors.full_messages.to_sentence
     end
@@ -75,7 +75,7 @@ class VolunteerHoursController < VolunteersController
     if approval.nil?
       flash[:alert] = I18n.t("errors.volunteer.hours.approval_invalid")
     elsif volunteer_hour.update(approval: approval)
-      flash[:notice] = "Volunteer hour updated"
+      flash[:notice] = I18n.t("volunteer_area.flash.hour_updated")
     else
       flash[:alert] = validation_message(volunteer_hour, "errors.volunteer.hours.approval_not_saved")
     end
@@ -96,7 +96,7 @@ class VolunteerHoursController < VolunteersController
 
   def destroy_hour(volunteer_hour)
     if volunteer_hour.destroy
-      flash[:notice] = "Volunteer Hour Deleted"
+      flash[:notice] = I18n.t("volunteer_area.flash.hour_deleted")
     else
       flash[:alert] = validation_message(volunteer_hour, "errors.volunteer.hours.not_deleted")
     end
@@ -126,7 +126,7 @@ class VolunteerHoursController < VolunteersController
   def validate_user_for_editing
     volunteer_hour = VolunteerHour.find(params[:id])
     if (current_user.id != volunteer_hour.user_id) && !current_user.staff?
-      flash[:alert] = "You are not authorized to edit this."
+      flash[:alert] = I18n.t("volunteer_area.flash.hour_edit_refused")
       redirect_to volunteer_hours_path
     end
   end
@@ -142,7 +142,7 @@ class VolunteerHoursController < VolunteersController
 
   def validate_staff_for_request
     unless current_user.staff?
-      flash[:alert] = "You are not authorized access this area"
+      flash[:alert] = I18n.t("volunteer_area.flash.hours_staff_only")
       redirect_to volunteer_hours_path
     end
   end

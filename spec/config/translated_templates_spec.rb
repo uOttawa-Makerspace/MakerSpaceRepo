@@ -31,6 +31,31 @@ RSpec.describe "Translated templates" do
     app/views/repositories/_repository_card.html.erb
     app/views/repositories/show.html.erb
     app/views/users/_repositories.html.erb
+    app/views/layouts/_volunteer_header.html.erb
+    app/views/volunteers/index.html.erb
+    app/views/volunteers/calendar.html.erb
+    app/views/volunteers/new_event.html.erb
+    app/views/volunteers/shadowing_shifts.html.erb
+    app/views/volunteers/emails.html.erb
+    app/views/volunteers/volunteer_list.html.erb
+    app/views/volunteers/my_stats.html.erb
+    app/views/volunteer_tasks/index.html.erb
+    app/views/volunteer_tasks/_task_card_grid.html.erb
+    app/views/volunteer_tasks/show.html.erb
+    app/views/volunteer_tasks/new.html.erb
+    app/views/volunteer_tasks/edit.html.erb
+    app/views/volunteer_tasks/my_tasks.html.erb
+    app/views/volunteer_task_requests/index.html.erb
+    app/views/volunteer_task_requests/_pending_requests.html.erb
+    app/views/volunteer_task_requests/_processed_requests.html.erb
+    app/views/volunteer_task_joins/_new.html.erb
+    app/views/volunteer_task_joins/_remove.html.erb
+    app/views/volunteer_hours/index.html.erb
+    app/views/volunteer_hours/new.html.erb
+    app/views/volunteer_hours/_new.html.erb
+    app/views/volunteer_hours/edit.html.erb
+    app/views/volunteer_hours/volunteer_hour_requests.html.erb
+    app/views/volunteer_hours/volunteer_hour_per_user.html.erb
   ].freeze
 
   TRANSLATED_TEMPLATES.each do |path|

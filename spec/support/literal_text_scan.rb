@@ -7,21 +7,26 @@ module LiteralTextScan
   ALLOWED_LITERALS = ["@uOCEED", "@uoceed", "CEED", "makerepo.com/new", "MakerRepo"].freeze
 
   LITERAL_ARGUMENT = /
-    (?:link_to|button_to|label_tag|submit_tag|provide|tag\.\w+|content_tag|
-       (?:placeholder|title|alt|value|label|aria-label|default):)
+    (?:link_to|button_to|button_tag|label_tag|submit_tag|provide|tag\.\w+|content_tag|\w+\.(?:label|submit)\b|
+       (?:placeholder|prompt|title|alt|value|label|aria-label|default):)
     \s*\(?\s*(?::\w+,\s*)?(['"])((?:\\.|(?!\1)[^\\])*[A-Za-z]{2}(?:\\.|(?!\1)[^\\])*)\1
   /x
 
+  # A tag, read past any ">" inside its quoted attribute values (such as data-action="input->search#filter").
+  TAG = /<(?:[^>"']|"[^"]*"|'[^']*')*>/m
+
   # Markup with ERB output, comments, scripts, tags and entities removed leaves only visible text.
   def self.visible_literals(source)
-    stripped = source.gsub(/<%#.*?%>/m, "").gsub(/<%.*?%>/m, " ").gsub(%r{<script.*?</script>}m, "")
-    stripped.gsub(/<[^>]*>/m, " ").gsub(/&\w+;/, " ").split(/\s+/).grep(/[[:alpha:]]/) - ALLOWED_LITERALS
+    stripped = source.gsub(/<%#.*?%>/m, "").gsub(/<%.*?%>/m, " ").gsub(/<!--.*?-->/m, " ").gsub(%r{<script.*?</script>}m, "")
+    stripped.gsub(TAG, " ").gsub(/&\w+;/, " ").split(/\s+/).grep(/[[:alpha:]]/) - ALLOWED_LITERALS
   end
 
-  # Text-bearing HTML attributes written out in the markup, such as alt="Logo" or placeholder="Email".
+  # Text-bearing HTML attributes written out in the markup, such as alt="Logo" or placeholder="Email". A value
+  # written all in lower case (value="events") is a form code that is submitted, not shown.
   def self.literal_attributes(source)
     markup = source.gsub(/<%#.*?%>/m, "").gsub(/<%.*?%>/m, "")
-    markup.scan(/\b(?:alt|title|aria-label|placeholder|value|label)=(["'])([^"']*[A-Za-z]{2}[^"']*)\1/).map(&:last) - ALLOWED_LITERALS
+    found = markup.scan(/\b(alt|title|aria-label|placeholder|value|label)=(["'])([^"']*[A-Za-z]{2}[^"']*)\2/)
+    found.reject { |name, _, text| name == "value" && text == text.downcase }.map(&:last) - ALLOWED_LITERALS
   end
 
   def self.literal_arguments(source)

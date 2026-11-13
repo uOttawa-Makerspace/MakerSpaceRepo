@@ -6,31 +6,31 @@
         <ol class="breadcrumb mb-0 small">
           <li class="breadcrumb-item">
             <%= link_to volunteers_path, class: "text-decoration-none text-body-secondary" do %>
-              <i class="fa-solid fa-hand-holding-heart me-1"></i>Volunteers
+              <i class="fa-solid fa-hand-holding-heart me-1"></i><%= t('volunteer_area.shared.volunteers') %>
             <% end %>
           </li>
           <li class="breadcrumb-item">
             <%= link_to volunteer_list_volunteers_path, class: "text-decoration-none text-body-secondary" do %>
-              Directory
+              <%= t('volunteer_area.shared.directory') %>
             <% end %>
           </li>
-          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page">Email Lists</li>
+          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page"><%= t('volunteer_area.shared.email_lists') %></li>
         </ol>
       </nav>
       <h1 class="h3 fw-bold text-body-emphasis mb-0 d-flex align-items-center gap-2">
         <i class="fa-solid fa-envelope-open-text text-primary"></i>
-        <span>Volunteer Email Lists</span>
+        <span><%= t('volunteer_area.emails.title') %></span>
       </h1>
-      <p class="text-body-secondary small mb-0 mt-1">Copy and export formatted email distribution lists for announcements and communications.</p>
+      <p class="text-body-secondary small mb-0 mt-1"><%= t('volunteer_area.emails.subtitle') %></p>
     </div>
     <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
       <%= link_to volunteer_list_volunteers_path, class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center" do %>
         <i class="fa-solid fa-users"></i>
-        <span>Volunteer Directory</span>
+        <span><%= t('volunteer_area.shared.volunteer_directory') %></span>
       <% end %>
       <%= link_to volunteer_tasks_path, class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center" do %>
         <i class="fa-solid fa-list-check"></i>
-        <span>Volunteer Tasks</span>
+        <span><%= t('volunteer_area.shared.volunteer_tasks') %></span>
       <% end %>
     </div>
   </div>
@@ -48,8 +48,8 @@
               <i class="fa-solid fa-mail-bulk"></i>
             </div>
             <div>
-              <h5 class="card-title fw-bold text-body-emphasis mb-0">All Volunteers</h5>
-              <span class="text-body-secondary small">Complete roster</span>
+              <h5 class="card-title fw-bold text-body-emphasis mb-0"><%= t('volunteer_area.emails.all') %></h5>
+              <span class="text-body-secondary small"><%= t('volunteer_area.emails.all_hint') %></span>
             </div>
           </div>
           <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill fs-6 px-3">
@@ -60,17 +60,17 @@
         <!-- Card Body with Monospace Textarea -->
         <div class="card-body p-3 p-md-4 flex-grow-1 d-flex flex-column">
           <label for="email-1" class="form-label fw-semibold text-body small d-flex justify-content-between align-items-center mb-2">
-            <span>Email List</span>
-            <span class="text-body-secondary fw-normal">Comma-separated</span>
+            <span><%= t('volunteer_area.emails.list') %></span>
+            <span class="text-body-secondary fw-normal"><%= t('volunteer_area.emails.comma_separated') %></span>
           </label>
           <% all_emails_formatted = @all_emails.compact.reject(&:blank?).join(", ") %>
           <textarea id="email-1"
                     rows="9"
                     readonly
                     class="form-control font-monospace small bg-body-secondary border-secondary-subtle flex-grow-1 mb-2"
-                    placeholder="No volunteer emails found..."><%= all_emails_formatted %></textarea>
+                    placeholder="<%= t('volunteer_area.emails.none_all') %>"><%= all_emails_formatted %></textarea>
           <div class="form-text text-body-secondary small">
-            Ready to paste directly into your email client's BCC field.
+            <%= t('volunteer_area.emails.bcc_hint') %>
           </div>
         </div>
 
@@ -84,12 +84,12 @@
                     data-clipboard-text="<%= all_emails_formatted %>"
                     <%= "disabled" if @all_emails.empty? %>>
               <i class="fa-solid fa-copy"></i>
-              <span>Copy All Emails</span>
+              <span><%= t('volunteer_area.emails.copy_all') %></span>
             </button>
             <% if @all_emails.any? %>
               <%= mail_to "", class: "btn btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-2 small", bcc: all_emails_formatted do %>
                 <i class="fa-solid fa-paper-plane"></i>
-                <span>Open in Mail Client</span>
+                <span><%= t('volunteer_area.emails.open_mail') %></span>
               <% end %>
             <% end %>
           </div>
@@ -107,8 +107,8 @@
               <i class="fa-solid fa-user-check"></i>
             </div>
             <div>
-              <h5 class="card-title fw-bold text-body-emphasis mb-0">Active Volunteers</h5>
-              <span class="text-body-secondary small">Currently active program</span>
+              <h5 class="card-title fw-bold text-body-emphasis mb-0"><%= t('volunteer_area.shared.active_volunteers') %></h5>
+              <span class="text-body-secondary small"><%= t('volunteer_area.emails.active_hint') %></span>
             </div>
           </div>
           <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill fs-6 px-3">
@@ -119,17 +119,17 @@
         <!-- Card Body with Monospace Textarea -->
         <div class="card-body p-3 p-md-4 flex-grow-1 d-flex flex-column">
           <label for="email-2" class="form-label fw-semibold text-body small d-flex justify-content-between align-items-center mb-2">
-            <span>Email List</span>
-            <span class="text-body-secondary fw-normal">Comma-separated</span>
+            <span><%= t('volunteer_area.emails.list') %></span>
+            <span class="text-body-secondary fw-normal"><%= t('volunteer_area.emails.comma_separated') %></span>
           </label>
           <% active_emails_formatted = @active_emails.compact.reject(&:blank?).join(", ") %>
           <textarea id="email-2"
                     rows="9"
                     readonly
                     class="form-control font-monospace small bg-body-secondary border-secondary-subtle flex-grow-1 mb-2"
-                    placeholder="No active volunteer emails found..."><%= active_emails_formatted %></textarea>
+                    placeholder="<%= t('volunteer_area.emails.none_active') %>"><%= active_emails_formatted %></textarea>
           <div class="form-text text-body-secondary small">
-            Ready to paste directly into your email client's BCC field.
+            <%= t('volunteer_area.emails.bcc_hint') %>
           </div>
         </div>
 
@@ -143,12 +143,12 @@
                     data-clipboard-text="<%= active_emails_formatted %>"
                     <%= "disabled" if @active_emails.empty? %>>
               <i class="fa-solid fa-copy"></i>
-              <span>Copy Active Emails</span>
+              <span><%= t('volunteer_area.emails.copy_active') %></span>
             </button>
             <% if @active_emails.any? %>
               <%= mail_to "", class: "btn btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-2 small", bcc: active_emails_formatted do %>
                 <i class="fa-solid fa-paper-plane"></i>
-                <span>Open in Mail Client</span>
+                <span><%= t('volunteer_area.emails.open_mail') %></span>
               <% end %>
             <% end %>
           </div>
@@ -166,8 +166,8 @@
               <i class="fa-solid fa-user-clock"></i>
             </div>
             <div>
-              <h5 class="card-title fw-bold text-body-emphasis mb-0">Inactive Volunteers</h5>
-              <span class="text-body-secondary small">Past or paused volunteers</span>
+              <h5 class="card-title fw-bold text-body-emphasis mb-0"><%= t('volunteer_area.shared.inactive_volunteers') %></h5>
+              <span class="text-body-secondary small"><%= t('volunteer_area.emails.inactive_hint') %></span>
             </div>
           </div>
           <span class="badge bg-secondary-subtle text-body-secondary border border-secondary-subtle rounded-pill fs-6 px-3">
@@ -178,17 +178,17 @@
         <!-- Card Body with Monospace Textarea -->
         <div class="card-body p-3 p-md-4 flex-grow-1 d-flex flex-column">
           <label for="email-3" class="form-label fw-semibold text-body small d-flex justify-content-between align-items-center mb-2">
-            <span>Email List</span>
-            <span class="text-body-secondary fw-normal">Comma-separated</span>
+            <span><%= t('volunteer_area.emails.list') %></span>
+            <span class="text-body-secondary fw-normal"><%= t('volunteer_area.emails.comma_separated') %></span>
           </label>
           <% unactive_emails_formatted = @unactive_emails.compact.reject(&:blank?).join(", ") %>
           <textarea id="email-3"
                     rows="9"
                     readonly
                     class="form-control font-monospace small bg-body-secondary border-secondary-subtle flex-grow-1 mb-2"
-                    placeholder="No inactive volunteer emails found..."><%= unactive_emails_formatted %></textarea>
+                    placeholder="<%= t('volunteer_area.emails.none_inactive') %>"><%= unactive_emails_formatted %></textarea>
           <div class="form-text text-body-secondary small">
-            Ready to paste directly into your email client's BCC field.
+            <%= t('volunteer_area.emails.bcc_hint') %>
           </div>
         </div>
 
@@ -202,12 +202,12 @@
                     data-clipboard-text="<%= unactive_emails_formatted %>"
                     <%= "disabled" if @unactive_emails.empty? %>>
               <i class="fa-solid fa-copy"></i>
-              <span>Copy Inactive Emails</span>
+              <span><%= t('volunteer_area.emails.copy_inactive') %></span>
             </button>
             <% if @unactive_emails.any? %>
               <%= mail_to "", class: "btn btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-2 small", bcc: unactive_emails_formatted do %>
                 <i class="fa-solid fa-paper-plane"></i>
-                <span>Open in Mail Client</span>
+                <span><%= t('volunteer_area.emails.open_mail') %></span>
               <% end %>
             <% end %>
           </div>

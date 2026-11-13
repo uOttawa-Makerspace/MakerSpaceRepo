@@ -1,4 +1,5 @@
 <% user = current_user %>
+<% level_name = ->(level) { t(level.to_s.downcase, scope: 'volunteer_area.levels', default: level.to_s) } %>
 
 <div class="py-3 py-md-4">
   <!-- Top Navigation & Header -->
@@ -8,30 +9,30 @@
         <ol class="breadcrumb mb-0 small">
           <li class="breadcrumb-item">
             <%= link_to volunteers_path, class: "text-decoration-none text-body-secondary" do %>
-              <i class="fa-solid fa-hand-holding-heart me-1"></i>Volunteers
+              <i class="fa-solid fa-hand-holding-heart me-1"></i><%= t('volunteer_area.shared.volunteers') %>
             <% end %>
           </li>
-          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page">My Stats</li>
+          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page"><%= t('volunteer_area.shared.my_stats') %></li>
         </ol>
       </nav>
       <h1 class="h3 fw-bold text-body-emphasis mb-0 d-flex align-items-center gap-2">
         <i class="fa-solid fa-chart-line text-primary"></i>
-        <span>My Volunteer Stats</span>
+        <span><%= t('volunteer_area.stats.title') %></span>
       </h1>
-      <p class="text-body-secondary small mb-0 mt-1">Track your earned credits, volunteer hours, and skill certifications.</p>
+      <p class="text-body-secondary small mb-0 mt-1"><%= t('volunteer_area.stats.subtitle') %></p>
     </div>
     <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
       <span class="badge bg-body-tertiary text-body-emphasis border border-secondary-subtle px-3 py-2 rounded-pill d-inline-flex align-items-center gap-2 small">
         <i class="fa-solid fa-user-check text-success"></i>
-        <span><%= user.name.presence || 'Volunteer' %></span>
+        <span><%= user.name.presence || t('volunteer_area.shared.volunteer') %></span>
       </span>
       <%= link_to transcript_volunteers_path, class: "btn btn-outline-primary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center", target: "_blank", rel: "noopener" do %>
         <i class="fa-solid fa-file-lines"></i>
-        <span>Print Transcript</span>
+        <span><%= t('volunteer_area.stats.print_transcript') %></span>
       <% end %>
       <%= link_to volunteer_tasks_path, class: "btn btn-primary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center shadow-sm" do %>
         <i class="fa-solid fa-list-check"></i>
-        <span>Find Tasks</span>
+        <span><%= t('volunteer_area.stats.find_tasks') %></span>
       <% end %>
     </div>
   </div>
@@ -43,7 +44,7 @@
       <div class="card border rounded-3 shadow-sm bg-body h-100">
         <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between gap-2">
           <div>
-            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">Total CCs</h6>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1"><%= t('volunteer_area.shared.total_ccs') %></h6>
             <h2 class="fw-bold text-body-emphasis mb-0"><%= user.get_total_cc %></h2>
           </div>
           <div class="rounded-circle bg-warning-subtle text-warning d-flex align-items-center justify-content-center p-3 fs-4 flex-shrink-0">
@@ -58,7 +59,7 @@
       <div class="card border rounded-3 shadow-sm bg-body h-100">
         <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between gap-2">
           <div>
-            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">Hours Logged</h6>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1"><%= t('volunteer_area.stats.hours_logged') %></h6>
             <h2 class="fw-bold text-body-emphasis mb-0"><%= user.get_total_hours %></h2>
           </div>
           <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center p-3 fs-4 flex-shrink-0">
@@ -73,7 +74,7 @@
       <div class="card border rounded-3 shadow-sm bg-body h-100">
         <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between gap-2">
           <div>
-            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">Approved Tasks</h6>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1"><%= t('volunteer_area.stats.approved_tasks') %></h6>
             <h2 class="fw-bold text-body-emphasis mb-0"><%= @processed_volunteer_task_requests&.size || 0 %></h2>
           </div>
           <div class="rounded-circle bg-success-subtle text-success d-flex align-items-center justify-content-center p-3 fs-4 flex-shrink-0">
@@ -88,7 +89,7 @@
       <div class="card border rounded-3 shadow-sm bg-body h-100">
         <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between gap-2">
           <div>
-            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">Certifications</h6>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1"><%= t('volunteer_area.shared.certifications') %></h6>
             <h2 class="fw-bold text-body-emphasis mb-0"><%= @certifications&.size || 0 %></h2>
           </div>
           <div class="rounded-circle bg-info-subtle text-info-emphasis d-flex align-items-center justify-content-center p-3 fs-4 flex-shrink-0">
@@ -113,7 +114,7 @@
                   aria-controls="skills-pane"
                   aria-selected="true">
             <i class="fa-solid fa-graduation-cap text-primary"></i>
-            <span>Skills & Progression</span>
+            <span><%= t('volunteer_area.stats.skills_tab') %></span>
           </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -126,7 +127,7 @@
                   aria-controls="history-pane"
                   aria-selected="false">
             <i class="fa-solid fa-clock-rotate-left text-secondary"></i>
-            <span>Activity & Credit History</span>
+            <span><%= t('volunteer_area.stats.history_tab') %></span>
             <span class="badge bg-secondary-subtle text-body-secondary border border-secondary-subtle rounded-pill ms-1">
               <%= @processed_volunteer_task_requests&.size || 0 %>
             </span>
@@ -147,10 +148,10 @@
         <div class="card bg-body-tertiary border border-secondary-subtle rounded-3 p-3 p-md-4 mb-4 shadow-sm">
           <label for="training-search-select" id="training-search-label" class="form-label fw-semibold text-body-emphasis d-flex align-items-center gap-2 mb-2">
             <i class="fa-solid fa-magnifying-glass text-primary"></i>
-            <span>Quick Jump to Tool / Certification:</span>
+            <span><%= t('volunteer_area.stats.quick_jump') %></span>
           </label>
-          <select id="training-search-select" class="form-select" aria-labelledby="training-search-label" placeholder="Search a tool or certification (e.g. Mill, 3D Printer, Laser)...">
-            <option value="">Search a tool or certification...</option>
+          <select id="training-search-select" class="form-select" aria-labelledby="training-search-label" placeholder="<%= t('volunteer_area.stats.search_placeholder') %>">
+            <option value=""><%= t('volunteer_area.stats.search_option') %></option>
             <% @skills.each do |skill| %>
               <optgroup label="<%= skill.name %>">
                 <% skill.trainings.each do |training| %>
@@ -175,7 +176,7 @@
                   <h2 class="h6 fw-bold mb-0 text-body-emphasis"><%= skill.name %></h2>
                 </div>
                 <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle rounded-pill small">
-                  <%= skill.trainings.size %> <%= "track".pluralize(skill.trainings.size) %>
+                  <%= t('volunteer_area.stats.tracks', count: skill.trainings.size) %>
                 </span>
               </div>
 
@@ -251,7 +252,7 @@
                                   </div>
                                   <div class="small w-100 min-w-0">
                                     <div class="d-flex align-items-center justify-content-between">
-                                      <span class="fw-bold"><%= badge.level %> Certified</span>
+                                      <span class="fw-bold"><%= t('volunteer_area.stats.certified', level: level_name.(badge.level)) %></span>
                                       <i class="fa-solid fa-circle-check text-success"></i>
                                     </div>
                                     <% if skills_list.any? %>
@@ -274,10 +275,10 @@
                                 <div class="d-flex align-items-center justify-content-between mb-2">
                                   <span class="small fw-semibold text-body-emphasis d-flex align-items-center gap-1">
                                     <i class="fa-solid fa-arrow-trend-up text-primary"></i>
-                                    <span>Next: <%= next_level %></span>
+                                    <span><%= t('volunteer_area.stats.next', level: level_name.(next_level)) %></span>
                                   </span>
                                   <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle small">
-                                    Milestone
+                                    <%= t('volunteer_area.stats.milestone') %>
                                   </span>
                                 </div>
 
@@ -285,7 +286,7 @@
                                 <% if next_projects_total.positive? %>
                                   <div class="mb-2">
                                     <div class="d-flex justify-content-between small mb-1">
-                                      <span class="text-body-secondary">Proficient Projects</span>
+                                      <span class="text-body-secondary"><%= t('volunteer_area.stats.proficient_projects') %></span>
                                       <span class="fw-semibold text-body-emphasis"><%= next_projects_done %> / <%= next_projects_total %></span>
                                     </div>
                                     <div class="progress bg-body-secondary" role="progressbar" aria-label="<%= t('common.names.progress_projects') %>" aria-valuenow="<%= next_projects_pct %>" aria-valuemin="0" aria-valuemax="100">
@@ -298,7 +299,7 @@
                                 <% if next_modules_total.positive? %>
                                   <div class="mb-1">
                                     <div class="d-flex justify-content-between small mb-1">
-                                      <span class="text-body-secondary">Learning Modules</span>
+                                      <span class="text-body-secondary"><%= t('volunteer_area.stats.learning_modules') %></span>
                                       <span class="fw-semibold text-body-emphasis"><%= next_modules_done %> / <%= next_modules_total %></span>
                                     </div>
                                     <div class="progress bg-body-secondary" role="progressbar" aria-label="<%= t('common.names.progress_modules') %>" aria-valuenow="<%= next_modules_pct %>" aria-valuemin="0" aria-valuemax="100">
@@ -309,14 +310,14 @@
 
                                 <% if next_projects_total.zero? && next_modules_total.zero? %>
                                   <div class="text-body-secondary small fst-italic">
-                                    <i class="fa-solid fa-chalkboard-user me-1 text-primary"></i> Workshop session required for <%= next_level %>
+                                    <i class="fa-solid fa-chalkboard-user me-1 text-primary"></i> <%= t('volunteer_area.stats.workshop_required', level: level_name.(next_level)) %>
                                   </div>
                                 <% end %>
                               </div>
                             <% else %>
                               <!-- Max Level Achieved (Advanced) -->
                               <div class="p-2 bg-warning-subtle text-warning-emphasis rounded-3 border border-warning-subtle mb-3 text-center small">
-                                <i class="fa-solid fa-trophy text-warning me-1"></i> <strong>Mastered</strong> · Highest level reached!
+                                <i class="fa-solid fa-trophy text-warning me-1"></i> <%= t('volunteer_area.stats.mastered_html') %>
                               </div>
                             <% end %>
                           </div>
@@ -324,9 +325,9 @@
                           <!-- Target Practice Footer for Next Level -->
                           <% if next_level.present? && next_target_hours.to_i > 0 %>
                             <div class="pt-2 border-top border-secondary-subtle d-flex align-items-center justify-content-between small text-body-secondary">
-                              <span>Practice for <%= next_level %>:</span>
+                              <span><%= t('volunteer_area.stats.practice_for', level: level_name.(next_level)) %></span>
                               <span class="badge bg-body-secondary text-body-emphasis border border-secondary-subtle">
-                                <%= next_target_hours %> <%= "hr".pluralize(next_target_hours) %>
+                                <%= t('volunteer_area.stats.practice_hours', count: next_target_hours) %>
                               </span>
                             </div>
                           <% end %>
@@ -352,10 +353,10 @@
             <table class="table table-hover align-middle mb-0">
               <thead class="bg-body-secondary border-bottom">
                 <tr class="text-body-secondary small text-uppercase">
-                  <th class="ps-3 ps-md-4 py-3" scope="col">Completed Task</th>
-                  <th class="py-3" scope="col">Date Logged</th>
-                  <th class="py-3" scope="col">Status</th>
-                  <th class="pe-3 pe-md-4 py-3 text-end" scope="col">Credits & Hours</th>
+                  <th class="ps-3 ps-md-4 py-3" scope="col"><%= t('volunteer_area.shared.completed_task') %></th>
+                  <th class="py-3" scope="col"><%= t('volunteer_area.stats.date_logged') %></th>
+                  <th class="py-3" scope="col"><%= t('volunteer_area.shared.status') %></th>
+                  <th class="pe-3 pe-md-4 py-3 text-end" scope="col"><%= t('volunteer_area.shared.credits_hours') %></th>
                 </tr>
               </thead>
               <tbody class="divide-y">
@@ -369,7 +370,7 @@
                         </div>
                         <div>
                           <%= link_to vtr.volunteer_task.title.capitalize, volunteer_task_path(vtr.volunteer_task.id), class: "fw-bold text-body-emphasis text-decoration-none d-block lh-sm" %>
-                          <span class="text-body-secondary small"><%= vtr.volunteer_task.category %></span>
+                          <span class="text-body-secondary small"><%= task_category_name(vtr.volunteer_task.category) %></span>
                         </div>
                       </div>
                     </td>
@@ -378,14 +379,14 @@
                     <td class="py-3">
                       <span class="text-body-secondary small d-inline-flex align-items-center gap-1">
                         <i class="fa-regular fa-calendar"></i>
-                        <span><%= vtr.created_at.strftime('%Y-%m-%d · %I:%M %p') %></span>
+                        <span><%= l(vtr.created_at, format: :volunteer_logged) %></span>
                       </span>
                     </td>
 
                     <!-- Status -->
                     <td class="py-3">
                       <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small">
-                        <i class="fa-solid fa-circle-check me-1"></i><%= vtr.status.capitalize %>
+                        <i class="fa-solid fa-circle-check me-1"></i><%= t('volunteer_area.shared.approved') %>
                       </span>
                     </td>
 
@@ -393,10 +394,10 @@
                     <td class="pe-3 pe-md-4 py-3 text-end">
                       <div class="d-inline-flex flex-column flex-sm-row gap-1 align-items-end">
                         <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1 small">
-                          <i class="fa-solid fa-coins text-warning me-1"></i><%= vtr.volunteer_task.cc %> CC
+                          <i class="fa-solid fa-coins text-warning me-1"></i><%= t('volunteer_area.shared.cc_amount', cc: vtr.volunteer_task.cc) %>
                         </span>
                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1 small">
-                          <i class="fa-regular fa-clock text-primary me-1"></i><%= vtr.volunteer_task.hours %> hrs
+                          <i class="fa-regular fa-clock text-primary me-1"></i><%= t('volunteer_area.shared.hours_short', hours: vtr.volunteer_task.hours) %>
                         </span>
                       </div>
                     </td>
@@ -418,11 +419,11 @@
             <div class="rounded-circle bg-body-secondary text-body-secondary d-inline-flex align-items-center justify-content-center p-4 fs-1 mb-3">
               <i class="fa-solid fa-folder-open"></i>
             </div>
-            <h5 class="fw-bold text-body-emphasis">No Activity Recorded</h5>
-            <p class="text-body-secondary small mb-3">You have not completed any volunteer tasks or earned credits yet.</p>
+            <h5 class="fw-bold text-body-emphasis"><%= t('volunteer_area.stats.no_activity_title') %></h5>
+            <p class="text-body-secondary small mb-3"><%= t('volunteer_area.stats.no_activity_body') %></p>
             <%= link_to volunteer_tasks_path, class: "btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm" do %>
               <i class="fa-solid fa-list-check"></i>
-              <span>Browse Volunteer Tasks</span>
+              <span><%= t('volunteer_area.stats.browse_tasks') %></span>
             <% end %>
           </div>
         <% end %>
