@@ -34,7 +34,7 @@ The caller's OWN sessions (the instructor is the caller), also for admins. Newes
 
 ## GET /api/v1/training_session_options?space_id=
 
-Form data, computed as legacy `new` does. `space_id` is optional: omitted means the caller's space (assigned, else the first space), as legacy always did. Unknown or non-numeric `space_id`: 404. A `space_id` the caller may not work in (staff: not assigned to it; admins may use any space): 403 `space_not_assigned`, "You are not assigned to that space".
+Form data, computed as legacy `new` does. `space_id` is optional: omitted means the caller's current space (`GET /me/space`: their saved space when they are assigned to it, else the first space they are assigned to; admins any); a caller with none gets 403 `space_not_assigned`. Unknown or non-numeric `space_id`: 404. A `space_id` the caller may not work in (staff: not assigned to it; admins may use any space): 403 `space_not_assigned`, "You are not assigned to that space".
 
 200:
 

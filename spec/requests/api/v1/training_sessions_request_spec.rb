@@ -104,6 +104,23 @@ RSpec.describe "/api/v1 training sessions", type: :request do
       expect(body["trainings"]).to eq([[training.id, training.name_en]])
     end
 
+    it "403s staff with no assignment when space_id is omitted, even with a saved space or a first space" do
+      loner = create(:user, :staff)
+      loner.update_columns(space_id: unassigned_space.id)
+      api_get "/api/v1/training_session_options", as: loner
+      expect(response).to have_http_status(:forbidden)
+      expect(error).to include("code" => "space_not_assigned", "message" => "You are not assigned to that space")
+    end
+
+    it "uses the first assigned space, not a saved space the caller is no longer assigned to" do
+      staff.update_columns(space_id: unassigned_space.id)
+      training
+      create(:training, spaces: [unassigned_space])
+      api_get "/api/v1/training_session_options", as: staff
+      expect(response).to have_http_status(:ok)
+      expect(body["trainings"]).to eq([[training.id, training.name_en]])
+    end
+
     it "403s staff asking for a space they are not assigned to; an admin gets any space" do
       unassigned_training = create(:training, spaces: [unassigned_space])
       api_get "/api/v1/training_session_options?space_id=#{unassigned_space.id}", as: staff
