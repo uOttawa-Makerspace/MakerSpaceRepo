@@ -123,6 +123,27 @@ RSpec.describe User do
 
       expect(User.delete_account!(target, actor: actor)).to be(true)
     end
+
+    it "removes the deleted user's uOEng record and no other user's" do
+      actor = create(:user, :admin)
+      target = create(:user, :regular_user)
+      other = create(:user, :regular_user)
+      [target, other].each { |u| UoengProfile.create!(user: u, source: "email", checked_at: Time.current) }
+
+      User.delete_account!(target, actor: actor)
+
+      expect(UoengProfile.where(user: target)).to be_empty
+      expect(UoengProfile.where(user: other).count).to eq(1)
+    end
+
+    it "keeps the uOEng record when the deletion is refused" do
+      create(:user, :admin)
+      target = create(:user, :regular_user)
+      UoengProfile.create!(user: target, source: "email", checked_at: Time.current)
+
+      expect { User.delete_account!(target, actor: nil) }.to raise_error(User::NotAdminError)
+      expect(UoengProfile.where(user: target).count).to eq(1)
+    end
   end
 
   describe "#sync_programs! atomicity" do
