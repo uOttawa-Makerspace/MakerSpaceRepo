@@ -228,6 +228,26 @@ RSpec.describe User::UoengConcern, type: :model do
       end
     end
 
+    describe "the stored profile after a check" do
+      let(:changed_record) do
+        { "emplid" => 300_000_001, "student_this_semester" => true, "fulltime" => false, "faculty" => "GENIE",
+          "program" => "CEG", "program_description" => "Computer Engineering", "program_level" => "graduate",
+          "courses_enrolled" => [] }
+      end
+
+      it "keeps the faculty, program, level and student number the user entered" do
+        stub_api(body: changed_record)
+        expect { eng.validate_uoeng_membership }.not_to(change { eng.reload.attributes.slice("faculty", "program", "identity", "year_of_study", "student_id") })
+      end
+
+      it "leaves the student number blank when the user was looked up by email" do
+        outsider = create(:user, :regular_user, identity: "community_member", email: "ann@uottawa.ca", student_id: nil)
+        stub_api(email_url, body: changed_record)
+        outsider.validate_uoeng_membership
+        expect(outsider.reload.student_id).to be_blank
+      end
+    end
+
     it "logs a name mismatch" do
       stub_api(body: { "first_name" => "Zzyzx", "last_name" => "Q", "student_this_semester" => true, "faculty" => "GENIE" })
       eng.validate_uoeng_membership
