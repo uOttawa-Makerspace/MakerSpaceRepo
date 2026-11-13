@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_230000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_13_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -82,6 +82,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_230000) do
     t.integer "question_id"
     t.datetime "updated_at", precision: nil, null: false
     t.index ["question_id"], name: "index_answers_on_question_id"
+  end
+
+  create_table "api_idempotency_keys", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "key", limit: 255, null: false
+    t.string "request_digest", null: false
+    t.integer "response_status", null: false
+    t.jsonb "response_body", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "key"], name: "index_api_idempotency_keys_on_user_id_and_key", unique: true
   end
 
   create_table "api_refresh_tokens", force: :cascade do |t|
@@ -1914,6 +1925,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_230000) do
   add_foreign_key "announcement_dismisses", "users"
   add_foreign_key "announcements", "users"
   add_foreign_key "answers", "questions"
+  add_foreign_key "api_idempotency_keys", "users", on_delete: :cascade
   add_foreign_key "api_refresh_tokens", "users", on_delete: :cascade
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "project_proposals"
