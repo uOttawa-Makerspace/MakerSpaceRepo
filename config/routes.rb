@@ -80,7 +80,8 @@ Rails.application.routes.draw do
       format: false,
       to:
         redirect { |params, request|
-          path = ["/rewards", params[:rest]].compact.join("/")
+          rest = params[:rest].to_s.split("/").map { |segment| ERB::Util.url_encode(segment) }
+          path = ["/rewards", *rest].join("/")
           request.query_string.empty? ? path : "#{path}?#{request.query_string}"
         }
 

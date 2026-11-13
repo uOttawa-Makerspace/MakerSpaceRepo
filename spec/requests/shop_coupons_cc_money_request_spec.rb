@@ -472,6 +472,19 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(response).to redirect_to("/rewards/link_cc_to_user?token=#{CGI.escape(token)}")
       end
 
+      it "keeps an encoded segment encoded in the target" do
+        get "/cc_moneys/a%20b"
+        expect(response).to have_http_status(:moved_permanently)
+        expect(response.headers["Location"]).to end_with("/rewards/a%20b")
+      end
+
+      it "answers a line break in a segment with a redirect or a 404, never an error, and sets no extra header" do
+        get "/cc_moneys/x%0d%0aSet-Cookie:%20a=b"
+        expect(response.status).to be_in([301, 404])
+        expect(response.headers["Location"].to_s).not_to match(/[\r\n]/)
+        expect(response.headers["Set-Cookie"].to_s).not_to include("a=b")
+      end
+
       it "names the new path in every route helper" do
         expect([cc_moneys_path, link_cc_to_user_cc_moneys_path, redeem_cc_moneys_path])
           .to eq(["/rewards", "/rewards/link_cc_to_user", "/rewards/redeem"])
