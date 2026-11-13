@@ -12,9 +12,9 @@ RSpec.describe Membership, type: :model do
   it { should belong_to(:membership_tier) }
 
   describe "status enum" do
-    it "defaults NEW rows to 'pending' (enum default wins over the column default 'paid')" do
+    it "defaults new rows to 'pending', in the model and in the database" do
       expect(Membership.new.status).to eq("pending")
-      expect(Membership.columns_hash["status"].default).to eq("paid") # DB default; the enum default shadows it
+      expect(Membership.columns_hash["status"].default).to eq("pending")
     end
 
     it "knows pending/paid/failed/expired/revoked and rejects anything else" do
