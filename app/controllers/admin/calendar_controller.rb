@@ -1,27 +1,15 @@
 class Admin::CalendarController < AdminAreaController
+  include CalendarWindowed
   layout "admin_area"
 
-  rescue_from CalendarWindow::Invalid, with: ->(error) { render json: { error: error.message }, status: :bad_request }
+  before_action :require_space_id, only: %i[unavailabilities_json imported_calendars_json]
 
   def index
-    @spaces =
-      Space.all.where(
-        id: StaffSpace.where(user_id: current_user.id).pluck(:space_id)
-      )
+    @spaces = Space.where(id: StaffSpace.where(user_id: current_user.id).select(:space_id))
     @space_id = @user.space_id || Space.first&.id
-
-    @colors = StaffSpace
-      .includes(:user)
-      .where(space_id: @space_id)
-      .map do |staff_space|
-        {
-          id: staff_space.user.id,
-          name: staff_space.user.name,
-          username: staff_space.user.username,
-          color: staff_space.color
-        }
-    end
-    .sort_by { |user| user[:name].downcase }
+    @colors = StaffSpace.includes(:user).where(space_id: @space_id).map do |staff_space|
+      { id: staff_space.user.id, name: staff_space.user.name, username: staff_space.user.username, color: staff_space.color }
+    end.sort_by { |user| user[:name].downcase }
     flash[:alert] = "You are not assigned to any spaces." if @spaces.empty?
     load_sidebar
   end
@@ -29,25 +17,21 @@ class Admin::CalendarController < AdminAreaController
   # Per staff member of the space: their unavailabilities in the window (CalendarWindow), stored ones and those of
   # their external calendars. With no window, all of them (the event dialog reads them that way).
   def unavailabilities_json
-    return render json: { error: "Space ID is required" }, status: :bad_request if params[:id].blank?
-
     window = CalendarWindow.from_params(params)
-    colors = StaffSpace.where(space_id: params[:id]).pluck(:user_id, :color).to_h
-    staff = calendar_staff(params[:id]).includes(:staff_external_unavailabilities).order(name: :desc)
+    colors = StaffSpace.colors_in(params[:id])
+    staff = StaffSpace.calendar_staff(params[:id]).includes(:staff_external_unavailabilities).order(name: :desc)
     stored = window.records(StaffUnavailability.where(user_id: staff.map(&:id))).group_by(&:user_id)
     render json: staff.map { |member|
-      rows = stored.fetch(member.id, []).map { |unavailability| stored_unavailability_row(unavailability, member) }
-      { id: member.id, name: member.name, color: colors[member.id], unavailabilities: rows + external_unavailability_rows(member, window) }
+      rows = stored.fetch(member.id, []).map { |unavailability| unavailability.calendar_row(member.name) }
+      { id: member.id, name: member.name, color: colors[member.id], unavailabilities: rows + external_rows(member, window) }
     }
   end
 
   # The space's imported calendars, with their entries in the window (CalendarWindow).
   def imported_calendars_json
-    return render json: { error: "Space ID is required" }, status: :bad_request if params[:id].blank?
-
     window = CalendarWindow.from_params(params)
     render json: StaffNeededCalendar.where(space_id: params[:id]).flat_map { |calendar|
-      helpers.parse_ics_calendar(calendar.calendar_url, name: imported_name(calendar), color: calendar.color, window: window)
+      helpers.parse_ics_calendar(calendar.calendar_url, name: calendar.display_name, color: calendar.color, window: window)
     }
   end
 
@@ -67,69 +51,28 @@ class Admin::CalendarController < AdminAreaController
 
   private
 
-  # The space the calendar shows is the one the space picker shows: the admin's own space when it is offered, else
-  # the first one. Its sidebar lists its event types, its staff and its imported calendars.
+  def require_space_id
+    render json: { error: "Space ID is required" }, status: :bad_request if params[:id].blank?
+  end
+
+  # The calendar shows the space the space picker shows: the admin's own space when it is offered, else the first
+  # one. Its sidebar lists its event types, its staff and its imported calendars.
   def load_sidebar
-    space_id = (@spaces.find_by(id: @space_id) || @spaces.first)&.id
-    return if space_id.nil?
+    @calendar_space_id = (@spaces.find_by(id: @space_id) || @spaces.first)&.id
+    return if @calendar_space_id.nil?
 
-    @calendar_space_id = space_id
     @hidden = %i[hidden_staff hidden_staff_events hidden_events hidden_calendars].index_with { |param| params[param].to_s.split(",") }
-    @event_types = Event.where(space_id: space_id).distinct.order(:event_type).pluck(:event_type)
-    @sidebar_staff = sidebar_staff(space_id)
-    @imported_calendars = StaffNeededCalendar.where(space_id: space_id).where.not(calendar_url: [nil, ""]).map do |calendar|
-      { id: ImportedCalendar.id_for(calendar.calendar_url), name: imported_name(calendar),
-        color: calendar.color.presence || helpers.generate_color_from_id(calendar.calendar_url) }
-    end
+    @event_types = Event.types_in(@calendar_space_id)
+    @sidebar_staff = StaffSpace.calendar_sidebar(@calendar_space_id)
+    @imported_calendars = StaffNeededCalendar.where(space_id: @calendar_space_id).linked
   end
 
-  # The staff whose unavailabilities the calendar shows: the space's staff and admins.
-  def calendar_staff(space_id)
-    User.where(id: StaffSpace.where(space_id: space_id).select(:user_id), role: %w[admin staff])
-  end
-
-  # The calendar staff with their colour, those with unavailabilities (stored, or an external calendar) first, each
-  # part by name.
-  def sidebar_staff(space_id)
-    colors = StaffSpace.where(space_id: space_id).pluck(:user_id, :color).to_h
-    busy = StaffUnavailability.where(user_id: colors.keys).distinct.pluck(:user_id) |
-           StaffExternalUnavailability.where(user_id: colors.keys).distinct.pluck(:user_id)
-    calendar_staff(space_id).pluck(:id, :name)
-                            .map { |id, name| { id: id, name: name, color: colors[id], busy: busy.include?(id) } }
-                            .sort_by { |member| [member[:busy] ? 0 : 1, member[:name].to_s.downcase] }
-  end
-
-  def stored_unavailability_row(unavailability, staff)
-    {
-      id: unavailability.id,
-      title: "🚫 #{staff.name} - #{unavailability.title}",
-      start: unavailability.start_time.in_time_zone(RecurrenceRule::ZONE).strftime("%Y-%m-%dT%H:%M:%S"),
-      end: unavailability.end_time.in_time_zone(RecurrenceRule::ZONE).strftime("%Y-%m-%dT%H:%M:%S"),
-      **stored_recurrence(unavailability),
-      allDay: CalendarTime.all_day?(unavailability.start_time, unavailability.end_time),
-      extendedProps: { name: staff.name, title: unavailability.title, description: unavailability.description },
-      className: "unavailability"
-    }
-  end
-
-  # The rule the page repeats a stored series by, and its length in milliseconds.
-  def stored_recurrence(unavailability)
-    return {} if unavailability.recurrence_rule.blank?
-
-    { rrule: helpers.date_formatted_recurrence_rule(unavailability),
-      duration: (unavailability.end_time.to_time - unavailability.start_time.to_time) * 1000 }
-  end
-
-  def external_unavailability_rows(staff, window)
+  def external_rows(staff, window)
     staff.staff_external_unavailabilities.flat_map do |external|
       calendars = helpers.parse_ics_calendar(external.ics_url, name: "#{staff.name} External Unavailability", window: window)
-      calendars.flat_map do |calendar|
-        calendar[:events].map { |event| event.merge(title: "🚫 #{staff.name} - #{event[:title]}", className: "unavailability") }
-      end
+      calendars.flat_map { |calendar| calendar[:events].map { |event| event.merge(title: "🚫 #{staff.name} - #{event[:title]}", className: "unavailability") } }
     end
   end
-
-  def imported_name(calendar) = calendar.name.presence || "Unnamed Calendar"
 
   def render_color_error(key)
     render json: { status: "error", error: I18n.t(key) }, status: :unprocessable_entity

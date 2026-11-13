@@ -32,9 +32,10 @@
 <div id="calendars_checkbox_container">
     <span id="imported_calendars_status" <%= "hidden" if @imported_calendars.any? %>>No calendars found</span>
     <% @imported_calendars.each do |calendar| %>
+        <% id = calendar.feed_id %>
         <div class="m-2 d-flex align-items-center gap-1">
-            <input type="checkbox" class="form-check-input calendar-filter" id="checkbox-<%= calendar[:id] %>" value="<%= calendar[:id] %>" data-color="<%= calendar[:color] %>" <%= "checked" unless @hidden[:hidden_calendars].include?(calendar[:id]) %> data-admin-calendar-target="importedCalendar" data-action="admin-calendar#toggleImportedCalendar">
-            <label class="form-check-label" for="checkbox-<%= calendar[:id] %>"><%= calendar[:name] %></label>
+            <input type="checkbox" class="form-check-input calendar-filter" id="checkbox-<%= id %>" value="<%= id %>" data-color="<%= calendar.color.presence || generate_color_from_id(calendar.calendar_url) %>" <%= "checked" unless @hidden[:hidden_calendars].include?(id) %> data-admin-calendar-target="importedCalendar" data-action="admin-calendar#toggleImportedCalendar">
+            <label class="form-check-label" for="checkbox-<%= id %>"><%= calendar.display_name %></label>
         </div>
     <% end %>
 </div>

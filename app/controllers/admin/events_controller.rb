@@ -1,9 +1,9 @@
 class Admin::EventsController < AdminAreaController
+  include CalendarWindowed
   layout "admin_area"
 
   before_action :parse_event_times, only: %i[create update]
   before_action :parse_view_range, if: :view_range_action?
-  rescue_from CalendarWindow::Invalid, with: ->(error) { render json: { error: error.message }, status: :bad_request }
 
   def create
     participants = params[:staff_select].presence || []
@@ -195,7 +195,7 @@ class Admin::EventsController < AdminAreaController
     return render json: { error: "Space ID is required" }, status: :bad_request if params[:id].blank?
 
     # Pre-load all staff space colors in ONE query
-    staff_colors = StaffSpace.where(space_id: params[:id]).pluck(:user_id, :color).to_h
+    staff_colors = StaffSpace.colors_in(params[:id])
     # Pre-load associations in ONE query; the events the window (CalendarWindow) keeps.
     event_sources = CalendarWindow.from_params(params).records(Event.where(space_id: params[:id]))
       .includes(:course_name, event_assignments: :user)
