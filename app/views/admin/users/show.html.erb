@@ -1,4 +1,4 @@
-<% provide(:title, 'Show user') %>
+<% provide(:title, t('admin_area.users.show.title')) %>
 
 <section id="user-show-admin">
   <div id="user-info">
@@ -7,12 +7,12 @@
         <% if @all_sessions.where("sign_out_time > ?", Time.zone.now).present? %>
           <div class="status-online">
             <i class="fa-regular fa-circle-check"></i>
-            <%= 'Currently signed in' %>
+            <%= t('admin_area.users.show.signed_in') %>
           </div>
         <% else %>
           <div class="status-offline">
             <i class="fa-regular fa-circle-xmark"></i>
-            <%= 'Currently signed out' %>
+            <%= t('admin_area.users.show.signed_out') %>
           </div>
         <% end %>
       </div>
@@ -40,12 +40,12 @@
       <% end %>
       <% if @edit_admin_user.faculty.present? %>
         <div class="user-info">
-          <i class="fa-solid fa-book"></i> Faculty of <%= @edit_admin_user.faculty %>
+          <i class="fa-solid fa-book"></i> <%= t('admin_area.users.show.faculty', faculty: @edit_admin_user.faculty) %>
         </div>
       <% end %>
       <% if @edit_admin_user.use.present? %>
         <div class="user-info">
-          <i class="fa-regular fa-sticky-note"></i> Use: <%= @edit_admin_user.use %>
+          <i class="fa-regular fa-sticky-note"></i> <%= t('admin_area.users.show.use', use: @edit_admin_user.use) %>
         </div>
       <% end %>
       <div class="user-info">
@@ -65,64 +65,64 @@
       </div>
       <% end %>
       <div class="user-info">
-        <i class="fa-solid fa-calendar"></i> Joined on <%= @edit_admin_user.created_at.strftime('%B %d, %Y') %>
+        <i class="fa-solid fa-calendar"></i> <%= t('admin_area.users.show.joined_on', date: l(@edit_admin_user.created_at, format: :admin_date)) %>
       </div>
   </div>
   <div id="user-show-admin" class="certifications">
     <hr>
-    <div class="title">Certifications</div>
+    <div class="title"><%= t('admin_area.users.show.certifications') %></div>
     <% if @edit_admin_user.certifications.present? %>
-      <div>This user is currently certified to use the following pieces of equipment:</div>
+      <div><%= t('admin_area.users.show.certified_for') %></div>
       <div id="cert-container">
         <% @edit_admin_user.certifications.each do |certification| %>
           <span class="certification"><%= certification.training.localized_name %></span>
         <% end %>
       </div>
     <% else %>
-      <div>This user has no certifications so far.</div>
+      <div><%= t('admin_area.users.show.no_certifications') %></div>
     <% end %>
   </div>
   <div id="user-show-admin" class="sessions">
     <hr>
-    <div class="title">Lab session statistics</div>
+    <div class="title"><%= t('admin_area.users.show.lab_statistics') %></div>
     <div id="user-info">
       <% if @all_sessions.present? %>
         <div class="user-info">
           <% if @all_sessions.first.sign_out_time > Time.zone.now %>
-            <i class="fa-regular fa-calendar-check"></i> Currently in lab
+            <i class="fa-regular fa-calendar-check"></i> <%= t('admin_area.users.show.in_lab') %>
           <% elsif (@all_sessions.first.sign_out_time < (Time.zone.now - 7.days)) %>
-            <i class="fa-regular fa-calendar-check"></i> Last seen in lab on <%= @all_sessions.first.sign_out_time.strftime('%B %d, %Y') %>
+            <i class="fa-regular fa-calendar-check"></i> <%= t('admin_area.users.show.last_seen_on', date: l(@all_sessions.first.sign_out_time, format: :admin_date)) %>
           <% else %>
-            <i class="fa-regular fa-calendar-check"></i> Last seen in lab <%= time_ago_in_words(@all_sessions.first.sign_out_time) %> ago
+            <i class="fa-regular fa-calendar-check"></i> <%= t('admin_area.users.show.last_seen_ago', time: time_ago_in_words(@all_sessions.first.sign_out_time)) %>
           <% end %>
         </div>
         <div class="user-info">
-            <i class="fa-regular fa-calendar-plus"></i> Been in lab <%= @all_sessions.count %> times
+            <i class="fa-regular fa-calendar-plus"></i> <%= t('admin_area.users.show.visits', number: @all_sessions.count) %>
         </div>
         <div class="user-info">
-            <i class="fa-regular fa-clock"></i> Average time spent in lab: <%= @average_time %> minutes
+            <i class="fa-regular fa-clock"></i> <%= t('admin_area.users.show.average_time', minutes: @average_time) %>
         </div>
-        <div class="subtitle">Most recent sessions:</div>
+        <div class="subtitle"><%= t('admin_area.users.show.recent_sessions') %></div>
         <table class="admin-table table table-striped">
           <thead class="table-primary">
-            <th>Sign In Time</th>
-            <th>Sign Out Time</th>
-            <th>Time Spent</th>
-            <th>Location</th>
+            <th><%= t('admin_area.users.show.sign_in_time') %></th>
+            <th><%= t('admin_area.users.show.sign_out_time') %></th>
+            <th><%= t('admin_area.users.show.time_spent') %></th>
+            <th><%= t('admin_area.users.show.location') %></th>
           </thead>
           <% @all_sessions.limit(10).each do |session| %>
             <% if session.sign_out_time > Time.zone.now %>
               <tr class="current-session">
-                <td><%= session.sign_in_time.getlocal.strftime('%B %d, %Y %H:%M:%S') %></td>
-                <td>Current session</td>
-                <td><%= ((Time.zone.now - session.sign_in_time) / 60).round %> min. so far</td>
+                <td><%= l(session.sign_in_time, format: :admin_date_seconds) %></td>
+                <td><%= t('admin_area.users.show.current_session') %></td>
+                <td><%= t('admin_area.users.show.minutes_so_far', minutes: ((Time.zone.now - session.sign_in_time) / 60).round) %></td>
                 <td><%= PiReader.find_by_mac(session.mac_address).try(:pi_location) %></td>
               </tr>
              <% else %>
               <tr>
-                <td><%= session.sign_in_time.getlocal.strftime('%B %d, %Y %H:%M:%S') %></td>
-                <td><%= session.sign_out_time.getlocal.strftime('%B %d, %Y %H:%M:%S') %></td>
-                <td><%= ((session.sign_out_time - session.sign_in_time) / 60).round %> minutes</td>
+                <td><%= l(session.sign_in_time, format: :admin_date_seconds) %></td>
+                <td><%= l(session.sign_out_time, format: :admin_date_seconds) %></td>
+                <td><%= t('admin_area.users.show.minutes', minutes: ((session.sign_out_time - session.sign_in_time) / 60).round) %></td>
                 <td><%= PiReader.find_by_mac(session.mac_address).try(:pi_location) %></td>
               </tr>
             <% end %>
@@ -130,7 +130,7 @@
         </table>
       <% else %>
         <div class="user-info">
-          <i class="fa-regular fa-calendar-times"></i> Never seen in lab
+          <i class="fa-regular fa-calendar-times"></i> <%= t('admin_area.users.show.never_seen') %>
         </div>
       <% end %>
     </div>

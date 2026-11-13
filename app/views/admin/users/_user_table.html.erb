@@ -1,10 +1,10 @@
 <thead class="table-primary">
   <tr class="text-center">
-    <th>Name</th>
-    <th>Username</th>
-    <th>Email</th>
-    <th>Spaces</th>
-    <th>Role</th>
+    <th><%= t('admin_area.users.columns.name') %></th>
+    <th><%= t('admin_area.users.columns.username') %></th>
+    <th><%= t('admin_area.users.columns.email') %></th>
+    <th><%= t('admin_area.users.columns.spaces') %></th>
+    <th><%= t('admin_area.users.columns.role') %></th>
   </tr>
 </thead>
 <%# Passed as partial local (users and user_spaces)%>
@@ -17,10 +17,11 @@
       <div class="row row-cols-lg-2 justify-content-center">
         <% @space_list.each do |space| %>
           <%# use check_box_tag, not check_box, to avoid sending a 'ghost value'. In this case we do want values to be left out%>
+          <% button_id = "space-#{space.name.parameterize.underscore}-#{admin.id}" %>
           <%= check_box_tag "spaces[#{admin.id}][]", space.id, (user_spaces[admin.id].include? space.id),
-                            form: space_form_id, class: 'btn-check set-user-space-button', id: "space-#{space.name.parameterize.underscore}-#{admin.id}",
+                            form: space_form_id, class: 'btn-check set-user-space-button', id: button_id,
                             data: { user_id: admin.id, space_id: space.id } %>
-          <%= label_tag "space-#{space.name.parameterize.underscore}-#{admin.id}", space.name, class: "btn btn-outline-primary btn-outline-space-#{space.id}" %>
+          <%= label_tag button_id, space.name, class: "btn btn-outline-primary btn-outline-space-#{space.id}" %>
       <% end %>
       </div>
     </td>
@@ -38,29 +39,16 @@
   <td colspan="3"></td>
   <td colspan="1">
     <%= form_tag set_role_admin_users_path, method: :patch, id: space_form_id do %>
-      <%= submit_tag 'Change spaces', class: 'btn btn-primary' %>
+      <%= submit_tag t('admin_area.users.roles.change_spaces'), class: 'btn btn-primary' %>
     <% end %>
   </td>
   <td colspan="1">
     <%= form_tag set_role_admin_users_path, method: :patch, id: role_form_id do %>
       <div class="input-group">
         <%= select_tag(:role, options_for_select(@roles.map { |r| [r.humanize, r] }), class: 'form-control form-select', aria: { label: t('common.names.role') }) %>
-        <%= submit_tag 'Commit', id: 'change-button', class: 'btn btn-primary form-control' %>
+        <%= submit_tag t('admin_area.users.roles.commit'), id: 'change-button', class: 'btn btn-primary form-control' %>
       </div>
     <% end %>
   </td>
 </tr>
-<style>
- <% @space_list.each do |space| %>
- .btn-outline-space-<%= space.id %> {
-   --bs-btn-color: var(--bs-body-color);
-   --bs-btn-border-color: <%= space.assigned_color_hex %>;
-   --bs-btn-hover-color: <%= space.assigned_color_text %>;
-   --bs-btn-hover-bg: <%= space.assigned_color_hex %>;
-   --bs-btn-hover-border-color: <%= space.assigned_color_hex %>;
-   --bs-btn-active-color: <%= space.assigned_color_text %>;
-   --bs-btn-active-bg: <%= space.assigned_color_hex %>;
-   --bs-btn-active-border-color: <%= space.assigned_color_hex %>;
- }
- <% end %>
-</style>
+<%= render 'space_button_styles' %>

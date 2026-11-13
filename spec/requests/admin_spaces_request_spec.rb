@@ -69,6 +69,27 @@ RSpec.describe "Admin spaces", type: :request do
       expect(response.body).to include("Room A")
     end
 
+    it "counts each training's sessions and active certifications, across spaces, without a query per session" do
+      laser = create(:training, name_en: "Laser", spaces: [space])
+      create(:training, name_en: "Mill", spaces: [space])
+      sessions = [space, space, create(:space)].map { |where| create(:training_session, training: laser, space: where) }
+      sessions.each_with_index { |ts, i| create_list(:certification, 2 - (i / 2), training_session: ts, training: laser) }
+      sessions.first.certifications.first.update_columns(active: false)
+
+      get edit_admin_space_path(space)
+
+      expect(response).to have_http_status(:ok)
+      rows = Nokogiri::HTML(response.body).css("table tr").map { |tr| tr.css("td").map { |td| td.text.strip } }
+      expect(rows).to include(["Laser", "3", "4", ""], ["Mill", "0", "0", ""])
+    end
+
+    it "gives the new calendar row a colour the colour input accepts" do
+      get edit_admin_space_path(space)
+
+      colour = Nokogiri::HTML(response.body).at_css("#new-link-input input[type=color]")["value"]
+      expect(colour).to match(/\A#\h{6}\z/)
+    end
+
     it "edit 404s for an unknown space" do
       get edit_admin_space_path(0)
       expect(response).to have_http_status(:not_found)

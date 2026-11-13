@@ -82,7 +82,7 @@ class Admin::UsersController < AdminAreaController
     end
 
     if saved
-      redirect_to edit_admin_user_path(@edit_admin_user), notice: "User information updated"
+      redirect_to edit_admin_user_path(@edit_admin_user), notice: t("admin_area.users.flash.updated")
     else
       # the rollback restored the card rows, not the loaded association
       @edit_admin_user.association(:rfid).reset
@@ -102,16 +102,16 @@ class Admin::UsersController < AdminAreaController
 
     if new_email.blank? || confirm_new_email.blank?
       redirect_to edit_admin_user_path(@edit_admin_user),
-                  alert: "There was a problem with the email, please try sending the email again."
+                  alert: t("admin_area.users.flash.email_blank")
     elsif new_email != confirm_new_email
       redirect_to edit_admin_user_path(@edit_admin_user),
-                  alert: "This confirmation email isn't matching the new email"
+                  alert: t("admin_area.users.flash.email_mismatch")
     elsif (shape_error = User.email_shape_error(new_email))
       redirect_to edit_admin_user_path(@edit_admin_user), alert: shape_error
     # LOWER(email) matches legacy mixed-case rows and uses index_users_on_lowercase_email
     elsif User.unscoped.where("LOWER(email) = ?", new_email).where.not(id: @edit_admin_user.id).exists?
       redirect_to edit_admin_user_path(@edit_admin_user),
-                  alert: "This email is already used by a MakerRepo Account."
+                  alert: t("admin_area.users.flash.email_taken")
     else
       # The same link as the user's own change: it only works for that user, signed in, within 24 hours.
       MsrMailer.email_confirmation_email(
@@ -121,18 +121,18 @@ class Admin::UsersController < AdminAreaController
       ).deliver_now
 
       redirect_to edit_admin_user_path(@edit_admin_user),
-                  notice: "A confirmation email has been sent to the new email"
+                  notice: t("admin_area.users.flash.email_sent")
     end
   end
 
   def delete_repository
     Repository.find(params[:id]).hide!(by: current_user)
-    redirect_to root_path, notice: "Repository Deleted!"
+    redirect_to root_path, notice: t("admin_area.users.flash.repository_deleted")
   end
 
   def delete_user
     unless @user.admin? && @user.authenticate_password(submitted_current_password)
-      redirect_to user_path(User.find(params[:id]).username), alert: "Invalid password!"
+      redirect_to user_path(User.find(params[:id]).username), alert: t("admin_area.users.flash.invalid_password")
       return
     end
     RateLimitCounter.reset(@user.reauth_attempts_key)
@@ -144,17 +144,17 @@ class Admin::UsersController < AdminAreaController
       redirect_to user_path(delete_user.username), alert: e.message
       return
     rescue User::NotAdminError
-      redirect_to user_path(delete_user.username), alert: "Only admins can delete accounts."
+      redirect_to user_path(delete_user.username), alert: t("admin_area.users.flash.only_admins_delete")
       return
     end
 
-    redirect_to root_path, notice: "User flagged as deleted"
+    redirect_to root_path, notice: t("admin_area.users.flash.flagged_deleted")
   end
 
   def restore_user
     restore_user = User.unscoped.find(params[:id])
     User.restore_account!(restore_user)
-    redirect_to user_path(restore_user.username), notice: "User restored!"
+    redirect_to user_path(restore_user.username), notice: t("admin_area.users.flash.restored")
   end
 
   def toggle_lock_user
@@ -166,7 +166,7 @@ class Admin::UsersController < AdminAreaController
       return
     end
     redirect_to user_path(user_to_toggle.username),
-                notice: "User #{user_to_toggle.locked ? 'locked' : 'unlocked'}!"
+                notice: t(user_to_toggle.locked ? "admin_area.users.flash.locked" : "admin_area.users.flash.unlocked")
   end
 
   def set_role
@@ -186,7 +186,6 @@ class Admin::UsersController < AdminAreaController
     respond_to do |format|
       format.html { redirect_back(fallback_location: root_path) }
       format.json { head :ok }
-      format.js { render layout: false }
       format.all { redirect_back(fallback_location: root_path) }
     end
   end
@@ -208,12 +207,12 @@ class Admin::UsersController < AdminAreaController
     user = User.find(params[:id])
     
     unless params[:rename].present?
-      redirect_to user_path(user.username), alert: "No username provided"
+      redirect_to user_path(user.username), alert: t("admin_area.users.flash.no_username")
       return
     end
 
     if user.update(username: params[:rename])
-      flash[:notice] = "User renamed successfully"
+      flash[:notice] = t("admin_area.users.flash.renamed")
     else
       flash[:alert] = validation_message(user, "failed_saves.username")
     end
@@ -236,7 +235,7 @@ class Admin::UsersController < AdminAreaController
   def require_admin
     return if @user&.admin?
     
-    redirect_to root_path, alert: "You do not have permission to do that!"
+    redirect_to root_path, alert: t("admin_area.users.flash.no_permission")
   end
 
   # ============================================
@@ -445,7 +444,7 @@ class Admin::UsersController < AdminAreaController
       user.staff_spaces.where.not(space_id: space_list).destroy_all
     end
     
-    flash[:notice] = "Successfully changed spaces for the user(s)."
+    flash[:notice] = t("admin_area.users.flash.spaces_changed")
   end
 
   def build_user_spaces_hash(users)

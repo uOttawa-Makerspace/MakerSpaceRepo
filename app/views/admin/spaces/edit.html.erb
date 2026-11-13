@@ -1,39 +1,39 @@
 <section>
-  <h2 class="fw-bold text-center py-3"><%= link_to 'Spaces Manager', admin_spaces_path %></h2><br/>
+  <h2 class="fw-bold text-center py-3"><%= link_to t('admin_area.spaces.manager'), admin_spaces_path %></h2><br/>
   <h1 style="font-weight:bold;text-align:center;"><%= @space.name.upcase %></h1><br>
 
-  <h4>Max Capacity</h4>
-  <small class="text-muted">Note: Setting the capacity to 0 means there is no limit to the capacity.</small>
+  <h4><%= t('admin_area.spaces.edit.max_capacity') %></h4>
+  <small class="text-muted"><%= t('admin_area.spaces.edit.capacity_note') %></small>
   <div class="mb-3">
     <%= form_for update_max_capacity_admin_spaces_path, url: { controller: 'admin/spaces', action: 'update_max_capacity' }, method: :post do |f| %>
       <div class="input-group">
         <%= hidden_field_tag :space_id, @space.id %> <br>
-        <%= number_field_tag :max_capacity, @space.max_capacity, { class: 'form-control', placeholder: 'Maximum Capacity' } %>
-        <%= f.submit 'Update Max Capacity', class: 'btn btn-primary', **confirmation_options(t('confirmations.spaces.update_max_capacity')) %>
+        <%= number_field_tag :max_capacity, @space.max_capacity, { class: 'form-control', placeholder: t('admin_area.spaces.edit.max_capacity_placeholder') } %>
+        <%= f.submit t('admin_area.spaces.edit.update_max_capacity'), class: 'btn btn-primary', **confirmation_options(t('confirmations.spaces.update_max_capacity')) %>
       </div>
     <% end %>
   </div>
 
-  <h4>Keycode</h4>
+  <h4><%= t('admin_area.spaces.edit.keycode') %></h4>
 
   <div class="mb-3">
     <%= form_for update_keycode_admin_spaces_path, url: { controller: 'admin/spaces', action: 'update_keycode' }, method: :patch do |f| %>
       <div class="input-group">
         <%= hidden_field_tag :space_id, @space.id %> <br>
         <%= text_field_tag :keycode, @space.keycode, { class: 'form-control', aria: { label: t('common.names.keycode') } } %>
-        <%= f.submit 'Update Keycode', class: 'btn btn-primary', **confirmation_options(t('confirmations.spaces.update_keycode')) %>
+        <%= f.submit t('admin_area.spaces.edit.update_keycode'), class: 'btn btn-primary', **confirmation_options(t('confirmations.spaces.update_keycode')) %>
       </div>
     <% end %>
   </div>
 
-  <h4>Space Managers</h4>
+  <h4><%= t('admin_area.spaces.edit.space_managers') %></h4>
   <div class="mb-3">
     <div class="mb-3">
       <%= form_for add_space_manager_admin_spaces_path, url: { controller: 'admin/spaces', action: 'add_space_manager' }, method: :patch do |f| %>
         <div class="input-group">
           <%= hidden_field_tag :space_id, @space.id %> <br>
           <%= select_tag(:space_manager_id, options_for_select(@admin_options), class: 'form-control form-select', id: 'space-manager-select', aria: { label: t('common.names.space_manager') }) %>
-          <%= f.submit 'Add Space Manager', class: 'btn btn-primary', **confirmation_options(t('confirmations.spaces.add_manager')) %>
+          <%= f.submit t('admin_area.spaces.edit.add_space_manager'), class: 'btn btn-primary', **confirmation_options(t('confirmations.spaces.add_manager')) %>
         </div>
       <% end %>
     </div>
@@ -41,15 +41,15 @@
     <table class="table text-center table-striped">
       <thead class="table-primary">
       <tr>
-        <th>User</th>
-        <th>Actions</th>
+        <th><%= t('admin_area.spaces.edit.user') %></th>
+        <th><%= t('admin_area.spaces.edit.actions') %></th>
       </tr>
       </thead>
       <% @space.space_manager_joins.each do |smj| %>
         <tr>
           <td><%= link_to smj.user.name, user_path(smj.user.username), target: '_blank', rel: 'noopener' %></td>
           <td>
-            <%= button_to 'Remove', remove_space_manager_admin_spaces_path(space_manager_join_id: smj.id), class: 'btn btn-danger', **confirmation_options(t('confirmations.spaces.remove_manager')), method: :patch %>
+            <%= button_to t('common.remove'), remove_space_manager_admin_spaces_path(space_manager_join_id: smj.id), class: 'btn btn-danger', **confirmation_options(t('confirmations.spaces.remove_manager')), method: :patch %>
           </td>
         </tr>
       <% end %>
@@ -59,32 +59,32 @@
   <br><br>
 
   <div class="mb-3">
-    <h4>Imported Calendars // Staff Needed Calendar</h4>
-    <p>Paste in any ICS link to be displayed as staff needed hours and in the <span class="fw-bold fst-italic">revamped</span> calendar.</p>
+    <h4><%= t('admin_area.spaces.edit.calendars_heading') %></h4>
+    <p><%= t('admin_area.spaces.edit.calendars_intro_html') %></p>
     <%= form_for update_staff_needed_calendars_admin_spaces_path, url: { controller: 'admin/spaces', action: 'update_staff_needed_calendars', space_id: @space.id }, method: :put do |f| %>
       <div id="link-container">
         <% @staff_needed_calendars.each_with_index do |snc, i| %>
           <div class="d-flex upload-file-input mb-2 gap-1">
-            <input type="color" id="colorpicker" name="staff_needed_calendar_color[]" class="form-control form-control-color" style="aspect-ratio: 1;" value="<%= snc.color %>" title="Choose your color">
-            <%= text_field_tag 'staff_needed_calendar_name[]', snc.name, { class: 'form-control w-25', placeholder: 'Enter name...' } %>
-            <%= text_field_tag 'staff_needed_calendar[]', snc.calendar_url, { class: 'form-control', placeholder: 'Enter ICS URL...' } %>
-            <%= select_tag 'staff_needed_calendar_role[]', options_for_select([['No role', ''], ['Open Hours', 'open_hours']], snc.role), class: "form-select w-25", aria: { label: t('common.names.calendar_role') } %>
+            <input type="color" id="colorpicker" name="staff_needed_calendar_color[]" class="form-control form-control-color" style="aspect-ratio: 1;" value="<%= snc.color %>" title="<%= t('admin_area.spaces.edit.choose_color') %>">
+            <%= text_field_tag 'staff_needed_calendar_name[]', snc.name, { class: 'form-control w-25', placeholder: t('admin_area.spaces.edit.calendar_name_placeholder') } %>
+            <%= text_field_tag 'staff_needed_calendar[]', snc.calendar_url, { class: 'form-control', placeholder: t('admin_area.spaces.edit.calendar_url_placeholder') } %>
+            <%= select_tag 'staff_needed_calendar_role[]', options_for_select([[t('admin_area.spaces.edit.no_role'), ''], [t('admin_area.spaces.edit.open_hours'), 'open_hours']], snc.role), class: "form-select w-25", aria: { label: t('common.names.calendar_role') } %>
             <button class="btn btn-danger snc-delete-button ms-2" type="button" aria-label="<%= t('common.delete') %>">
               <i class="fa fa-trash"></i>
             </button>
           </div>
         <% end %>
       </div>
-      <button type="button" class="btn btn-outline-primary" id="new-snc">New Calendar</button>
-      <%= f.submit 'Save Calendars', class: 'btn btn-primary' %>
+      <button type="button" class="btn btn-outline-primary" id="new-snc"><%= t('admin_area.spaces.edit.new_calendar') %></button>
+      <%= f.submit t('admin_area.spaces.edit.save_calendars'), class: 'btn btn-primary' %>
     <% end %>
 
     <%# template %>
     <div class="d-flex upload-file-input mb-2 gap-1" id="new-link-input" style="visibility: hidden;">
-      <input type="color" id="colorpicker" name="staff_needed_calendar_color[]" class="form-control form-control-color" style="aspect-ratio: 1;" value="navyblue" title="Choose your color">
-      <%= text_field_tag 'staff_needed_calendar_name[]', nil, { class: 'form-control w-25', placeholder: 'Enter name...' } %>
-      <%= text_field_tag 'staff_needed_calendar[]', nil, { class: 'form-control', placeholder: 'Enter ICS URL...' } %>
-      <%= select_tag 'staff_needed_calendar_role[]', options_for_select([['No role', ''], ['Open Hours', 'open_hours']]), class: "form-select w-25", aria: { label: t('common.names.calendar_role') } %>
+      <input type="color" id="colorpicker" name="staff_needed_calendar_color[]" class="form-control form-control-color" style="aspect-ratio: 1;" value="#000000" title="<%= t('admin_area.spaces.edit.choose_color') %>">
+      <%= text_field_tag 'staff_needed_calendar_name[]', nil, { class: 'form-control w-25', placeholder: t('admin_area.spaces.edit.calendar_name_placeholder') } %>
+      <%= text_field_tag 'staff_needed_calendar[]', nil, { class: 'form-control', placeholder: t('admin_area.spaces.edit.calendar_url_placeholder') } %>
+      <%= select_tag 'staff_needed_calendar_role[]', options_for_select([[t('admin_area.spaces.edit.no_role'), ''], [t('admin_area.spaces.edit.open_hours'), 'open_hours']]), class: "form-select w-25", aria: { label: t('common.names.calendar_role') } %>
       <button class="btn btn-danger snc-delete-button ms-2" type="button" aria-label="<%= t('common.delete') %>">
         <i class="fa fa-trash"></i>
       </button>
@@ -93,16 +93,16 @@
 
   <br><br>
 
-  <h2 class="mb-3 fw-bold">Manage RFID Readers</h2>
+  <h2 class="mb-3 fw-bold"><%= t('admin_area.spaces.edit.rfid_heading') %></h2>
   <br>
   <div>
-    <h3><%= @space.name %> RFID Readers</h3>
+    <h3><%= t('admin_area.spaces.edit.space_readers', space: @space.name) %></h3>
     <table class="table text-center table-striped">
       <thead class="table-primary">
       <tr>
-        <th>Reader Mac Address</th>
-        <th>Space</th>
-        <th>Disassociate from <%= @space.name %></th>
+        <th><%= t('admin_area.spaces.edit.reader_mac') %></th>
+        <th><%= t('admin_area.spaces.edit.space') %></th>
+        <th><%= t('admin_area.spaces.edit.disassociate', space: @space.name) %></th>
       </tr>
       </thead>
       <% @space.pi_readers.each do |raspi| %>
@@ -116,84 +116,84 @@
 
     <br>
 
-    <h3>Unassociated RFID Readers</h3>
+    <h3><%= t('admin_area.spaces.edit.unassociated_readers') %></h3>
     <table class="table text-center table-striped">
       <thead class="table-primary">
       <tr>
-        <th>Reader Mac Address</th>
-        <th>Space</th>
-        <th>Associate with <%= @space.name %></th>
+        <th><%= t('admin_area.spaces.edit.reader_mac') %></th>
+        <th><%= t('admin_area.spaces.edit.space') %></th>
+        <th><%= t('admin_area.spaces.edit.associate', space: @space.name) %></th>
       </tr>
       </thead>
       <% PiReader.where(space_id: nil).find_each do |raspi| %>
         <tr>
           <td><%= raspi.pi_mac_address %></td>
-          <td>unknown</td>
+          <td><%= t('admin_area.spaces.edit.unknown') %></td>
           <td><%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, admin_pi_reader_url(id: raspi.id, pi_reader_params: { space_id: @space.id }), method: :patch, action: :update, path: '/', class: 'btn btn-default', aria: { label: t('common.save') } %></td>
         </tr>
       <% end %>
     </table>
 
-    <h3>Recently seen unregistered readers</h3>
-    <p>Taps from these MAC addresses were rejected in the last 7 days.</p>
+    <h3><%= t('admin_area.spaces.edit.unregistered_heading') %></h3>
+    <p><%= t('admin_area.spaces.edit.unregistered_intro') %></p>
     <table class="table text-center table-striped">
       <thead class="table-primary">
       <tr>
-        <th>Reader Mac Address</th>
-        <th>Last seen</th>
-        <th>Register for <%= @space.name %></th>
+        <th><%= t('admin_area.spaces.edit.reader_mac') %></th>
+        <th><%= t('admin_area.spaces.edit.last_seen') %></th>
+        <th><%= t('admin_area.spaces.edit.register_for', space: @space.name) %></th>
       </tr>
       </thead>
       <% @unknown_readers.each do |mac, seen| %>
         <tr>
           <td><%= mac %></td>
-          <td><%= time_ago_in_words(seen) %> ago</td>
+          <td><%= t('admin_area.time_ago', time: time_ago_in_words(seen)) %></td>
           <td><%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, admin_pi_readers_path, params: { pi_reader_params: { pi_mac_address: mac, space_id: @space.id } }, method: :post, class: 'btn btn-default', aria: { label: t('common.add') } %></td>
         </tr>
       <% end %>
     </table>
     <% if @unknown_readers_more.positive? %>
-      <p class="text-muted">...and <%= @unknown_readers_more %> more not shown.</p>
+      <p class="text-muted"><%= t('admin_area.spaces.edit.more_not_shown', number: @unknown_readers_more) %></p>
     <% end %>
 
-    <h3>Register a new RFID Reader</h3>
-    <p>Readers must be registered here before their taps are accepted.</p>
+    <h3><%= t('admin_area.spaces.edit.register_heading') %></h3>
+    <p><%= t('admin_area.spaces.edit.register_intro') %></p>
     <%= form_with url: admin_pi_readers_path, scope: :pi_reader_params, method: :post, class: 'd-flex gap-2' do |f| %>
-      <%= f.text_field :pi_mac_address, class: 'form-control', placeholder: 'MAC address', required: true %>
-      <%= f.text_field :pi_location, class: 'form-control', placeholder: 'Location (optional)' %>
+      <%= f.text_field :pi_mac_address, class: 'form-control', placeholder: t('admin_area.spaces.edit.mac_placeholder'), required: true %>
+      <%= f.text_field :pi_location, class: 'form-control', placeholder: t('admin_area.spaces.edit.location_placeholder') %>
       <%= f.hidden_field :space_id, value: @space.id %>
-      <%= f.submit 'Register reader for ' + @space.name, class: 'btn btn-primary' %>
+      <%= f.submit t('admin_area.spaces.edit.register_reader', space: @space.name), class: 'btn btn-primary' %>
     <% end %>
   </div>
 
   <br>
 
-  <h2 class="fw-bold mb-3">Manage Trainings</h2>
+  <h2 class="fw-bold mb-3"><%= t('admin_area.spaces.edit.trainings_heading') %></h2>
   <div>
-    <h3>New <%= @space.name %> Training:</h3>
+    <h3><%= t('admin_area.spaces.edit.new_training', space: @space.name) %></h3>
     <%= form_for @new_training, url: { action: 'create', controller: 'admin/trainings' } do |f| %>
       <%= f.hidden_field :space_id, value: @space.id %>
       <div class="input-group">
-        <%= f.text_field :name, placeholder: 'Enter a unique name', class: 'form-control' %>
-        <%= submit_tag 'Add', class: 'btn btn-primary' %>
+        <%= f.text_field :name, placeholder: t('admin_area.spaces.unique_name'), class: 'form-control' %>
+        <%= submit_tag t('common.add'), class: 'btn btn-primary' %>
       </div>
     <% end %>
 
-    <h3><%= @space.name %> Trainings</h3>
+    <h3><%= t('admin_area.spaces.edit.space_trainings', space: @space.name) %></h3>
     <table class="table text-center table-striped">
       <thead class="table-primary">
       <tr>
-        <th>Training</th>
-        <th>Total Sessions</th>
-        <th>Total Certifications</th>
-        <th>Delete Training and all Sessions and Certifications</th>
+        <th><%= t('admin_area.spaces.edit.training') %></th>
+        <th><%= t('admin_area.spaces.edit.total_sessions') %></th>
+        <th><%= t('admin_area.spaces.edit.total_certifications') %></th>
+        <th><%= t('admin_area.spaces.edit.delete_training') %></th>
       </tr>
       </thead>
       <% @space.trainings.each do |training| %>
         <tr>
           <td><%= training.localized_name %></td>
-          <td><%= training.training_sessions.length %></td>
-          <td><%= training.certifications.length %></td>
+          <td><%= @session_counts.fetch(training.id, 0) %></td>
+          <td><%= @certification_counts.fetch(training.id, 0) %></td>
           <td><%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, admin_training_url(id: training.id), method: :delete, action: :destroy, class: 'btn btn-default',
                                                                                    **confirmation_options(t('confirm_delete.training')) %></td>
         </tr>
@@ -202,53 +202,53 @@
   </div>
 
   <br></br>
-  <h3>Edit space name</h3>
+  <h3><%= t('admin_area.spaces.edit.rename_heading') %></h3>
   <%= form_for admin_spaces_path, action: :update_name, method: :post do |f| %>
     <div class="mb-3 input-group">
 
-      <%= text_field_tag :name, '', class: 'form-control', placeholder: 'New Space Name' %>
+      <%= text_field_tag :name, '', class: 'form-control', placeholder: t('admin_area.spaces.edit.new_name_placeholder') %>
       <%= hidden_field_tag :space_id, @space.id %> <br>
-      <%= f.submit 'Edit name', class: 'btn btn-primary', **confirmation_options(t('confirmations.spaces.rename')) %>
+      <%= f.submit t('admin_area.spaces.edit.rename'), class: 'btn btn-primary', **confirmation_options(t('confirmations.spaces.rename')) %>
     </div>
   <% end %>
   <br>
-  <h3>New Sub Space</h3>
+  <h3><%= t('admin_area.spaces.edit.new_sub_space') %></h3>
   <%= form_for admin_spaces_path, action: :create_sub_space, method: :put do |f| %>
     <div class="mb-3 input-group">
       <div class="input-group-text">
         <div class="form-check form-check-inline">
           <%= check_box_tag :approval_required, 1, false, class: 'form-check-input' %>
-          <%= label_tag :approval_required, 'Require Approval', class: 'form-check-label' %>
+          <%= label_tag :approval_required, t('admin_area.spaces.edit.require_approval'), class: 'form-check-label' %>
         </div>
       </div>
-      <%= text_field_tag :name, '', class: 'form-control', placeholder: 'Subspace Name' %>
+      <%= text_field_tag :name, '', class: 'form-control', placeholder: t('admin_area.spaces.edit.sub_space_placeholder') %>
       <%= hidden_field_tag :space_id, @space.id %>
-      <%= f.submit 'Create new sub space', class: 'btn btn-primary' %>
+      <%= f.submit t('admin_area.spaces.edit.create_sub_space'), class: 'btn btn-primary' %>
     </div>
   <% end %>
-  <h3 id="sub_space_area">Sub Spaces</h3>
-  <i> Hover over the question mark to see the description of the setting</i>
+  <h3 id="sub_space_area"><%= t('admin_area.spaces.edit.sub_spaces') %></h3>
+  <i> <%= t('admin_area.spaces.edit.hover_hint') %></i>
   <div class="table-responsive">
     <table class="table table-striped">
       <thead class="table-primary text-center">
       <tr>
-        <th>Sub Space</th>
-        <th data-bs-toggle="tooltip" data-bs-placement="top" title="If enabled, bookings will be automatically approved if they are within the maximum booking duration and weekly maximum.">
-          Automatic Booking Approval?
+        <th><%= t('admin_area.spaces.edit.sub_space') %></th>
+        <th data-bs-toggle="tooltip" data-bs-placement="top" title="<%= t('admin_area.spaces.edit.auto_approval_tip') %>">
+          <%= t('admin_area.spaces.edit.auto_approval') %>
         </th>
-        <th data-bs-toggle="tooltip" data-bs-placement="top" title="If not -1, bookings will be automatically approved even if the subspace is on manual approval and the user is within the maximum booking duration and weekly maximum .">
-          Automatically Approve Booking Duration?
+        <th data-bs-toggle="tooltip" data-bs-placement="top" title="<%= t('admin_area.spaces.edit.auto_duration_tip') %>">
+          <%= t('admin_area.spaces.edit.auto_duration') %>
         </th>
-        <th data-bs-toggle="tooltip" data-bs-placement="top" title="If not -1, a user will not be able to book a slot longer than this duration.">
-          Maximum Hours per Booking?
+        <th data-bs-toggle="tooltip" data-bs-placement="top" title="<%= t('admin_area.spaces.edit.max_hours_tip') %>">
+          <%= t('admin_area.spaces.edit.max_hours') %>
         </th>
-        <th data-bs-toggle="tooltip" data-bs-placement="top" title="If not -1, a user will not be able to book more than this amount of hours per week.">
-          Maximum Hours per Week?
+        <th data-bs-toggle="tooltip" data-bs-placement="top" title="<%= t('admin_area.spaces.edit.max_weekly_tip') %>">
+          <%= t('admin_area.spaces.edit.max_weekly') %>
         </th>
-        <th data-bs-toggle="tooltip" data-bs-placement="top" title="If private by default, booking details like name, and description will not be shown on the calendar">
-          Default booking privacy?
+        <th data-bs-toggle="tooltip" data-bs-placement="top" title="<%= t('admin_area.spaces.edit.privacy_tip') %>">
+          <%= t('admin_area.spaces.edit.privacy') %>
         </th>
-        <th>Delete Sub Space</th>
+        <th><%= t('admin_area.spaces.edit.delete_sub_space') %></th>
       </tr>
       </thead>
       <% SubSpace.where(space: @space).order(:name).each do |sub_space| %>
@@ -256,35 +256,35 @@
           <td>
             <%= form_tag admin_space_update_sub_space_path(space_id: @space.id, id: sub_space.id), method: :patch, class: 'input-group input-group-sm' do %>
               <%= text_field_tag :name, sub_space.name, class: 'form-control', aria: { label: t('common.names.subspace_name') }, required: true %>
-              <%= submit_tag 'Rename', class: 'btn btn-outline-primary btn-sm', **confirmation_options(t('confirmations.spaces.rename_sub_space')) %>
+              <%= submit_tag t('admin_area.spaces.edit.rename_sub_space'), class: 'btn btn-outline-primary btn-sm', **confirmation_options(t('confirmations.spaces.rename_sub_space')) %>
             <% end %>
           </td>
-          <td><%= button_to "#{sub_space.approval_required ? 'Enable' : 'Disable'} Automatic Booking Approval", admin_space_change_sub_space_approval_path(space_id: @space.id, id: sub_space.id), method: :put, action: :change_sub_space_approval, class: 'btn btn-primary btn-sm' %></td>
+          <td><%= button_to t(sub_space.approval_required ? 'admin_area.spaces.edit.enable_auto_approval' : 'admin_area.spaces.edit.disable_auto_approval'), admin_space_change_sub_space_approval_path(space_id: @space.id, id: sub_space.id), method: :put, action: :change_sub_space_approval, class: 'btn btn-primary btn-sm' %></td>
           <td>
             <%= form_tag admin_space_set_max_automatic_approval_hour_path(space_id: @space.id, sub_space_id: sub_space.id), action: :set_auto_approve_booking_duration, method: :patch, class: 'input-group' do %>
               <%= select_tag(:auto_approve_hours, options_for_select((-1..24).to_a, sub_space.max_automatic_approval_hour || -1), class: 'form-select', aria: { label: t('common.names.auto_approve_hours') }) %>
-              <%= submit_tag 'Set', class: 'btn btn-primary btn-sm' %>
+              <%= submit_tag t('admin_area.spaces.edit.set'), class: 'btn btn-primary btn-sm' %>
             <% end %>
-            <i>to disable the limit, use -1</i>
+            <i><%= t('admin_area.spaces.edit.disable_limit') %></i>
           <td>
             <%= form_tag admin_space_set_max_booking_duration_path(space_id: @space.id, sub_space_id: sub_space.id), action: :set_max_booking_duration, method: :patch, class: 'input-group' do %>
               <%= select_tag(:max_hours, options_for_select((-1..24).to_a, sub_space.maximum_booking_duration || -1), class: 'form-select', aria: { label: t('common.names.max_hours') }) %>
-              <%= submit_tag 'Set', class: 'btn btn-primary btn-sm' %>
+              <%= submit_tag t('admin_area.spaces.edit.set'), class: 'btn btn-primary btn-sm' %>
             <% end %>
-            <i>to disable the limit, use -1</i>
+            <i><%= t('admin_area.spaces.edit.disable_limit') %></i>
           </td>
           <td>
             <%= form_tag admin_space_set_max_booking_duration_path(space_id: @space.id, sub_space_id: sub_space.id), action: :set_max_booking_duration, method: :patch, class: 'input-group' do %>
               <%= select_tag(:max_weekly_hours, options_for_select((-1..168).to_a, sub_space.maximum_booking_hours_per_week || -1), class: 'form-select', aria: { label: t('common.names.max_weekly_hours') }) %>
-              <%= submit_tag 'Set', class: 'btn btn-primary btn-sm' %>
+              <%= submit_tag t('admin_area.spaces.edit.set'), class: 'btn btn-primary btn-sm' %>
             <% end %>
-            <i>to disable the limit, use -1</i>
+            <i><%= t('admin_area.spaces.edit.disable_limit') %></i>
           </td>
           <td>
 
-            <%= button_to "Make #{sub_space.default_public ? 'Private' : 'Public'} by default", admin_space_change_sub_space_default_public_path(space_id: @space.id, id: sub_space.id), method: :post, action: :change_sub_space_default_public, class: "btn #{sub_space.default_public ? ' btn-secondary' : ' btn-primary'}" %>
+            <%= button_to t(sub_space.default_public ? 'admin_area.spaces.edit.make_private' : 'admin_area.spaces.edit.make_public'), admin_space_change_sub_space_default_public_path(space_id: @space.id, id: sub_space.id), method: :post, action: :change_sub_space_default_public, class: "btn #{sub_space.default_public ? ' btn-secondary' : ' btn-primary'}" %>
           </td>
-          <td><%= button_to 'Destroy', admin_space_delete_sub_space_path(space_id: @space.id, id: sub_space.id), method: :delete, action: :delete_sub_space,
+          <td><%= button_to t('admin_area.spaces.edit.destroy_sub_space'), admin_space_delete_sub_space_path(space_id: @space.id, id: sub_space.id), method: :delete, action: :delete_sub_space,
                                                                                                                  **confirmation_options(t('confirmations.spaces.delete_sub_space')), class: 'btn btn-danger' %></td>
         </tr>
       <% end %>
@@ -293,17 +293,17 @@
   <br>
 
 
-  <h2 class="mb-3 fw-bold">Destroy Space</h2>
+  <h2 class="mb-3 fw-bold"><%= t('admin_area.spaces.edit.destroy_heading') %></h2>
   <div>
-    <span class="fw-bold text-danger"> Destroying a space will erase all associated data including trainings, training sessions, and certifications.</span>
+    <span class="fw-bold text-danger"> <%= t('admin_area.spaces.edit.destroy_warning') %></span>
     <br></br>
-    Type <span style="font-weight:bold;"><%= @space.name.upcase %></span> in the box then click DESTROY:
+    <%= t('admin_area.spaces.edit.destroy_instructions_html', name: @space.name.upcase) %>
     <br>
     <%= form_for admin_spaces_path, action: :destroy, method: :delete do |f| %>
       <div class="mb-3 input-group">
         <%= text_field_tag :admin_input, '', class: 'form-control', aria: { label: t('common.names.space_name_confirm') } %>
         <%= hidden_field_tag :id, @space.id %>
-        <%= f.submit 'DESTROY', class: 'btn btn-danger', **confirmation_options(t('confirmations.spaces.delete')) %>
+        <%= f.submit t('admin_area.spaces.edit.destroy'), class: 'btn btn-danger', **confirmation_options(t('confirmations.spaces.delete')) %>
       </div>
     <% end %>
   </div>

@@ -2,14 +2,14 @@
   <table class="table sessions-table  table-striped" id="table-js-demotions">
     <thead class="table-primary">
     <tr>
-       <th>User</th>
-       <th>Training</th>
-       <th>Trainer</th>
-       <th>Created on</th>
-       <th>Demoted on</th>
-       <th>Demotion's reason</th>
-       <th>Demoted By</th>
-       <th class="action-header">Action</th>
+       <th><%= t('admin_area.certifications.columns.user') %></th>
+       <th><%= t('admin_area.certifications.columns.training') %></th>
+       <th><%= t('admin_area.certifications.columns.trainer') %></th>
+       <th><%= t('admin_area.certifications.columns.created_on') %></th>
+       <th><%= t('admin_area.certifications.columns.demoted_on') %></th>
+       <th><%= t('admin_area.certifications.columns.reason') %></th>
+       <th><%= t('admin_area.certifications.columns.demoted_by') %></th>
+       <th class="action-header"><%= t('admin_area.certifications.columns.action') %></th>
      </tr>
      </thead>
 
@@ -24,23 +24,23 @@
           </td>
           <td><%= demotion.trainer.name %></td>
           <td>
-              <%= link_to demotion.created_at.strftime('%B %d, %Y'), staff_training_session_path(id: demotion.training_session.id), style: 'text-decoration:underline;' %>
+              <%= link_to l(demotion.created_at, format: :admin_date), staff_training_session_path(id: demotion.training_session.id), style: 'text-decoration:underline;' %>
           </td>
         <% else %>
           <% 3.times do %>
             <td></td>
           <% end %>
         <% end %>
-        <td><%= demotion.updated_at.strftime('%B %d, %Y') %></td>
+        <td><%= l(demotion.updated_at, format: :admin_date) %></td>
         <td><%= demotion.demotion_reason %></td>
-        <td><%= demotion.demotion_staff.present? ? (link_to demotion.demotion_staff.name, user_path(demotion.demotion_staff.username)) : 'Staff not available' %></td>
+        <td><%= demotion.demotion_staff.present? ? (link_to demotion.demotion_staff.name, user_path(demotion.demotion_staff.username)) : t('admin_area.certifications.staff_not_available') %></td>
         <td class="action-cell">
           <%= form_for demotion, url: admin_certification_path(demotion) do |f| %>
             <%= f.hidden_field :active, value: true %>
             <%= f.hidden_field :demotion_reason, value: nil %>
-            <%= f.submit 'Reinstate', **confirmation_options(t('confirmations.certifications.reinstate')), class: 'btn btn-success btn-sm d-block w-100 mb-1 me-0' %>
+            <%= f.submit t('admin_area.certifications.reinstate'), **confirmation_options(t('confirmations.certifications.reinstate')), class: 'btn btn-success btn-sm d-block w-100 mb-1 me-0' %>
           <% end %>
-          <%= button_to 'Delete', { controller: :certifications, action: :destroy, id: demotion.id }, method: :delete, **confirmation_options(t('confirmations.certifications.delete_permanently')), class: 'btn btn-danger btn-sm d-block w-100 mb-1 me-0' %>
+          <%= button_to t('common.delete'), { controller: :certifications, action: :destroy, id: demotion.id }, method: :delete, **confirmation_options(t('confirmations.certifications.delete_permanently')), class: 'btn btn-danger btn-sm d-block w-100 mb-1 me-0' %>
         </td>
       </tr>
     <% end %>
