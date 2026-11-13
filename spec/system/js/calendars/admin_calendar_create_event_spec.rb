@@ -436,11 +436,18 @@ RSpec.describe "Admin calendar: creating events", type: :system do
       create(:staff_unavailability, **attrs)
     end
 
-    def start_modal_with_slot
+    # The calendar draws itself and scrolls the page to it as it starts, so
+    # "+ Add Event" is clicked only once the calendar is drawn and the modal is
+    # ready: a click aimed before that scroll lands below the button.
+    def open_add_modal_on_week
       show_week_of_march_14("fullCalendarDefaultDateAdmin", admin_calendar_index_path)
       expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
       wait_for_admin_calendar_scripts
       open_add_modal
+    end
+
+    def start_modal_with_slot
+      open_add_modal_on_week
       fill_datetime("start_time_field", slot_start)
       fill_datetime("end_time_field", slot_end)
     end
@@ -463,8 +470,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
 
     it "marks nobody when the slot is clear of the unavailability", js: true, skip_bullet: true do
       unavailability_around_slot
-      show_week_of_march_14("fullCalendarDefaultDateAdmin", admin_calendar_index_path)
-      open_add_modal
+      open_add_modal_on_week
       fill_datetime("start_time_field", "2027-03-19T09:00")
       fill_datetime("end_time_field", "2027-03-19T10:00")
 
