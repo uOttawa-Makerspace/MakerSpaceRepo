@@ -216,7 +216,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
       admin = sign_in_as(:admin)
       post admin_announcements_path, params: { announcement: { description: "Hello", public_goal: "all", active: true, end_date: "2030-01-01" } }
       expect(response).to redirect_to(admin_announcements_path)
-      expect(flash[:notice]).to eq("You've successfully created an announcement for All")
+      expect(flash[:notice]).to eq("You've successfully created an announcement for All Visitors (Even not signed in)")
       expect(Announcement.last).to have_attributes(user_id: admin.id, public_goal: "all", active: true, end_date: Date.new(2030, 1, 1))
     end
 

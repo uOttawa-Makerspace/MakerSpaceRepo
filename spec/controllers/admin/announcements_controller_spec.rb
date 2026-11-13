@@ -96,7 +96,7 @@ RSpec.describe Admin::AnnouncementsController, type: :controller do
           post :create, params: { announcement: announcement_params }
         end.to change(Announcement, :count).by(1)
         expect(response).to redirect_to admin_announcements_path
-        expect(flash[:notice]).to eq("You've successfully created an announcement for All")
+        expect(flash[:notice]).to eq("You've successfully created an announcement for All Visitors (Even not signed in)")
       end
     end
 

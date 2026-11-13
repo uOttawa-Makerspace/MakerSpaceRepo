@@ -127,6 +127,12 @@ RSpec.describe "Admin area pages in French", type: :request do
       expect(flash[:notice]).to eq("La nouvelle période a été créée!")
     end
 
+    it "names the audience of a new announcement in French" do
+      post admin_announcements_path, params: { announcement: { description: "Bonjour", public_goal: "regular_user", active: true } }
+
+      expect(flash[:notice]).to eq("Vous avez créé une annonce pour : Tous les utilisateurs")
+    end
+
     it "names an unapproved holder in French on the assign form" do
       key = create(:key, :regular_key_type, :inventory_status, space: space)
       create(:user, :staff, name: "Sam Staff")
@@ -145,6 +151,9 @@ RSpec.describe "Admin area pages in French", type: :request do
 
       get admin_announcements_path
       expect(page_text).to include("Dismissed by: No one", "All Users", "No")
+
+      post admin_announcements_path, params: { announcement: { description: "Hi all", public_goal: "regular_user", active: true } }
+      expect(flash[:notice]).to eq("You've successfully created an announcement for All Users")
 
       post admin_drop_off_locations_path, params: { name: "Desk" }
       expect(flash[:notice]).to eq("Drop-off Location added successfully!")

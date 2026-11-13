@@ -24,7 +24,7 @@ class Admin::AnnouncementsController < AdminAreaController
     announcement.user_id = current_user.id
     if announcement.save
       redirect_to admin_announcements_path,
-                  notice: I18n.t("admin_pages.announcements.flash.created", audience: announcement.public_goal.capitalize)
+                  notice: I18n.t("admin_pages.announcements.flash.created", audience: I18n.t(announcement.public_goal, scope: "admin_pages.announcements.audiences"))
     else
       redirect_to new_admin_announcement_path,
                   alert: validation_message(announcement, "errors.admin.announcements.not_created")
