@@ -583,6 +583,18 @@ RSpec.describe User, type: :model do
         create(:training_requirement, :"3d_printing", level: "Beginner")
         expect(user.has_requirements?(TrainingRequirement.all)).to be_falsey
       end
+
+      it "gives the same answers from the held training levels read once" do
+        user = create(:user, :regular_user)
+        cert = create(:certification, :"3d_printing", user_id: user.id, level: "Beginner")
+        met = create(:training_requirement, :"3d_printing", training_id: cert.training.id, level: "Beginner")
+        unmet = create(:training_requirement, :"3d_printing", training_id: cert.training.id, level: "Intermediate")
+        held = user.held_training_levels
+
+        expect(held).to eq(Set[[cert.training.id, "Beginner"]])
+        expect(user.has_requirements?([met], held)).to be(true)
+        expect(user.has_requirements?([met, unmet], held)).to be(false)
+      end
     end
   end
 

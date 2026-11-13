@@ -1247,10 +1247,17 @@ class User < ApplicationRecord
     Training.all.where.not(id: held)
   end
 
-  def has_requirements?(training_reqs)
-    training_reqs.all? do |treq|
-      has_training?(treq.training_id, treq.level)
-    end
+  # The training requirements are all met by the given held [training_id, level] pairs; a page
+  # checking many requirements reads them once with held_training_levels.
+  def has_requirements?(training_reqs, held = nil)
+    return training_reqs.all? { |treq| has_training?(treq.training_id, treq.level) } if held.nil?
+
+    training_reqs.all? { |treq| held.include?([treq.training_id, treq.level]) }
+  end
+
+  # Every [training_id, level] pair the user holds a certification for.
+  def held_training_levels
+    certifications.joins(:training).pluck("trainings.id", "certifications.level").to_set
   end
 
   def has_training?(training_id, level)

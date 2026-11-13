@@ -58,6 +58,13 @@ class Training < ApplicationRecord
     learning_modules.select { |learning_module| completed_ids.include?(learning_module.id) }
   end
 
+  # The proficient projects ordered by level text (projects without a level last), with the
+  # Advanced ones moved to the end. Reads the loaded proficient_projects.
+  def proficient_projects_by_level
+    sorted = proficient_projects.sort_by.with_index { |project, index| [project.level.nil? ? 1 : 0, project.level.to_s, index] }
+    sorted.rotate(sorted.count { |project| project.level == "Advanced" })
+  end
+
   # The number of learning modules and proficient projects at the given levels.
   def recommended_hours(levels)
     wanted = [levels].flatten

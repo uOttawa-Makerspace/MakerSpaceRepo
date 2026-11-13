@@ -25,31 +25,14 @@ class ProficientProjectsController < DevelopmentProgramsController
   before_action :with_development_header
 
   def index
-    @skills = Skill.includes(:trainings)
-    @proficient_projects_awarded =
-      proc do |training|
-        training.proficient_projects.where(
-          id: current_user.order_items.awarded.pluck(:proficient_project_id)
-        )
-      end
-    @all_proficient_projects =
-      proc { |training| training.proficient_projects }
-    @advanced_pp_count =
-      proc do |training|
-        training.proficient_projects.where(level: "Advanced").count
-      end
+    @skills = Skill.includes(trainings: { proficient_projects: [:training_requirements, { photos: { image_attachment: :blob } }] })
+    @proficient_projects_awarded = proc { |training| training.awarded_proficient_projects(current_user) }
     @order_item = current_order.order_items.new
-    @user_order_items = current_user.order_items.completed_order
-    @proficient_projects_bought =
-      proc do |training|
-        training.proficient_projects.where(
-          id:
-            current_user
-              .order_items
-              .where(status: ["Awarded", "In progress", "Waiting for approval"])
-              .pluck(:proficient_project_id)
-        )
-      end
+    @order_items_by_project = current_user.order_items.completed_order.group_by(&:proficient_project_id)
+    @in_progress_project_ids = current_user.order_items.in_progress.pluck(:proficient_project_id).to_set
+    @bought_project_ids =
+      current_user.order_items.where(status: ["Awarded", "In progress", "Waiting for approval"]).pluck(:proficient_project_id).to_set
+    @held_training_levels = current_user.held_training_levels
   end
 
   def requests
