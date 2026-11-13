@@ -8,7 +8,7 @@ require "rails_helper"
 RSpec.describe "Staff area flash messages", type: :request do
   let(:password) { "asa32A353#" }
   let(:staff) { create(:user, :staff) }
-  let(:notice) { "You've successfully created an announcement for Volunteer" }
+  let(:notice) { "You've successfully created an announcement for Volunteers" }
   let(:alert) { "Please select another public goal" }
 
   before do
