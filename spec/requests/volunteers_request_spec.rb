@@ -364,6 +364,25 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
       expect(ivar(:@processed_volunteer_task_requests).size).to eq(2)
     end
+
+    it "counts the learning modules of the next level and the share the user completed" do
+      user = create(:user, :volunteer_with_volunteer_program)
+      training = create(:training, skill: create(:skill))
+      session = create(:training_session, training: training, level: "Beginner")
+      create(:certification, user: user, training: training, training_session: session, level: "Beginner")
+      create(:learning_module, training: training, level: "Beginner")
+      done = create(:learning_module, training: training, level: "Intermediate")
+      create(:learning_module, training: training, level: "Intermediate")
+      create(:learning_module_track, :completed, user: user, learning_module: done)
+      vol_login!(user)
+
+      get my_stats_volunteers_path
+
+      page = Nokogiri::HTML(response.body)
+      bar = page.at_css(%(.progress[aria-label="#{I18n.t("common.names.progress_modules")}"]))
+      expect(bar["aria-valuenow"]).to eq("50")
+      expect(page.text.squish).to include("1 / 2")
+    end
   end
 
   describe "shadowing" do
