@@ -63,6 +63,19 @@ RSpec.describe LearningModule, type: :model do
         lm = build(:learning_module, shortcut_name: 'Hello')
         expect(lm).not_to be_valid
       end
+
+      it 'stores a blank shortcut as nil, so several modules can have none' do
+        first = create(:learning_module, shortcut_name: '')
+        second = create(:learning_module, shortcut_name: '   ')
+        expect([first.reload.shortcut_name, second.reload.shortcut_name]).to eq([nil, nil])
+      end
+
+      it 'saves a module without a shortcut next to an older one stored with an empty shortcut' do
+        older = create(:learning_module)
+        LearningModule.where(id: older.id).update_all("shortcut_name = ''") # as stored before blanks became nil
+        expect(create(:learning_module, shortcut_name: nil).shortcut_name).to be_nil
+        expect(older.reload.shortcut_name).to eq('')
+      end
     end
   end
 

@@ -280,6 +280,13 @@ RSpec.describe "Learning area", type: :request do
         .to change(LearningModule, :count).by(1)
     end
 
+    it "creates a second module without a shortcut" do
+      post learning_area_index_path, params: valid_params(title: "First blank", shortcut_name: "")
+      expect { post learning_area_index_path, params: valid_params(title: "Second blank", shortcut_name: "") }
+        .to change(LearningModule, :count).by(1)
+      expect(LearningModule.where(title: ["First blank", "Second blank"]).pluck(:shortcut_name)).to eq([nil, nil])
+    end
+
     it "rejects a duplicate shortcut_name (case-insensitive)" do
       learning_module.update!(shortcut_name: "taken")
       expect { post learning_area_index_path, params: valid_params(shortcut_name: "TAKEN") }

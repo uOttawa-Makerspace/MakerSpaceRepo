@@ -8,15 +8,18 @@ class LearningModule < ApplicationRecord
   has_many_attached :project_files # was: has_many :repo_files
   has_many_attached :videos # was: has_many :videos
 
-  # Normalization runs before validation, but we still want to catch if something breaks
+  # Normalization runs before validation, but we still want to catch if something breaks.
+  # A blank shortcut is stored as nil, so any number of modules can go without one.
   normalizes :shortcut_name,
              with: ->(shortcut_name) do
                shortcut_name.strip.downcase.underscore.parameterize(
                  separator: '_'
-               )
+               ).presence
              end
-  validates :shortcut_name, format: { with: /\A[a-zA-Z0-9_]+\z/ }, allow_blank: true
-  validates :shortcut_name, uniqueness: { case_sensitive: false }
+  validates :shortcut_name,
+            format: { with: /\A[a-zA-Z0-9_]+\z/ },
+            uniqueness: { case_sensitive: false },
+            allow_blank: true
 
   enum :level,
        {
