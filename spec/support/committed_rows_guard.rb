@@ -63,16 +63,18 @@ module CommittedRowsGuard
     "This non-transactional example changed committed rows and did not undo it: #{message}"
   end
 
-  def self.connections_held_by_other_threads
+  # The owner of every pooled connection leased to a thread other than the current one. Each
+  # connection's owner is read once: the pool's reaper can take a dead thread's connection back, and
+  # clear its owner, at any moment.
+  def self.owners_of_connections_held_by_other_threads
     me = ActiveSupport::IsolatedExecutionState.context
-    ActiveRecord::Base.connection_handler.connection_pool_list(:all).flat_map(&:connections).select do |conn|
-      conn.owner && !conn.owner.equal?(me)
-    end
+    ActiveRecord::Base.connection_handler.connection_pool_list(:all).flat_map(&:connections)
+      .filter_map(&:owner).reject { |owner| owner.equal?(me) }
   end
 
-  def self.held_connections_message(held)
-    owners = held.map { |conn| conn.owner.alive? ? "a running thread" : "a finished thread" }
-    "This example left #{held.size} pooled connection(s) leased to #{owners.uniq.join(' and ')}. " \
+  def self.held_connections_message(owners)
+    kinds = owners.map { |owner| owner.alive? ? "a running thread" : "a finished thread" }
+    "This example left #{owners.size} pooled connection(s) leased to #{kinds.uniq.join(' and ')}. " \
       "Start its threads with in_thread or race_thread and join them before the example ends."
   end
 
@@ -98,7 +100,7 @@ RSpec.configure do |config|
     example.run
 
     # Checked even when the example failed: its own error stays and the leftovers are added to it.
-    held = CommittedRowsGuard.connections_held_by_other_threads
+    held = CommittedRowsGuard.owners_of_connections_held_by_other_threads
     leaked = CommittedRowsGuard.leaked(before, CommittedRowsGuard.counts)
     problems = []
     problems << CommittedRowsGuard.leaked_message(leaked) unless leaked.empty?

@@ -78,13 +78,15 @@ RSpec.describe CommittedRowsGuard do
   end
 
   describe "connections left leased to another thread" do
+    # The pool's reaper thread takes a dead thread's connection back, and clears its owner, whenever
+    # it runs. Holding the pool's reaper lock keeps it from doing so while the example runs.
     def run_example(&body)
       group = RSpec.describe("example that starts a thread") do
         self.use_transactional_tests = false
         it("runs a query on another thread", &body)
       end
       RSpec.world.example_groups.delete(group) # run it here, not again as part of the suite
-      group.run(RSpec::Core::NullReporter)
+      ActiveRecord::Base.connection_pool.reaper_lock { group.run(RSpec::Core::NullReporter) }
       group.examples.first.exception
     end
 
@@ -97,12 +99,47 @@ RSpec.describe CommittedRowsGuard do
       ActiveRecord::Base.connection_pool.reap # takes back the finished thread's connection
     end
 
+    it "fails an example whose running thread still holds the connection it leased" do
+      leased = Queue.new
+      release = Queue.new
+      holder = nil
+      begin
+        error = run_example do
+          holder = Thread.new do
+            ActiveRecord::Base.connection.select_value("SELECT 1")
+            leased << true
+            release.pop(timeout: ThreadPause::PARKED_TIMEOUT)
+          end
+          ThreadPause.await(leased)
+        end
+        expect(error.message).to include("1 pooled connection(s) leased to a running thread")
+      ensure
+        release << true
+        holder&.join
+        ActiveRecord::Base.connection_pool.reap
+      end
+    end
+
     it "passes an example whose threads were started with in_thread and race_thread and joined" do
       error = run_example do
         in_thread { ActiveRecord::Base.connection.select_value("SELECT 1") }.join
         race_thread { User.connection.select_value("SELECT 1") }.join
       end
       expect(error).to be_nil
+    end
+
+    # The reaper clears a dead thread's connection owner at any moment, between two reads of it.
+    it "reads a connection's owner once, so an owner cleared mid-check does not break the report" do
+      finished = Thread.new { nil }.tap(&:join)
+      conn = instance_double(ActiveRecord::ConnectionAdapters::AbstractAdapter)
+      allow(conn).to receive(:owner).and_return(finished, nil)
+      pool = instance_double(ActiveRecord::ConnectionAdapters::ConnectionPool, connections: [conn])
+      allow(ActiveRecord::Base.connection_handler).to receive(:connection_pool_list).with(:all).and_return([pool])
+
+      owners = described_class.owners_of_connections_held_by_other_threads
+
+      expect(owners).to eq([finished])
+      expect(described_class.held_connections_message(owners)).to include("1 pooled connection(s) leased to a finished thread")
     end
   end
 
