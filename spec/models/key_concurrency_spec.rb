@@ -34,14 +34,6 @@ RSpec.describe Key, "assign and revoke under concurrency", type: :model do
     end
   end
 
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
-    end
-  end
-
   # Runs the first request holding the key lock until released, starts the second, and returns both outcomes.
   def race(&request)
     paused = Queue.new

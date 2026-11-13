@@ -38,14 +38,6 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
     end
   end
 
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
-    end
-  end
-
   it "activation first: deactivate! waits for the activating transaction, which therefore stays valid" do
     paused = Queue.new
     resume = Queue.new

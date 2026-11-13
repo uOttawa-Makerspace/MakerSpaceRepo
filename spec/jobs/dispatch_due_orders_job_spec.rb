@@ -131,7 +131,7 @@ RSpec.describe DispatchDueOrdersJob, type: :job do
     it "hands a row out once to two concurrent dispatchers" do
       order = stored(1)
       results = 2.times.map do
-        Thread.new { ActiveRecord::Base.connection_pool.with_connection { ProcessedOrder.dispatch_due(now: now) } }
+        race_thread { ProcessedOrder.dispatch_due(now: now) }
       end.map(&:value)
       expect(results.flatten).to eq([order.id])
       expect(queued_ids).to eq([order.id])

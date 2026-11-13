@@ -16,6 +16,12 @@
 # lock the example holds; a lock timeout turns an unexpected wait into a failure instead of a hang.
 # The example's own lock waits (its `after` cleanup included) are bounded by the lock_timeout every
 # test connection starts with (config/database.yml), so the guard sets nothing on them.
+#
+# The guard also fails an example that leaves a pooled connection leased to a thread other than its
+# own, finished or still running: a thread that ends holding its lease keeps the connection out of
+# the pool until the pool's reaper takes it back and resets it, at a moment no example controls.
+# Threads started with `in_thread` or `race_thread` (spec/support/race_thread.rb) and joined before
+# the example ends always give their connection back.
 module CommittedRowsGuard
   IGNORED_TABLES = %w[schema_migrations ar_internal_metadata].freeze
   # Rows the suite itself seeds (rails_helper's before(:suite)) and keeps between runs.
@@ -57,6 +63,19 @@ module CommittedRowsGuard
     "This non-transactional example changed committed rows and did not undo it: #{message}"
   end
 
+  def self.connections_held_by_other_threads
+    me = ActiveSupport::IsolatedExecutionState.context
+    ActiveRecord::Base.connection_handler.connection_pool_list(:all).flat_map(&:connections).select do |conn|
+      conn.owner && !conn.owner.equal?(me)
+    end
+  end
+
+  def self.held_connections_message(held)
+    owners = held.map { |conn| conn.owner.alive? ? "a running thread" : "a finished thread" }
+    "This example left #{held.size} pooled connection(s) leased to #{owners.uniq.join(' and ')}. " \
+      "Start its threads with in_thread or race_thread and join them before the example ends."
+  end
+
   def self.leaked(before, after)
     (before.keys & after.keys).filter_map { |t| [t, after[t] - before[t]] if after[t] != before[t] }
   end
@@ -79,7 +98,11 @@ RSpec.configure do |config|
     example.run
 
     # Checked even when the example failed: its own error stays and the leftovers are added to it.
+    held = CommittedRowsGuard.connections_held_by_other_threads
     leaked = CommittedRowsGuard.leaked(before, CommittedRowsGuard.counts)
-    raise CommittedRowsGuard.leaked_message(leaked) unless leaked.empty?
+    problems = []
+    problems << CommittedRowsGuard.leaked_message(leaked) unless leaked.empty?
+    problems << CommittedRowsGuard.held_connections_message(held) unless held.empty?
+    raise problems.join("\n") unless problems.empty?
   end
 end

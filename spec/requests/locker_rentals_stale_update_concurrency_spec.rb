@@ -44,24 +44,18 @@ RSpec.describe "LockerRentals update racing a payment webhook", type: :request d
   def request_during_uncommitted_payment
     paused = Queue.new
     resume = Queue.new
-    webhook = Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection do
-        LockerRental.transaction do
-          LockerRental.find(rental.id).record_payment(shopify_order_id: "stale-1")
-          paused << true
-          resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
-        end
+    webhook = in_thread do
+      LockerRental.transaction do
+        LockerRental.find(rental.id).record_payment(shopify_order_id: "stale-1")
+        paused << true
+        resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
       end
-    rescue StandardError => e
-      e
     end
     ThreadPause.await(paused)
-    releaser = Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection do
-        deadline = Time.current + 10
-        Thread.pass until blocked_backends.positive? || Time.current > deadline
-        resume << true
-      end
+    releaser = race_thread do
+      deadline = Time.current + 10
+      Thread.pass until blocked_backends.positive? || Time.current > deadline
+      resume << true
     end
     yield
     releaser.join
@@ -114,7 +108,7 @@ RSpec.describe "LockerRentals update racing a payment webhook", type: :request d
     allow(ShopifyConcern::DraftOrders).to receive(:delete) do |*|
       open_during_call << ActiveRecord::Base.connection.transaction_open?
       # and the cancellation is already visible to another connection
-      open_during_call << Thread.new { ActiveRecord::Base.connection_pool.with_connection { LockerRental.find(rental.id).cancelled? } }.value
+      open_during_call << race_thread { LockerRental.find(rental.id).cancelled? }.value
       true
     end
     log_in!
@@ -130,23 +124,19 @@ RSpec.describe "LockerRentals update racing a payment webhook", type: :request d
     paused = Queue.new
     resume = Queue.new
     released_at = nil
-    settler = Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection do
-        LockerRental.transaction do
-          LockerRental.find(rental.id).lock!
-          paused << true
-          resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
-          released_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        end
+    settler = race_thread do
+      LockerRental.transaction do
+        LockerRental.find(rental.id).lock!
+        paused << true
+        resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
+        released_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       end
     end
     ThreadPause.await(paused)
-    releaser = Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection do
-        deadline = Time.current + 3
-        Thread.pass until blocked_backends.positive? || Time.current > deadline
-        resume << true
-      end
+    releaser = race_thread do
+      deadline = Time.current + 3
+      Thread.pass until blocked_backends.positive? || Time.current > deadline
+      resume << true
     end
     log_in!
     patch locker_rental_locker_payment_path(rental, held), params: { resolution: "dismissed" }

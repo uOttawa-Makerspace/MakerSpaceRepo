@@ -20,14 +20,6 @@ RSpec.describe Repository, "title uniqueness under concurrency", type: :model do
     ActiveStorage::Blob.where("id > ?", last_blob_id).delete_all
   end
 
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
-    end
-  end
-
   def blocked_backends
     ActiveRecord::Base.connection.select_value(
       "SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND datname = current_database()"

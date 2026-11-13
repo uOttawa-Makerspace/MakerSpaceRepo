@@ -32,14 +32,6 @@ RSpec.describe Key, "edit under concurrency", type: :model do
     end
   end
 
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
-    end
-  end
-
   # Loads the key for an edit, then lets another request hand it out or take it back while holding
   # the row lock, and runs the edit against the key as loaded. Returns the edit's outcome.
   def edit_during(other_request, attributes)
