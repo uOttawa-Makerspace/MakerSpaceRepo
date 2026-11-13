@@ -13,23 +13,19 @@ Public configuration for the Design Day app. Replaces `GET /admin/design_day/dat
   "day": "2026-03-14",
   "sheet_key": "1AbC...",
   "show_floorplans": true,
+  "show_floorplans_day2": true,
   "floorplan_urls": ["https://.../floorplan.png"],
   "floorplan_titles": ["Level 1"],
-  "schedules": [
-    {
-      "start": "2026-03-14T14:00:00.000Z",
-      "end": "2026-03-14T15:00:00.000Z",
-      "title_en": "Judging",
-      "title_fr": "Evaluation",
-      "event_for": "judge"
-    }
-  ]
+  "floorplan_days": [1]
 }
 ```
 
-- Exactly these keys. Not sent (the app never read them): `id`, `is_live`, schedule `id`, `ordering`, `design_day_id`, timestamps.
-- Differences from the legacy payload: schedules are under `schedules` (legacy: `design_day_schedules`), and `floorplan_urls` / `floorplan_titles` are always arrays (legacy: `null` when no floorplan). `floorplan_titles[i]` may be `null`.
-- `semester` is `winter` (Jan-Apr), `summer` (May-Aug) or `fall` (Sep-Dec). `event_for` is `student` or `judge`. Schedules are ordered by `event_for`, `ordering`, `start`.
+- Design day spans two days. `show_floorplans` is the day 1 switch, `show_floorplans_day2` the day 2 switch. `floorplan_days[i]` (`1` or `2`) is the day of `floorplan_urls[i]`; floorplans uploaded before days existed are day `1`. Both fields were added additively.
+
+- Exactly these keys. Not sent (the app never read them): `id`, `is_live`, timestamps.
+- `schedules` was removed: the student and judge schedules now live in the Google Sheet (`sheet_key`) and the Design Day app reads them from there. This is a deliberate exception to the additive-only rule; the Design Day app, the only client, stopped reading `schedules` before the field was dropped. The legacy endpoint still sends `design_day_schedules`.
+- Differences from the legacy payload: no schedules, and `floorplan_urls` / `floorplan_titles` are always arrays (legacy: `null` when no floorplan). `floorplan_titles[i]` may be `null`.
+- `semester` is `winter` (Jan-Apr), `summer` (May-Aug) or `fall` (Sep-Dec).
 - With no design day configured the answer is a placeholder (today, empty `sheet_key`, `show_floorplans: false`, empty arrays); nothing is written (the legacy endpoint creates a row).
 - Cached by nobody: `Cache-Control: no-store`.
 

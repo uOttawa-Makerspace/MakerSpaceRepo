@@ -24,15 +24,27 @@ RSpec.describe "GET /api/v1/design_day", type: :request do
       get "/api/v1/design_day"
       expect(response).to have_http_status(:ok)
       expect(response.headers["Set-Cookie"]).to be_nil
-      expect(body.keys).to eq(%w[year semester day sheet_key show_floorplans floorplan_urls floorplan_titles schedules])
+      expect(body.keys).to eq(%w[year semester day sheet_key show_floorplans show_floorplans_day2 floorplan_urls
+                                 floorplan_titles floorplan_days])
       expect(body).to include("year" => 2026, "semester" => "winter", "day" => "2026-03-14",
                               "sheet_key" => "KEY123", "show_floorplans" => true)
       expect(body["floorplan_urls"].size).to eq(1)
       expect(body["floorplan_urls"].first).to start_with("http")
       expect(body["floorplan_titles"].size).to eq(1)
-      expect(body["schedules"].size).to eq(10)
-      expect(body["schedules"].map(&:keys).uniq).to eq([%w[start end title_en title_fr event_for]])
-      expect(body["schedules"].map { |s| s["event_for"] }.uniq).to contain_exactly("student", "judge")
+      expect(body["floorplan_days"]).to eq([1])
+    end
+
+    it "sends the design day each floorplan belongs to and the day 2 switch" do
+      design_day.floorplans.first.blob.update!(metadata: { floorplan_day: "2" })
+      design_day.update!(show_floorplans_day2: false)
+      get "/api/v1/design_day"
+      expect(body["floorplan_days"]).to eq([2])
+      expect(body["show_floorplans_day2"]).to be(false)
+    end
+
+    it "does not send the schedules (they now live in the Google Sheet)" do
+      get "/api/v1/design_day"
+      expect(body).not_to have_key("schedules")
     end
 
     it "carries the same values as the legacy data endpoint" do
@@ -41,16 +53,14 @@ RSpec.describe "GET /api/v1/design_day", type: :request do
       get "/api/v1/design_day"
       expect(body.slice("year", "semester", "day", "sheet_key", "show_floorplans"))
         .to eq(legacy.slice("year", "semester", "day", "sheet_key", "show_floorplans"))
-      expect(body["schedules"].map { |s| s.slice("start", "end", "title_en", "title_fr", "event_for") })
-        .to eq(legacy["design_day_schedules"].map { |s| s.slice("start", "end", "title_en", "title_fr", "event_for") })
     end
 
-    it "does not run a query per schedule" do
+    it "does not query the schedules" do
       queries = []
       sub = ActiveSupport::Notifications.subscribe("sql.active_record") { |*, p| queries << p[:sql] if p[:sql] =~ /design_day_schedules/ }
       get "/api/v1/design_day"
       ActiveSupport::Notifications.unsubscribe(sub)
-      expect(queries.size).to eq(1)
+      expect(queries).to be_empty
     end
 
     it "ignores a Bearer token and any cookie" do
@@ -62,7 +72,8 @@ RSpec.describe "GET /api/v1/design_day", type: :request do
   it "answers empty arrays, and writes nothing, when no design day exists" do
     expect { get "/api/v1/design_day" }.not_to change(DesignDay.unscoped, :count)
     expect(response).to have_http_status(:ok)
-    expect(body).to include("floorplan_urls" => [], "floorplan_titles" => [], "schedules" => [], "sheet_key" => "")
+    expect(body).to include("floorplan_urls" => [], "floorplan_titles" => [], "floorplan_days" => [], "sheet_key" => "",
+                            "show_floorplans_day2" => false)
   end
 
   describe "CORS" do

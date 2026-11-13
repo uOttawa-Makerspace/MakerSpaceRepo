@@ -184,18 +184,66 @@ document.addEventListener("turbo:load", function () {
   );
   const floorplanTemplate = document.querySelector("[data-floorplan-template]");
 
+  // Design day is hardcoded to two days (1 and 2) for now.
+  const selectedDayInput = document.querySelector("[data-selected-day-input]");
+  let selectedDay = selectedDayInput?.value || "1";
+
+  function showFloorplansForDay(day) {
+    selectedDay = day;
+
+    if (selectedDayInput) selectedDayInput.value = day;
+    const url = new URL(window.location.href);
+    url.searchParams.set("day", day);
+    window.history.replaceState(window.history.state, "", url);
+
+    document.querySelectorAll("[data-design-day-select]").forEach((btn) => {
+      const isSelected = btn.dataset.designDaySelect === day;
+      btn.classList.toggle("btn-primary", isSelected);
+      btn.classList.toggle("btn-outline-primary", !isSelected);
+      btn.setAttribute("aria-pressed", isSelected);
+    });
+
+    let visibleCount = 0;
+    document.querySelectorAll("[data-floorplan-day]").forEach((row) => {
+      const isVisible = row.dataset.floorplanDay === day;
+      row.classList.toggle("d-none", !isVisible);
+      if (isVisible) visibleCount++;
+    });
+
+    document.querySelectorAll("[data-day-section]").forEach((section) => {
+      section.classList.toggle("d-none", section.dataset.daySection !== day);
+    });
+
+    const emptyMessage = document.querySelector("[data-floorplan-empty]");
+    if (emptyMessage) emptyMessage.hidden = visibleCount > 0;
+
+    document
+      .querySelectorAll("[data-selected-day-label]")
+      .forEach((el) => (el.textContent = day));
+  }
+
   function floorplanDelete(evt) {
     evt.preventDefault();
     evt.currentTarget.parentElement.remove();
+    showFloorplansForDay(selectedDay);
   }
 
   function newFloorplanInput() {
     const clone = floorplanTemplate.cloneNode(true);
+    clone.dataset.floorplanDay = selectedDay;
+    clone.querySelector("[data-floorplan-day-input]").value = selectedDay;
     clone
       .querySelector("[data-floorplan-delete]")
       .addEventListener("click", floorplanDelete);
     return clone;
   }
+
+  document.querySelectorAll("[data-design-day-select]").forEach((btn) => {
+    btn.addEventListener("click", (evt) => {
+      evt.preventDefault();
+      showFloorplansForDay(btn.dataset.designDaySelect);
+    });
+  });
 
   document.querySelectorAll("[data-floorplan-delete]").forEach((el) => {
     el.addEventListener("click", floorplanDelete);
@@ -206,5 +254,8 @@ document.addEventListener("turbo:load", function () {
     .addEventListener("click", (evt) => {
       evt.preventDefault();
       floorplanContainer.appendChild(newFloorplanInput());
+      showFloorplansForDay(selectedDay);
     });
+
+  showFloorplansForDay(selectedDay);
 });
