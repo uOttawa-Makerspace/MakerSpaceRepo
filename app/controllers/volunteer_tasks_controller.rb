@@ -93,6 +93,8 @@ class VolunteerTasksController < SessionsController
 
   def my_tasks
     @your_volunteer_tasks = current_user.get_volunteer_tasks_from_volunteer_joins
+    preload_task_details(@your_volunteer_tasks)
+    @pending_request_task_ids = current_user.volunteer_task_requests.not_processed.pluck(:volunteer_task_id)
     @completed_task_requests = current_user.volunteer_task_requests
                                            .processed
                                            .approved
@@ -143,6 +145,13 @@ class VolunteerTasksController < SessionsController
   end
 
   private
+
+  # The page names every task's space, and the required trainings of the tasks still in progress.
+  def preload_task_details(tasks)
+    in_progress = tasks.reject { |task| task.status == "completed" }
+    ActiveRecord::Associations::Preloader.new(records: tasks, associations: :space).call
+    ActiveRecord::Associations::Preloader.new(records: in_progress, associations: { require_trainings: :training }).call
+  end
 
   def joined_user_ids(task)
     task.volunteer_task_joins.joined.pluck(:user_id)
