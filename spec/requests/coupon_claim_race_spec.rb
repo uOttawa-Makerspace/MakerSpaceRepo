@@ -24,14 +24,6 @@ RSpec.describe "Coupon claim race", type: :request do
     User.unscoped.where(id: ids).delete_all
   end
 
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
-    end
-  end
-
   def blocked_backends
     ActiveRecord::Base.connection.select_value(
       "SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND datname = current_database()"

@@ -53,11 +53,7 @@ RSpec.describe "Current-password exhaustion under concurrency", type: :request d
     allow_any_instance_of(User).to receive(:disconnect_cable!) { disconnects << true }
 
     results = sessions.map do |sess|
-      Thread.new do
-        ActiveRecord::Base.connection_pool.with_connection { wrong_guess(sess) && [sess.response.location, sess.flash[:alert]] }
-      rescue StandardError => e
-        e
-      end
+      in_thread { wrong_guess(sess) && [sess.response.location, sess.flash[:alert]] }
     end.map(&:value)
 
     expect(results).to all(eq(["http://www.example.com#{login_path}", UsersController::REAUTH_LIMIT_ALERT]))
@@ -83,7 +79,7 @@ RSpec.describe "Current-password exhaustion under concurrency", type: :request d
     # Runs the block on another connection (committed) between the request's load and its store.
     def between_load_and_store(&block)
       allow_any_instance_of(User).to receive(:plaintext_password_problems).and_wrap_original do |m, *args|
-        Thread.new { ActiveRecord::Base.connection_pool.with_connection(&block) }.value
+        race_thread(&block).value
         m.call(*args)
       end
     end

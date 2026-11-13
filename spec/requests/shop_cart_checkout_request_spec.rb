@@ -494,13 +494,11 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       cart = buyer.orders.last
       locked = Queue.new
       release = Queue.new
-      holder = Thread.new do
-        ActiveRecord::Base.connection_pool.with_connection do
-          Order.transaction do
-            Order.lock(Order::CART_LOCK_MODE).find(cart.id) # as checkout! holds it
-            locked << true
-            release.pop(timeout: ThreadPause::PARKED_TIMEOUT)
-          end
+      holder = race_thread do
+        Order.transaction do
+          Order.lock(Order::CART_LOCK_MODE).find(cart.id) # as checkout! holds it
+          locked << true
+          release.pop(timeout: ThreadPause::PARKED_TIMEOUT)
         end
       end
       ThreadPause.await(locked)

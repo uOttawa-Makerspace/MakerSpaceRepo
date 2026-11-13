@@ -50,14 +50,6 @@ RSpec.describe ApplyProcessedOrderJob, "under concurrency", type: :job do
     end
   end
 
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
-    end
-  end
-
   def pause_first_credit_then_fail
     first_in = Queue.new
     resume = Queue.new

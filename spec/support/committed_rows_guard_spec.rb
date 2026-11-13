@@ -66,13 +66,43 @@ RSpec.describe CommittedRowsGuard do
       RSpec.world.example_groups.delete(group)
       begin
         group.run(RSpec::Core::NullReporter)
-        expect(group.examples.first.exception).to be_nil
+        # the guard reports the parked thread's lease and runs nothing on that connection
+        expect(group.examples.first.exception.message).to include("leased to a running thread")
       ensure
         resume << true
       end
       took_it, during, after_the_example = holder.value
       expect(took_it).to be(true)
       expect(after_the_example).to eq(during)
+    end
+  end
+
+  describe "connections left leased to another thread" do
+    def run_example(&body)
+      group = RSpec.describe("example that starts a thread") do
+        self.use_transactional_tests = false
+        it("runs a query on another thread", &body)
+      end
+      RSpec.world.example_groups.delete(group) # run it here, not again as part of the suite
+      group.run(RSpec::Core::NullReporter)
+      group.examples.first.exception
+    end
+
+    it "fails an example whose finished thread still holds the connection it leased" do
+      error = run_example do
+        Thread.new { ActiveRecord::Base.connection.select_value("SELECT 1") }.join
+      end
+      expect(error.message).to include("1 pooled connection(s) leased to a finished thread")
+    ensure
+      ActiveRecord::Base.connection_pool.reap # takes back the finished thread's connection
+    end
+
+    it "passes an example whose threads were started with in_thread and race_thread and joined" do
+      error = run_example do
+        in_thread { ActiveRecord::Base.connection.select_value("SELECT 1") }.join
+        race_thread { User.connection.select_value("SELECT 1") }.join
+      end
+      expect(error).to be_nil
     end
   end
 
