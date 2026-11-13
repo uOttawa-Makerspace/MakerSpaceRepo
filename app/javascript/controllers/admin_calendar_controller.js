@@ -367,10 +367,11 @@ export default class extends TypedController {
   }
 }
 
-// An unavailability row as the calendar and the event dialog read it.
+// An unavailability row (an occurrence the server expanded) as the calendar
+// and the event dialog read it.
 function unavailabilityRow(member, row) {
   return {
-    ...readRule(row),
+    ...row,
     color: member.color,
     extendedProps: {
       ...row.extendedProps,

@@ -337,10 +337,59 @@ function storedTitle(event) {
   return event.title.replace(/✎/g, "").trim() || "";
 }
 
+const WEEKDAYS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
+
+// The repeat of the clicked entry as the dialog shows it ({ frequency,
+// weekdays, until }), or null for a single entry: what the feed sent
+// (unavailabilities), or what the rule the calendar repeats an event by says
+// (the rrule plugin's series definition).
+function seriesOf(event) {
+  if ("series" in event.extendedProps) return event.extendedProps.series;
+  const options = event.recurringDef?.typeData.rruleSet._rrule[0].origOptions;
+  return options ? seriesFromRule(options) : null;
+}
+
+function seriesFromRule(options) {
+  const { freq, byweekday, until } = new RRule(options).options;
+  return {
+    frequency: RRule.FREQUENCIES[freq],
+    weekdays: (byweekday || []).map((day) => WEEKDAYS[day]),
+    until: until && dateValue(until.getTime()),
+  };
+}
+
+// The repeat fields of a series, and the rule they make from the clicked
+// occurrence's start (wall time), as it is stored.
+function fillRepeatFields({ frequency, weekdays, until }, startWall) {
+  const untilDate = until || "";
+  const weekly = frequency === "WEEKLY";
+  document.querySelector("#recurrence_rule_field").value = storedRule(
+    { freq: RRule[frequency], byweekday: weekdays.map((day) => RRule[day]) },
+    startWall,
+    untilDate,
+  );
+  document.querySelector("#recurrence_options").style.display = "block";
+  document.querySelector("#recurrence_frequency").value = frequency;
+  document.querySelector("#weekly_options").style.display = weekly
+    ? "block"
+    : "none";
+  weekdays.forEach((day) => {
+    const box = document.getElementById(`day_${day}`);
+    if (box) box.checked = weekly;
+  });
+  document.querySelector("#recurrence_until").value = untilDate;
+}
+
 function openEventForEditing(eventImpl) {
   const event = eventImpl._def;
   const id = eventImpl.id.replace("event-", "");
   const isUnavailability = event.extendedProps.eventType === "unavailability";
+  const [recordPath, scope] = isUnavailability
+    ? [
+        `/staff/unavailabilities/${event.extendedProps.recordId}`,
+        "staff_unavailability",
+      ]
+    : [`/admin/events/${id}`, "event"];
 
   // Only edit events with an eventType
   if (!event.extendedProps.eventType) return;
@@ -351,13 +400,8 @@ function openEventForEditing(eventImpl) {
   const form = document.querySelector("#eventModal form");
 
   // SETUP FORM ACTION & METHOD
-  if (isUnavailability) {
-    form.action = `/staff/unavailabilities/${eventImpl.id}`;
-    setFormScope("staff_unavailability");
-  } else {
-    form.action = `/admin/events/${id}`;
-    setFormScope("event");
-  }
+  form.action = recordPath;
+  setFormScope(scope);
 
   // Add PATCH method
   const methodInput = document.createElement("input");
@@ -419,72 +463,8 @@ function openEventForEditing(eventImpl) {
     event.extendedProps.description || "";
 
   // RECURRENCE
-  let rruleData = null;
-
-  if (event.recurringDef?.typeData?.rruleSet) {
-    rruleData = event.recurringDef.typeData.rruleSet._rrule[0].origOptions;
-  } else if (event.extendedProps.rrule) {
-    try {
-      const rruleStr = event.extendedProps.rrule;
-      rruleData = RRule.fromString(
-        /^(RRULE|DTSTART)/.test(rruleStr) ? rruleStr : `RRULE:${rruleStr}`,
-      ).options;
-    } catch (e) {
-      console.log("RRule parse error", e);
-    }
-  }
-
-  const frequency = document.querySelector("#recurrence_frequency");
-  const options = document.querySelector("#recurrence_options");
-  const weeklyOptions = document.querySelector("#weekly_options");
-  const untilInput = document.querySelector("#recurrence_until");
-  const ruleField = document.querySelector("#recurrence_rule_field");
-  const dayCheckboxes = [...document.querySelectorAll(".dayCheckbox")];
-
-  if (rruleData) {
-    const rule = new RRule(rruleData);
-    options.style.display = "block";
-
-    switch (rule.options.freq) {
-      case RRule.DAILY:
-        frequency.value = "DAILY";
-        break;
-      case RRule.WEEKLY:
-        frequency.value = "WEEKLY";
-        weeklyOptions.style.display = "block";
-        if (rule.options.byweekday) {
-          rule.options.byweekday.forEach((day) => {
-            const dayMap = {
-              0: "MO",
-              1: "TU",
-              2: "WE",
-              3: "TH",
-              4: "FR",
-              5: "SA",
-              6: "SU",
-            };
-            const dayCode = dayMap[day];
-            const cb = document.getElementById(`day_${dayCode}`);
-            if (cb) cb.checked = true;
-          });
-        }
-        break;
-      case RRule.MONTHLY:
-        frequency.value = "MONTHLY";
-        break;
-    }
-
-    const untilDate = rule.options.until
-      ? dateValue(rule.options.until.getTime())
-      : "";
-    if (untilDate) untilInput.value = untilDate;
-    // The feed's start is a Toronto wall time already
-    ruleField.value = storedRule(
-      { freq: rule.options.freq, byweekday: rule.options.byweekday },
-      rule.options.dtstart.getTime(),
-      untilDate,
-    );
-  }
+  const series = seriesOf(event);
+  if (series) fillRepeatFields(series, start);
 
   // TRAINING FIELDS
   const trainingFields = document.getElementById("training-fields");
@@ -529,7 +509,7 @@ function openEventForEditing(eventImpl) {
   }
 
   // POSITION SAVE BUTTON
-  const hasRecurrence = event.recurringDef || rruleData;
+  const hasRecurrence = Boolean(series);
   positionSaveButton(hasRecurrence, true);
 
   // HANDLE PUBLISH BUTTON (events only)
@@ -567,24 +547,20 @@ function openEventForEditing(eventImpl) {
     allForm.style.display = "none";
   }
 
-  // Set start_date for deletion: the instant of the clicked occurrence
-  const startDateValue = new Date(
-    instantFromCalendar(eventImpl.startStr),
-  ).toISOString();
+  // Set start_date for deletion: the instant of the clicked occurrence, as the
+  // feed sent it (unavailabilities) or as the calendar draws it (events)
+  const startDateValue =
+    event.extendedProps.occurrenceStart ??
+    new Date(instantFromCalendar(eventImpl.startStr)).toISOString();
   document.querySelectorAll(".delete_start_date").forEach((e) => {
     e.value = startDateValue;
   });
 
   // Set form actions
-  if (isUnavailability) {
-    singleForm.action = `/staff/unavailabilities/${eventImpl.id}/delete_with_scope`;
-    followingForm.action = `/staff/unavailabilities/${eventImpl.id}/delete_with_scope`;
-    allForm.action = `/staff/unavailabilities/${eventImpl.id}/delete_with_scope`;
-  } else {
-    singleForm.action = `/admin/events/${id}/delete_with_scope`;
-    followingForm.action = `/admin/events/${id}/delete_with_scope`;
-    allForm.action = `/admin/events/${id}/delete_with_scope`;
-  }
+  singleForm.action =
+    followingForm.action =
+    allForm.action =
+      `${recordPath}/delete_with_scope`;
 
   // SHOW MODAL
   const modal = new Modal(document.getElementById("eventModal"));

@@ -90,7 +90,7 @@
       "count": 5
     },
     "no-unused-vars": {
-      "count": 2
+      "count": 1
     }
   },
   "app/javascript/src/effects.js": {

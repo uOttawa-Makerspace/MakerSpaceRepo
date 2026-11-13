@@ -1,11 +1,9 @@
 import { Controller } from "@hotwired/stimulus";
 import { Collapse, Modal } from "bootstrap";
-import { RRule, rrulestr } from "rrule";
+import { RRule } from "rrule";
 
 import {
-  dateValue,
   fieldValue,
-  instantFromCalendar,
   instantToWall,
   startOfDay,
   storedRule,
@@ -17,12 +15,6 @@ import {
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 const COLLECTION_PATH = "/staff/unavailabilities";
-
-const FREQUENCY_NAMES = new Map([
-  [RRule.DAILY, "DAILY"],
-  [RRule.WEEKLY, "WEEKLY"],
-  [RRule.MONTHLY, "MONTHLY"],
-]);
 
 // Stimulus defines the target accessors at runtime; this tells the type checker.
 const TypedController = /** @type {new () => Controller<HTMLElement> & {
@@ -118,18 +110,19 @@ export default class extends TypedController {
     this.endTimeTarget.value = fieldValue(wallFromCalendar(end));
   }
 
-  // The entry is a plain object (see editableUnavailability): its id, title,
-  // description, all-day flag, the calendar's start and end strings and, for a
-  // repeating entry, the rule text the feed sent.
+  // The entry is a plain object (see editableUnavailability): its record id,
+  // title, description, all-day flag, the calendar's start and end strings,
+  // the occurrence's start instant and, for a repeating entry, what the feed
+  // sent of its repeat.
   openForEdit(entry) {
-    const repeats = Boolean(entry.rrule);
+    const repeats = Boolean(entry.series);
 
     this.modal.show();
     this.pointFormAt(entry.id);
     this.fillTimes(entry);
     this.titleFieldTarget.value = entry.title || "";
     this.descriptionFieldTarget.value = entry.description || "";
-    this.restoreRule(entry.rrule);
+    if (repeats) this.restoreSeries(entry.series);
 
     this.labelTarget.textContent = "Edit Unavailability";
     this.saveButtonTarget.value = "Update";
@@ -146,7 +139,10 @@ export default class extends TypedController {
     this.methodFieldTarget.disabled = false;
   }
 
-  // The fields hold Toronto wall-clock times, like the calendar.
+  // The fields hold Toronto wall-clock times, like the calendar. An occurrence
+  // whose wall-clock end is its start (one hour from the first 1:30 of the
+  // night the clocks go back) has no end in the calendar; the form ends it one
+  // wall-clock hour after its start.
   fillTimes(entry) {
     if (entry.allDay) {
       this.allDayTarget.checked = true;
@@ -155,47 +151,25 @@ export default class extends TypedController {
       this.endTimeTarget.value = fieldValue(startDate + DAY_MS);
       this.endTimeTarget.disabled = true;
     } else {
-      this.startTimeTarget.value = fieldValue(wallFromCalendar(entry.startStr));
-      this.endTimeTarget.value = fieldValue(wallFromCalendar(entry.endStr));
+      const start = wallFromCalendar(entry.startStr);
+      this.startTimeTarget.value = fieldValue(start);
+      this.endTimeTarget.value = fieldValue(
+        entry.endStr ? wallFromCalendar(entry.endStr) : start + HOUR_MS,
+      );
     }
   }
 
-  // Unbuilds the repeat rule text of the feed into the repeat fields.
-  restoreRule(ruleText) {
-    if (!ruleText) return;
-
-    const ruleSet = /** @type {import("rrule").RRuleSet} */ (
-      rrulestr(ruleText, { forceset: true })
-    );
-    const rule = ruleSet.rrules()[0];
-    const { freq, byweekday, until, dtstart } = rule.options;
-
+  // The repeat fields of a series as the feed sent it: its frequency, its
+  // weekdays and the day it repeats until (the rule is built again on submit).
+  restoreSeries({ frequency, weekdays, until }) {
+    const weekly = frequency === "WEEKLY";
     this.optionsTarget.style.display = "block";
-    this.weeklyOptionsTarget.style.display = "none";
-    this.restoreFrequency(freq, byweekday);
-
-    const untilDate = until ? dateValue(until.getTime()) : "";
-    this.untilTarget.value = untilDate;
-    // The feed's start is a Toronto wall time already
-    this.ruleFieldTarget.value = storedRule(
-      { freq, byweekday },
-      dtstart.getTime(),
-      untilDate,
-    );
-  }
-
-  restoreFrequency(freq, byweekday) {
-    const name = FREQUENCY_NAMES.get(freq);
-    if (name) this.frequencyTarget.value = name;
-    if (freq !== RRule.WEEKLY) return;
-
-    this.weeklyOptionsTarget.style.display = "block";
-    byweekday.forEach((day) => {
-      // rrule has MO=0 while we use SU=0...
-      const box =
-        this.dayCheckboxTargets[day + 1] || this.dayCheckboxTargets[0];
-      box.checked = true;
+    this.weeklyOptionsTarget.style.display = weekly ? "block" : "none";
+    this.frequencyTarget.value = frequency;
+    this.dayCheckboxTargets.forEach((box) => {
+      box.checked = weekly && weekdays.includes(box.value);
     });
+    this.untilTarget.value = until || "";
   }
 
   // A repeating entry saves through the "update this / all" menu.
@@ -220,12 +194,9 @@ export default class extends TypedController {
     });
     this.deleteChoicesTarget.style.display = "flex";
 
-    // The instant of the clicked occurrence
-    const occurrenceStart = new Date(
-      instantFromCalendar(entry.startStr),
-    ).toISOString();
+    // The instant of the clicked occurrence, as the server sent it
     this.deleteStartDateTargets.forEach((input) => {
-      input.value = occurrenceStart;
+      input.value = entry.occurrenceStart;
     });
   }
 

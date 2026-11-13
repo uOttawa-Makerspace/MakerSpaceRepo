@@ -158,10 +158,11 @@ const staff = [
     color: "#0f0",
     unavailabilities: [
       {
-        id: 11,
+        id: `11@${Date.UTC(2027, 2, 15, 14) / 1000}`,
         title: "🚫 Bob - Busy (Admin)",
-        rrule: "DTSTART:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO",
-        extendedProps: { name: "Bob" },
+        start: "2027-03-15T10:00:00-04:00",
+        end: "2027-03-15T11:00:00-04:00",
+        extendedProps: { name: "Bob", recordId: 11 },
       },
     ],
   },
@@ -335,15 +336,17 @@ describe("the rows drawn", () => {
     expect(console.error).toHaveBeenCalled();
   });
 
-  it("draws each unavailability in its staff member's colour, marked as one and as admin-made", async () => {
+  it("draws each unavailability occurrence as sent, in its staff member's colour, marked as one and as admin-made", async () => {
     const calendar = await boot();
     const [busy, away] = calendar.drawn.unavailabilities;
 
     expect(busy).toMatchObject({
       color: "#0f0",
-      rrule: "DTSTART:20270301T100000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO",
+      start: "2027-03-15T10:00:00-04:00",
+      end: "2027-03-15T11:00:00-04:00",
       extendedProps: {
         name: "Bob",
+        recordId: 11,
         eventType: "unavailability",
         userId: 6,
         isAdminCreated: true,

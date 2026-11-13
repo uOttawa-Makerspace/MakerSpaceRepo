@@ -280,15 +280,19 @@ function entry(overrides = {}) {
     endStr: "2027-03-17T15:00:00-04:00",
     title: "Lecture",
     description: "Calculus",
-    rrule: null,
+    occurrenceStart: "2027-03-17T17:00:00Z",
+    series: null,
     ...overrides,
   };
 }
 
-// The rule text the feed sends: the Toronto start, then the other lines
-const weekly = ({ days = "MO,WE", until = ";UNTIL=20270331T235959" } = {}) =>
-  `DTSTART:20270315T140000\nRRULE:FREQ=WEEKLY;BYDAY=${days}${until}`;
-const withFreq = (freq) => `DTSTART:20270315T140000\nRRULE:FREQ=${freq}`;
+// What the feed sends of a series' repeat
+const weekly = ({ days = ["MO", "WE"], until = "2027-03-31" } = {}) => ({
+  frequency: "WEEKLY",
+  weekdays: days,
+  until,
+});
+const withFreq = (frequency) => ({ frequency, weekdays: [], until: null });
 
 describe("openForEdit", () => {
   it("opens the modal in edit mode against the unavailability URL", () => {
@@ -328,6 +332,14 @@ describe("openForEdit", () => {
     );
   });
 
+  it("ends an occurrence the calendar gives no end one wall-clock hour after its start", () => {
+    controller().openForEdit(
+      entry({ startStr: "2027-11-07T01:30:00-04:00", endStr: "" }),
+    );
+    expect($("start_time_field").value).toBe("2027-11-07T01:30");
+    expect($("end_time_field").value).toBe("2027-11-07T02:30");
+  });
+
   it("writes the times in Toronto time", () => {
     controller().openForEdit(entry());
     expect($("start_time_field").value).toBe("2027-03-17T13:00");
@@ -335,7 +347,7 @@ describe("openForEdit", () => {
   });
 
   it("leaves the end date empty for a repeating entry without one", () => {
-    controller().openForEdit(entry({ rrule: weekly({ until: "" }) }));
+    controller().openForEdit(entry({ series: weekly({ until: null }) }));
     expect($("recurrence_until").value).toBe("");
   });
 
@@ -363,16 +375,17 @@ describe("openForEdit", () => {
     expect($("delete_all_form").style.display).toBe("none");
   });
 
-  it("restores the weekly rule of a repeating entry and moves save into the scope menu", () => {
-    controller().openForEdit(entry({ rrule: weekly() }));
+  it("restores the weekly repeat of a series and moves save into the scope menu", () => {
+    controller().openForEdit(entry({ series: weekly() }));
 
     expect($("recurrence_frequency").value).toBe("WEEKLY");
     expect($("recurrence_options").style.display).toBe("block");
     expect($("weekly_options").style.display).toBe("block");
     expect($("recurrence_until").value).toBe("2027-03-31");
-    // the feed gives Toronto wall times; the field holds the rule as stored
+    // saving writes the rule as stored, from the start of the occurrence
+    fire($("unavailForm"), "submit", { cancelable: true });
     expect($("recurrence_rule_field").value).toBe(
-      "DTSTART;TZID=America/Toronto:20270315T140000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20270401T035959Z",
+      "DTSTART;TZID=America/Toronto:20270317T130000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20270401T035959Z",
     );
     expect($("update_dropdown_items").contains($("save_button"))).toBe(true);
     expect($("update_dropdown").style.display).toBe("block");
@@ -380,30 +393,27 @@ describe("openForEdit", () => {
     expect($("delete_all_form").style.display).toBe("block");
   });
 
-  it("ticks the day box one place after the rule's weekday number", () => {
-    // rrule numbers Monday 0 and Wednesday 2; the boxes run Sunday first, so
-    // the page ticks Monday and Wednesday as index+1
-    controller().openForEdit(entry({ rrule: weekly() }));
+  it("ticks the day boxes of the series' weekdays only", () => {
+    controller().openForEdit(entry({ series: weekly({ days: ["SU"] }) }));
+    controller().openForEdit(entry({ series: weekly() }));
     expect($("day_MO").checked).toBe(true);
     expect($("day_WE").checked).toBe(true);
     expect($("day_TU").checked).toBe(false);
+    expect($("day_SU").checked).toBe(false);
   });
 
-  it("ticks Sunday for a rule on Sunday (weekday 6)", () => {
-    controller().openForEdit(entry({ rrule: weekly({ days: "SU" }) }));
-    expect($("day_SU").checked).toBe(true);
-  });
-
-  it("restores daily and monthly rules", () => {
-    controller().openForEdit(entry({ rrule: withFreq("DAILY") }));
+  it("restores daily and monthly series, with no day ticked", () => {
+    controller().openForEdit(entry({ series: weekly() }));
+    controller().openForEdit(entry({ series: withFreq("DAILY") }));
     expect($("recurrence_frequency").value).toBe("DAILY");
     expect($("weekly_options").style.display).toBe("none");
-    controller().openForEdit(entry({ rrule: withFreq("MONTHLY") }));
+    expect($("day_MO").checked).toBe(false);
+    controller().openForEdit(entry({ series: withFreq("MONTHLY") }));
     expect($("recurrence_frequency").value).toBe("MONTHLY");
   });
 
-  it("leaves the frequency alone for a rule it has no choice for", () => {
-    controller().openForEdit(entry({ rrule: withFreq("YEARLY") }));
+  it("leaves the frequency empty for a series it has no choice for", () => {
+    controller().openForEdit(entry({ series: withFreq("YEARLY") }));
     expect($("recurrence_frequency").value).toBe("");
     expect($("weekly_options").style.display).toBe("none");
   });
@@ -416,8 +426,10 @@ describe("openForEdit", () => {
     expect(form().action).toContain("/staff/unavailabilities/32");
   });
 
-  it("sets the start date for every delete form", () => {
-    controller().openForEdit(entry());
+  it("sets the occurrence start the feed sent for every delete form", () => {
+    controller().openForEdit(
+      entry({ occurrenceStart: "2027-03-17T17:00:00.000Z" }),
+    );
     const values = [...document.querySelectorAll(".delete_start_date")].map(
       (i) => i.value,
     );
@@ -458,7 +470,7 @@ describe("returning focus", () => {
 
 describe("openForAdd", () => {
   it("returns an edit modal to add mode", () => {
-    controller().openForEdit(entry({ rrule: weekly() }));
+    controller().openForEdit(entry({ series: weekly() }));
     controller().openForAdd();
 
     expect(form().action).toContain("/staff/unavailabilities");
@@ -474,7 +486,7 @@ describe("openForAdd", () => {
   });
 
   it("leaves the repeat fields and delete buttons as the last edit left them", () => {
-    controller().openForEdit(entry({ rrule: weekly() }));
+    controller().openForEdit(entry({ series: weekly() }));
     controller().openForAdd();
     expect($("recurrence_frequency").value).toBe("WEEKLY");
     expect($("delete_forms").style.display).toBe("flex");
