@@ -15,14 +15,14 @@
     <% @spaces.each do |space| %>
       <div class="tab-pane container <%= @space.name == space.name ? 'active' : '' %>" id="<%= space.name.gsub(' ', '-') %>">
         <br>
-        <% popular_hours = PopularHour.from_space(space.id) %>
+        <% popular_hours = @popular_hours_by_space.fetch(space.id, []).group_by(&:day) %>
 
         <span style="text-align: center!important; display: block;" class="d-print-none">The following stats are being updated automatically over time. It takes the average per hour for every day of the week and every spaces.</span>
         <div class="mb-3 text-center fw-bold d-none d-print-block">Displaying all-time popular hours in <%= space.name %></div>
 
         <div class="row">
           <% (0..6).each do |weekday| %>
-            <% popular_hour = popular_hours.where(day: weekday) %>
+            <% popular_hour = popular_hours.fetch(weekday, []) %>
             <br>
 
             <% if popular_hour.present? %>
@@ -39,7 +39,7 @@
                           labels: ['0h', '1h', '2h', '3h', '4h', '5h', '6h', '7h', '8h', '9h', '10h', '11h', '12h', '13h', '14h', '15h', '16h', '17h', '18h', '19h', '20h', '21h', '22h', '23h'],
                           datasets: [{
                               label: '# of people',
-                              data: <%= popular_hour.pluck(:mean) %>,
+                              data: <%= popular_hour.map(&:mean) %>,
                               backgroundColor: '#6db1f5',
                               borderWidth: 1
                           }]

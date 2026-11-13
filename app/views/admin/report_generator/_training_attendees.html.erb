@@ -24,13 +24,13 @@
 
     <div class="mb-5 accordion">
       <% @spaces.each do |space| %>
-        <% space_certs = space.certifications.includes(:user, training_session: %i[user training]).where(created_at: @report_window).reverse_order %>
-        <% if !space_certs.empty? %>
+        <% space_certs = @certifications_by_space.fetch(space.id, []) %>
+        <% if space_certs.any? %>
           <div class="card">
             <div class="card-header" data-bs-toggle="collapse" data-bs-target="#accordion-<%= space.name.gsub(' ', '-') %>" aria-expanded="true">
               <h2 class="mb-0 text-center">
                 <button class="btn btn-link" type="button">
-                  <%= space.name %> - <%= space_certs.count %> attendees
+                  <%= space.name %> - <%= space_certs.size %> attendees
                 </button>
               </h2>
             </div>
