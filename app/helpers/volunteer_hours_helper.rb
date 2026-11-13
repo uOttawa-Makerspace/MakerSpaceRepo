@@ -8,11 +8,11 @@ module VolunteerHoursHelper
   def return_approval(approval)
     case approval
     when nil
-      "Not Accessed"
+      t("volunteer_area.hours.approval.pending")
     when true
-      "Approved"
+      t("volunteer_area.hours.approval.approved")
     when false
-      "Not Approved"
+      t("volunteer_area.hours.approval.rejected")
     end
   end
 

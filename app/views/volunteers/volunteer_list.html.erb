@@ -6,26 +6,26 @@
         <ol class="breadcrumb mb-0 small">
           <li class="breadcrumb-item">
             <%= link_to volunteers_path, class: "text-decoration-none text-body-secondary" do %>
-              <i class="fa-solid fa-hand-holding-heart me-1"></i>Volunteers
+              <i class="fa-solid fa-hand-holding-heart me-1"></i><%= t('volunteer_area.shared.volunteers') %>
             <% end %>
           </li>
-          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page">Directory</li>
+          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page"><%= t('volunteer_area.shared.directory') %></li>
         </ol>
       </nav>
       <h1 class="h3 fw-bold text-body-emphasis mb-0 d-flex align-items-center gap-2">
         <i class="fa-solid fa-users text-primary"></i>
-        <span>Volunteer Directory</span>
+        <span><%= t('volunteer_area.shared.volunteer_directory') %></span>
       </h1>
-      <p class="text-body-secondary small mb-0 mt-1">Review active and inactive volunteers, assigned tasks, and certifications.</p>
+      <p class="text-body-secondary small mb-0 mt-1"><%= t('volunteer_area.list.subtitle') %></p>
     </div>
     <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
       <%= link_to emails_volunteers_path, class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center" do %>
         <i class="fa-solid fa-envelope"></i>
-        <span>Email Lists</span>
+        <span><%= t('volunteer_area.shared.email_lists') %></span>
       <% end %>
       <%= link_to volunteer_tasks_path, class: "btn btn-primary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center shadow-sm" do %>
         <i class="fa-solid fa-list-check"></i>
-        <span>Volunteer Tasks</span>
+        <span><%= t('volunteer_area.shared.volunteer_tasks') %></span>
       <% end %>
     </div>
   </div>
@@ -39,7 +39,7 @@
             <i class="fa-solid fa-user-check"></i>
           </div>
           <div>
-            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">Active Volunteers</h6>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1"><%= t('volunteer_area.shared.active_volunteers') %></h6>
             <h2 class="fw-bold text-body-emphasis mb-0"><%= @active_volunteers.size %></h2>
           </div>
         </div>
@@ -52,7 +52,7 @@
             <i class="fa-solid fa-user-clock"></i>
           </div>
           <div>
-            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">Inactive Volunteers</h6>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1"><%= t('volunteer_area.shared.inactive_volunteers') %></h6>
             <h2 class="fw-bold text-body-emphasis mb-0"><%= @unactive_volunteers.size %></h2>
           </div>
         </div>
@@ -70,14 +70,14 @@
             <li class="nav-item" role="presentation">
               <button class="nav-link active fw-semibold d-inline-flex align-items-center gap-2" id="active-tab" data-bs-toggle="pill" data-bs-target="#active-volunteers" type="button" role="tab" aria-controls="active-volunteers" aria-selected="true">
                 <i class="fa-solid fa-circle-check text-success"></i>
-                <span>Active</span>
+                <span><%= t('volunteer_area.list.active') %></span>
                 <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1" data-volunteer-search-target="activeCount"><%= @active_volunteers.size %></span>
               </button>
             </li>
             <li class="nav-item" role="presentation">
               <button class="nav-link fw-semibold d-inline-flex align-items-center gap-2" id="inactive-tab" data-bs-toggle="pill" data-bs-target="#inactive-volunteers" type="button" role="tab" aria-controls="inactive-volunteers" aria-selected="false">
                 <i class="fa-solid fa-circle-pause text-secondary"></i>
-                <span>Inactive</span>
+                <span><%= t('volunteer_area.list.inactive') %></span>
                 <span class="badge bg-secondary-subtle text-body-secondary border border-secondary-subtle rounded-pill ms-1" data-volunteer-search-target="inactiveCount"><%= @unactive_volunteers.size %></span>
               </button>
             </li>
@@ -92,7 +92,7 @@
             </span>
             <input type="text"
                    class="form-control"
-                   placeholder="Search volunteers by name, email, task, cert..."
+                   placeholder="<%= t('volunteer_area.list.search_placeholder') %>"
                    aria-label="<%= t('common.names.search_volunteers') %>"
                    data-volunteer-search-target="input"
                    data-action="input->volunteer-search#filter">
@@ -116,11 +116,11 @@
             <table class="table table-hover align-middle mb-0">
               <thead class="bg-body-secondary border-bottom">
                 <tr class="text-body-secondary small text-uppercase">
-                  <th class="ps-3 ps-md-4 py-3" scope="col">Volunteer</th>
-                  <th class="py-3" scope="col">Contact</th>
-                  <th class="py-3" scope="col">Active Tasks</th>
-                  <th class="py-3" scope="col">Education</th>
-                  <th class="pe-3 pe-md-4 py-3" scope="col">Certifications</th>
+                  <th class="ps-3 ps-md-4 py-3" scope="col"><%= t('volunteer_area.shared.volunteer') %></th>
+                  <th class="py-3" scope="col"><%= t('volunteer_area.list.contact') %></th>
+                  <th class="py-3" scope="col"><%= t('volunteer_area.list.active_tasks') %></th>
+                  <th class="py-3" scope="col"><%= t('volunteer_area.list.education') %></th>
+                  <th class="pe-3 pe-md-4 py-3" scope="col"><%= t('volunteer_area.shared.certifications') %></th>
                 </tr>
               </thead>
               <tbody class="divide-y">
@@ -137,7 +137,7 @@
                             <%= v.name.to_s.titleize %>
                           <% end %>
                           <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small mt-1">
-                            <i class="fa-solid fa-circle fa-2xs me-1"></i>Active
+                            <i class="fa-solid fa-circle fa-2xs me-1"></i><%= t('volunteer_area.list.active') %>
                           </span>
                         </div>
                       </div>
@@ -166,7 +166,7 @@
                           <% end %>
                         </div>
                       <% else %>
-                        <span class="text-body-secondary small fst-italic">No active tasks</span>
+                        <span class="text-body-secondary small fst-italic"><%= t('volunteer_area.list.no_active_tasks') %></span>
                       <% end %>
                     </td>
 
@@ -178,11 +178,11 @@
                         <% end %>
                         <% if v.year_of_study.present? %>
                           <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle small mt-1">
-                            Year <%= v.year_of_study %>
+                            <%= t('volunteer_area.list.year', year: v.year_of_study) %>
                           </span>
                         <% end %>
                         <% if v.program.blank? && v.year_of_study.blank? %>
-                          <span class="text-body-secondary small fst-italic">Not specified</span>
+                          <span class="text-body-secondary small fst-italic"><%= t('volunteer_area.list.not_specified') %></span>
                         <% end %>
                       </div>
                     </td>
@@ -205,7 +205,7 @@
                           <% end %>
                         </div>
                       <% else %>
-                        <span class="text-body-secondary small fst-italic">No certifications</span>
+                        <span class="text-body-secondary small fst-italic"><%= t('volunteer_area.list.no_certifications') %></span>
                       <% end %>
                     </td>
                   </tr>
@@ -219,10 +219,10 @@
             <div class="rounded-circle bg-body-secondary text-body-secondary d-inline-flex align-items-center justify-content-center p-4 fs-1 mb-3">
               <i class="fa-solid fa-magnifying-glass"></i>
             </div>
-            <h5 class="fw-bold text-body-emphasis">No Matching Active Volunteers</h5>
-            <p class="text-body-secondary small mb-3">No active volunteers match your current search query.</p>
+            <h5 class="fw-bold text-body-emphasis"><%= t('volunteer_area.list.no_match_active_title') %></h5>
+            <p class="text-body-secondary small mb-3"><%= t('volunteer_area.list.no_match_active_body') %></p>
             <button type="button" class="btn btn-outline-secondary btn-sm" data-action="click->volunteer-search#clear">
-              <i class="fa-solid fa-rotate-left me-1"></i>Reset Search
+              <i class="fa-solid fa-rotate-left me-1"></i><%= t('volunteer_area.list.reset_search') %>
             </button>
           </div>
         <% else %>
@@ -230,8 +230,8 @@
             <div class="rounded-circle bg-body-secondary text-body-secondary d-inline-flex align-items-center justify-content-center p-4 fs-1 mb-3">
               <i class="fa-solid fa-user-slash"></i>
             </div>
-            <h5 class="fw-bold text-body-emphasis">No Active Volunteers</h5>
-            <p class="text-body-secondary small mb-0">Currently, there are no volunteers marked as active in the program.</p>
+            <h5 class="fw-bold text-body-emphasis"><%= t('volunteer_area.list.none_active_title') %></h5>
+            <p class="text-body-secondary small mb-0"><%= t('volunteer_area.list.none_active_body') %></p>
           </div>
         <% end %>
       </div>
@@ -243,11 +243,11 @@
             <table class="table table-hover align-middle mb-0">
               <thead class="bg-body-secondary border-bottom">
                 <tr class="text-body-secondary small text-uppercase">
-                  <th class="ps-3 ps-md-4 py-3" scope="col">Volunteer</th>
-                  <th class="py-3" scope="col">Contact</th>
-                  <th class="py-3" scope="col">Previous Tasks</th>
-                  <th class="py-3" scope="col">Education</th>
-                  <th class="pe-3 pe-md-4 py-3" scope="col">Certifications</th>
+                  <th class="ps-3 ps-md-4 py-3" scope="col"><%= t('volunteer_area.shared.volunteer') %></th>
+                  <th class="py-3" scope="col"><%= t('volunteer_area.list.contact') %></th>
+                  <th class="py-3" scope="col"><%= t('volunteer_area.list.previous_tasks') %></th>
+                  <th class="py-3" scope="col"><%= t('volunteer_area.list.education') %></th>
+                  <th class="pe-3 pe-md-4 py-3" scope="col"><%= t('volunteer_area.shared.certifications') %></th>
                 </tr>
               </thead>
               <tbody class="divide-y">
@@ -264,7 +264,7 @@
                             <%= v.name.to_s.titleize %>
                           <% end %>
                           <span class="badge bg-secondary-subtle text-body-secondary border border-secondary-subtle rounded-pill small mt-1">
-                            <i class="fa-solid fa-circle fa-2xs me-1"></i>Inactive
+                            <i class="fa-solid fa-circle fa-2xs me-1"></i><%= t('volunteer_area.list.inactive') %>
                           </span>
                         </div>
                       </div>
@@ -290,7 +290,7 @@
                           <% end %>
                         </div>
                       <% else %>
-                        <span class="text-body-secondary small fst-italic">No tasks assigned</span>
+                        <span class="text-body-secondary small fst-italic"><%= t('volunteer_area.list.no_tasks') %></span>
                       <% end %>
                     </td>
 
@@ -302,11 +302,11 @@
                         <% end %>
                         <% if v.year_of_study.present? %>
                           <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle small mt-1">
-                            Year <%= v.year_of_study %>
+                            <%= t('volunteer_area.list.year', year: v.year_of_study) %>
                           </span>
                         <% end %>
                         <% if v.program.blank? && v.year_of_study.blank? %>
-                          <span class="text-body-secondary small fst-italic">Not specified</span>
+                          <span class="text-body-secondary small fst-italic"><%= t('volunteer_area.list.not_specified') %></span>
                         <% end %>
                       </div>
                     </td>
@@ -329,7 +329,7 @@
                           <% end %>
                         </div>
                       <% else %>
-                        <span class="text-body-secondary small fst-italic">No certifications</span>
+                        <span class="text-body-secondary small fst-italic"><%= t('volunteer_area.list.no_certifications') %></span>
                       <% end %>
                     </td>
                   </tr>
@@ -343,10 +343,10 @@
             <div class="rounded-circle bg-body-secondary text-body-secondary d-inline-flex align-items-center justify-content-center p-4 fs-1 mb-3">
               <i class="fa-solid fa-magnifying-glass"></i>
             </div>
-            <h5 class="fw-bold text-body-emphasis">No Matching Inactive Volunteers</h5>
-            <p class="text-body-secondary small mb-3">No inactive volunteers match your current search query.</p>
+            <h5 class="fw-bold text-body-emphasis"><%= t('volunteer_area.list.no_match_inactive_title') %></h5>
+            <p class="text-body-secondary small mb-3"><%= t('volunteer_area.list.no_match_inactive_body') %></p>
             <button type="button" class="btn btn-outline-secondary btn-sm" data-action="click->volunteer-search#clear">
-              <i class="fa-solid fa-rotate-left me-1"></i>Reset Search
+              <i class="fa-solid fa-rotate-left me-1"></i><%= t('volunteer_area.list.reset_search') %>
             </button>
           </div>
         <% else %>
@@ -354,8 +354,8 @@
             <div class="rounded-circle bg-body-secondary text-body-secondary d-inline-flex align-items-center justify-content-center p-4 fs-1 mb-3">
               <i class="fa-solid fa-user-check"></i>
             </div>
-            <h5 class="fw-bold text-body-emphasis">No Inactive Volunteers</h5>
-            <p class="text-body-secondary small mb-0">All registered volunteers are currently active.</p>
+            <h5 class="fw-bold text-body-emphasis"><%= t('volunteer_area.list.none_inactive_title') %></h5>
+            <p class="text-body-secondary small mb-0"><%= t('volunteer_area.list.none_inactive_body') %></p>
           </div>
         <% end %>
       </div>

@@ -1,5 +1,5 @@
 <%= form_with controller: :lockers, url: {action: :price}, method: :put, class: 'mb-3' do |f| %>
-    <%= f.label 'shopifyProductLink', class: 'form-label' do %>
+    <%= f.label :shopifyProductLink, class: 'form-label' do %>
         <%= t('lockers.size_control.product_link_label') %><br />
     <% end %>
 

@@ -58,10 +58,10 @@ class VolunteersController < SessionsController
 
   def join_volunteer_program
     if current_user.staff?
-      flash[:notice] = 'You already have access to the Volunteer Program.'
+      flash[:notice] = I18n.t("volunteer_area.flash.program_already")
     else
       Program.join(current_user, Program::VOLUNTEER)
-      flash[:notice] = "You've joined the Volunteer Program"
+      flash[:notice] = I18n.t("volunteer_area.flash.program_joined")
     end
 
     # Redirect to external HubSpot intake form
@@ -110,8 +110,8 @@ class VolunteersController < SessionsController
   end
 
   def shadowing_shifts
-    @shifts = current_user.shadowing_hours.complete.where('end_time > ?', DateTime.now)
-    @all_shifts = ShadowingHour.complete.includes(:display_user).where('end_time > ?', DateTime.now)
+    @shifts = current_user.shadowing_hours.complete.includes(:space).where('end_time > ?', DateTime.now)
+    @all_shifts = ShadowingHour.complete.includes(:display_user, :space).where('end_time > ?', DateTime.now)
   end
 
   def delete_event
@@ -120,7 +120,7 @@ class VolunteersController < SessionsController
 
     case shift.cancel
     when :removed
-      flash[:notice] = 'This shift has been cancelled.'
+      flash[:notice] = I18n.t("volunteer_area.flash.shift_cancelled")
       redirect_to calendar_volunteers_path
     when :gone then refuse_shift(:shift_not_found)
     else refuse_shift(:shift_not_removed)
@@ -148,7 +148,7 @@ class VolunteersController < SessionsController
 
   def transcript
     unless signed_in?
-      flash[:alert] = 'Please sign in to view your volunteer transcript.'
+      flash[:alert] = I18n.t("volunteer_area.flash.transcript_sign_in")
       redirect_to login_path and return
     end
 
@@ -215,7 +215,7 @@ class VolunteersController < SessionsController
     end
 
     if change.enqueue
-      flash[:notice] = 'The shadowing shift has been added'
+      flash[:notice] = I18n.t("volunteer_area.flash.shift_added")
     else
       flash[:alert] = I18n.t('errors.volunteers.calendar_event_missing')
     end
@@ -224,7 +224,7 @@ class VolunteersController < SessionsController
   def grant_access_list
     unless current_user.admin? || current_user.staff?
       redirect_to root_path
-      flash[:alert] = 'You cannot access this area.'
+      flash[:alert] = I18n.t("volunteer_area.flash.no_access")
     end
   end
 end

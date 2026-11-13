@@ -1,27 +1,27 @@
 <section class="page-contents">
   <div class="text-center">
 
-    <h2>Volunteer hour requests</h2>
-    <h5>Total volunteer hours requests pending: <b><%= @total_volunteer_hour_requests %></b></h5>
+    <h2><%= t('volunteer_area.hours.requests.title') %></h2>
+    <h5><%= t('volunteer_area.hours.requests.pending_total_html', count: @total_volunteer_hour_requests) %></h5>
 
     <% if !@new_volunteer_hour_requests.blank? %>
-      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, tasks, hours, ..." class="form-control mx-auto">
+      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="<%= t('volunteer_area.hours.find_placeholder') %>" class="form-control mx-auto">
 
       <br />
 
-      <h5>Requests pending</h5>
+      <h5><%= t('volunteer_area.hours.requests.pending') %></h5>
 
       <div class="table-responsive">
         <table class="table sessions-table">
 
           <tr>
-            <th>User<span onclick="sortTable('sessions-table', 0)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Date Submitted <span onclick="sortTable('sessions-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Task <span onclick="sortTable('sessions-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Date of Task<span onclick="sortTable('sessions-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Hours Worked <span onclick="sortTable('sessions-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Approve?<span onclick="sortTable('sessions-table', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th class="action-header">Action</th>
+            <th><%= t('volunteer_area.hours.columns.user') %><span onclick="sortTable('sessions-table', 0)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th><%= t('volunteer_area.hours.columns.submitted') %> <span onclick="sortTable('sessions-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th><%= t('volunteer_area.hours.columns.task') %> <span onclick="sortTable('sessions-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th><%= t('volunteer_area.hours.columns.date') %><span onclick="sortTable('sessions-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th><%= t('volunteer_area.hours.columns.hours') %> <span onclick="sortTable('sessions-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th><%= t('volunteer_area.hours.columns.approve') %><span onclick="sortTable('sessions-table', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th class="action-header"><%= t('volunteer_area.hours.columns.action') %></th>
           </tr>
 
           <tbody>
@@ -32,22 +32,22 @@
                 <%= link_to vh.user.name.titleize, user_path(vh.user.username) %>
               </td>
 
-              <td>
-                <%= vh.created_at.strftime('%m/%e/%Y (%b)') %>
+              <td data-sort-as="<%= vh.created_at.iso8601 %>">
+                <%= l(vh.created_at, format: :volunteer_numeric) %>
                 <br>
-                <%= vh.created_at.strftime('%I:%M %p').downcase %>
+                <%= l(vh.created_at, format: :volunteer_clock).downcase %>
               </td>
 
               <td class = "volunteer_task">
                 <%= link_to vh.volunteer_task.title, volunteer_task_path(vh.volunteer_task.id) %>
               </td>
 
-              <td>
-                <%= vh.date_of_task&.strftime('%m/%e/%Y (%b)') %>
+              <td data-sort-as="<%= vh.date_of_task&.iso8601 %>">
+                <%= l(vh.date_of_task, format: :volunteer_numeric) if vh.date_of_task %>
               </td>
 
               <td>
-                <%= vh.total_time %> Hours
+                <%= t('volunteer_area.hours.total_time', hours: vh.total_time) %>
               </td>
 
               <td class="action-cell">
@@ -56,8 +56,8 @@
               </td>
 
               <td class="action-cell">
-                <%= link_to 'Edit', edit_volunteer_hour_path(vh.id), class: 'd-block w-100 visit-button mb-1 mt-0' %>
-                <%= button_to 'Delete', { action: :destroy, id: vh.id }, method: :delete, **confirmation_options(t('confirmations.volunteer_hours.delete')), class: 'd-block w-100 destroy-button mb-1 me-0' %>
+                <%= link_to t('volunteer_area.shared.edit'), edit_volunteer_hour_path(vh.id), class: 'd-block w-100 visit-button mb-1 mt-0' %>
+                <%= button_to t('common.delete'), { action: :destroy, id: vh.id }, method: :delete, **confirmation_options(t('confirmations.volunteer_hours.delete')), class: 'd-block w-100 destroy-button mb-1 me-0' %>
               </td>
 
             </tr>
@@ -68,15 +68,15 @@
 
     <% else %>
       <div class="m-5">
-        🎉Congratz! Your work is done! No more requests today. 🎉
+        <%= t('volunteer_area.hours.requests.none_pending') %>
       </div>
     <% end %>
 
-    <h5>Requests processed</h5>
+    <h5><%= t('volunteer_area.hours.requests.processed') %></h5>
 
     <% if !@old_volunteer_hour_requests.blank? %>
 
-      <input type="text" id="query-2" onkeyup="findSession('sessions-table-2', 'query-2')" placeholder="Find by: date, tasks, hours, ..." class="form-control mx-auto">
+      <input type="text" id="query-2" onkeyup="findSession('sessions-table-2', 'query-2')" placeholder="<%= t('volunteer_area.hours.find_placeholder') %>" class="form-control mx-auto">
 
       <br />
 
@@ -84,13 +84,13 @@
         <table class="table table-primary table-striped sessions-table-2">
 
           <tr>
-            <th>User<span onclick="sortTable('sessions-table-2', 0)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Date Submitted <span onclick="sortTable('sessions-table-2', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Task <span onclick="sortTable('sessions-table-2', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Date of Task<span onclick="sortTable('sessions-table-2', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Hours Worked <span onclick="sortTable('sessions-table-2', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Approved?<span onclick="sortTable('sessions-table-2', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th class="action-header">Action</th>
+            <th><%= t('volunteer_area.hours.columns.user') %><span onclick="sortTable('sessions-table-2', 0)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th><%= t('volunteer_area.hours.columns.submitted') %> <span onclick="sortTable('sessions-table-2', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th><%= t('volunteer_area.hours.columns.task') %> <span onclick="sortTable('sessions-table-2', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th><%= t('volunteer_area.hours.columns.date') %><span onclick="sortTable('sessions-table-2', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th><%= t('volunteer_area.hours.columns.hours') %> <span onclick="sortTable('sessions-table-2', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th><%= t('volunteer_area.hours.columns.approved') %><span onclick="sortTable('sessions-table-2', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th class="action-header"><%= t('volunteer_area.hours.columns.action') %></th>
           </tr>
 
           <tbody>
@@ -101,22 +101,22 @@
                 <%= link_to vh.user.name.titleize, user_path(vh.user.username) %>
               </td>
 
-              <td>
-                <%= vh.created_at.strftime('%m/%e/%Y (%b)') %>
+              <td data-sort-as="<%= vh.created_at.iso8601 %>">
+                <%= l(vh.created_at, format: :volunteer_numeric) %>
                 <br>
-                <%= vh.created_at.strftime('%I:%M %p').downcase %>
+                <%= l(vh.created_at, format: :volunteer_clock).downcase %>
               </td>
 
               <td class = "volunteer_task">
                   <%= link_to vh.volunteer_task.title, volunteer_task_path(vh.volunteer_task.id) %>
               </td>
 
-              <td>
-                <%= vh.date_of_task&.strftime('%m/%e/%Y (%b)') %>
+              <td data-sort-as="<%= vh.date_of_task&.iso8601 %>">
+                <%= l(vh.date_of_task, format: :volunteer_numeric) if vh.date_of_task %>
               </td>
 
               <td>
-                <%= vh.total_time %> Hours
+                <%= t('volunteer_area.hours.total_time', hours: vh.total_time) %>
               </td>
 
               <td>
@@ -124,8 +124,8 @@
               </td>
 
               <td class="action-cell">
-                <%= link_to 'Edit', edit_volunteer_hour_path(vh.id), class: 'd-block w-100 visit-button mb-1 mt-0' %>
-                <%= button_to 'Delete', { action: :destroy, id: vh.id }, method: :delete, **confirmation_options(t('confirmations.volunteer_hours.delete')), class: 'd-block w-100 destroy-button mb-1 me-0' %>
+                <%= link_to t('volunteer_area.shared.edit'), edit_volunteer_hour_path(vh.id), class: 'd-block w-100 visit-button mb-1 mt-0' %>
+                <%= button_to t('common.delete'), { action: :destroy, id: vh.id }, method: :delete, **confirmation_options(t('confirmations.volunteer_hours.delete')), class: 'd-block w-100 destroy-button mb-1 me-0' %>
               </td>
 
             </tr>
@@ -134,7 +134,7 @@
         </table>
     <% else %>
       <div class="m-5">
-        No requests processed yet.
+        <%= t('volunteer_area.hours.requests.none_processed') %>
       </div>
     <% end %>
     </div>

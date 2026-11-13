@@ -51,7 +51,7 @@ class VolunteerTasksController < SessionsController
     @volunteer_task = VolunteerTask.new
     @volunteer_task.user_id = @user.try(:id)
     if save_task_with_photos(@volunteer_task)
-      redirect_to volunteer_tasks_path, notice: "You've successfully created a new Volunteer Task"
+      redirect_to volunteer_tasks_path, notice: I18n.t("volunteer_area.flash.task_created")
     else
       redirect_to new_volunteer_task_path, alert: task_refusal(@volunteer_task)
     end
@@ -92,7 +92,10 @@ class VolunteerTasksController < SessionsController
   end
 
   def my_tasks
-    @your_volunteer_tasks = current_user.get_volunteer_tasks_from_volunteer_joins
+    @your_volunteer_tasks = current_user.volunteer_task_joins.joined
+                                        .includes(volunteer_task: [:space, { require_trainings: :training }])
+                                        .map(&:volunteer_task)
+    @under_review_task_ids = current_user.volunteer_task_requests.not_processed.pluck(:volunteer_task_id).to_set
     @completed_task_requests = current_user.volunteer_task_requests
                                            .processed
                                            .approved
@@ -126,7 +129,7 @@ class VolunteerTasksController < SessionsController
   def update
     volunteer_task = VolunteerTask.find(params[:id])
     if save_task_with_photos(volunteer_task)
-      redirect_to volunteer_tasks_path, notice: "Volunteer task updated"
+      redirect_to volunteer_tasks_path, notice: I18n.t("volunteer_area.flash.task_updated")
     else
       redirect_to edit_volunteer_task_path(volunteer_task), alert: task_refusal(volunteer_task)
     end
@@ -135,9 +138,9 @@ class VolunteerTasksController < SessionsController
   def destroy
     volunteer_task = VolunteerTask.find(params[:id])
     if volunteer_task.destroy
-      flash[:notice] = "Volunteer Task Deleted"
+      flash[:notice] = I18n.t("volunteer_area.flash.task_deleted")
     else
-      flash[:alert] = volunteer_task.errors.full_messages.to_sentence.presence || "Something went wrong"
+      flash[:alert] = volunteer_task.errors.full_messages.to_sentence.presence || I18n.t("volunteer_area.flash.task_not_deleted")
     end
     redirect_to volunteer_tasks_path
   end
@@ -167,7 +170,7 @@ class VolunteerTasksController < SessionsController
     task = VolunteerTask.find(params[:id])
     return if current_user.staff? || (task.user_id.present? && task.user_id == current_user.id)
 
-    flash[:alert] = "You cannot access this area."
+    flash[:alert] = I18n.t("volunteer_area.flash.no_access")
     redirect_to root_path
   end
 

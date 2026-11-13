@@ -33,7 +33,7 @@ module VolunteerAreaAccess
   end
 
   def deny_volunteer_area
-    flash[:alert] = "You cannot access this area."
+    flash[:alert] = I18n.t("volunteer_area.flash.no_access")
     redirect_to root_path
   end
 end

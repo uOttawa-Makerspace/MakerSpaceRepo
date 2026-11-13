@@ -6,31 +6,31 @@
         <ol class="breadcrumb mb-0 small">
           <li class="breadcrumb-item">
             <%= link_to volunteer_tasks_path, class: "text-decoration-none text-body-secondary" do %>
-              <i class="fa-solid fa-hand-holding-heart me-1"></i>Volunteer Tasks
+              <i class="fa-solid fa-hand-holding-heart me-1"></i><%= t('volunteer_area.shared.volunteer_tasks') %>
             <% end %>
           </li>
           <li class="breadcrumb-item">
             <%= link_to volunteer_task_path(@volunteer_task), class: "text-decoration-none text-body-secondary" do %>
-              <%= truncate(@volunteer_task.title.presence || "Task ##{@volunteer_task.id}", length: 25) %>
+              <%= truncate(@volunteer_task.title.presence || t('volunteer_area.shared.task_number', id: @volunteer_task.id), length: 25) %>
             <% end %>
           </li>
-          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page">Edit</li>
+          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page"><%= t('volunteer_area.shared.edit') %></li>
         </ol>
       </nav>
       <h1 class="h3 fw-bold text-body-emphasis mb-0 d-flex align-items-center gap-2">
         <i class="fa-solid fa-pen-to-square text-primary"></i>
-        <span>Edit Volunteer Task</span>
+        <span><%= t('volunteer_area.tasks.form.edit_title') %></span>
       </h1>
-      <p class="text-body-secondary small mb-0 mt-1">Update task parameters, requirements, photos, and team member assignments.</p>
+      <p class="text-body-secondary small mb-0 mt-1"><%= t('volunteer_area.tasks.form.edit_subtitle') %></p>
     </div>
     <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
       <%= link_to volunteer_task_path(@volunteer_task), class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center" do %>
         <i class="fa-solid fa-eye"></i>
-        <span>View Task</span>
+        <span><%= t('volunteer_area.tasks.form.view_task') %></span>
       <% end %>
       <%= link_to volunteer_tasks_path, class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center" do %>
         <i class="fa-solid fa-arrow-left"></i>
-        <span>Back to List</span>
+        <span><%= t('volunteer_area.tasks.form.back_to_list') %></span>
       <% end %>
     </div>
   </div>
@@ -47,7 +47,7 @@
             <div class="card-header bg-body-tertiary border-bottom py-3 px-3 px-md-4">
               <h5 class="card-title fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
                 <i class="fa-solid fa-clipboard-list text-primary"></i>
-                <span>Task Overview</span>
+                <span><%= t('volunteer_area.shared.task_overview') %></span>
               </h5>
             </div>
             <div class="card-body p-3 p-md-4">
@@ -55,50 +55,50 @@
                 <!-- Task Title -->
                 <div class="col-12">
                   <%= f.label :title, class: 'form-label fw-semibold text-body' do %>
-                    Task Title <span class="text-danger">*</span>
+                    <%= t('volunteer_area.tasks.form.title') %> <span class="text-danger">*</span>
                   <% end %>
                   <div class="input-group">
                     <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
                       <i class="fa-solid fa-heading"></i>
                     </span>
-                    <%= f.text_field :title, placeholder: 'e.g., Workshop Tool Inventory & Calibration', class: 'form-control form-control-lg', required: true %>
-                    <div class="invalid-feedback">Please enter a task title.</div>
+                    <%= f.text_field :title, placeholder: t('volunteer_area.tasks.form.title_placeholder'), class: 'form-control form-control-lg', required: true %>
+                    <div class="invalid-feedback"><%= t('volunteer_area.tasks.form.title_missing') %></div>
                   </div>
                 </div>
 
                 <!-- Category -->
                 <div class="col-12 col-sm-6">
                   <%= f.label :category, class: 'form-label fw-semibold text-body' do %>
-                    Category <span class="text-danger">*</span>
+                    <%= t('volunteer_area.tasks.form.category') %> <span class="text-danger">*</span>
                   <% end %>
                   <div class="input-group">
                     <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
                       <i class="fa-solid fa-tags"></i>
                     </span>
-                    <%= f.select :category, options_for_select(@tasks_categories, @volunteer_task.category), { prompt: 'Select category...' }, { class: 'form-select', required: true } %>
+                    <%= f.select :category, options_for_select(task_category_options(@tasks_categories), @volunteer_task.category), { prompt: t('volunteer_area.tasks.form.category_prompt') }, { class: 'form-select', required: true } %>
                   </div>
                 </div>
 
                 <!-- Space -->
                 <div class="col-12 col-sm-6">
                   <%= f.label :space_id, class: 'form-label fw-semibold text-body' do %>
-                    Space Location <span class="text-danger">*</span>
+                    <%= t('volunteer_area.shared.space_location') %> <span class="text-danger">*</span>
                   <% end %>
                   <div class="input-group">
                     <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
                       <i class="fa-solid fa-location-dot"></i>
                     </span>
-                    <%= f.collection_select :space_id, Space.all.order(name: :asc), :id, ->(s) { s.name.capitalize }, { prompt: 'Select Space...' }, { class: 'form-select', required: true } %>
+                    <%= f.collection_select :space_id, Space.all.order(name: :asc), :id, ->(s) { s.name.capitalize }, { prompt: t('volunteer_area.tasks.form.space_prompt') }, { class: 'form-select', required: true } %>
                   </div>
                 </div>
 
                 <!-- Description -->
                 <div class="col-12">
                   <%= f.label :description, class: 'form-label fw-semibold text-body' do %>
-                    Description <span class="text-danger">*</span>
+                    <%= t('volunteer_area.tasks.form.description') %> <span class="text-danger">*</span>
                   <% end %>
-                  <%= f.text_area :description, rows: 5, placeholder: 'Provide clear instructions, prerequisites, and expected outcomes...', class: 'form-control', required: true %>
-                  <div class="invalid-feedback">Please provide a description.</div>
+                  <%= f.text_area :description, rows: 5, placeholder: t('volunteer_area.tasks.form.description_placeholder_edit'), class: 'form-control', required: true %>
+                  <div class="invalid-feedback"><%= t('volunteer_area.tasks.form.description_missing') %></div>
                 </div>
               </div>
             </div>
@@ -109,23 +109,23 @@
             <div class="card-header bg-body-tertiary border-bottom py-3 px-3 px-md-4">
               <h5 class="card-title fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
                 <i class="fa-solid fa-images text-primary"></i>
-                <span>Task Photos</span>
+                <span><%= t('volunteer_area.tasks.form.task_photos') %></span>
               </h5>
             </div>
             <div class="card-body p-3 p-md-4">
               <!-- Existing Images Gallery -->
               <% if @volunteer_task.photos.any? %>
-                <label class="form-label fw-semibold text-body mb-2">Current Attached Images</label>
+                <label class="form-label fw-semibold text-body mb-2"><%= t('volunteer_area.tasks.form.current_images') %></label>
                 <div id="image-container" class="row g-2 mb-3">
                   <% @volunteer_task.photos.each do |img| %>
                     <div class="col-6 col-sm-4 col-md-3 image-item">
                       <div class="card h-100 border border-secondary-subtle overflow-hidden">
                         <div class="ratio ratio-4x3 bg-body-secondary">
-                          <%= image_tag img.image, alt: @volunteer_task.title.presence || 'Task photo', class: 'object-fit-cover' %>
+                          <%= image_tag img.image, alt: @volunteer_task.title.presence || t('volunteer_area.tasks.form.task_photo'), class: 'object-fit-cover' %>
                         </div>
                         <div class="card-footer p-1 bg-body-tertiary text-center border-top">
-                          <span id="<%= img.image.filename %>" class="image-remove btn btn-sm btn-outline-danger w-100 py-1" role="button" title="Remove image">
-                            <i class="fa-solid fa-trash-can me-1"></i>Remove
+                          <span id="<%= img.image.filename %>" class="image-remove btn btn-sm btn-outline-danger w-100 py-1" role="button" title="<%= t('volunteer_area.tasks.form.remove_image') %>">
+                            <i class="fa-solid fa-trash-can me-1"></i><%= t('common.remove') %>
                           </span>
                         </div>
                       </div>
@@ -139,7 +139,7 @@
               <div class="col-12">
                 <%= label_tag :task_images, class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
                   <i class="fa-solid fa-cloud-arrow-up text-info"></i>
-                  <span>Upload Additional Photos</span>
+                  <span><%= t('volunteer_area.tasks.form.upload_photos') %></span>
                 <% end %>
                 <div class="input-group">
                   <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
@@ -148,7 +148,7 @@
                   <%= file_field_tag 'images[]', multiple: true, accept: 'image/png,image/jpeg,image/gif,image/svg+xml,image/x-icon', class: 'form-control', id: 'task_images' %>
                 </div>
                 <div class="form-text text-body-secondary mt-1">
-                  Allowed formats: JPEG, PNG, GIF, SVG, ICO (up to 5 photos total).
+                  <%= t('volunteer_area.tasks.form.images_hint_edit') %>
                 </div>
               </div>
             </div>
@@ -159,12 +159,12 @@
             <div class="card-header bg-body-tertiary border-bottom py-3 px-3 px-md-4">
               <h5 class="card-title fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
                 <i class="fa-solid fa-award text-primary"></i>
-                <label for="task_certifications" id="task_certifications_label">Required Certifications</label>
+                <label for="task_certifications" id="task_certifications_label"><%= t('volunteer_area.tasks.form.required_certifications') %></label>
               </h5>
             </div>
             <div class="card-body p-3 p-md-4">
-              <p class="text-body-secondary small mb-2">Select all required qualifications (hold <kbd class="bg-body-secondary text-body">Ctrl</kbd>/<kbd class="bg-body-secondary text-body">Cmd</kbd> on desktop to select multiple):</p>
-              <%= select_tag :certifications_id, options_from_collection_for_select(@certifications, 'id', 'name', selected: @volunteer_task.require_trainings.pluck(:training_id)), multiple: true, id: 'task_certifications', class: 'form-select', size: 4, aria: { labelledby: 'task_certifications_label' } %>
+              <p class="text-body-secondary small mb-2"><%= t('volunteer_area.tasks.form.certifications_hint_edit_html') %></p>
+              <%= select_tag :certifications_id, options_from_collection_for_select(@certifications, 'id', 'localized_name', selected: @volunteer_task.require_trainings.pluck(:training_id)), multiple: true, id: 'task_certifications', class: 'form-select', size: 4, aria: { labelledby: 'task_certifications_label' } %>
             </div>
           </div>
 
@@ -180,23 +180,23 @@
             <div class="card-header bg-body-tertiary border-bottom py-3 px-3 px-md-4">
               <h5 class="card-title fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
                 <i class="fa-solid fa-sliders text-primary"></i>
-                <span>Task Settings</span>
+                <span><%= t('volunteer_area.tasks.form.settings') %></span>
               </h5>
             </div>
             <div class="card-body p-3 p-md-4">
               <div class="row g-3">
                 <!-- Status -->
                 <div class="col-12">
-                  <label class="form-label fw-semibold text-body mb-2">Task Status</label>
+                  <label class="form-label fw-semibold text-body mb-2"><%= t('volunteer_area.tasks.form.task_status') %></label>
                   <div class="btn-group w-100" role="group" aria-label="<%= t('common.names.task_status') %>">
                     <%= f.radio_button :status, 'open', class: 'btn-check', id: 'status_open' %>
                     <label class="btn btn-outline-success d-flex align-items-center justify-content-center gap-2 py-2" for="status_open">
-                      <i class="fa-solid fa-lock-open"></i> Open
+                      <i class="fa-solid fa-lock-open"></i> <%= t('volunteer_area.tasks.form.open') %>
                     </label>
 
                     <%= f.radio_button :status, 'completed', class: 'btn-check', id: 'status_completed' %>
                     <label class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2 py-2" for="status_completed">
-                      <i class="fa-solid fa-check"></i> Completed
+                      <i class="fa-solid fa-check"></i> <%= t('volunteer_area.shared.completed') %>
                     </label>
                   </div>
                 </div>
@@ -205,37 +205,37 @@
 
                 <!-- Joins Capacity -->
                 <div class="col-12">
-                  <%= f.label :joins, 'Volunteer Capacity (Joins)', class: 'form-label fw-semibold text-body' %>
+                  <%= f.label :joins, t('volunteer_area.tasks.form.capacity'), class: 'form-label fw-semibold text-body' %>
                   <div class="input-group">
                     <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
                       <i class="fa-solid fa-users"></i>
                     </span>
                     <%= f.number_field :joins, min: 1, class: 'form-control', required: true %>
-                    <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">person(s)</span>
+                    <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle"><%= t('volunteer_area.tasks.form.people') %></span>
                   </div>
                 </div>
 
                 <!-- Hours -->
                 <div class="col-12 col-sm-6 col-lg-12">
-                  <%= f.label :hours, 'Estimated Hours', class: 'form-label fw-semibold text-body' %>
+                  <%= f.label :hours, t('volunteer_area.tasks.form.hours'), class: 'form-label fw-semibold text-body' %>
                   <div class="input-group">
                     <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
                       <i class="fa-regular fa-clock"></i>
                     </span>
                     <%= f.number_field :hours, step: '0.01', min: '0', placeholder: '0.00', class: 'form-control' %>
-                    <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">hrs</span>
+                    <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle"><%= t('volunteer_area.tasks.form.hrs') %></span>
                   </div>
                 </div>
 
                 <!-- CCs -->
                 <div class="col-12 col-sm-6 col-lg-12">
-                  <%= f.label :cc, 'Community Credits (CCs)', class: 'form-label fw-semibold text-body' %>
+                  <%= f.label :cc, t('volunteer_area.tasks.form.cc'), class: 'form-label fw-semibold text-body' %>
                   <div class="input-group">
                     <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
                       <i class="fa-solid fa-coins"></i>
                     </span>
                     <%= f.number_field :cc, min: '0', placeholder: '0', class: 'form-control' %>
-                    <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">CCs</span>
+                    <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle"><%= t('volunteer_area.tasks.form.ccs') %></span>
                   </div>
                 </div>
               </div>
@@ -247,7 +247,7 @@
             <div class="card-header bg-body-tertiary border-bottom py-3 px-3 px-md-4">
               <h5 class="card-title fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
                 <i class="fa-solid fa-users-gear text-primary"></i>
-                <span>Team Assignments</span>
+                <span><%= t('volunteer_area.tasks.form.team_assignments') %></span>
               </h5>
             </div>
             <div class="card-body p-3 p-md-4">
@@ -256,9 +256,9 @@
                 <div class="col-12">
                   <%= label_tag :staff_id, id: 'staff_id_label', class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
                     <i class="fa-solid fa-user-plus text-success"></i>
-                    <span>Add Staff Lead(s)</span>
+                    <span><%= t('volunteer_area.tasks.form.add_staff') %></span>
                   <% end %>
-                  <%= select_tag :staff_id, options_from_collection_for_select(@staff_available, 'id', 'name'), prompt: 'Choose staff to assign...', class: 'form-select', multiple: true, size: 2, aria: { labelledby: 'staff_id_label' } %>
+                  <%= select_tag :staff_id, options_from_collection_for_select(@staff_available, 'id', 'name'), prompt: t('volunteer_area.tasks.form.add_staff_prompt'), class: 'form-select', multiple: true, size: 2, aria: { labelledby: 'staff_id_label' } %>
                 </div>
 
                 <!-- Remove Staff -->
@@ -266,9 +266,9 @@
                   <div class="col-12">
                     <%= label_tag :remove_staff_id, id: 'remove_staff_id_label', class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
                       <i class="fa-solid fa-user-minus text-danger"></i>
-                      <span>Remove Assigned Staff</span>
+                      <span><%= t('volunteer_area.tasks.form.remove_staff') %></span>
                     <% end %>
-                    <%= select_tag :remove_staff_id, options_from_collection_for_select(@staff_in_task, 'id', 'name'), prompt: 'Select staff to remove...', class: 'form-select border-danger-subtle', multiple: true, size: 2, aria: { labelledby: 'remove_staff_id_label' } %>
+                    <%= select_tag :remove_staff_id, options_from_collection_for_select(@staff_in_task, 'id', 'name'), prompt: t('volunteer_area.tasks.form.remove_staff_prompt'), class: 'form-select border-danger-subtle', multiple: true, size: 2, aria: { labelledby: 'remove_staff_id_label' } %>
                   </div>
                 <% end %>
 
@@ -278,9 +278,9 @@
                 <div class="col-12">
                   <%= label_tag :volunteer_id, id: 'volunteer_id_label', class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
                     <i class="fa-solid fa-hand-holding-heart text-success"></i>
-                    <span>Add Volunteer(s)</span>
+                    <span><%= t('volunteer_area.tasks.form.add_volunteers') %></span>
                   <% end %>
-                  <%= select_tag :volunteer_id, options_from_collection_for_select(@volunteers_available, 'id', 'name'), prompt: 'Choose volunteers to add...', class: 'form-select', multiple: true, size: 2, aria: { labelledby: 'volunteer_id_label' } %>
+                  <%= select_tag :volunteer_id, options_from_collection_for_select(@volunteers_available, 'id', 'name'), prompt: t('volunteer_area.tasks.form.add_volunteers_prompt'), class: 'form-select', multiple: true, size: 2, aria: { labelledby: 'volunteer_id_label' } %>
                 </div>
 
                 <!-- Remove Volunteer -->
@@ -288,9 +288,9 @@
                   <div class="col-12">
                     <%= label_tag :remove_volunteer_id, id: 'remove_volunteer_id_label', class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
                       <i class="fa-solid fa-user-xmark text-danger"></i>
-                      <span>Remove Assigned Volunteer</span>
+                      <span><%= t('volunteer_area.tasks.form.remove_volunteer') %></span>
                     <% end %>
-                    <%= select_tag :remove_volunteer_id, options_from_collection_for_select(@volunteers_in_task, 'id', 'name'), prompt: 'Select volunteer to remove...', class: 'form-select border-danger-subtle', multiple: true, size: 2, aria: { labelledby: 'remove_volunteer_id_label' } %>
+                    <%= select_tag :remove_volunteer_id, options_from_collection_for_select(@volunteers_in_task, 'id', 'name'), prompt: t('volunteer_area.tasks.form.remove_volunteer_prompt'), class: 'form-select border-danger-subtle', multiple: true, size: 2, aria: { labelledby: 'remove_volunteer_id_label' } %>
                   </div>
                 <% end %>
               </div>
@@ -303,10 +303,10 @@
               <div class="d-grid gap-2">
                 <%= f.button type: :submit, class: 'btn btn-primary btn-lg fw-semibold d-flex align-items-center justify-content-center gap-2 shadow-sm' do %>
                   <i class="fa-solid fa-check"></i>
-                  <span>Update Task</span>
+                  <span><%= t('volunteer_area.tasks.form.update_task') %></span>
                 <% end %>
                 <%= link_to volunteer_task_path(@volunteer_task), class: 'btn btn-outline-secondary d-flex align-items-center justify-content-center' do %>
-                  Cancel
+                  <%= t('volunteer_area.shared.cancel') %>
                 <% end %>
               </div>
             </div>

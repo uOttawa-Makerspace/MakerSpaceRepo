@@ -13,7 +13,8 @@
         assigned_volunteers = joined_joins.select { |j| j.user_type == "Volunteer" }
         responsible_staff = vt.responsible_staff_joins
         cert_names = vt.require_trainings.map { |r| r.training&.localized_name }.compact.join(', ')
-        searchable_text = "#{vt.title} #{vt.category} #{vt.space.try(:name)} #{vt.description} #{cert_names}".downcase
+        categories = [vt.category, task_category_name(vt.category)].uniq.join(" ")
+        searchable_text = "#{vt.title} #{categories} #{vt.space.try(:name)} #{vt.description} #{cert_names}".downcase
       %>
       <div class="col-12 col-md-6 col-lg-4 task-item-card-col"
            data-searchable-text="<%= searchable_text %>"
@@ -26,9 +27,9 @@
           <div class="card-body p-4 pb-2">
             <!-- Header Badges -->
             <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
-              <span class="badge bg-body-secondary text-body-secondary border text-uppercase"><%= vt.category.capitalize %></span>
+              <span class="badge bg-body-secondary text-body-secondary border text-uppercase"><%= task_category_name(vt.category, vt.category.capitalize) %></span>
               <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
-                <i class="fa fa-map-marker me-1"></i><%= vt.space.try(:name)&.capitalize || 'General' %>
+                <i class="fa fa-map-marker me-1"></i><%= vt.space.try(:name)&.capitalize || t('volunteer_area.shared.general') %>
               </span>
             </div>
 
@@ -39,15 +40,15 @@
 
             <!-- CC & Hours Badge -->
             <div class="d-inline-flex align-items-center bg-body-tertiary border rounded-pill px-2 py-1 mb-3">
-              <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs me-1', id: 'myCcBlack', style: 'width: 14px; height: 14px;' %>
-              <span class="fw-bold me-2 text-primary"><%= vt.cc %> CC</span>
-              <span class="text-body-secondary small">• <%= vt.hours %> hrs</span>
+              <%= vite_image_tag 'images/cc.png', alt: t('volunteer_area.shared.cc'), class: 'ccs me-1', id: 'myCcBlack', style: 'width: 14px; height: 14px;' %>
+              <span class="fw-bold me-2 text-primary"><%= t('volunteer_area.shared.cc_amount', cc: vt.cc) %></span>
+              <span class="text-body-secondary small">• <%= t('volunteer_area.shared.hours_short', hours: vt.hours) %></span>
             </div>
 
             <!-- Prerequisites / Certifications -->
             <div class="mb-3">
               <span class="small text-body-secondary d-block mb-1">
-                <i class="fa fa-certificate me-1 text-ceed-orange"></i>Prerequisites:
+                <i class="fa fa-certificate me-1 text-ceed-orange"></i><%= t('volunteer_area.tasks.card.prerequisites') %>
               </span>
               <% if vt.require_trainings.present? %>
                 <div class="d-flex flex-wrap gap-1">
@@ -56,7 +57,7 @@
                   <% end %>
                 </div>
               <% else %>
-                <span class="badge bg-success-subtle text-success border border-success-subtle">No Certifications Required</span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle"><%= t('volunteer_area.tasks.card.no_certifications_required') %></span>
               <% end %>
             </div>
           </div>
@@ -65,7 +66,7 @@
           <div class="card-footer bg-transparent border-top p-4 pt-3 mt-auto">
             <div class="d-flex justify-content-between align-items-center mb-3 small">
               <div class="text-truncate me-2">
-                <span class="text-body-secondary">Staff:</span>
+                <span class="text-body-secondary"><%= t('volunteer_area.tasks.card.staff') %></span>
                 <% if responsible_staff.present? %>
                   <strong class="text-body"><%= responsible_staff.first.user.name.titleize %></strong>
                 <% else %>
@@ -75,15 +76,15 @@
               <div class="flex-shrink-0">
                 <% if vt.status == "completed" %>
                   <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle px-2 py-1">
-                    <i class="fa fa-check me-1"></i> Completed
+                    <i class="fa fa-check me-1"></i> <%= t('volunteer_area.shared.completed') %>
                   </span>
                 <% elsif assigned_volunteers.present? %>
                   <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">
-                    <i class="fa fa-user me-1"></i> Assigned (<%= assigned_volunteers.count %>)
+                    <i class="fa fa-user me-1"></i> <%= t('volunteer_area.tasks.card.assigned', count: assigned_volunteers.count) %>
                   </span>
                 <% else %>
                   <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
-                    <i class="fa fa-unlock me-1"></i> Available
+                    <i class="fa fa-unlock me-1"></i> <%= t('volunteer_area.shared.available') %>
                   </span>
                 <% end %>
               </div>
@@ -91,7 +92,7 @@
 
             <!-- Actions (Students can ONLY view details) -->
             <div class="d-flex gap-2">
-              <%= link_to 'View Details', volunteer_task_path(vt.id), class: 'btn btn-outline-ceed btn-sm w-100 rounded-pill fw-bold' %>
+              <%= link_to t('volunteer_area.tasks.card.view_details'), volunteer_task_path(vt.id), class: 'btn btn-outline-ceed btn-sm w-100 rounded-pill fw-bold' %>
 
               <% if current_user.staff? %>
                 <div class="dropdown">
@@ -99,10 +100,10 @@
                     <i class="fa fa-ellipsis-v"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end shadow border">
-                    <li><%= link_to 'Edit / Assign', edit_volunteer_task_path(vt.id), class: 'dropdown-item small' %></li>
+                    <li><%= link_to t('volunteer_area.shared.edit_assign'), edit_volunteer_task_path(vt.id), class: 'dropdown-item small' %></li>
                     <li><hr class="dropdown-divider my-1"></li>
                     <li>
-                      <%= button_to 'Delete', volunteer_task_path(vt.id), method: :delete,
+                      <%= button_to t('common.delete'), volunteer_task_path(vt.id), method: :delete,
                                     **confirmation_options(t('confirmations.volunteer_tasks.delete')),
                                     class: 'dropdown-item text-danger small' %>
                     </li>
