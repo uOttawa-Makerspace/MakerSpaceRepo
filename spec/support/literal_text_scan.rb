@@ -13,9 +13,11 @@ module LiteralTextScan
   /x
 
   # Markup with ERB output, comments, scripts, tags and entities removed leaves only visible text.
+  # A path shown as written (such as /learning_area/s/) is the same in every language.
   def self.visible_literals(source)
     stripped = source.gsub(/<%#.*?%>/m, "").gsub(/<%.*?%>/m, " ").gsub(%r{<script.*?</script>}m, "")
-    stripped.gsub(/<[^>]*>/m, " ").gsub(/&\w+;/, " ").split(/\s+/).grep(/[[:alpha:]]/) - ALLOWED_LITERALS
+    words = stripped.gsub(/<[^>]*>/m, " ").gsub(/&\w+;/, " ").split(/\s+/).grep(/[[:alpha:]]/)
+    words.grep_v(%r{\A/[\w/]*\z}) - ALLOWED_LITERALS
   end
 
   # Text-bearing HTML attributes written out in the markup, such as alt="Logo" or placeholder="Email".

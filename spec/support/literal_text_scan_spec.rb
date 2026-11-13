@@ -34,4 +34,9 @@ RSpec.describe LiteralTextScan do
     expect(described_class.visible_literals("<p>Hello <%= name %></p>")).to eq(["Hello"])
     expect(described_class.visible_literals("<p><%= t('x') %></p>")).to eq([])
   end
+
+  it "ignores a path shown as written but not words around it" do
+    expect(described_class.visible_literals("<code>/learning_area/s/</code>")).to eq([])
+    expect(described_class.visible_literals("<p>Go to /help now</p>")).to eq(%w[Go to now])
+  end
 end

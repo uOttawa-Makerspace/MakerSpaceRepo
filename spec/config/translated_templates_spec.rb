@@ -44,6 +44,17 @@ RSpec.describe "Translated templates" do
     app/views/staff_dashboard/_flag_list.html.erb
     app/views/staff_dashboard/_no_assigned_spaces.html.erb
     app/views/staff_dashboard/_table_broadcast.turbo_stream.erb
+    app/views/learning_area/index.html.erb
+    app/views/learning_area/show.html.erb
+    app/views/learning_area/new.html.erb
+    app/views/learning_area/edit.html.erb
+    app/views/learning_area/subskill.html.erb
+    app/views/learning_area/_form.html.erb
+    app/views/learning_area/_content.html.erb
+    app/views/learning_area/_learning_module_card.html.erb
+    app/views/learning_area/_scorm.html.erb
+    app/views/learning_area/_scorm_problem.html.erb
+    app/views/learning_module_track/index.html.erb
   ].freeze
 
   TRANSLATED_TEMPLATES.each do |path|

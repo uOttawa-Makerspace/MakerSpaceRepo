@@ -59,6 +59,19 @@ RSpec.describe "Learning module tracks", type: :request do
       expect(response.body).to include("Modules finished : 1 / 2")
       expect(response.body).to include("Todo one")
     end
+
+    it "shows a badge with the training and level for each of the user's certifications" do
+      signed = sign_in_as(:regular)
+      { "Beginner" => "Badge training one", "Advanced" => "Badge training two" }.each do |level, name|
+        training = create(:training, name_en: name)
+        session = create(:training_session, training: training, level: level)
+        create(:certification, user: signed, training: training, training_session: session)
+      end
+      get learning_module_track_index_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Badge training one").and include("Badge training two")
+      expect(response.body).to include("bronze").and include("golden")
+    end
   end
 
   describe "POST /learning_module_track/start" do

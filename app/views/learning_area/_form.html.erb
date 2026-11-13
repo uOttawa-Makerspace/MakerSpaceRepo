@@ -3,51 +3,51 @@
     class: 'useTurbo',
     data: { controller: 'learning-module-form' } do |f| %>
     <div class="mb-3">
-        <%= f.label :title, 'Title', for: 'repository_title', class: 'form-label' %>
+        <%= f.label :title, t('learning_area.form.title'), for: 'repository_title', class: 'form-label' %>
         <%= f.text_field :title,
          id: 'repository_title',
-         placeholder: 'Title of the learning module…',
+         placeholder: t('learning_area.form.title_placeholder'),
          class: 'form-control' %>
     </div>
 
     <div class="mb-3">
-        <%= f.trix_label :description, 'Description', for: 'redactor', class: 'form-label' %>
+        <%= f.trix_label :description, t('common.names.description'), for: 'redactor', class: 'form-label' %>
         <div class="form-text mb-1">
-            You can input a <code>wiki.makerepo.com</code> link and the page will be displayed.
+            <%= t('learning_area.form.wiki_hint_html') %>
         </div>
         <%= f.trix_editor :description,
-            placeholder: 'Description of the learning module…',
+            placeholder: t('learning_area.form.description_placeholder'),
             class: 'form-control',
             id: 'redactor' %>
     </div>
 
-    <%= f.label :shortcut_name, 'Shortcut permanent link to this learning module', class: 'form-label' %>
+    <%= f.label :shortcut_name, t('learning_area.form.shortcut'), class: 'form-label' %>
     <div class="form-text mb-1">
-        Only letters, numbers, and underscores
+        <%= t('learning_area.form.shortcut_hint') %>
     </div>
     <div class="input-group mb-3">
-        <span class="input-group-text"><code>/learning_modules/s/</code></span>
-        <%= f.text_field :shortcut_name, class: 'form-control', pattern: '[a-zA-Z0-9_]*', title: 'Only letters, numbers, and underscores' %>
+        <span class="input-group-text"><code><%= learning_area_shortcut_prefix %></code></span>
+        <%= f.text_field :shortcut_name, class: 'form-control', pattern: '[a-zA-Z0-9_]*', title: t('learning_area.form.shortcut_hint') %>
     </div>
 
     <div class="mb-3">
-        <%= f.label :subskill, 'Subskill (optional)', id: 'learning_module_subskill_label', class: 'form-label' %>
+        <%= f.label :subskill, t('learning_area.form.subskill'), id: 'learning_module_subskill_label', class: 'form-label' %>
         <%= f.select :subskill,
             options_for_select(@subskills, @learning_module.subskill),
-         { include_blank: "Select or type a new subskill..." },
+         { include_blank: t('learning_area.form.subskill_blank') },
          { class: 'form-select',
              data: { controller: 'tomselect' },
              aria: { labelledby: 'learning_module_subskill_label' } } %>
-        <div class="form-text">Learning modules with the same subskill become merged together and accessible under a subskill page</div>
+        <div class="form-text"><%= t('learning_area.form.subskill_hint') %></div>
     </div>
 
     <div class="row g-3 mb-3">
         <div class="col-sm-6">
-            <%= f.label :training_id, 'Category', class: 'form-label' %>
+            <%= f.label :training_id, t('common.names.category'), class: 'form-label' %>
             <%= f.select :training_id, @training_categories, {}, { class: 'form-select' } %>
         </div>
         <div class="col-sm-6">
-            <%= f.label :level, 'Level', class: 'form-label' %>
+            <%= f.label :level, t('common.names.level'), class: 'form-label' %>
             <%= f.select :level, @training_levels, {}, { class: 'form-select' } %>
         </div>
     </div>
@@ -56,22 +56,22 @@
         <div class="form-check form-switch">
             <%= f.check_box :scorm_enabled, class: 'form-check-input', role: 'switch',
                 data: { learning_module_form_target: 'scormToggle', action: 'change->learning-module-form#toggleScorm' } %>
-            <%= f.label :scorm_enabled, 'SCORM package', class: 'form-check-label' %>
+            <%= f.label :scorm_enabled, t('learning_area.form.scorm_toggle'), class: 'form-check-label' %>
         </div>
-        <div class="form-text">Enable if uploading a SCORM <code>.zip</code> file instead of regular project files.</div>
+        <div class="form-text"><%= t('learning_area.form.scorm_toggle_hint_html') %></div>
     </div>
 
     <fieldset id="regular-files-section" data-learning-module-form-target="regularSection">
         <%# Include this to wipe out existing package %>
         <%= f.hidden_field :scorm_package, value: nil %>
         <div class="mb-3">
-            <%= f.label :project_files, 'Project Files', class: 'form-label' %>
+            <%= f.label :project_files, t('learning_area.form.project_files'), class: 'form-label' %>
             <%= f.file_field :project_files, multiple: true, class: 'form-control', aria: { label: t('common.names.project_files') } %>
             <div id="file-container"></div>
         </div>
 
         <div class="mb-3">
-            <%= f.label :videos, 'Videos', class: 'form-label' %>
+            <%= f.label :videos, t('learning_area.form.videos'), class: 'form-label' %>
             <%= f.file_field :videos, multiple: true, class: 'form-control', aria: { label: t('common.names.videos') } %>
 
             <div id="video-container" class="d-flex flex-column gap-1 mt-2">
@@ -86,7 +86,7 @@
                         <% end %>
                         <i class="fa fa-file-video-o"></i>
                         <span class="small flex-grow-1"><%= video.filename %></span>
-                        <span class="small"><%= (video.byte_size / 1.megabyte).round(1) %> MB</span>
+                        <span class="small"><%= t('learning_area.form.file_size_mb', size: (video.byte_size / 1.megabyte).round(1)) %></span>
                         <button type="button" class="btn btn-danger btn-sm video-remove" data-action="learning-module-form#removeVideo" aria-label="<%= t('common.names.remove_video') %>">&times;</button>
                     </div>
                 <% end %>
@@ -94,7 +94,7 @@
         </div>
 
         <div class="mb-3">
-            <%= f.label :photos, 'Gallery', class: 'form-label' %>
+            <%= f.label :photos, t('learning_area.form.gallery'), class: 'form-label' %>
             <div class="input-group">
                 <%= f.file_field :photos, multiple: true, class: 'form-control image-upload', aria: { label: t('common.names.select_pictures') } %>
                 <button class="btn btn-success" type="button" id="new-photo-input" data-action="learning-module-form#addPhoto" aria-label="<%= t('common.names.add_image_input') %>">
@@ -134,7 +134,7 @@
              ondrop="dragndrop(event);"
              ondragover="dragover(event);">
             <i class="fa-solid fa-cloud-arrow-up fs-3"></i>
-            <p class="mb-0 mt-1 small">Drag & Drop files here</p>
+            <p class="mb-0 mt-1 small"><%= t('learning_area.form.drag_drop') %></p>
         </div>
     </fieldset>
 
@@ -149,9 +149,9 @@
         <% end %>
 
         <%= f.label :scorm_package, class: 'form-label' do %>
-            SCORM Package (.zip)
+            <%= t('learning_area.form.scorm_package') %>
             <% if @learning_module.scorm_package.attached? && (@learning_module.scorm_package.persisted? || @learning_module.scorm_package.blob&.persisted?) %>
-                <p>Download current scorm package: <%= link_to @learning_module.scorm_package.filename, url_for(@learning_module.scorm_package) %></p>
+                <p><%= t('learning_area.form.download_current_html', link: link_to(@learning_module.scorm_package.filename, url_for(@learning_module.scorm_package))) %></p>
             <% end %>
         <% end %>
         <%= f.file_field :scorm_package,
@@ -159,16 +159,16 @@
            accept: '.zip',
            direct_upload: true,
            aria: { label: t('common.names.scorm_zip') }, required: !@learning_module.scorm_package.attached? %>
-        <p class="form-text">Upload a valid SCORM <code>.zip</code> package.</p>
+        <p class="form-text"><%= t('learning_area.form.scorm_upload_hint_html') %></p>
     </fieldset>
 
     <div class="text-center border-top pt-4">
-        <%= f.submit @learning_module.persisted? ? 'Save Changes' : 'Create Learning Module',
+        <%= f.submit t(@learning_module.persisted? ? 'learning_area.form.save' : 'learning_area.form.create'),
                  class: 'btn btn-primary px-4',
                  id: 'waiting-save-button',
-                 data: { turbo_submits_with: 'Saving (Please wait)...' } %>
+                 data: { turbo_submits_with: t('learning_area.form.saving') } %>
         <p class="small text-muted mt-2 mb-0">
-            Uploading large SCORM zip files may take a minute. Please do not close or refresh this page.
+            <%= t('learning_area.form.large_upload_hint') %>
         </p>
     </div>
 

@@ -8,15 +8,18 @@ class LearningModule < ApplicationRecord
   has_many_attached :project_files # was: has_many :repo_files
   has_many_attached :videos # was: has_many :videos
 
-  # Normalization runs before validation, but we still want to catch if something breaks
+  # Normalization runs before validation, but we still want to catch if something breaks.
+  # A blank shortcut is stored as nil, so any number of modules can go without one.
   normalizes :shortcut_name,
              with: ->(shortcut_name) do
                shortcut_name.strip.downcase.underscore.parameterize(
                  separator: '_'
-               )
+               ).presence
              end
-  validates :shortcut_name, format: { with: /\A[a-zA-Z0-9_]+\z/ }, allow_blank: true
-  validates :shortcut_name, uniqueness: { case_sensitive: false }
+  validates :shortcut_name,
+            format: { with: /\A[a-zA-Z0-9_]+\z/ },
+            uniqueness: { case_sensitive: false },
+            allow_blank: true
 
   enum :level,
        {
@@ -108,9 +111,9 @@ class LearningModule < ApplicationRecord
     return unless scorm_package.attached?
 
     if scorm_failed?
-      scorm_error.presence || 'The package could not be processed.'
+      scorm_error.presence || I18n.t('learning_area.scorm_problem.not_processed')
     elsif scorm_stalled?
-      'Extraction did not finish. The background worker may not be running.'
+      I18n.t('learning_area.scorm_problem.not_finished')
     end
   end
 
@@ -163,6 +166,12 @@ class LearningModule < ApplicationRecord
 
   def capitalize_title
     self.title = title.upcase_first
+  end
+
+  # The module whose shortcut link this is. The value is normalised like the stored shortcut, and a value
+  # that is blank once normalised matches no module, not one that has no shortcut.
+  def self.find_by_shortcut!(shortcut)
+    where.not(shortcut_name: nil).find_by!(shortcut_name: shortcut)
   end
 
   def self.filter_by_attribute(attribute, value)
