@@ -66,9 +66,9 @@
         <% @staff_needed_calendars.each_with_index do |snc, i| %>
           <div class="d-flex upload-file-input mb-2 gap-1">
             <input type="color" id="staff_needed_calendar_color_<%= i %>" name="staff_needed_calendar_color[]" class="form-control form-control-color" style="aspect-ratio: 1;" value="<%= snc.color %>" title="<%= t('admin_area.spaces.edit.choose_color') %>" aria-label="<%= t('admin_area.spaces.edit.choose_color') %>">
-            <%= text_field_tag 'staff_needed_calendar_name[]', snc.name, { class: 'form-control w-25', placeholder: t('admin_area.spaces.edit.calendar_name_placeholder') } %>
-            <%= text_field_tag 'staff_needed_calendar[]', snc.calendar_url, { class: 'form-control', placeholder: t('admin_area.spaces.edit.calendar_url_placeholder') } %>
-            <%= select_tag 'staff_needed_calendar_role[]', options_for_select([[t('admin_area.spaces.edit.no_role'), ''], [t('admin_area.spaces.edit.open_hours'), 'open_hours']], snc.role), class: "form-select w-25", aria: { label: t('common.names.calendar_role') } %>
+            <%= text_field_tag 'staff_needed_calendar_name[]', snc.name, { id: "staff_needed_calendar_name_#{i}", class: 'form-control w-25', placeholder: t('admin_area.spaces.edit.calendar_name_placeholder'), aria: { label: t('admin_area.spaces.edit.calendar_name_placeholder') } } %>
+            <%= text_field_tag 'staff_needed_calendar[]', snc.calendar_url, { id: "staff_needed_calendar_url_#{i}", class: 'form-control', placeholder: t('admin_area.spaces.edit.calendar_url_placeholder'), aria: { label: t('admin_area.spaces.edit.calendar_url_placeholder') } } %>
+            <%= select_tag 'staff_needed_calendar_role[]', options_for_select([[t('admin_area.spaces.edit.no_role'), ''], [t('admin_area.spaces.edit.open_hours'), 'open_hours']], snc.role), id: "staff_needed_calendar_role_#{i}", class: "form-select w-25", aria: { label: t('common.names.calendar_role') } %>
             <button class="btn btn-danger snc-delete-button ms-2" type="button" aria-label="<%= t('common.delete') %>">
               <i class="fa fa-trash"></i>
             </button>
@@ -82,9 +82,9 @@
     <%# template %>
     <div class="d-flex upload-file-input mb-2 gap-1" id="new-link-input" style="visibility: hidden;">
       <input type="color" name="staff_needed_calendar_color[]" class="form-control form-control-color" style="aspect-ratio: 1;" value="#000000" title="<%= t('admin_area.spaces.edit.choose_color') %>" aria-label="<%= t('admin_area.spaces.edit.choose_color') %>">
-      <%= text_field_tag 'staff_needed_calendar_name[]', nil, { class: 'form-control w-25', placeholder: t('admin_area.spaces.edit.calendar_name_placeholder') } %>
-      <%= text_field_tag 'staff_needed_calendar[]', nil, { class: 'form-control', placeholder: t('admin_area.spaces.edit.calendar_url_placeholder') } %>
-      <%= select_tag 'staff_needed_calendar_role[]', options_for_select([[t('admin_area.spaces.edit.no_role'), ''], [t('admin_area.spaces.edit.open_hours'), 'open_hours']]), class: "form-select w-25", aria: { label: t('common.names.calendar_role') } %>
+      <%= text_field_tag 'staff_needed_calendar_name[]', nil, { id: nil, class: 'form-control w-25', placeholder: t('admin_area.spaces.edit.calendar_name_placeholder'), aria: { label: t('admin_area.spaces.edit.calendar_name_placeholder') } } %>
+      <%= text_field_tag 'staff_needed_calendar[]', nil, { id: nil, class: 'form-control', placeholder: t('admin_area.spaces.edit.calendar_url_placeholder'), aria: { label: t('admin_area.spaces.edit.calendar_url_placeholder') } } %>
+      <%= select_tag 'staff_needed_calendar_role[]', options_for_select([[t('admin_area.spaces.edit.no_role'), ''], [t('admin_area.spaces.edit.open_hours'), 'open_hours']]), id: nil, class: "form-select w-25", aria: { label: t('common.names.calendar_role') } %>
       <button class="btn btn-danger snc-delete-button ms-2" type="button" aria-label="<%= t('common.delete') %>">
         <i class="fa fa-trash"></i>
       </button>

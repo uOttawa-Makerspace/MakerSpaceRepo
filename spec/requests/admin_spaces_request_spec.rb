@@ -98,6 +98,23 @@ RSpec.describe "Admin spaces", type: :request do
       expect(page.css("input[type=color]").map { |input| input["aria-label"] }).to all(be_present)
     end
 
+    it "gives every calendar name, url and role input its own id and an accessible name, keeping the submitted names" do
+      StaffNeededCalendar.create!(space: space, name: "A", calendar_url: "https://x.test/a.ics", color: "#112233")
+      StaffNeededCalendar.create!(space: space, name: "B", calendar_url: "https://x.test/b.ics", color: "#445566")
+
+      get edit_admin_space_path(space)
+
+      page = Nokogiri::HTML(response.body)
+      { "staff_needed_calendar_name[]" => "input", "staff_needed_calendar[]" => "input", "staff_needed_calendar_role[]" => "select" }.each do |name, tag|
+        saved = page.css("#link-container #{tag}[name='#{name}']")
+        expect(saved.map { |field| field["id"] }.uniq.size).to eq(2)
+        expect(page.css("#{tag}[name='#{name}']").map { |field| field["aria-label"] }).to all(be_present)
+        expect(page.css("#new-link-input #{tag}[name='#{name}']").map { |field| field["id"] }).to eq([nil])
+      end
+      ids = page.css("#link-container [id]").map { |node| node["id"] }
+      expect(ids).to eq(ids.uniq)
+    end
+
     it "gives the new calendar row a colour the colour input accepts" do
       get edit_admin_space_path(space)
 
