@@ -47,17 +47,28 @@ module PageCrawl
     def templates_file = Rails.root.join(DIR, "templates.yml")
     def baseline_file = Rails.root.join(DIR, "axe_baseline.yml")
 
-    # The key of a rendered view: its path under app/views, under the app root,
-    # or "gem-name:path" inside a gem. Anything else is an error, so a key is
-    # never a machine-specific absolute path.
+    # The key of a rendered view: "gem-name:path" inside a loaded gem,
+    # "bundle:path" elsewhere under the bundle path, otherwise its path under
+    # app/views or under the app root. Gems come first because a bundle can sit
+    # inside the app (vendor/bundle on CI). Anything else is an error, so a key
+    # is never a machine-specific absolute path.
     def view_key(identifier)
-      [Rails.root.join("app/views").to_s, Rails.root.to_s].each do |root|
-        return identifier.delete_prefix("#{root}/") if identifier.start_with?("#{root}/")
-      end
-      gem = Gem.loaded_specs.values.find { |spec| identifier.start_with?("#{spec.full_gem_path}/") }
-      raise ArgumentError, "view outside the app and its gems: #{identifier}" unless gem
+      gem_key(identifier) || app_key(identifier) ||
+        raise(ArgumentError, "view outside the app and its gems: #{identifier}")
+    end
 
-      "#{gem.name}:#{identifier.delete_prefix("#{gem.full_gem_path}/")}"
+    def gem_key(identifier)
+      gem = Gem.loaded_specs.values.find { |spec| identifier.start_with?("#{spec.full_gem_path}/") }
+      return "#{gem.name}:#{identifier.delete_prefix("#{gem.full_gem_path}/")}" if gem
+
+      bundle = "#{Bundler.bundle_path}/"
+      "bundle:#{identifier.delete_prefix(bundle)}" if identifier.start_with?(bundle)
+    end
+
+    def app_key(identifier)
+      roots = [Rails.root.join("app/views").to_s, Rails.root.to_s]
+      root = roots.find { |dir| identifier.start_with?("#{dir}/") }
+      identifier.delete_prefix("#{root}/") if root
     end
 
     # Lines for each key and rule whose node count differs from the baseline.
