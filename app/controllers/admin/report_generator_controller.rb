@@ -493,8 +493,20 @@ class Admin::ReportGeneratorController < AdminAreaController
         end
       )
     @spaces = Space.order(name: :asc)
+    @certifications_by_space = certifications_by_space(@spaces)
 
     @monthly_average = monthly_attendee_averages(report_days)
+  end
+
+  # The certificates of the report window for each space, as { space id => certificates }, in the order the report
+  # lists them: oldest training session first.
+  def certifications_by_space(spaces)
+    Certification
+      .joins(:training_session)
+      .where(training_sessions: { space_id: spaces.map(&:id) }, created_at: @report_window)
+      .preload(:user, training_session: %i[user training])
+      .order('training_sessions.updated_at ASC, certifications.id ASC')
+      .group_by { |certification| certification.training_session.space_id }
   end
 
   # Every day of the report: the picked days, else 2015-06-01 to today.
@@ -556,7 +568,10 @@ class Admin::ReportGeneratorController < AdminAreaController
     @spaces = Space.all.order(name: :asc)
     @weekdays = Date::DAYNAMES
 
-    return unless @date_specified
+    unless @date_specified
+      @popular_hours_by_space = PopularHour.where(space: @spaces).order(day: :asc, hour: :asc).group_by(&:space_id)
+      return
+    end
     @info =
       PopularHour.popular_hours_per_period(
         @period.first_day,

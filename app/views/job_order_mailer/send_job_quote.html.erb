@@ -57,7 +57,7 @@
 
     <% task.job_task_options.each do |opt| %>
       &nbsp;&nbsp;• <%= opt.job_option.name %>
-      : CAD <%= number_to_currency(task.job_task_quote&.job_task_quote_options&.find_by(job_option_id: opt.job_option.id)&.price || 0, locale: :fr) %>
+      : CAD <%= number_to_currency(task.job_task_quote&.price_for_option(opt.job_option_id) || 0, locale: :fr) %>
       <br>
     <% end %>
   <% end %>
@@ -127,7 +127,7 @@
 
     <% task.job_task_options.each do |opt| %>
       &nbsp;&nbsp;• <%= opt.job_option.name %>
-      : CAD <%= number_to_currency(task.job_task_quote&.job_task_quote_options&.find_by(job_option_id: opt.job_option.id)&.price || 0, locale: :en) %>
+      : CAD <%= number_to_currency(task.job_task_quote&.price_for_option(opt.job_option_id) || 0, locale: :en) %>
       <br>
     <% end %>
   <% end %>
