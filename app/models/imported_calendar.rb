@@ -42,11 +42,11 @@ class ImportedCalendar
     # The row key in the calendar: a modified instance is told apart from its series by its original instant.
     def key = recurrence_id ? "#{uid}_#{recurrence_id.to_i}" : uid
 
-    # Its occurrences that overlap the window (a CalendarWindow).
+    # Its occurrences that overlap the window (a CalendarWindow), each carrying this entry.
     def occurrences_in(window)
-      return series.occurrences_in(window) if series
+      return series.occurrences_in(window).map { |occurrence| occurrence.with(entry: self) } if series
 
-      window.overlaps?(starts_at, ends_at) ? [RecurringSeries::Occurrence.new(starts_at:, ends_at:, all_day:)] : []
+      window.overlaps?(starts_at, ends_at) ? [RecurringSeries::Occurrence.new(starts_at:, ends_at:, all_day:, entry: self)] : []
     end
   end
 
@@ -133,15 +133,16 @@ class ImportedCalendar
   # The occurrences of the calendar's entries in the window (a CalendarWindow), as the calendar pages draw them: each
   # title after `prefix`, with the page's own `extra` properties and `props` in extendedProps.
   def feed_rows(window, prefix: "", props: {}, **extra)
-    occurrences_in(window).map do |entry, occurrence|
+    occurrences_in(window).map do |occurrence|
+      entry = occurrence.entry
       row = { groupId: id, title: "#{prefix}#{entry.summary}", display: "auto", **extra,
               extendedProps: { name: name, description: entry.description, **props } }
       occurrence.feed_row(entry.key, row, repeating: entry.series)
     end
   end
 
-  # Each entry with each of its occurrences in the window (a CalendarWindow), as [entry, occurrence] pairs.
-  def occurrences_in(window) = entries.flat_map { |entry| entry.occurrences_in(window).map { |occurrence| [entry, occurrence] } }
+  # The occurrences of its entries in the window (a CalendarWindow), each carrying its entry.
+  def occurrences_in(window) = entries.flat_map { |entry| entry.occurrences_in(window) }
 
   # Whether the feed could not be read: no body, a fetch or parse error, or a body with no calendar in it.
   def failed? = @failed

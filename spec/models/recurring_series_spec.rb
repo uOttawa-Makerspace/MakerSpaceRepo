@@ -66,7 +66,7 @@ RSpec.describe RecurringSeries do
   end
 
   describe "Occurrence#overlaps?" do
-    def occurrence(from, to) = described_class::Occurrence.new(starts_at: from, ends_at: to, all_day: false)
+    def occurrence(from, to) = described_class::Occurrence.new(starts_at: from, ends_at: to, all_day: false, entry: nil)
 
     it "is true for occurrences that share some time, and not for ones that only touch" do
       event = occurrence(at(2027, 3, 17, 10), at(2027, 3, 17, 11))
@@ -82,7 +82,7 @@ RSpec.describe RecurringSeries do
 
   describe "Occurrence#feed_row" do
     it "sends the times with their Toronto offset, an id with the start for a series, and the start as an instant" do
-      occurrence = described_class::Occurrence.new(starts_at: at(2027, 11, 7, 1, 30) + 1.hour, ends_at: at(2027, 11, 7, 3), all_day: false)
+      occurrence = described_class::Occurrence.new(starts_at: at(2027, 11, 7, 1, 30) + 1.hour, ends_at: at(2027, 11, 7, 3), all_day: false, entry: nil)
       expect(occurrence.feed_row(7, { title: "Class", extendedProps: { a: 1 } }, repeating: true)).to eq(
         title: "Class", id: "7@#{Time.utc(2027, 11, 7, 6, 30).to_i}", start: "2027-11-07T01:30:00-05:00", end: "2027-11-07T03:00:00-05:00",
         allDay: false, extendedProps: { a: 1, occurrenceStart: "2027-11-07T06:30:00Z" }
@@ -90,7 +90,7 @@ RSpec.describe RecurringSeries do
     end
 
     it "sends an all-day occurrence as Toronto dates and a single entry under its own key" do
-      occurrence = described_class::Occurrence.new(starts_at: at(2027, 3, 14), ends_at: at(2027, 3, 15), all_day: true)
+      occurrence = described_class::Occurrence.new(starts_at: at(2027, 3, 14), ends_at: at(2027, 3, 15), all_day: true, entry: nil)
       expect(occurrence.feed_row("uid", { extendedProps: {} }, repeating: false))
         .to include(id: "uid", start: "2027-03-14", end: "2027-03-15", allDay: true)
     end

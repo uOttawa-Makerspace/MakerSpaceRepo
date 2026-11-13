@@ -28,7 +28,7 @@ class RecurringSeries
 
   class UnsupportedRule < ArgumentError; end
 
-  Occurrence = Data.define(:starts_at, :ends_at, :all_day) do
+  Occurrence = Data.define(:starts_at, :ends_at, :all_day, :entry) do # entry: its ImportedCalendar::Entry, if imported
     # The occurrence as a calendar page draws it: `row` with this occurrence's start, end and all-day flag (Toronto
     # times with their offset, which keeps the second 01:30 of a fall-back night apart; dates for an all-day one), an
     # id (`key`, and for an occurrence of a series its start) and its start as an instant, which the dialogs post
@@ -92,9 +92,8 @@ class RecurringSeries
   end
 
   # Occurrences that overlap the window (a CalendarWindow); a series with no rule is its one occurrence. The walk
-  # starts one occurrence length before the window, so an occurrence that began before it is kept.
+  # starts one occurrence length (at most 25 hours for an all-day one) before the window, so one begun before is kept.
   def occurrences_in(window)
-    # an all-day occurrence is at most 25 hours long
     starts = @rule.blank? ? [@starts_at] : starts_between(window.from - @span.fetch(:seconds, 25.hours), window.to)
     starts.map { |start| occurrence_at(start) }.select { |occurrence| window.overlaps?(occurrence.starts_at, occurrence.ends_at) }.to_a
   end
@@ -112,7 +111,7 @@ class RecurringSeries
     Result.new(occurrences: found.first(limit), truncated: found.size > limit)
   end
 
-  def occurrence_at(start) = Occurrence.new(starts_at: start, ends_at: start.advance(@span), all_day: @all_day)
+  def occurrence_at(start) = Occurrence.new(starts_at: start, ends_at: start.advance(@span), all_day: @all_day, entry: nil)
 
   # The only method that reaches the repeat library. Lazy: the caller's
   # first(limit + 1) stops the walk. The gem takes COUNT from its start, so the

@@ -402,6 +402,11 @@ RSpec.describe ImportedCalendar do
       expect(rows).to all(include(groupId: Digest::MD5.hexdigest(url), display: "auto", extendedProps: hash_including(name: "Hours")))
     end
 
+    it "gives each occurrence its entry" do
+      occurrences = calendar_of(fixture("recurrence_id_moved")).occurrences_in(CalendarWindow.new(toronto.local(2027, 3, 1), toronto.local(2027, 4, 1)))
+      expect(occurrences.map { |o| o.entry.key }.uniq).to contain_exactly("moved@ics.test", "moved@ics.test_#{toronto.local(2027, 3, 14, 10).to_i}")
+    end
+
     it "leaves out a one-off outside the window" do
       body = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//spec//EN", "BEGIN:VEVENT", "UID:one@ics.test", "DTSTAMP:20270101T000000Z",
               "DTSTART:20270317T150000Z", "DTEND:20270317T160000Z", "SUMMARY:Once", "END:VEVENT", "END:VCALENDAR"].join("\r\n")
@@ -424,8 +429,8 @@ RSpec.describe ImportedCalendar do
       calendar = calendar_of(body)
       expect(calendar.feed_rows(CalendarWindow.new(toronto.local(2027, 3, 14), toronto.local(2027, 3, 21))).map { |row| row.values_at(:start, :end, :allDay) })
         .to eq([["2027-03-17", "2027-03-18", true]])
-      noon = RecurringSeries::Occurrence.new(starts_at: toronto.local(2027, 3, 17, 12), ends_at: toronto.local(2027, 3, 17, 13), all_day: false)
-      expect(calendar.occurrences_in(CalendarWindow.new(toronto.local(2027, 3, 17), toronto.local(2027, 3, 18))).map(&:last).map { |o| o.overlaps?(noon) })
+      noon = RecurringSeries::Occurrence.new(starts_at: toronto.local(2027, 3, 17, 12), ends_at: toronto.local(2027, 3, 17, 13), all_day: false, entry: nil)
+      expect(calendar.occurrences_in(CalendarWindow.new(toronto.local(2027, 3, 17), toronto.local(2027, 3, 18))).map { |o| o.overlaps?(noon) })
         .to eq([true])
     end
   end

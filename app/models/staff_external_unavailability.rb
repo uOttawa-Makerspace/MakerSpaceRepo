@@ -8,7 +8,7 @@ class StaffExternalUnavailability < ApplicationRecord
   def calendar(name: nil) = ImportedCalendar.load(ics_url, name: name, color: nil)
 
   # The occurrences of its calendar's entries in the window (a CalendarWindow).
-  def occurrences_in(window) = calendar.occurrences_in(window).map(&:last)
+  def occurrences_in(window) = calendar.occurrences_in(window)
 
   # The host of the link, for showing where an event came from (nil when it cannot be read).
   def source_host
