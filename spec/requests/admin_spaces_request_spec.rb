@@ -115,6 +115,18 @@ RSpec.describe "Admin spaces", type: :request do
       expect(ids).to eq(ids.uniq)
     end
 
+    it "gives every element on the page a unique id, with two sub spaces" do
+      create(:sub_space, space: space, name: "Room B")
+
+      get edit_admin_space_path(space)
+
+      page = Nokogiri::HTML(response.body)
+      ids = page.css("[id]").map { |node| node["id"] }
+      expect(ids.tally.select { |_id, count| count > 1 }).to be_empty
+      expect(page.css("input[type=hidden][name=space_id]").size).to be >= 5
+      expect(page.css("input[name=name]").map { |input| input["aria-label"] }).to all(be_present)
+    end
+
     it "gives the new calendar row a colour the colour input accepts" do
       get edit_admin_space_path(space)
 
