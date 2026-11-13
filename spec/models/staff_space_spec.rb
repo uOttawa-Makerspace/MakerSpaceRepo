@@ -81,3 +81,35 @@ RSpec.describe StaffSpace, type: :model do
     end
   end
 end
+
+RSpec.describe StaffSpace, "calendar staff of a space", type: :model do
+  let(:space) { create(:space) }
+  let!(:zed) { create(:staff_space, space: space, color: "#111111", user: create(:user, :staff, name: "zed")).user }
+  let!(:amy) { create(:staff_space, space: space, color: "#222222", user: create(:user, :admin, name: "Amy")).user }
+  let!(:bea) { create(:staff_space, space: space, color: "#333333", user: create(:user, :staff, name: "Bea")).user }
+
+  before do
+    create(:staff_space, space: space, user: create(:user, :regular_user))
+    create(:staff_space, space: create(:space), user: create(:user, :staff))
+  end
+
+  it "gives each member's colour by user id" do
+    expect(described_class.colors_in(space.id)).to include(zed.id => "#111111", amy.id => "#222222")
+    expect(described_class.colors_in(0)).to eq({})
+  end
+
+  it "lists the space's staff and admins only" do
+    expect(described_class.calendar_staff(space.id)).to contain_exactly(zed, amy, bea)
+  end
+
+  it "lists the sidebar staff with unavailabilities first, each part by name" do
+    create(:staff_unavailability, user: zed)
+    StaffExternalUnavailability.create!(user: bea, ics_url: "https://calendar.example/bea.ics")
+
+    expect(described_class.calendar_sidebar(space.id)).to eq([
+      { id: bea.id, name: "Bea", color: "#333333", busy: true },
+      { id: zed.id, name: "zed", color: "#111111", busy: true },
+      { id: amy.id, name: "Amy", color: "#222222", busy: false }
+    ])
+  end
+end

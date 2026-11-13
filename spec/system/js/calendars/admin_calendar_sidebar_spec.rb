@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# The sidebar and toolbar of the admin calendar (fullcalendar_setup_admin.js,
+# The sidebar and toolbar of the admin calendar (admin_calendar_controller.js,
 # calendar.js): staff, event-type and imported-calendar checkboxes, the hours
 # badges, the toolbar toggles, the draft buttons, copy week and staff colours.
 

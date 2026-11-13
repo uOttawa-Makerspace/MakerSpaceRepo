@@ -69,6 +69,53 @@ RSpec.describe "Admin events contract", type: :request do
     expect(entry["allDay"]).to be(false)
   end
 
+  describe "json for the range the calendar shows (?start&end)" do
+    let(:zone) { RecurrenceRule::ZONE }
+
+    def event!(title, starts, ends, rule = nil)
+      create(:event, space: space, title: title, created_by: admin, start_time: starts, end_time: ends, recurrence_rule: rule)
+    end
+
+    def titles
+      response.parsed_body.flat_map { |group| group["events"] }.map { |row| row["title"] }
+    end
+
+    before do
+      event!("Inside", zone.local(2027, 3, 16, 9), zone.local(2027, 3, 16, 10))
+      event!("Overnight", zone.local(2027, 3, 13, 22), zone.local(2027, 3, 14, 2))
+      event!("Last week", zone.local(2027, 3, 9, 9), zone.local(2027, 3, 9, 10))
+      event!("Next week", zone.local(2027, 3, 21, 9), zone.local(2027, 3, 21, 10))
+      event!("Weekly", zone.local(2027, 1, 4, 9), zone.local(2027, 1, 4, 10), "RRULE:FREQ=WEEKLY;BYDAY=MO")
+      event!("Later weekly", zone.local(2027, 4, 5, 9), zone.local(2027, 4, 5, 10), "RRULE:FREQ=WEEKLY;BYDAY=MO")
+      log_in!(admin)
+    end
+
+    it "sends the one-off events that overlap the range and the series that start before its end, rule included" do
+      get json_admin_events_path(id: space.id), params: { start: "2027-03-14T00:00:00", end: "2027-03-21T00:00:00" }
+
+      expect(response.status).to eq(200)
+      expect(titles).to contain_exactly("Inside", "Overnight", "Weekly")
+      weekly = response.parsed_body.flat_map { |group| group["events"] }.find { |row| row["title"] == "Weekly" }
+      expect(weekly["rrule"]).to include("RRULE:FREQ=WEEKLY;BYDAY=MO")
+    end
+
+    it "sends every event without a range" do
+      get json_admin_events_path(id: space.id)
+
+      expect(titles).to contain_exactly("Inside", "Overnight", "Last week", "Next week", "Weekly", "Later weekly")
+    end
+
+    it "answers 400 with the reason for a range it cannot read or one over 100 days" do
+      get json_admin_events_path(id: space.id), params: { start: "2027-03-14T00:00:00", end: "soon" }
+      expect(response.status).to eq(400)
+      expect(response.parsed_body).to eq("error" => I18n.t("errors.calendar.window_invalid"))
+
+      get json_admin_events_path(id: space.id), params: { start: "2027-01-01", end: "2027-06-01" }
+      expect(response.status).to eq(400)
+      expect(response.parsed_body).to eq("error" => "The calendar can show at most 100 days at a time.")
+    end
+  end
+
   it "single publish PATCH marks draft published" do
     event = create(:event, :draft, space: space)
     log_in!(admin)

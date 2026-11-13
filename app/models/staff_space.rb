@@ -38,6 +38,22 @@ class StaffSpace < ApplicationRecord
     #000000
   ]
 
+  # Each staff member's calendar colour in a space, by user id.
+  def self.colors_in(space_id) = where(space_id: space_id).pluck(:user_id, :color).to_h
+
+  # The staff whose unavailabilities a space's calendar shows: its staff and admins.
+  def self.calendar_staff(space_id) = User.where(id: where(space_id: space_id).select(:user_id), role: %w[admin staff])
+
+  # The calendar staff of a space as the admin calendar sidebar lists them (id, name, colour, busy): those with
+  # unavailabilities (stored, or an external calendar link) first, each part by name.
+  def self.calendar_sidebar(space_id)
+    colors = colors_in(space_id)
+    staff = calendar_staff(space_id)
+    busy = staff.where(id: StaffUnavailability.select(:user_id)).or(staff.where(id: StaffExternalUnavailability.select(:user_id))).ids
+    staff.pluck(:id, :name).map { |id, name| { id: id, name: name, color: colors[id], busy: busy.include?(id) } }
+         .sort_by { |member| [member[:busy] ? 0 : 1, member[:name].to_s.downcase] }
+  end
+
   # A colour passed in is kept; a blank one gets the first palette entry still free in the space.
   def ensure_color
     self.color = generate_color if color.blank?

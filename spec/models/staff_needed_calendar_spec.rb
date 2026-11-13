@@ -60,3 +60,22 @@ RSpec.describe StaffNeededCalendar, type: :model do
     end
   end
 end
+
+RSpec.describe StaffNeededCalendar, "on the admin calendar", type: :model do
+  it "is named, or called Unnamed Calendar" do
+    expect(described_class.new(name: "Hours").display_name).to eq("Hours")
+    expect(described_class.new(name: "").display_name).to eq("Unnamed Calendar")
+  end
+
+  it "carries the id its imported rows have" do
+    url = "https://calendar.example/open.ics"
+    expect(described_class.new(calendar_url: url).feed_id).to eq(ImportedCalendar.new(url, "Hours", nil).id)
+  end
+
+  it "lists only the calendars with a link" do
+    linked = described_class.create!(calendar_url: "https://calendar.example/a.ics")
+    described_class.create!(calendar_url: "")
+
+    expect(described_class.linked).to eq([linked])
+  end
+end

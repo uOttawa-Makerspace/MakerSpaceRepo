@@ -1,5 +1,4 @@
 import { addEventClick } from "../src/calendar_helper";
-import "../src/fullcalendar_setup_admin";
 import "../src/manage_calendar_events";
 import "flatpickr";
 import { csrfHeaders } from "../src/csrf";

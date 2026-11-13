@@ -8,6 +8,8 @@ en:
       color_not_saved: "The staff colour could not be saved."
       rule_one_line: "has more than one RRULE line. Use one repeat rule."
       rule_never_repeats: "never repeats: no date matches this rule (for example 30 February). Change the days or months."
+      window_invalid: "The calendar dates asked for are not valid: give a start and an end, with the end after the start."
+      window_too_long: "The calendar can show at most %{days} days at a time."
     generic:
       unexpected: "Something unexpected went wrong on our side. Please try again. If it keeps happening, contact the makerspace staff and quote reference %{reference}."
       not_found: "That page or record could not be found. It may have been removed, or the link may be wrong."

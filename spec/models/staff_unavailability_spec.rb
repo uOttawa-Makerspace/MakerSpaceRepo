@@ -53,3 +53,26 @@ RSpec.describe StaffUnavailability, type: :model do
     expect(record.errors[:recurrence_rule]).to eq([RecurrenceRuleValidator::UNPARSEABLE])
   end
 end
+
+RSpec.describe StaffUnavailability, "#calendar_row", type: :model do
+  let(:zone) { RecurrenceRule::ZONE }
+
+  it "is the admin calendar row of a one-off, in Toronto wall time" do
+    unavailability = create(:staff_unavailability, title: "Doctor", description: "Away",
+                                                   start_time: zone.local(2027, 5, 5, 9), end_time: zone.local(2027, 5, 5, 11))
+
+    expect(unavailability.calendar_row("Ann")).to eq(
+      id: unavailability.id, title: "🚫 Ann - Doctor", start: "2027-05-05T09:00:00", end: "2027-05-05T11:00:00",
+      allDay: false, extendedProps: { name: "Ann", title: "Doctor", description: "Away" }, className: "unavailability"
+    )
+  end
+
+  it "carries the rule in Toronto wall time and the length in milliseconds for a series" do
+    unavailability = create(:staff_unavailability, start_time: zone.local(2027, 1, 4, 9), end_time: zone.local(2027, 1, 4, 10),
+                                                   recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=MO")
+    row = unavailability.calendar_row("Ann")
+
+    expect(row[:rrule]).to eq(RecurrenceRule.new(unavailability.recurrence_rule, unavailability.start_time).in_toronto_time)
+    expect(row[:duration]).to eq(3_600_000.0)
+  end
+end

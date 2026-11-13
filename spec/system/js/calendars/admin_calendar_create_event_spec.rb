@@ -22,10 +22,9 @@ RSpec.describe "Admin calendar: creating events", type: :system do
 
   around { |ex| travel_to(Time.zone.local(2027, 3, 16, 12)) { ex.run } }
 
-  # The calendar view and the event modal read the same feed. On every page
-  # load the modal script asks for it first (the calendar view first waits for
-  # the events), so refusing the first request in the browser fails the modal
-  # only and the calendar still draws.
+  # The calendar view and the event modal read the same feed: the view for the
+  # range it shows (?start&end), the modal for everything. Refusing the first
+  # request without a range fails the modal only, and the calendar still draws.
   def fail_staff_availability_feed
     @refuse_first_feed_script = page.driver.browser.execute_cdp(
       "Page.addScriptToEvaluateOnNewDocument",
@@ -34,7 +33,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
           const originalFetch = window.fetch;
           let asked = 0;
           window.fetch = (url, ...rest) =>
-            String(url).includes("/admin/calendar/unavailabilities_json/") && asked++ === 0
+            String(url).includes("/admin/calendar/unavailabilities_json/") && !String(url).includes("?") && asked++ === 0
               ? Promise.resolve(new Response(null, { status: 500 }))
               : originalFetch(url, ...rest);
         })();
