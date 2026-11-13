@@ -116,6 +116,16 @@ describe("hours calendar", () => {
     expect(calendar.options.timeZone).toBe("America/Toronto");
   });
 
+  it("hides the toolbar chevrons from assistive technology once a view is mounted", async () => {
+    const calendar = await mount();
+    calendar.el.innerHTML =
+      '<span class="fc-icon fc-icon-chevron-left" role="img"></span>';
+    calendar.options.viewDidMount();
+    expect(
+      calendar.el.querySelector(".fc-icon").getAttribute("aria-hidden"),
+    ).toBe("true");
+  });
+
   it("draws nothing when the server lists no calendar, leaving its message", async () => {
     window.innerWidth = 1200;
     document.body.innerHTML = page({ filters: [] }).replace(

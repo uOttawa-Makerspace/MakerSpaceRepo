@@ -3,6 +3,7 @@ import { Calendar } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 
+import { makeCalendarAccessible } from "../src/calendar_accessibility.js";
 import { rangeSource, unticked } from "../src/range_source.js";
 
 // Below this width the calendar shows fewer days.
@@ -116,6 +117,7 @@ export default class extends TypedController {
         minute: "2-digit",
         meridiem: "short",
       },
+      viewDidMount: () => makeCalendarAccessible(this.calendarTarget),
       windowResize: () => this.fitView(),
     };
   }
