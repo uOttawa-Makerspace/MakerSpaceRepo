@@ -184,7 +184,7 @@ fr:
             rented_by:
               request_under_review: "a déjà une demande en attente de révision"
             state:
-              cancelled_cannot_change: "ne peut pas passer de « Terminée » à un autre état, sauf pour revenir à « Attendre le paiement » ou pour passer à « Actif » par le personnel"
+              cancelled_cannot_change: "ne peut pas passer de « Terminée » à un autre état, sauf pour revenir à « En attente de paiement » ou pour passer à « Actif » par le personnel"
         order_item:
           attributes:
             proficient_project:

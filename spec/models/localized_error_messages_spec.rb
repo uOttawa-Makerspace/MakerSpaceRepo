@@ -183,7 +183,7 @@ RSpec.describe "Localized model error messages" do
       rental.state = :active
       expect_messages(rental, :state,
                       "cannot change from cancelled except back to awaiting payment, or to active by staff",
-                      "ne peut pas passer de « Terminée » à un autre état, sauf pour revenir à « Attendre le paiement » ou pour passer à « Actif » par le personnel")
+                      "ne peut pas passer de « Terminée » à un autre état, sauf pour revenir à « En attente de paiement » ou pour passer à « Actif » par le personnel")
     end
   end
 

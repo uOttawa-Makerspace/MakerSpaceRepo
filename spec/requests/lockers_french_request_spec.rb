@@ -181,6 +181,16 @@ RSpec.describe "Locker pages in French", type: :request do
       expect(page_text).to include("Assigner un casier à un utilisateur", "Indéterminée (sans expiration)")
     end
 
+    it "labels a rental waiting for payment 'En attente de paiement'" do
+      create(:locker_rental, :await_payment, rented_by: owner, locker: create(:locker, specifier: "111", locker_size: size))
+      log_in!(staff)
+
+      get admin_locker_rentals_path, params: fr
+
+      expect(page_text).to include("En attente de paiement")
+      expect(page_text).not_to include("Attendre le paiement")
+    end
+
     it "gives the rental messages in French" do
       locker = create(:locker, specifier: "101", locker_size: size)
       allow_any_instance_of(LockerRental).to receive(:sync_shopify_draft_order_after_commit).and_return(true)

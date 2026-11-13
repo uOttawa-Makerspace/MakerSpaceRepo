@@ -181,6 +181,12 @@ RSpec.describe "Translated templates" do
     app/views/questions/_question_form.html.erb
     app/views/questions/_answers.html.erb
     app/views/questions/_question_images.html.erb
+    app/views/locker_mailer/locker_assigned.html.erb
+    app/views/locker_mailer/locker_cancelled.html.erb
+    app/views/locker_mailer/locker_checkout.html.erb
+    app/views/locker_mailer/locker_moved.html.erb
+    app/views/locker_mailer/locker_requested.html.erb
+    app/views/locker_mailer/rental_expired.html.erb
   ].freeze
 
   TRANSLATED_TEMPLATES.each do |path|
