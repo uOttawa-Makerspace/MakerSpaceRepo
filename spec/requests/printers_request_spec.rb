@@ -300,6 +300,26 @@ RSpec.describe "Printers", type: :request do
       expect(response).to redirect_to(staff_printers_printers_path)
     end
 
+    it "replies with only its own message when an earlier redirect left a message pending" do
+      link("", format: :html)
+      link(user.id)
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq("notice" => "Printer Session Created")
+    end
+
+    it "leaves no message for the next page after a JSON reply" do
+      link(user.id)
+      get root_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("Printer Session Created")
+    end
+
+    it "keeps the message of an HTML request for the next page that shows messages" do
+      link(user.id, format: :html)
+      get root_path
+      expect(response.body).to include("Printer Session Created")
+    end
+
     it "clearing a printer that has no session changes nothing and replies 200" do
       expect { link("clear") }.not_to change(PrinterSession, :count)
       expect(response).to have_http_status(:ok)
