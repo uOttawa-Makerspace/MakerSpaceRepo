@@ -1,0 +1,68 @@
+# Known axe violations of the browser page crawl (spec/system/page_crawl_spec.rb):
+# view template (or route, for a page no template renders) => axe rule =>
+# number of violating nodes. This list may only shrink. A violation that is not
+# listed fails the crawl, and so does a listed one that no longer occurs: after
+# a fix, lower or remove its entry.
+"/learning_area/:id/scorm_assets/*path":
+  document-title: 1
+  html-has-lang: 1
+badges/_badge_list.html.erb:
+  document-title: 1
+  html-has-lang: 1
+job_orders/timeline_modal.html.erb:
+  document-title: 1
+  html-has-lang: 1
+order_items/approve_order_item_modal.html.erb:
+  document-title: 1
+  html-has-lang: 1
+order_items/order_item_modal.html.erb:
+  document-title: 1
+  html-has-lang: 1
+order_items/revoke_order_item_modal.html.erb:
+  document-title: 1
+  html-has-lang: 1
+proficient_projects/proficient_project_modal.html.erb:
+  document-title: 1
+  html-has-lang: 1
+questions/edit.html.erb:
+  label: 2
+  select-name: 1
+questions/new.html.erb:
+  aria-input-field-name: 4
+  label: 2
+  select-name: 1
+repositories/edit.html.erb:
+  image-alt: 1
+staff_dashboard/_capacity_alert.html.erb:
+  document-title: 1
+  html-has-lang: 1
+template/category.html.erb:
+  document-title: 1
+  html-has-lang: 1
+template/certification.html.erb:
+  document-title: 1
+  html-has-lang: 1
+template/equipment.html.erb:
+  document-title: 1
+  html-has-lang: 1
+template/file.html.erb:
+  document-title: 1
+  html-has-lang: 1
+users/show.html.erb:
+  aria-required-children: 2
+volunteer_task_requests/_pending_requests.html.erb:
+  document-title: 1
+  html-has-lang: 1
+volunteer_task_requests/_processed_requests.html.erb:
+  document-title: 1
+  html-has-lang: 1
+volunteer_tasks/edit.html.erb:
+  label: 1
+  select-name: 3
+volunteer_tasks/index.html.erb:
+  aria-input-field-name: 2
+  select-name: 3
+volunteer_tasks/new.html.erb:
+  select-name: 3
+volunteers/new_event.html.erb:
+  select-name: 1

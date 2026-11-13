@@ -23,6 +23,12 @@ module AxeAudit
   # tabindex to it breaks the calendar's grid markup, so the rule is skipped
   # until the library fixes it.
   SKIPPED_RULES = %w[scrollable-region-focusable].freeze
+  # Colour rules judge the palette, which is a design decision rather than
+  # something a spec can settle; the page crawl leaves them out.
+  COLOUR_RULES = %w[color-contrast link-in-text-block].freeze
+  # Rules about the document itself (its <title> and <html lang>). A fragment
+  # that a page fetches and inserts has neither; the host page provides them.
+  DOCUMENT_RULES = %w[document-title html-has-lang html-lang-valid html-xml-lang-mismatch].freeze
   REPORT_DIR = "tmp/axe"
 
   Violation = Struct.new(:rule, :impact, :page, :label, :selector, :html, keyword_init: true)
@@ -36,14 +42,21 @@ module AxeAudit
 
     def strict? = !ENV["AXE_STRICT"].to_s.match?(/\A(0|false|no)\z/i)
 
-    # `only:` restricts the audit to the named axe rule ids (for focused specs).
-    def run(page, only: nil)
+    # `only:` restricts the audit to the named axe rule ids (for focused specs);
+    # `skip:` leaves out more rules on top of SKIPPED_RULES; `frames: false`
+    # audits the page without the documents inside its frames (the frame
+    # elements themselves are still checked). Only violations are reported, so
+    # axe skips the details of passing and inapplicable checks.
+    def run(page, only: nil, skip: [], frames: true)
       started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      Axe::Configuration.instance.legacy_mode = true
-      run = Axe::API::Run.new.excluding(*EXCLUDED)
-      run = only ? run.checking_only(*only) : run.according_to(*TAGS).skipping(*SKIPPED_RULES)
+      config = Axe::Configuration.instance
+      config.legacy_mode = true
+      config.skip_iframes = !frames
+      run = Axe::API::Run.new.excluding(*EXCLUDED).with_options(resultTypes: ["violations"], iframes: frames)
+      run = only ? run.checking_only(*only) : run.according_to(*TAGS).skipping(*SKIPPED_RULES, *skip)
       Axe::Core.new(page).call(run).results.violations
     ensure
+      config.skip_iframes = nil
       @seconds += Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
     end
 

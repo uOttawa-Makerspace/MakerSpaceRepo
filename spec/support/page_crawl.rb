@@ -176,8 +176,13 @@ module PageCrawl
       make(:exam) { create(:exam, user: records[:target], training_session: records[:training_session]) }
       make(:skill) { create(:skill) }
       make(:certification) { create(:certification, :basic_training, user_id: records[:target].id) }
-      make(:repository) { create(:repository, owner: records[:target]) }
-      make(:proficient_project) { create(:proficient_project, training: records[:training]) }
+      # a video link, so the repository page renders its embedded player
+      make(:repository) { create(:repository, owner: records[:target], youtube_link: "https://www.youtube.com/watch?v=dQw4w9WgXcQ") }
+      # a wiki link and an attached file, so the project page renders both frames
+      make(:proficient_project) do
+        create(:proficient_project, training: records[:training], description: "See https://wiki.makerepo.com/en/page")
+          .tap { |pp| create(:repo_file, proficient_project: pp) }
+      end
       make(:project_kit) { create(:project_kit, proficient_project: records[:proficient_project]) }
       make(:learning_module) do
         # a ready SCORM package, extracted now, so the asset route has a file to serve
@@ -206,7 +211,10 @@ module PageCrawl
         create(:key_request, :status_waiting_for_approval, :all_questions_answered, user: records[:target],
                                                                    space: records[:space], supervisor: create(:user, :admin))
       end
-      make(:key_certification) { create(:key_certification, user: records[:target]) }
+      # one attached document, so the certification page renders its frame
+      make(:key_certification) do
+        create(:key_certification, user: records[:target]).tap { |kc| kc.pdf_file_1.attach(FilesTestHelper.pdf) }
+      end
       make(:key_transaction) { create(:key_transaction, user: records[:target], key: records[:key]) }
       make(:order) { create(:order, user: records[:target]) }
       make(:order_item) { create(:order_item, order: records[:order], proficient_project: records[:proficient_project]) }
