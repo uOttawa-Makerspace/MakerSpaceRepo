@@ -1,6 +1,6 @@
 <section class="page-contents">
   <br>
-  <h2 class="text-center">Welcome to
+  <h2 class="text-center"><%= t('staff_dashboard.welcome_to') %>
     <strong><%= select_tag :space_id, options_from_collection_for_select(@all_spaces, :id, :name, @space.id), id: 'set_space_id', aria: { label: t('common.names.space') }, class: 'form-select', onchange: 'setSpace()' %></strong>
   </h2>
   <%= render "staff_dashboard/no_assigned_spaces" %>
@@ -8,14 +8,14 @@
   <br />
   <% if @users.any? %>
     <table class="table table-striped" id="table-js-search" data-datatable>
-      <caption>Search results</caption>
+      <caption><%= t('staff_dashboard.search.results') %></caption>
       <thead class="table-primary">
         <tr>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Last Seen</th>
-          <th>Status</th>
-          <th class="action-header"><i class="fa-solid fa-check"></i>&nbsp; TO SIGN IN <br> <i class="fa-solid fa-xmark"></i>&nbsp; TO SIGN OUT</th>
+          <th><%= t('staff_dashboard.columns.name') %></th>
+          <th><%= t('staff_dashboard.columns.email') %></th>
+          <th><%= t('staff_dashboard.columns.last_seen') %></th>
+          <th><%= t('staff_dashboard.columns.status') %></th>
+          <th class="action-header"><i class="fa-solid fa-check"></i>&nbsp; <%= t('staff_dashboard.columns.to_sign_in') %> <br> <i class="fa-solid fa-xmark"></i>&nbsp; <%= t('staff_dashboard.columns.to_sign_out') %></th>
         </tr>
       </thead>
       <% @users.each do |user| %>
@@ -29,7 +29,7 @@
             <%= last_seen_text(user) %>
           </td>
           <td class="status-cell">
-            <%= lab_sessions && signed_in ? 'Signed In' : 'Signed Out' %>
+            <%= lab_sessions && signed_in ? t('staff_dashboard.search.signed_in') : t('staff_dashboard.search.signed_out') %>
           </td>
 
           <td class="action-cell">
@@ -45,25 +45,25 @@
     </table>
     <br />
   <% else %>
-    No results
+    <%= t('staff_dashboard.search.no_results') %>
   <% end %>
   <br /><br />
 
   <div class="table-responsive">
-    <p id="user-count" class="text-center">Users inside <%= @space.name %>: <%= @space.signed_in_users.count %></p>
+    <p id="user-count" class="text-center"><%= t('staff_dashboard.users_inside_label', space: @space.name) %> <%= @space.signed_in_users.count %></p>
     <div class="container text-center mx-auto">
-      <%= button_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, method: :post, class: 'btn btn-secondary mx-auto text-center', **confirmation_options(t('confirmations.staff_dashboard.sign_out_all')) %>
+      <%= button_to t('staff_dashboard.sign_out_all'), staff_dashboard_sign_out_all_users_path, method: :post, class: 'btn btn-secondary mx-auto text-center', **confirmation_options(t('confirmations.staff_dashboard.sign_out_all')) %>
     </div>
     <table class="staff-users-table text-center mb-5 table table-striped" data-datatable>
       <thead class="table-primary">
         <tr>
-          <th class="name-header">Name</th>
-          <th class="email-header">Email</th>
-          <th class="name-header">Flagged?</th>
-          <th class="certifications-header">Certifications in <%= @space.name %></th>
-          <th class="email-header"> # of visits <br> (Past 2 months)</th>
-          <th class="last-seen-header">Last Seen</th>
-          <th class="action-header">Sign Out of <%= @space.name %></th>
+          <th class="name-header"><%= t('staff_dashboard.columns.name') %></th>
+          <th class="email-header"><%= t('staff_dashboard.columns.email') %></th>
+          <th class="name-header"><%= t('staff_dashboard.columns.flagged') %></th>
+          <th class="certifications-header"><%= t('staff_dashboard.columns.certifications_in', space: @space.name) %></th>
+          <th class="email-header"> <%= t('staff_dashboard.columns.visits_html') %></th>
+          <th class="last-seen-header"><%= t('staff_dashboard.columns.last_seen') %></th>
+          <th class="action-header"><%= t('staff_dashboard.columns.sign_out_of', space: @space.name) %></th>
         </tr>
       </thead>
       <tbody id="table-js-signed-in">
@@ -78,9 +78,9 @@
             <td>
               <%= render 'staff_dashboard/flag', staff_dashboard_user: user %>
               <% if user.flagged? %>
-                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#flag_message_<%= user.id %>">See Flag</button>
+                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#flag_message_<%= user.id %>"><%= t('staff_dashboard.flags.see_flag') %></button>
               <% else %>
-                None
+                <%= t('staff_dashboard.flags.none') %>
               <% end %>
             </td>
             <td class="certifications-cell">
@@ -92,7 +92,7 @@
                       <div id="cert-details" style="display:inline">
                         <%= certification.training.name_en %> <br />
                         <%= certification.trainer.name %> <br />
-                        <%= certification.updated_at.strftime('%B %d, %Y') %>
+                        <%= l(certification.updated_at, format: '%B %d, %Y') %>
                       </div>
                       <br />
                     </div>
@@ -118,14 +118,14 @@
   <br />
 
   <div class="table-responsive">
-    <p class="text-center">Users recently signed out of <%= @space.name %></p>
+    <p class="text-center"><%= t('staff_dashboard.recently_signed_out', space: @space.name) %></p>
     <table class="staff-recent-users-table text-center mb-5 table table-striped" data-datatable>
       <thead class="table-primary">
         <tr>
-          <th class="name-header">Name</th>
-          <th class="email-header">Email</th>
-          <th class="last-seen-header">Last Seen</th>
-          <th class="action-header"><i class="fa-solid fa-check"></i>&nbsp; TO SIGN IN <br> <i class="fa-solid fa-xmark"></i>&nbsp; TO SIGN OUT</th>
+          <th class="name-header"><%= t('staff_dashboard.columns.name') %></th>
+          <th class="email-header"><%= t('staff_dashboard.columns.email') %></th>
+          <th class="last-seen-header"><%= t('staff_dashboard.columns.last_seen') %></th>
+          <th class="action-header"><i class="fa-solid fa-check"></i>&nbsp; <%= t('staff_dashboard.columns.to_sign_in') %> <br> <i class="fa-solid fa-xmark"></i>&nbsp; <%= t('staff_dashboard.columns.to_sign_out') %></th>
         </tr>
       </thead>
       <%= render partial: 'signed_out_table', locals: { space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space } %>

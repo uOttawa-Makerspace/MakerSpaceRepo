@@ -105,12 +105,10 @@ class StaffDashboardController < StaffAreaController
     end
 
     faulty_user_data = sign_in_listed_users(read_spreadsheet(file))
-    flash[:notice] = "The file has been processed and users have been signed in ! "
+    flash[:notice] = I18n.t("staff_dashboard.flash.import_done")
     if faulty_user_data.any?
-      flash[
-        :alert_yellow
-      ] = "Please note that #{faulty_user_data.size} user(s) did not get signed in because they were not found in the system."
-      flash[:alert] = "Users with error: #{faulty_user_data.join(", ")}"
+      flash[:alert_yellow] = I18n.t("staff_dashboard.flash.import_not_found", count: faulty_user_data.size)
+      flash[:alert] = I18n.t("staff_dashboard.flash.import_errors", users: faulty_user_data.join(", "))
     end
     redirect_to staff_dashboard_index_path
   rescue Zip::Error, Roo::Error, Ole::Storage::FormatError
@@ -136,8 +134,8 @@ class StaffDashboardController < StaffAreaController
     respond_to do |format|
       format.html do
         notes = []
-        notes << "Not signed in: #{not_signed_in.map(&:name).join(', ')}" if not_signed_in.any?
-        notes << "Unknown username: #{not_found.join(', ')}" if not_found.any?
+        notes << I18n.t("staff_dashboard.flash.not_signed_in", names: not_signed_in.map(&:name).join(", ")) if not_signed_in.any?
+        notes << I18n.t("staff_dashboard.flash.unknown_username", names: not_found.join(", ")) if not_found.any?
         flash[:alert] = notes.join(". ") if notes.any?
         redirect_to staff_dashboard_index_path
       end
@@ -159,9 +157,9 @@ class StaffDashboardController < StaffAreaController
         Program.join(user, Program::TEAMS)
       end
 
-      flash[:notice] = "Successfully added all users to teams program"
+      flash[:notice] = I18n.t("staff_dashboard.flash.added_to_teams")
     else
-      flash[:alert] = "You can't perform this operation in this space."
+      flash[:alert] = I18n.t("staff_dashboard.flash.teams_not_here")
     end
 
     redirect_to staff_dashboard_index_path
@@ -201,7 +199,7 @@ class StaffDashboardController < StaffAreaController
       message = "You are not assigned to that space"
     elsif current_user.update(space_id: new_space.id)
       @space = new_space
-      flash[:notice] = "Space changed successfully"
+      flash[:notice] = I18n.t("staff_dashboard.flash.space_changed")
     else
       errors = current_user.errors.full_messages
       http_status = :unprocessable_content
@@ -236,9 +234,9 @@ class StaffDashboardController < StaffAreaController
     respond_to do |format|
       format.html do
         if error
-          flash[:alert] = "RFID not linked: #{error}"
+          flash[:alert] = I18n.t("staff_dashboard.flash.rfid_not_linked", error: error)
         else
-          flash[:notice] = "RFID linked successfully"
+          flash[:notice] = I18n.t("staff_dashboard.flash.rfid_linked")
         end
         redirect_back(fallback_location: root_path)
       end
@@ -263,9 +261,9 @@ class StaffDashboardController < StaffAreaController
         if error
           flash[:alert] = error
         elsif outcome == :already_unlinked
-          flash[:notice] = "RFID was already unlinked"
+          flash[:notice] = I18n.t("staff_dashboard.flash.rfid_already_unlinked")
         else
-          flash[:notice] = "RFID unlinked successfully"
+          flash[:notice] = I18n.t("staff_dashboard.flash.rfid_unlinked")
         end
         redirect_back(fallback_location: root_path)
       end
@@ -288,7 +286,7 @@ class StaffDashboardController < StaffAreaController
     elsif params[:query].present?
       redirect_to staff_dashboard_search_path(query: params[:query])
     else
-      flash[:alert] = "A valid user must be selected"
+      flash[:alert] = I18n.t("staff_dashboard.flash.select_valid_user")
       redirect_to staff_dashboard_index_path
     end
   end
@@ -336,7 +334,7 @@ class StaffDashboardController < StaffAreaController
   # A search with neither a query nor a username: the page goes back to the dashboard, the staff app gets an error object.
   def reject_blank_search
     respond_to do |format|
-      format.html { redirect_to staff_dashboard_index_path, alert: "No search parameters." }
+      format.html { redirect_to staff_dashboard_index_path, alert: I18n.t("staff_dashboard.flash.no_search_parameters") }
       format.json { render json: { error: "no params" } }
     end
   end

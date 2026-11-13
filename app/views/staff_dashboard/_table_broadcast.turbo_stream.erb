@@ -1,5 +1,5 @@
 <%= turbo_stream.update 'SpaceUserCount' do %>
-    <%= pluralize signed_in_users.count, 'user' %> inside <%= space.name %>
+    <%= t('staff_dashboard.users_inside', count: signed_in_users.count, space: space.name) %>
 <% end %>
 
 <%= turbo_stream.update 'table-js-signed-in' do %>

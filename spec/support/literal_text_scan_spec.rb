@@ -12,6 +12,8 @@ RSpec.describe LiteralTextScan do
     expect(arguments(%(<%= tag.p "<em>Welcome</em>" %>))).to eq(["<em>Welcome</em>"])
     expect(arguments(%(<%= link_to "Total\#{n}", root_path %>))).to eq(["Total\#{n}"])
     expect(arguments(%(<%= t("k", default: "Plain words") %>))).to eq(["Plain words"])
+    expect(arguments(%(<%= button_tag "Sign In", class: "btn" %>))).to eq(["Sign In"])
+    expect(arguments(%(<%= select_tag :user, "", prompt: "Pick a user" %>))).to eq(["Pick a user"])
   end
 
   it "ignores urls, fragments, a lone interpolation, markup without text and shared names" do
