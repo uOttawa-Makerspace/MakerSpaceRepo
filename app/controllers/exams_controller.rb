@@ -53,7 +53,7 @@ class ExamsController < SessionsController
 
   def destroy
     exam = Exam.find(params[:id])
-    write_flash(exam, "errors.training.exam_not_deleted", "Exam Deleted") { exam.destroy }
+    write_flash(exam, "errors.training.exam_not_deleted", I18n.t("exams.flash.deleted")) { exam.destroy }
     redirect_to exams_path
   end
 
@@ -88,14 +88,14 @@ class ExamsController < SessionsController
       exam.update(status: status, score: score)
     end
     if empty
-      flash[:alert] = "This exam has no questions. Ask staff to resend it."
+      flash[:alert] = I18n.t("exams.flash.no_exam_questions")
       return redirect_to exams_path
     end
     return reject_unopen_exam unless graded
 
     MsrMailer.finishing_exam(user, exam).deliver_now
     # MsrMailer.exam_results_staff(user, exam).deliver_now
-    flash[:notice] = "Score: #{score}. You #{status} the exam."
+    flash[:notice] = I18n.t("exams.flash.score.#{status}", score: score)
     redirect_to exams_path
   end
 
@@ -140,14 +140,14 @@ class ExamsController < SessionsController
 
   def only_admin_access
     return if current_user.admin?
-    flash[:alert] = "You cannot access this area."
+    flash[:alert] = I18n.t("exams.flash.no_access")
     redirect_to root_path
   end
 
   def only_session_staff_access
     @training_session = TrainingSession.find(params[:training_session_id])
     return if current_user.admin? || @training_session.user.eql?(current_user)
-    flash[:alert] = "You cannot access this area."
+    flash[:alert] = I18n.t("exams.flash.no_access")
     redirect_to root_path
   end
 
@@ -160,7 +160,7 @@ class ExamsController < SessionsController
   def only_owner_access
     @exam = Exam.find(params[:exam_id])
     return if @exam.user.eql?(current_user)
-    flash[:alert] = "You cannot access this area."
+    flash[:alert] = I18n.t("exams.flash.no_access")
     redirect_to root_path
   end
 
@@ -172,16 +172,16 @@ class ExamsController < SessionsController
   def reject_unopen_exam
     flash[:alert] =
       if @exam.ungraded?
-        "This exam has expired."
+        I18n.t("exams.flash.expired")
       else
-        "You cannot finish an exam that is already finished."
+        I18n.t("exams.flash.cannot_finish_finished")
       end
     redirect_to exams_path
   end
 
   def grant_access
     return if @exam.user.eql?(current_user) || current_user.staff?
-      flash[:alert] = "You cannot access this area."
+      flash[:alert] = I18n.t("exams.flash.no_access")
       redirect_to root_path
     
   end
@@ -192,9 +192,9 @@ class ExamsController < SessionsController
     if !@exam.open_for_answers?
       flash[:alert] =
         if @exam.ungraded?
-          "This exam has expired."
+          I18n.t("exams.flash.expired")
         else
-          "You cannot access an exam after being finished."
+          I18n.t("exams.flash.cannot_open_finished")
         end
       redirect_to exams_path
     end

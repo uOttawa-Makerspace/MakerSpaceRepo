@@ -40,7 +40,7 @@ class QuestionsController < AdminAreaController
     mark_first_answer_correct_by_default
     if @new_question.save(context: :question_form)
       redirect_to questions_path
-      flash[:notice] = "You've successfully created a new question!"
+      flash[:notice] = I18n.t("questions.flash.created")
     else
       set_levels
       set_categories
@@ -59,7 +59,7 @@ class QuestionsController < AdminAreaController
       (params[:n_answers].to_i - @question.answers.count).times do
         @question.answers.new(correct: false)
       end
-      flash[:notice] = "Answer added. Please update its content!"
+      flash[:notice] = I18n.t("questions.flash.answer_added")
     end
 
     @answers = @question.answers.sort_by { |a| a.correct ? 0 : 1 }
@@ -68,16 +68,16 @@ class QuestionsController < AdminAreaController
   def remove_answer
     @question.answers.where(correct: false).find(params[:answer_id]).destroy
     redirect_to edit_question_path(@question),
-                notice: "Successfully removed answer"
+                notice: I18n.t("questions.flash.answer_removed")
   end
 
   def update
-    write_flash(@question, "errors.training.question_not_updated", "Question updated") { @question.update(question_params) }
+    write_flash(@question, "errors.training.question_not_updated", I18n.t("questions.flash.updated")) { @question.update(question_params) }
     redirect_to questions_path
   end
 
   def destroy
-    write_flash(@question, "errors.training.question_not_deleted", "Question Deleted") { @question.destroy }
+    write_flash(@question, "errors.training.question_not_deleted", I18n.t("questions.flash.deleted")) { @question.destroy }
     redirect_to questions_path
   end
 
@@ -86,7 +86,7 @@ class QuestionsController < AdminAreaController
     @image = @question.images.attachments.find(params[:id])
     @image.purge
     redirect_to edit_question_path(params[:question_id]),
-                notice: "Question image deleted"
+                notice: I18n.t("questions.flash.image_deleted")
   end
 
   private

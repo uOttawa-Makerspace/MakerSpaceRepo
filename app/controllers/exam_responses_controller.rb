@@ -26,7 +26,7 @@ class ExamResponsesController < SessionsController
 
   def grant_access
     unless Exam.find(exam_response_params[:exam_id]).user.eql?(current_user)
-      flash[:alert] = "Do not try this"
+      flash[:alert] = I18n.t("exams.flash.not_your_exam")
       redirect_to :root
     end
   end
