@@ -129,6 +129,39 @@ RSpec.describe Admin::EventsController, type: :controller do
       end
     end
 
+    context "with recurring event updating this occurrence from the night the clocks go back" do
+      let(:posted) do
+        { title: "Renamed", event_type: "other", space_id: space.id, utc_start_time: "2027-11-07T05:30:00Z", utc_end_time: "2027-11-07T07:30:00Z" }
+      end
+
+      def series_from(starts_at)
+        create(:event, space: space, created_by: admin_user, event_type: "other", title: "Sunday lab", start_time: starts_at,
+                       end_time: starts_at + 1.hour, recurrence_rule: "DTSTART:#{starts_at.utc.strftime('%Y%m%dT%H%M%SZ')}\nRRULE:FREQ=WEEKLY;BYDAY=SU")
+      end
+
+      # The dialog's fields read 01:30 to 02:30 whichever 01:30 was opened, which post as two real hours from the first.
+      {
+        "the first 01:30" => [Time.utc(2027, 10, 31, 5, 30), "2027-11-07T05:30:00Z", "2027-11-07T06:30:00Z"],
+        "the second 01:30 (a series that starts there)" => [Time.utc(2027, 11, 7, 6, 30), "2027-11-07T06:30:00Z", "2027-11-07T07:30:00Z"]
+      }.each do |label, (starts_at, from, to)|
+        it "replaces and excludes #{label} with its real hour when the times are as the dialog filled them" do
+          series = series_from(starts_at)
+          patch :update, params: { id: series.id, update_scope: "this", keep_series_times: "1", event: posted }
+
+          replacement = Event.where.not(id: series.id).sole
+          expect([replacement.start_time.utc.iso8601, replacement.end_time.utc.iso8601]).to eq([from, to])
+          expect(series.reload.recurrence_rule).to include("EXDATE:#{Time.iso8601(from).strftime('%Y%m%dT%H%M%SZ')}")
+        end
+      end
+
+      it "takes the posted times when they were changed" do
+        series = series_from(Time.zone.local(2027, 10, 31, 1, 30))
+        patch :update, params: { id: series.id, update_scope: "this", event: posted }
+
+        expect(Event.where.not(id: series.id).sole.end_time).to eq(Time.utc(2027, 11, 7, 7, 30))
+      end
+    end
+
     context "with recurring event updating this occurrence only" do
       let!(:recurring_event) { create(:event, :recurring, space: space, created_by: admin_user) }
 

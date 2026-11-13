@@ -6,7 +6,7 @@ class Admin::EventsController < AdminAreaController
   before_action :parse_view_range, if: :view_range_action?
 
   def create
-    participants = params[:staff_select].presence || []
+    participants = Array.wrap(params[:staff_select].presence)
 
     title = event_params[:title].presence || event_params[:event_type].capitalize
 
@@ -48,19 +48,15 @@ class Admin::EventsController < AdminAreaController
   def update
     @event = Event.find(params[:id])
 
-    participants = params[:staff_select].presence || []
+    participants = Array.wrap(params[:staff_select].presence)
 
     title = event_params[:title].presence || event_params[:event_type].capitalize
 
-    update_scope = if @event.recurrence_rule.present?
-      params[:update_scope]
-    else
-      "non-recurring"
-    end
+    update_scope = @event.recurrence_rule.present? ? params[:update_scope] : "non-recurring"
 
     case update_scope
     when "non-recurring"
-      start_time, end_time = @event.times_after_update(@start_time, @end_time, keep: params[:keep_series_times] == "1")
+      start_time, end_time = @event.times_after_update(@start_time, @end_time, keep: keep_dialog_times?)
       if @event.update(
         title: title,
         description: event_params[:description],
@@ -76,17 +72,8 @@ class Admin::EventsController < AdminAreaController
         course_name_id: event_params[:course_name]
         )
 
-        # Update event assignments
         @event.event_assignments.destroy_all
-        unless participants.empty?
-          @event_assignments = participants.map do |staff_id|
-            EventAssignment.new(
-              event: @event,
-              user_id: staff_id
-            )
-          end
-          @event.event_assignments << @event_assignments
-        end
+        attach_participants(@event, participants)
 
         @event.push_to_google_later
 
@@ -95,7 +82,7 @@ class Admin::EventsController < AdminAreaController
         flash[:alert] = validation_message(@event, "failed_saves.event_update")
       end
     when "all"
-      old_date_new_time_start, old_date_new_time_end = @event.times_after_update(@start_time, @end_time, keep: params[:keep_series_times] == "1", series: true)
+      old_date_new_time_start, old_date_new_time_end = @event.times_after_update(@start_time, @end_time, keep: keep_dialog_times?, series: true)
 
       rule_to_use = series_rule.with_time_from(event_params[:recurrence_rule], at: old_date_new_time_start)
 
@@ -112,17 +99,8 @@ class Admin::EventsController < AdminAreaController
           course_name_id: event_params[:course_name]
           )
 
-        # Update event assignments
         @event.event_assignments.destroy_all
-        unless participants.empty?
-          @event_assignments = participants.map do |staff_id|
-            EventAssignment.new(
-              event: @event,
-              user_id: staff_id
-            )
-          end
-          @event.event_assignments << @event_assignments
-        end
+        attach_participants(@event, participants)
 
         @event.push_to_google_later
 
@@ -378,11 +356,12 @@ class Admin::EventsController < AdminAreaController
   # Excludes the occurrence from the series and creates it as its own event. Both happen in one
   # transaction, so a failure leaves the series as it was.
   def update_this_occurrence(title, participants)
-    updated_rule = series_rule.appending_exdate(@event.occurrence_start_on(@start_time))
+    excluded, start_time, end_time = @event.occurrence_after_update(@start_time, @end_time, keep: keep_dialog_times?)
+    updated_rule = series_rule.appending_exdate(excluded)
 
     # The replacement is checked before anything is saved: saving the series pushes to Google, which a
     # rollback cannot undo. A failure after this point (a database error) can still leave Google ahead.
-    @new_event = build_occurrence_event(title)
+    @new_event = build_occurrence_event(title, start_time, end_time)
     raise ActiveRecord::RecordInvalid, @new_event unless @new_event.valid?
 
     series_updated = Event.transaction do
@@ -434,13 +413,18 @@ class Admin::EventsController < AdminAreaController
     Event.remove_from_google_later(google_event_id, calendar_id, event.id) if event.destroy
   end
 
-  def build_occurrence_event(title)
+  # Whether the dialog sent its time fields as it filled them from the clicked entry.
+  def keep_dialog_times?
+    params[:keep_series_times] == "1"
+  end
+
+  def build_occurrence_event(title, start_time, end_time)
     Event.new(
       title: title,
       description: event_params[:description],
       # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
-      start_time: @start_time,
-      end_time: @end_time,
+      start_time: start_time,
+      end_time: end_time,
       recurrence_rule: nil,
       created_by_id: current_user.id,
       space_id: event_params[:space_id],
