@@ -36,6 +36,7 @@ class Question < ApplicationRecord
   # Saves form changes (including trainings and answers) only when the form rules pass.
   def update_from_form(attributes)
     with_transaction_returning_status do
+      preload_answers_with_texts
       assign_attributes(attributes)
       save(context: :question_form)
     end
@@ -43,10 +44,15 @@ class Question < ApplicationRecord
 
   private
 
-  # Checks the answers built or submitted with the form; stored answers left untouched are not reloaded.
+  # Checks the answers built or submitted with the form.
   def answers_have_text
     return if answers.target.reject(&:marked_for_destruction?).all? { |answer| answer.description.present? }
     errors.add(:base, :answer_text_required)
+  end
+
+  # Loads the stored answers with their texts and embedded files together, so assigning and checking each text costs no query of its own.
+  def preload_answers_with_texts
+    ActiveRecord::Associations::Preloader.new(records: [self], associations: { answers: { rich_text_description: :embeds_attachments } }).call
   end
 
   def exactly_one_correct_answer

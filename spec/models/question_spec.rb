@@ -53,6 +53,46 @@ RSpec.describe Question, type: :model do
     end
   end
 
+  describe "#update_from_form" do
+    let(:question) do
+      create(:question, level: "Beginner").tap do |q|
+        4.times { |i| Answer.create!(question: q, correct: i.zero?, description: "Answer #{i}") }
+      end
+    end
+
+    def answers_attributes_for(question)
+      question.answers.order(:id).each_with_index.to_h do |answer, i|
+        [i.to_s, { id: answer.id, description: "Edited #{i}", correct: answer.correct }]
+      end
+    end
+
+    it "saves the edited text of every answer" do
+      fresh = Question.find(question.id)
+      expect(fresh.update_from_form(description: "Changed?", answers_attributes: answers_attributes_for(question))).to be(true)
+      expect(Question.find(question.id).answers.order(:id).map { |a| a.description.to_plain_text }).to eq((0..3).map { |i| "Edited #{i}" })
+    end
+
+    it "loads the answer texts together instead of one at a time" do
+      fresh = Question.find(question.id)
+      attributes = answers_attributes_for(question)
+      rich_text_queries = []
+      callback = lambda do |*, payload|
+        rich_text_queries << payload[:sql] if payload[:sql].include?("action_text_rich_texts") && payload[:sql].start_with?("SELECT")
+      end
+      ActiveSupport::Notifications.subscribed(callback, "sql.active_record") do
+        fresh.update_from_form(description: "Changed?", answers_attributes: attributes)
+      end
+      expect(rich_text_queries.size).to eq(1)
+    end
+
+    it "refuses an answer without text and keeps the stored text" do
+      fresh = Question.find(question.id)
+      attributes = answers_attributes_for(question).tap { |a| a["1"][:description] = "" }
+      expect(fresh.update_from_form(answers_attributes: attributes)).to be(false)
+      expect(Question.find(question.id).answers.order(:id).map { |a| a.description.to_plain_text }).to eq((0..3).map { |i| "Answer #{i}" })
+    end
+  end
+
   describe "Chunk 12: answers and exam responses" do
     it "response_for_exam returns the response recorded for that exam only" do
       q = create(:question)
