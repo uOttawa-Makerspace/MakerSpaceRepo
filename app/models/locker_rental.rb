@@ -405,7 +405,7 @@ class LockerRental < ApplicationRecord
   #                   still arrives is recorded as held for staff to refund
   # An exception (HTTP, timeout, configuration, no answer) is the same failure. Returns true when there was nothing
   # to do or nothing is left to remove.
-  class DraftOrderNotDeleted < StandardError; end
+  DraftOrderNotDeleted = ShopifyConcern::DraftOrderNotDeleted
 
   def sync_shopify_draft_order_after_commit
     return true unless saved_change_to_state?
@@ -620,24 +620,8 @@ class LockerRental < ApplicationRecord
 
   def create_checkout_draft
     ensure_can_use_draft_order
-    new_id, _line_items = create_remote_draft_order # Shopify, no lock
-
-    kept = false
-    begin
-      transaction do
-        lock! # reloads: the state and the draft id are read now
-        if await_payment? && shopify_draft_order_id.blank? && renter_eligible?
-          update_column(:shopify_draft_order_id, new_id)
-          kept = true
-        end
-      end
-    rescue StandardError
-      # Nothing stored the id (lock timeout, deadlock, lost connection): the new draft would be an orphan payable
-      # invoice. (If the COMMIT itself failed, the id is not stored either.)
-      discard_unused_draft(new_id)
-      raise
-    end
-    discard_unused_draft(new_id) unless kept
+    new_id, = create_remote_draft_order # Shopify, no lock
+    keep_draft_order_id_unless_taken(new_id)
     # Kept: this draft is the invoice. Lost the race: another request stored its draft, which is. Either way the link
     # goes through the same fetch -> classify -> payable path.
     return nil unless shopify_draft_order_id.present? && await_payment? && renter_eligible?(lock: false)
@@ -650,16 +634,9 @@ class LockerRental < ApplicationRecord
     Rails.error.report(error, handled: true, severity: :error, context: { locker_rental_id: id, step: step })
   end
 
-  # The draft created for a checkout that lost the race. The lock is released; the shared rule decides what the
-  # outcome means, and only a draft that is still open and could not be deleted is a failure.
-  def discard_unused_draft(gid)
-    result = ShopifyConcern::DraftRemoval.call(gid)
-    return unless result.outcome == :open
-
-    raise DraftOrderNotDeleted, "Shopify did not delete the unused draft order #{gid}: #{result.user_errors.map { |e| e['message'] }.join(', ')}"
-  rescue StandardError => e
-    report_checkout_failure(e, 'delete_unused_shopify_draft_order')
-  end
+  # Read under the row lock by #keep_draft_order_id_unless_taken: a rental takes a new draft only while it awaits
+  # payment from an eligible renter (a cancel or a deactivation that committed meanwhile refuses it).
+  def may_take_draft_order? = await_payment? && renter_eligible?
 
   # A callable telling whether a payload line item is this rental's locker line, built once from the expected
   # variant (production) or title (elsewhere); nil when the rental has no locker (no draft can exist).

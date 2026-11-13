@@ -26,6 +26,9 @@ module ShopifyConcern
   ].freeze
   TRANSIENT_GRAPHQL_CODES = %w[THROTTLED INTERNAL_SERVER_ERROR].freeze
 
+  # Shopify kept open a draft it was asked to delete: it can still be paid.
+  class DraftOrderNotDeleted < StandardError; end
+
   # The gid-level Shopify calls (a draft order id, no record). Deliberately not class methods of the models that
   # include the concern: they skip #ensure_can_use_draft_order, so lockers and memberships must not gain them.
   # Used by the concern's instance methods and by JobOrder (its draft rule, JobOrder::DraftSweep).
@@ -171,10 +174,55 @@ module ShopifyConcern
 
   private
 
-  # Stores the id of a draft Shopify just created from `line_items` (the exact items sent). A model that needs to
-  # remember what the draft was built from overrides this (JobOrder stores a fingerprint in the same UPDATE).
-  def store_shopify_draft_order_id(new_id, _line_items)
+  # Stores the id of a draft Shopify just created. A model that writes more in the same UPDATE overrides this
+  # (JobOrder: the fingerprint of the quote the draft was built from; Membership: updated_at, checkout activity).
+  def store_shopify_draft_order_id(new_id)
     update_column(:shopify_draft_order_id, new_id)
+  end
+
+  # Whether the record, read again under its row lock, may still take a new draft (#keep_draft_order_id_unless_taken).
+  # A model whose drafts belong to one state overrides this.
+  def may_take_draft_order? = true
+
+  # THE step that keeps a draft Shopify has just created (`new_id`, made outside any lock) or deletes it again.
+  # Under the row lock, with the row read again, the id is stored (#store_shopify_draft_order_id) only when the row
+  # still has no draft and the record may still take one (#may_take_draft_order?). A draft that is not stored
+  # (another request stored its draft first, the record moved on, or storing failed) is deleted on Shopify once the
+  # lock is released, so a record is never left with a second payable draft; a stored draft is never deleted here.
+  # Afterwards the record holds the row's draft id: this one when kept, else the winner's (or none). True when kept;
+  # a failure to store re-raises after the delete.
+  def keep_draft_order_id_unless_taken(new_id)
+    kept = store_draft_order_id_unless_taken(new_id)
+    discard_unused_draft(new_id) unless kept
+    kept
+  end
+
+  def store_draft_order_id_unless_taken(new_id)
+    with_lock do # reloads the row: the state and the stored draft id are read now
+      next false unless shopify_draft_order_id.blank? && may_take_draft_order?
+
+      store_shopify_draft_order_id(new_id)
+      true
+    end
+  rescue StandardError
+    # Nothing stored the id (lock timeout, deadlock, lost connection; a failed COMMIT stores nothing either): the new
+    # draft would be a payable invoice no record points at.
+    discard_unused_draft(new_id)
+    raise
+  end
+
+  # Deletes a draft no record stores, by the shared rule (ShopifyConcern::DraftRemoval). A draft that is gone, or
+  # was paid meanwhile (it became an order), needs nothing. A draft Shopify still has open, and any error asking
+  # Shopify, is reported and never raised: the caller goes on with the draft the row stores.
+  def discard_unused_draft(gid)
+    result = ShopifyConcern::DraftRemoval.call(gid)
+    return unless result.outcome == :open
+
+    raise DraftOrderNotDeleted,
+          "Shopify did not delete the unused draft order #{gid}: #{result.user_errors.map { |e| e['message'] }.join(', ')}"
+  rescue StandardError => e
+    Rails.error.report(e, handled: true, severity: :error,
+                          context: { "#{self.class.model_name.singular}_id": id, step: 'delete_unused_shopify_draft_order' })
   end
 
   included do
@@ -296,14 +344,16 @@ module ShopifyConcern
       ShopifyConcern::DraftOrders.fetch_result(gid)
     end
 
+    # Creates a draft and keeps it unless another request stored one first, then fetches the row's draft.
     def create_shopify_draft_order
-      new_id, line_items = create_remote_draft_order
-      store_shopify_draft_order_id(new_id, line_items)
+      new_id, = create_remote_draft_order
+      keep_draft_order_id_unless_taken(new_id)
       fetch_shopify_draft_order
     end
 
-    # Creates the draft on Shopify and returns [its gid, the line items sent, its invoice URL]; stores nothing, so a caller that must
-    # decide under a lock whether to keep it (LockerRental#checkout_link) can do the Shopify call outside the lock.
+    # Creates the draft on Shopify and returns [its gid, the line items sent, its invoice URL]; stores nothing, so the
+    # Shopify call runs outside any lock and the caller decides under the lock whether to keep the draft
+    # (#keep_draft_order_id_unless_taken).
     def create_remote_draft_order
       create_draft_order = <<~QUERY
         mutation draftOrderCreate($input: DraftOrderInput!) {
