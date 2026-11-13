@@ -12,14 +12,16 @@ module User::UoengConcern
   # Results that carry no answer about the user. :unavailable means the
   # upstream failed in a way that may pass (timeout, refused connection, 5xx),
   # so asking again later can succeed; :unknown means asking again will not
-  # help (other statuses, a malformed body, nothing to look the user up by).
-  NO_ANSWER = %i[unknown unavailable].freeze
+  # help (other statuses, a malformed body, nothing to look the user up by);
+  # :mismatch means the answer is about a student number other than the one on
+  # the account, so it says nothing about this user.
+  NO_ANSWER = %i[unknown unavailable mismatch].freeze
 
   included do
     # Verify if user qualifies for a faculty membership. Returns the granted
     # membership, nil when the user is not engineering (any active faculty
-    # membership is revoked), or :unknown / :unavailable when the upstream
-    # could not answer (see NO_ANSWER): then the stored memberships are left
+    # membership is revoked), or :unknown / :unavailable / :mismatch when the
+    # upstream gave no answer about this user (see NO_ANSWER): then the stored memberships are left
     # exactly as they are.
     def validate_uoeng_membership(card_number: nil, space: nil)
       faculty_tier = MembershipTier.find_by!(title_en: "Faculty membership")
@@ -74,7 +76,7 @@ module User::UoengConcern
       nil
     end
 
-    # true, false, or :unknown / :unavailable when the upstream gave no usable answer.
+    # true, false, or :unknown / :unavailable / :mismatch when there is no usable answer about this user.
     def engineering?(card_number: nil, space: nil)
       return faculty == "Engineering" if Rails.env.test?
 
@@ -123,8 +125,7 @@ module User::UoengConcern
       parsed = JSON.parse(response.body)
       raise UnexpectedShape, "unexpected answer shape" unless expected_uoeng_shape?(parsed)
 
-      detect_student_id_mismatch(parsed, card_number, space)
-      parsed
+      checked_uoeng_answer(parsed, card_number, space)
     rescue Excon::Error::Timeout => e
       elapsed = ((Time.current - api_start) * 1000).round(1)
       TapBoxLog.log_api_timeout(user: self, elapsed_ms: elapsed, exception: e, card_number: card_number, space: space)
@@ -181,11 +182,20 @@ module User::UoengConcern
       TapBoxLog.log_name_mismatch(user: self, card_number: card_number, space: space)
     end
 
-    def detect_student_id_mismatch(parsed, card_number, space)
-      return unless student_id.present? && parsed["student_number"].present?
-      return if parsed["student_number"].to_s == student_id.to_s
+    # The answer, or :mismatch when it carries a student number other than the
+    # one on the account (the typed number is left as it is). The mismatch is
+    # logged for staff.
+    def checked_uoeng_answer(parsed, card_number, space)
+      return parsed unless uoeng_student_number_differs?(parsed)
 
       TapBoxLog.log_student_id_mismatch(user: self, card_number: card_number, space: space)
+      :mismatch
+    end
+
+    # uOEng sends the student number as `emplid`; `student_number` is read as a fallback.
+    def uoeng_student_number_differs?(parsed)
+      verified = parsed["emplid"].presence || parsed["student_number"].presence
+      student_id.present? && verified.present? && verified.to_s != student_id.to_s
     end
   end
 end

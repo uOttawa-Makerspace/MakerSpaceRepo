@@ -67,6 +67,7 @@ en:
     not_eligible: "Not eligible for a faculty membership."
     not_eligible_ended: "Not eligible for a faculty membership. The active faculty membership was ended."
     not_queryable: "This user has no student number or uOttawa email on file, so the check could not run. Nothing was changed."
+    identity_mismatch: "The student number on this account does not match the one uOttawa returned for it. No faculty membership was granted and nothing was changed. Check the student card, then fix the student number."
     unavailable: "The faculty membership check could not reach the university service. Nothing was changed; try again later."
     rate_limited: "Too many membership checks. Please wait a minute."
     button: "Check faculty membership"

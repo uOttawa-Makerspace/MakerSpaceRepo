@@ -49,6 +49,12 @@ RSpec.describe "Membership check from a profile", type: :request do
       expect(flash[:alert_yellow]).to eq(I18n.t("membership_checks.not_eligible_ended"))
     end
 
+    it "tells staff, and grants nothing, when the answer is for another student number" do
+      stub_api(body: genie.merge("emplid" => 999_999_999))
+      expect { run_check }.not_to change { target.memberships.count }
+      expect(flash[:alert]).to eq(I18n.t("membership_checks.identity_mismatch"))
+    end
+
     it "only says not eligible when there was no faculty membership to end" do
       stub_api(body: not_engineering)
       run_check

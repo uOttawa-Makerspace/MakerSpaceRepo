@@ -42,6 +42,7 @@ class MembershipChecksController < ApplicationController
   def flash_for(result, ended)
     case result
     when Membership then { notice: t("membership_checks.granted") }
+    when :mismatch then { alert: t("membership_checks.identity_mismatch") }
     when nil then { alert_yellow: t(ended.positive? ? "membership_checks.not_eligible_ended" : "membership_checks.not_eligible") }
     else { alert: t("membership_checks.unavailable") }
     end
