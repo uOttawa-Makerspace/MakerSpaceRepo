@@ -28,6 +28,9 @@ vi.mock("tom-select", () => ({
     addOption(options) {
       this.added = options;
     }
+    refreshOptions() {
+      this.refreshed = (this.refreshed || 0) + 1;
+    }
     destroy() {
       this.destroyed = true;
     }
@@ -42,22 +45,20 @@ await import("../../../app/javascript/src/manage_calendar_events.js");
 const $ = (id) => document.getElementById(id);
 const fire = (el, type, init) => el.dispatchEvent(new Event(type, init));
 
-async function load(feed) {
+// The page lists the staff on the picker; the server ranks them.
+async function load(staff) {
+  $("staff_select").dataset.staff = JSON.stringify(staff);
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => ({ ok: true, json: async () => feed })),
+    vi.fn(async () => ({ ok: true, json: async () => staff })),
   );
   document.dispatchEvent(new Event("turbo:load"));
-  await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-const ada = (unavailabilities) => [
-  { id: 1, name: "Ada", color: "#f00", unavailabilities },
+const ada = () => [
+  { id: 1, name: "Ada", color: "#f00", unavailableStarts: [] },
 ];
-const unavailableDates = (name) =>
-  [...$("staff_select").options].find((o) => o.textContent === name).dataset
-    .unavailableDates;
 
 beforeEach(() => {
   document.body.innerHTML = EVENT_MODAL_HTML;
@@ -68,7 +69,7 @@ afterEach(() => vi.useRealTimers());
 
 describe("all day", () => {
   it("restores a one hour entry when all day is switched off", async () => {
-    await load(ada([]));
+    await load(ada());
     $("start_time_field").value = "2027-03-17T10:30";
     $("all_day_checkbox").checked = true;
     fire($("all_day_checkbox"), "change");
@@ -81,7 +82,7 @@ describe("all day", () => {
   });
 
   it("keeps an all day entry at midnight when the start date changes", async () => {
-    await load(ada([]));
+    await load(ada());
     $("all_day_checkbox").checked = true;
     $("start_time_field").value = "2027-03-20T15:00";
     fire($("start_time_field"), "change");
@@ -90,7 +91,7 @@ describe("all day", () => {
   });
 
   it("ticks the weekday of an all day weekly entry", async () => {
-    await load(ada([]));
+    await load(ada());
     $("recurrence_frequency").value = "WEEKLY";
     $("start_time_field").value = "2027-03-17T10:00"; // a Wednesday
     $("all_day_checkbox").checked = true;
@@ -110,7 +111,7 @@ describe("repeat options", () => {
   };
 
   it("shows the repeat options and ticks the start weekday for weekly", async () => {
-    await load(ada([]));
+    await load(ada());
     $("start_time_field").value = "2027-03-17T10:00";
     await change("WEEKLY");
 
@@ -121,7 +122,7 @@ describe("repeat options", () => {
   });
 
   it("hides the weekday choices for daily and everything for no repeat", async () => {
-    await load(ada([]));
+    await load(ada());
     $("start_time_field").value = "2027-03-17T10:00";
     await change("WEEKLY");
     await change("DAILY");
@@ -134,7 +135,7 @@ describe("repeat options", () => {
   });
 
   it("warns when no weekday is ticked and clears the warning when one is", async () => {
-    await load(ada([]));
+    await load(ada());
     $("start_time_field").value = "2027-03-17T10:00";
     await change("WEEKLY");
 
@@ -148,7 +149,7 @@ describe("repeat options", () => {
   });
 
   it("builds a weekly rule with the chosen days and the end date", async () => {
-    await load(ada([]));
+    await load(ada());
     fire($("eventModal"), "show.bs.modal");
     $("start_time_field").value = "2027-03-17T10:00";
     $("end_time_field").value = "2027-03-17T11:00";
@@ -156,7 +157,7 @@ describe("repeat options", () => {
     $("day_MO").checked = true;
     $("day_WE").checked = true;
     $("recurrence_until").value = "2027-06-30";
-    tomInstances[0].handlers.focus();
+    fire($("recurrence_until"), "change");
 
     const rule = $("recurrence_rule_field").value;
     expect(rule).toContain("FREQ=WEEKLY");
@@ -168,16 +169,16 @@ describe("repeat options", () => {
   });
 
   it("leaves the rule empty when the event does not repeat", async () => {
-    await load(ada([]));
+    await load(ada());
     fire($("eventModal"), "show.bs.modal");
     $("recurrence_rule_field").value = "stale";
     $("recurrence_frequency").value = "";
-    tomInstances[0].handlers.focus();
+    fire($("recurrence_frequency"), "change");
     expect($("recurrence_rule_field").value).toBe("");
   });
 
   it("falls back to daily for a frequency the rule library does not know", async () => {
-    await load(ada([]));
+    await load(ada());
     fire($("eventModal"), "show.bs.modal");
     $("start_time_field").value = "2027-03-17T10:00";
     $("end_time_field").value = "2027-03-17T11:00";
@@ -185,60 +186,21 @@ describe("repeat options", () => {
     option.value = "FORTNIGHTLY";
     $("recurrence_frequency").add(option);
     $("recurrence_frequency").value = "FORTNIGHTLY";
-    tomInstances[0].handlers.focus();
+    fire($("recurrence_frequency"), "change");
     expect($("recurrence_rule_field").value).toContain("FREQ=DAILY");
-  });
-});
-
-describe("repeating event against repeating unavailability", () => {
-  // The feed gives Toronto wall-clock times: a start with no zone and a rule
-  // whose DTSTART has no Z, as Admin::CalendarController#unavailabilities_json
-  // writes them.
-  const feed = ada([
-    {
-      start: "2027-03-17T10:00:00",
-      end: "2027-03-17T11:00:00",
-      duration: 3600000,
-      rrule: "DTSTART:20270317T100000\nRRULE:FREQ=DAILY;COUNT=10",
-    },
-  ]);
-
-  const repeatDaily = (start, end) => {
-    fire($("eventModal"), "show.bs.modal");
-    $("start_time_field").value = start;
-    $("end_time_field").value = end;
-    $("recurrence_frequency").value = "DAILY";
-    tomInstances[0].handlers.focus();
-  };
-
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2027-03-10T00:00:00Z"));
-  });
-
-  it("flags the staff member when the occurrences overlap", async () => {
-    await load(feed);
-    repeatDaily("2027-03-17T10:30", "2027-03-17T11:30");
-    expect(unavailableDates("Ada")).not.toBe("");
-  });
-
-  it("does not flag a repeating event at another time of day", async () => {
-    await load(feed);
-    repeatDaily("2027-03-17T12:00", "2027-03-17T13:00");
-    expect(unavailableDates("Ada")).toBe("");
   });
 });
 
 describe("staff picker", () => {
   it("clears the typed text after a staff member is picked", async () => {
-    await load(ada([]));
+    await load(ada());
     fire($("eventModal"), "show.bs.modal");
     tomInstances[0].config.onItemAdd.call(tomInstances[0]);
     expect(tomInstances[0].textbox).toBe("");
   });
 
   it("replaces the picker when the modal opens again", async () => {
-    await load(ada([]));
+    await load(ada());
     fire($("eventModal"), "show.bs.modal");
     fire($("eventModal"), "show.bs.modal");
     expect(tomInstances).toHaveLength(2);
@@ -254,7 +216,7 @@ describe("staff picker", () => {
   });
 
   it("does not close the update dropdown when a radio is clicked", async () => {
-    await load(ada([]));
+    await load(ada());
     const parentClicks = vi.fn();
     $("update_dropdown_items").addEventListener("click", parentClicks);
     $("update_all").click();

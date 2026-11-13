@@ -1,16 +1,13 @@
-import { RRule, rrulestr } from "rrule";
+import { RRule } from "rrule";
 
 /*
  * Recurrence rules are kept in Toronto wall-clock time: "Monday 9:00" stays
  * 9:00 whatever the clock offset on the day. Everything here works on wall
  * times written as numbers: the milliseconds since 1970-01-01T00:00 of the
- * wall-clock fields read as if they were UTC (a "wall time"). Every day is then
- * exactly 24 hours long, which is what rrule.js (it has no time zones) needs,
- * and nothing depends on the zone of the browser.
- *
- * A real instant appears only at the edges: a timestamp ending in Z inside a
- * rule is turned into Toronto wall fields, and `wallToInstant` turns a wall
- * time back into an instant for display.
+ * wall-clock fields read as if they were UTC (a "wall time"), so nothing
+ * depends on the zone of the browser. A real instant appears only at the
+ * edges (`wallToInstant`, `instantToWall`). The server expands repeat rules
+ * (RecurringSeries); this module only writes them (`storedRule`).
  */
 
 const ZONE = "America/Toronto";
@@ -116,24 +113,6 @@ function stampOf(wallMs) {
   return new Date(wallMs).toISOString().replace(/[-:]|\.\d+Z/g, "");
 }
 
-function utcStampToWallStamp(stamp) {
-  const [, y, mo, d, h, mi, s] = stamp.match(
-    /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/,
-  );
-  return stampOf(instantToWall(Date.UTC(y, mo - 1, d, h, mi, s)));
-}
-
-// Timestamps ending in Z (an UNTIL or EXDATE written by the rule builder)
-// are instants: read them in Toronto. A start written in Toronto time
-// (DTSTART;TZID=America/Toronto:...) is already a wall time.
-const ZONED_START = new RegExp(`^DTSTART;TZID=${ZONE}:`, "m");
-
-function toWallRule(ruleText) {
-  return ruleText
-    .replace(ZONED_START, "DTSTART:")
-    .replace(/(\d{8}T\d{6})Z/g, (_, stamp) => utcStampToWallStamp(stamp));
-}
-
 /*
  * A repeat rule as it is stored: the start as Toronto wall-clock time
  * (DTSTART;TZID=America/Toronto), so the series keeps its clock time across
@@ -147,55 +126,4 @@ export function storedRule(options, startWall, untilDate) {
   // A time the clocks skip or repeat is written as the time it stands for
   const start = stampOf(instantToWall(wallToInstant(startWall)));
   return `DTSTART;TZID=${ZONE}:${start}\n${body}`;
-}
-
-/* The rule with its start replaced by a wall time. */
-export function startingAt(ruleText, startWall) {
-  const lines = ruleText.split("\n").filter((l) => !l.startsWith("DTSTART"));
-  return [`DTSTART:${stampOf(startWall)}`, ...lines].join("\n");
-}
-
-function overlaps(occurrence, from, to) {
-  return occurrence.start < to && occurrence.end > from;
-}
-
-/*
- * The occurrences of a rule that overlap the wall-time range [from, to), each
- * ending `durationMs` of wall-clock time after it starts. The rule is read once.
- */
-export function occurrencesOverlapping(ruleText, durationMs, from, to) {
-  const rule = rrulestr(toWallRule(ruleText));
-  const until = rule.options.until;
-  if (until && until.getTime() < from - durationMs) return [];
-  return rule
-    .between(new Date(from - durationMs), new Date(to), true)
-    .map((start) => ({
-      start: start.getTime(),
-      end: start.getTime() + durationMs,
-    }))
-    .filter((occurrence) => overlaps(occurrence, from, to));
-}
-
-/*
- * The intervals of a calendar feed entry that overlap the wall-time range
- * [from, to). An entry is either one-off ({ start, end }) or repeating
- * ({ rrule, duration }, the duration absent for a series with no end); its times are Toronto wall-clock strings. A rule that
- * cannot be read has none. A repeating entry is parsed and expanded once, for
- * the whole range.
- */
-export function entryIntervals(entry, from, to) {
-  if (!entry.rrule) {
-    const occurrence = {
-      start: wallFromString(entry.start),
-      end: wallFromString(entry.end),
-    };
-    return overlaps(occurrence, from, to) ? [occurrence] : [];
-  }
-  try {
-    // a series with no end has no duration: each occurrence is a single moment
-    return occurrencesOverlapping(entry.rrule, entry.duration ?? 0, from, to);
-  } catch (error) {
-    console.warn("Invalid RRULE:", error);
-    return [];
-  }
 }

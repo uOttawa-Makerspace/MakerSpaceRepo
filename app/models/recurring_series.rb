@@ -90,7 +90,8 @@ class RecurringSeries
   # Occurrences that overlap the window (a CalendarWindow); a series with no rule is its one occurrence. The walk
   # starts one occurrence length before the window, so an occurrence that began before it is kept.
   def occurrences_in(window)
-    starts = @rule.blank? ? [@starts_at] : starts_between(window.from - reach, window.to)
+    # an all-day occurrence is at most 25 hours long
+    starts = @rule.blank? ? [@starts_at] : starts_between(window.from - @span.fetch(:seconds, 25.hours), window.to)
     starts.map { |start| occurrence_at(start) }.select { |occurrence| window.overlaps?(occurrence.starts_at, occurrence.ends_at) }.to_a
   end
 
@@ -108,9 +109,6 @@ class RecurringSeries
   end
 
   def occurrence_at(start) = Occurrence.new(starts_at: start, ends_at: start.advance(@span), all_day: @all_day)
-
-  # How long before a window an occurrence that reaches into it can start (an all-day one is at most 25 hours long).
-  def reach = @all_day ? 25.hours : @span[:seconds]
 
   # The only method that reaches the repeat library. Lazy: the caller's
   # first(limit + 1) stops the walk. The gem takes COUNT from its start, so the

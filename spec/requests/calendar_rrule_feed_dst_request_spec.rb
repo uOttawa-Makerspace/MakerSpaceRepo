@@ -4,8 +4,7 @@ require "rails_helper"
 
 # What the calendar feeds send for weekly series across the America/Toronto
 # clock changes of 2027 (forward Sunday 2027-03-14 at 02:00, back Sunday
-# 2027-11-07 at 02:00). The admin events feed (and the admin unavailabilities
-# feed asked without a range, for the event dialog) send a repeat rule string
+# 2027-11-07 at 02:00). The admin events feed sends a repeat rule string
 # that the browser expands with @fullcalendar/rrule in the Toronto zone; the
 # same strings are drawn in spec/javascript/calendars/rrule_feed_dst.test.js.
 # The unavailabilities feeds asked for a range send the occurrences of the
@@ -74,16 +73,6 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
         row = response.parsed_body.flat_map { |group| group["events"] }.find { |r| r["id"] == "event-#{event.id}" }
         expect(row["rrule"]).to eq(scenario[:sent])
         expect(row["duration"]).to eq(3_600_000)
-      end
-
-      it "is sent as Toronto wall-clock text by the admin unavailabilities feed" do
-        sign_in_as(:admin)
-        staff = create(:user, :staff)
-        create(:staff_space, user: staff, space: space)
-        unavailability = create(:staff_unavailability, user: staff, start_time: start, end_time: start + 1.hour, recurrence_rule: stored)
-        get unavailabilities_json_admin_calendar_index_path(id: space.id)
-        row = response.parsed_body.flat_map { |group| group["unavailabilities"] }.find { |r| r["id"] == unavailability.id }
-        expect(row["rrule"]).to eq(scenario[:sent])
       end
 
       it "is sent by the admin unavailabilities feed for a range as the server's occurrences" do
@@ -257,12 +246,12 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
       response.parsed_body.flat_map { |group| group["events"] }
     end
 
-    def admin_unavailabilities_rows
+    def admin_unavailabilities_rows(range)
       sign_in_as(:admin)
       staff = create(:user, :staff)
       create(:staff_space, user: staff, space: space)
       create(:staff_external_unavailability, user: staff, ics_url: feed_url)
-      get unavailabilities_json_admin_calendar_index_path(id: space.id)
+      get unavailabilities_json_admin_calendar_index_path(id: space.id), params: range
       response.parsed_body.flat_map { |group| group["unavailabilities"] }
     end
 
@@ -282,7 +271,7 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
       expected.fetch(fixture).to_h { |row| [row["id"], row.slice("rrule", "duration", "allDay")] }
     end
 
-    %i[admin_imported_calendars open_hours admin_unavailabilities].each do |feed|
+    %i[admin_imported_calendars open_hours].each do |feed|
       context "in the #{feed.to_s.tr('_', ' ')} feed" do
         it "sends a Toronto-zone series over both clock changes as floating Toronto text" do
           rows = sent(feed, "toronto_tzid")
@@ -309,29 +298,31 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
         end
       end
     end
-    # The staff unavailabilities feed sends the occurrences of the imported series in the range, in the zone of the
-    # file, as the server expands them.
-    context "in the staff unavailabilities feed" do
-      def starts(fixture, range)
-        serve(fixture)
-        staff_unavailabilities_rows(range).map { |row| [row["id"], row["start"]] }
-      end
+    # The unavailabilities feeds send the occurrences of the imported series in the range, in the zone of the file,
+    # as the server expands them.
+    %i[admin_unavailabilities staff_unavailabilities].each do |feed|
+      context "in the #{feed.to_s.tr('_', ' ')} feed" do
+        define_method(:starts) do |fixture, range|
+          serve(fixture)
+          send("#{feed}_rows", range).map { |row| [row["id"], row["start"]] }
+        end
 
-      it "sends a Toronto-zone series at its occurrences, the skipped 02:30 at 03:30" do
-        expect(starts("toronto_tzid", start: "2027-03-07T00:00:00-05:00", end: "2027-03-15T00:00:00-04:00")).to eq([
-          ["spring-0230@ics.test@#{Time.utc(2027, 3, 7, 7, 30).to_i}", "2027-03-07T02:30:00-05:00"],
-          ["spring-0230@ics.test@#{Time.utc(2027, 3, 14, 7, 30).to_i}", "2027-03-14T03:30:00-04:00"]
-        ])
-      end
+        it "sends a Toronto-zone series at its occurrences, the skipped 02:30 at 03:30" do
+          expect(starts("toronto_tzid", start: "2027-03-07T00:00:00-05:00", end: "2027-03-15T00:00:00-04:00")).to eq([
+            ["spring-0230@ics.test@#{Time.utc(2027, 3, 7, 7, 30).to_i}", "2027-03-07T02:30:00-05:00"],
+            ["spring-0230@ics.test@#{Time.utc(2027, 3, 14, 7, 30).to_i}", "2027-03-14T03:30:00-04:00"]
+          ])
+        end
 
-      it "sends a Paris-zone series at 09:00 Paris time, 04:00 in Toronto while only Toronto has changed its clocks" do
-        expect(starts("paris_tzid", start: "2027-03-14T00:00:00-05:00", end: "2027-03-29T00:00:00-04:00").map(&:last))
-          .to eq(%w[2027-03-14T04:00:00-04:00 2027-03-21T04:00:00-04:00 2027-03-28T03:00:00-04:00])
-      end
+        it "sends a Paris-zone series at 09:00 Paris time, 04:00 in Toronto while only Toronto has changed its clocks" do
+          expect(starts("paris_tzid", start: "2027-03-14T00:00:00-05:00", end: "2027-03-29T00:00:00-04:00").map(&:last))
+            .to eq(%w[2027-03-14T04:00:00-04:00 2027-03-21T04:00:00-04:00 2027-03-28T03:00:00-04:00])
+        end
 
-      it "leaves out the cancelled instance and the cancelled series" do
-        expect(starts("recurrence_id_cancelled", start: "2027-03-07T00:00:00-05:00", end: "2027-03-22T00:00:00-04:00").map(&:last))
-          .to eq(%w[2027-03-07T10:00:00-05:00 2027-03-21T10:00:00-04:00])
+        it "leaves out the cancelled instance and the cancelled series" do
+          expect(starts("recurrence_id_cancelled", start: "2027-03-07T00:00:00-05:00", end: "2027-03-22T00:00:00-04:00").map(&:last))
+            .to eq(%w[2027-03-07T10:00:00-05:00 2027-03-21T10:00:00-04:00])
+        end
       end
     end
   end

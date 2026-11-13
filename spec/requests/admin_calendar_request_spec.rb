@@ -27,6 +27,9 @@ RSpec.describe "Admin calendar contract", type: :request do
   let(:staff) { create(:user, :staff, booking_approval: true) }
   let(:admin) { create(:user, :admin, booking_approval: true) }
 
+  # The unavailabilities feed sends the occurrences in the range the calendar asks for.
+  def week_of(day) = { start: day.to_date.iso8601, end: (day.to_date + 7).iso8601 }
+
   def log_in!(user)
     post login_authentication_path,
          params: { username_email: user.username, password: "asa32A353#" }
@@ -78,7 +81,7 @@ RSpec.describe "Admin calendar contract", type: :request do
   # `/…_json/0` (unknown space) returns 200 with an empty list. Pinned that.
   it "both admin JSON feeds answer 200 with an empty payload for an unknown space id" do
     log_in!(admin)
-    get unavailabilities_json_admin_calendar_index_path(id: 0)
+    get unavailabilities_json_admin_calendar_index_path(id: 0), params: week_of(Date.new(2027, 3, 14))
     expect(response.status).to eq(200)
     expect(response.parsed_body).to eq([])
 
@@ -105,11 +108,11 @@ RSpec.describe "Admin calendar contract", type: :request do
       )
     end
 
-    it "shares UNAVAILABILITY entries under the staff + literal wall re-zoned" do
+    it "shares UNAVAILABILITY occurrences under the staff, with the Toronto offset" do
       staff_space!
-      unavailability
+      record = unavailability
 
-      get unavailabilities_json_admin_calendar_index_path(id: space.id)
+      get unavailabilities_json_admin_calendar_index_path(id: space.id), params: week_of(Date.new(2027, 5, 3))
       expect(response.status).to eq(200)
       body = response.parsed_body
 
@@ -122,13 +125,14 @@ RSpec.describe "Admin calendar contract", type: :request do
 
       event = staff_entry["unavailabilities"].first
       expect(event["title"]).to eq("🚫 #{staff.name} - Doctor")
-      expect(event["start"]).to eq("2027-05-05T09:00:00")
-      expect(event["end"]).to eq("2027-05-05T11:00:00")
+      expect(event["start"]).to eq("2027-05-05T09:00:00-04:00")
+      expect(event["end"]).to eq("2027-05-05T11:00:00-04:00")
       expect(event["allDay"]).to be(false)
       expect(event).not_to include("rrule")
       expect(event["className"]).to eq("unavailability")
       expect(event["extendedProps"]).to eq(
-        "name" => staff.name, "title" => "Doctor", "description" => "Away at hospital"
+        "name" => staff.name, "title" => "Doctor", "description" => "Away at hospital",
+        "recordId" => record.id, "series" => nil, "occurrenceStart" => "2027-05-05T13:00:00Z"
       )
     end
 
@@ -146,14 +150,14 @@ RSpec.describe "Admin calendar contract", type: :request do
         start_time: Time.zone.parse("2027-05-05 09:00"),
         end_time: Time.zone.parse("2027-05-06 09:00")
       )
-      get unavailabilities_json_admin_calendar_index_path(id: space.id)
+      get unavailabilities_json_admin_calendar_index_path(id: space.id), params: week_of(Date.new(2027, 5, 3))
       flags = response.parsed_body.first["unavailabilities"].to_h { |u| [u["id"], u["allDay"]] }
       expect(flags).to eq(whole.id => true, span.id => false)
     end
 
     it "returns staff without unavailabilities with empty lists" do
       staff_space!
-      get unavailabilities_json_admin_calendar_index_path(id: space.id)
+      get unavailabilities_json_admin_calendar_index_path(id: space.id), params: week_of(Date.new(2027, 5, 3))
       body = response.parsed_body
       expect(body.first["unavailabilities"]).to eq([])
       expect(body.first["name"]).to eq(staff.name)
@@ -165,7 +169,7 @@ RSpec.describe "Admin calendar contract", type: :request do
                               user: create(:user, :staff, name: "Zeta"))
       StaffSpace.create!(space: space, color: "#222222",
                               user: create(:user, :staff, name: "Alpha"))
-      get unavailabilities_json_admin_calendar_index_path(id: space.id)
+      get unavailabilities_json_admin_calendar_index_path(id: space.id), params: week_of(Date.new(2027, 5, 3))
       expect(response.parsed_body.map { |e| e["name"] })
         .to eq(["Zeta", "Alpha"])
     end
@@ -337,37 +341,31 @@ RSpec.describe "Admin calendar contract", type: :request do
       )
     end
 
-    it "adds rrule (Toronto wall clock) and duration (ms) to a recurring local unavailability" do
+    def occurrence_starts(range)
+      get unavailabilities_json_admin_calendar_index_path(id: space.id), params: range
+      response.parsed_body.first["unavailabilities"].map { |entry| entry["start"] }
+    end
+
+    it "sends each occurrence of a recurring local unavailability, without the excluded one and after its COUNT" do
       recurring_unavailability
-      get unavailabilities_json_admin_calendar_index_path(id: space.id)
-      entry = response.parsed_body.first["unavailabilities"].first
-      expect(entry["duration"]).to eq(2 * 60 * 60 * 1000)
-      expect(entry["rrule"]).to eq(
-        "DTSTART:20270505T090000\nRRULE:FREQ=WEEKLY;BYDAY=WE;COUNT=4\nEXDATE:20270512T090000"
-      )
+      expect(occurrence_starts(start: "2027-05-01", end: "2027-06-30"))
+        .to eq(%w[2027-05-05T09:00:00-04:00 2027-05-19T09:00:00-04:00 2027-05-26T09:00:00-04:00])
     end
 
     it "still lists a series whose stored start line cannot be read, from its own start" do
       unavailability = recurring_unavailability
       unavailability.update_column(:recurrence_rule, "DTSTART:garbage\nRRULE:FREQ=WEEKLY;BYDAY=WE;COUNT=4")
-      get unavailabilities_json_admin_calendar_index_path(id: space.id)
-      expect(response).to have_http_status(:ok)
-      entry = response.parsed_body.first["unavailabilities"].first
-      expect(entry["rrule"]).to eq("DTSTART:20270505T090000\nRRULE:FREQ=WEEKLY;BYDAY=WE;COUNT=4")
+      expect(occurrence_starts(start: "2027-05-01", end: "2027-05-08")).to eq(%w[2027-05-05T09:00:00-04:00])
     end
 
-    it "gives a rule created in winter the same wall-clock start as one created in summer" do
+    it "keeps the wall-clock time of a rule created in winter after the clocks go forward" do
       StaffUnavailability.create!(
         user: staff, title: "Shift",
         start_time: Time.utc(2027, 1, 13, 14), end_time: Time.utc(2027, 1, 13, 16),
         recurrence_rule: "DTSTART:20270113T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=WE\nEXDATE:20270127T140000Z"
       )
-      get unavailabilities_json_admin_calendar_index_path(id: space.id)
-      entry = response.parsed_body.first["unavailabilities"].first
-      expect(entry["start"]).to eq("2027-01-13T09:00:00")
-      expect(entry["rrule"]).to eq(
-        "DTSTART:20270113T090000\nRRULE:FREQ=WEEKLY;BYDAY=WE\nEXDATE:20270127T090000"
-      )
+      expect(occurrence_starts(start: "2027-01-10", end: "2027-01-31")).to eq(%w[2027-01-13T09:00:00-05:00 2027-01-20T09:00:00-05:00])
+      expect(occurrence_starts(start: "2027-03-15", end: "2027-03-22")).to eq(%w[2027-03-17T09:00:00-04:00])
     end
 
     it "merges parsed external ICS events (HTTP stubbed) into the staff entry with the unavailability title" do
@@ -387,13 +385,14 @@ RSpec.describe "Admin calendar contract", type: :request do
       stub_request(:get, "https://calendar.example/staff.ics").to_return(status: 200, body: ics)
       StaffExternalUnavailability.create!(user: staff, ics_url: "https://calendar.example/staff.ics")
 
-      get unavailabilities_json_admin_calendar_index_path(id: space.id)
+      get unavailabilities_json_admin_calendar_index_path(id: space.id), params: week_of(Date.new(2098, 12, 30))
       entry = response.parsed_body.first["unavailabilities"].first
       expect(entry["title"]).to eq("🚫 #{staff.name} - Dentist")
-      expect(entry["start"]).to eq("2099-01-01T10:00:00")
-      expect(entry["end"]).to eq("2099-01-01T11:00:00")
+      expect(entry["start"]).to eq("2099-01-01T10:00:00-05:00")
+      expect(entry["end"]).to eq("2099-01-01T11:00:00-05:00")
       expect(entry["className"]).to eq("unavailability")
-      expect(entry["extendedProps"]).to eq("name" => "#{staff.name} External Unavailability", "description" => nil)
+      expect(entry["extendedProps"]).to eq("name" => "#{staff.name} External Unavailability", "description" => nil,
+                                           "occurrenceStart" => "2099-01-01T15:00:00Z")
     end
 
     it "serves the space's imported calendars from their ICS url (HTTP stubbed)" do
@@ -472,13 +471,11 @@ RSpec.describe "Admin calendar contract", type: :request do
       expect(unavailability_titles).to contain_exactly("Inside", "Lectures", "One-off 20270317", "Weekly")
     end
 
-    it "sends every unavailability without a range, for the event dialog" do
-      unavailability!("Inside", zone.local(2027, 3, 16, 9), zone.local(2027, 3, 16, 10))
-      unavailability!("Before", zone.local(2027, 3, 1, 9), zone.local(2027, 3, 1, 10))
-
+    it "answers 400 with the reason when the range is missing" do
       get unavailabilities_json_admin_calendar_index_path(id: space.id)
 
-      expect(unavailability_titles).to contain_exactly("Inside", "Before")
+      expect(response.status).to eq(400)
+      expect(response.parsed_body).to eq("error" => I18n.t("errors.calendar.window_invalid"))
     end
 
     it "sends the imported calendars' one-offs in the range and their series" do

@@ -96,12 +96,13 @@ class Staff::UnavailabilitiesController < StaffAreaController
   # those of their linked calendars.
   def json
     window = CalendarWindow.bounded(params)
-    calendars = current_user.staff_external_unavailabilities.map do |external|
-      [external, ImportedCalendar.load(external.ics_url, name: "#{current_user.name} External Unavailability", color: nil)]
-    end
+    calendars = current_user.staff_external_unavailabilities.map { |external| [external, external.calendar(current_user.name)] }
     report_failed_calendars(calendars)
 
-    render json: own_unavailability_rows(window) + calendars.flat_map { |external, calendar| imported_rows(external.source_host, calendar, window) }
+    render json: own_unavailability_rows(window) + calendars.flat_map { |external, calendar|
+      # only the host is ever sent: a private link holds its secret in the path
+      calendar.feed_rows(window, prefix: "External - ", props: { sourceHost: external.source_host })
+    }
   end
 
   def update_external_unavailabilities
@@ -139,14 +140,6 @@ class Staff::UnavailabilitiesController < StaffAreaController
     failed_hosts = calendars.select { |_external, calendar| calendar.failed? }.map { |external, _calendar| external.source_host }
     response.set_header("Cache-Control", "no-store")
     response.set_header("X-Failed-Calendars", failed_hosts.to_json) unless failed_hosts.empty?
-  end
-
-  # The occurrences of one linked calendar, marked with the host of the link they came from. Only the host is ever
-  # sent: a private link holds its secret in the path.
-  def imported_rows(host, calendar, window)
-    calendar.feed_rows(window).map do |row|
-      row.merge(title: "External - #{row[:title]}", extendedProps: row[:extendedProps].merge(sourceHost: host))
-    end
   end
 
   def staff_params

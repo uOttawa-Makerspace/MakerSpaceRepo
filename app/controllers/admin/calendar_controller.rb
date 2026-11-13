@@ -10,20 +10,20 @@ class Admin::CalendarController < AdminAreaController
     @colors = StaffSpace.includes(:user).where(space_id: @space_id).map do |staff_space|
       { id: staff_space.user.id, name: staff_space.user.name, username: staff_space.user.username, color: staff_space.color }
     end.sort_by { |user| user[:name].downcase }
+    @modal_staff = StaffSpace.conflicts(@space_id, [])
     flash[:alert] = "You are not assigned to any spaces." if @spaces.empty?
     load_sidebar
   end
 
-  # Per staff member of the space: the occurrences of their unavailabilities in the window (CalendarWindow), stored
-  # ones and those of their external calendars. With no window, every unavailability with its repeat rule (the
-  # event dialog reads them that way).
+  # Per staff member of the space: the occurrences of their unavailabilities in the window (CalendarWindow, required),
+  # stored ones and those of their external calendars.
   def unavailabilities_json
-    window = CalendarWindow.from_params(params)
+    window = CalendarWindow.bounded(params)
     colors = StaffSpace.colors_in(params[:id])
     staff = StaffSpace.calendar_staff(params[:id]).includes(:staff_external_unavailabilities).order(name: :desc)
     stored = window.records(StaffUnavailability.where(user_id: staff.map(&:id))).group_by(&:user_id)
     render json: staff.map { |member|
-      rows = stored.fetch(member.id, []).flat_map { |unavailability| unavailability.calendar_rows(member.name, window) }
+      rows = stored.fetch(member.id, []).flat_map { |unavailability| stored_rows(unavailability, member.name, window) }
       { id: member.id, name: member.name, color: colors[member.id], unavailabilities: rows + external_rows(member, window) }
     }
   end
@@ -68,17 +68,14 @@ class Admin::CalendarController < AdminAreaController
     @imported_calendars = StaffNeededCalendar.where(space_id: @calendar_space_id).linked
   end
 
-  # The rows of a staff member's external calendars: their occurrences in the window, or with no window each entry
-  # with its repeat rule (CalendarHelper#ics_feed).
+  def stored_rows(unavailability, staff_name, window)
+    unavailability.feed_rows(window, title: "🚫 #{staff_name} - #{unavailability.title}", className: "unavailability",
+                                     extendedProps: { name: staff_name, title: unavailability.title, description: unavailability.description })
+  end
+
   def external_rows(staff, window)
-    name = "#{staff.name} External Unavailability"
     staff.staff_external_unavailabilities.flat_map do |external|
-      rows = if window == CalendarWindow::ALL
-        helpers.parse_ics_calendar(external.ics_url, name: name).flat_map { |calendar| calendar[:events] }
-      else
-        ImportedCalendar.load(external.ics_url, name: name, color: nil).feed_rows(window)
-      end
-      rows.map { |row| row.merge(title: "🚫 #{staff.name} - #{row[:title]}", className: "unavailability") }
+      external.calendar(staff.name).feed_rows(window, prefix: "🚫 #{staff.name} - ", className: "unavailability")
     end
   end
 

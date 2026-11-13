@@ -22,18 +22,15 @@ RSpec.describe "Admin calendar: creating events", type: :system do
 
   around { |ex| travel_to(Time.zone.local(2027, 3, 16, 12)) { ex.run } }
 
-  # The calendar view and the event modal read the same feed: the view for the
-  # range it shows (?start&end), the modal for everything. Refusing the first
-  # request without a range fails the modal only, and the calendar still draws.
-  def fail_staff_availability_feed
-    @refuse_first_feed_script = page.driver.browser.execute_cdp(
+  # The event modal asks the server to rank the staff (staff_conflicts); this refuses every such request.
+  def fail_staff_ranking
+    @refuse_ranking_script = page.driver.browser.execute_cdp(
       "Page.addScriptToEvaluateOnNewDocument",
       source: <<~JS
         (() => {
           const originalFetch = window.fetch;
-          let asked = 0;
           window.fetch = (url, ...rest) =>
-            String(url).includes("/admin/calendar/unavailabilities_json/") && !String(url).includes("?") && asked++ === 0
+            String(url).includes("/admin/calendar/staff_conflicts")
               ? Promise.resolve(new Response(null, { status: 500 }))
               : originalFetch(url, ...rest);
         })();
@@ -42,23 +39,15 @@ RSpec.describe "Admin calendar: creating events", type: :system do
   end
 
   after do
-    next unless @refuse_first_feed_script
+    next unless @refuse_ranking_script
 
-    page.driver.browser.execute_cdp("Page.removeScriptToEvaluateOnNewDocument", identifier: @refuse_first_feed_script)
+    page.driver.browser.execute_cdp("Page.removeScriptToEvaluateOnNewDocument", identifier: @refuse_ranking_script)
   end
 
   def open_admin_calendar
     log_in_as(admin, to: admin_calendar_index_path, local_storage: { fullCalendarDefaultDateAdmin: CalendarJsHelpers::WEEK_MIDDAY })
     expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
     wait_for_admin_calendar_scripts
-  end
-
-  # The page that could not load its staff data never becomes ready, so only
-  # the calendar and the error alert are awaited.
-  def open_admin_calendar_without_ready_wait
-    log_in_as(admin, to: admin_calendar_index_path, local_storage: { fullCalendarDefaultDateAdmin: CalendarJsHelpers::WEEK_MIDDAY })
-    expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
-    expect(page).to have_css("#staff_load_error:not(.d-none)")
   end
 
   # Drags down a Thursday slot; the block runs while the button is still held.
@@ -107,41 +96,19 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     expect(page).to have_button("+ Add Event", disabled: false)
   end
 
-  it "tells the admin and keeps Add Event disabled when the staff availability cannot be loaded", js: true, js_errors: :allow, skip_bullet: true do
-    fail_staff_availability_feed
-    log_in_as(admin, to: admin_calendar_index_path)
-
-    expect(page).to have_css("#staff_load_error[role='alert']", text: "staff availability could not be loaded")
-    expect(page).to have_button("+ Add Event", disabled: true)
-    expect(page).to have_no_css("#eventModal[data-ready]", visible: :all)
+  def open_staff_options
+    find("#staff_select_container .ts-control").click
+    find("#staff_select_container .ts-dropdown")
   end
 
-  context "when the staff availability cannot be loaded" do
-    before do
-      fail_staff_availability_feed
-      create(:event, space: space, title: "Open lab", event_type: "other", draft: false,
-                     start_time: Time.utc(2027, 3, 16, 14), end_time: Time.utc(2027, 3, 16, 15))
-      open_admin_calendar_without_ready_wait
-    end
+  it "tells the admin and still lists the staff when the staff availability cannot be loaded", js: true, js_errors: :allow, skip_bullet: true do
+    fail_staff_ranking
+    open_admin_calendar
+    open_add_modal
 
-    it "does not open the modal when an event is clicked", js: true, js_errors: :allow, skip_bullet: true do
-      page.find(".fc-timegrid-event", text: "Open lab", visible: :all).click
-
-      expect(page).to have_css("#staff_load_error[role='alert']")
-      expect(page).to have_no_css("#eventModal.show", visible: :all)
-      expect(page).to have_css("#eventModalLabel", text: "Add Event", visible: :all)
-    end
-
-    it "ignores a dragged range: no modal, an untouched form and no lingering highlight", js: true, js_errors: :allow, skip_bullet: true do
-      drag_a_range do
-        # mid-drag: FullCalendar is tracking the selection, so the drag does reach it
-        expect(page).to have_css(".fc-highlight")
-      end
-
-      expect(page).to have_no_css(".fc-highlight")
-      expect(page).to have_no_css("#eventModal.show", visible: :all)
-      expect(find("#start_time_field", visible: :all).value).to eq("")
-    end
+    expect(page).to have_css("#staff_load_error[role='alert']", text: "staff availability could not be loaded")
+    expect(open_staff_options).to have_css(".option", text: "Wanda Worker")
+    expect(page).to have_button("+ Add Event", disabled: false)
   end
 
   it "opens the modal with the dragged start time once the page is ready", js: true, skip_bullet: true do
@@ -420,7 +387,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     let(:slot_start) { "2027-03-17T17:30" }
     let(:slot_end) { "2027-03-17T18:00" }
 
-    # The feed and the modal's fields are Toronto wall-clock times. The page is
+    # The server ranks the staff for the modal's Toronto wall-clock times. The page is
     # loaded first and loaded again afterwards.
     def unavailability_around_slot(rule_for: nil)
       log_in_as(admin, to: root_path)
@@ -445,7 +412,9 @@ RSpec.describe "Admin calendar: creating events", type: :system do
       fill_datetime("end_time_field", slot_end)
     end
 
+    # The list is read once it shows the server's answer for the times in the form.
     def staff_options
+      expect(page).to have_css("#staff_select[data-ranked]", visible: :all)
       find("#staff_select + .ts-wrapper .ts-control").click
       page.all(".ts-dropdown .option").map(&:text)
     end

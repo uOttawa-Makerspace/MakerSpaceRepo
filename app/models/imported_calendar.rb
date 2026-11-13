@@ -130,10 +130,12 @@ class ImportedCalendar
     @problem_uids = []
   end
 
-  # The occurrences of the calendar's entries in the window (a CalendarWindow), as the calendar pages draw them.
-  def feed_rows(window)
+  # The occurrences of the calendar's entries in the window (a CalendarWindow), as the calendar pages draw them: each
+  # title after `prefix`, with the page's own `extra` properties and `props` in extendedProps.
+  def feed_rows(window, prefix: "", props: {}, **extra)
     entries.flat_map do |entry|
-      row = { groupId: id, title: entry.summary, display: "auto", extendedProps: { name: name, description: entry.description } }
+      row = { groupId: id, title: "#{prefix}#{entry.summary}", display: "auto", **extra,
+              extendedProps: { name: name, description: entry.description, **props } }
       entry.occurrences_in(window).map { |occurrence| occurrence.feed_row(entry.key, row, repeating: entry.series) }
     end
   end

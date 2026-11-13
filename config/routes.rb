@@ -469,6 +469,9 @@ Rails.application.routes.draw do
       post "import_programs"
     end
 
+    namespace :calendar do
+      resource :staff_conflicts, only: :show
+    end
     resources :calendar, only: :index do
       collection do
         get 'unavailabilities_json/:id', to: 'calendar#unavailabilities_json', as: :unavailabilities_json
