@@ -113,15 +113,15 @@
           <% @all_sessions.limit(10).each do |session| %>
             <% if session.sign_out_time > Time.zone.now %>
               <tr class="current-session">
-                <td><%= l(session.sign_in_time.getlocal, format: :admin_date_seconds) %></td>
+                <td><%= l(session.sign_in_time, format: :admin_date_seconds) %></td>
                 <td><%= t('admin_area.users.show.current_session') %></td>
                 <td><%= t('admin_area.users.show.minutes_so_far', minutes: ((Time.zone.now - session.sign_in_time) / 60).round) %></td>
                 <td><%= PiReader.find_by_mac(session.mac_address).try(:pi_location) %></td>
               </tr>
              <% else %>
               <tr>
-                <td><%= l(session.sign_in_time.getlocal, format: :admin_date_seconds) %></td>
-                <td><%= l(session.sign_out_time.getlocal, format: :admin_date_seconds) %></td>
+                <td><%= l(session.sign_in_time, format: :admin_date_seconds) %></td>
+                <td><%= l(session.sign_out_time, format: :admin_date_seconds) %></td>
                 <td><%= t('admin_area.users.show.minutes', minutes: ((session.sign_out_time - session.sign_in_time) / 60).round) %></td>
                 <td><%= PiReader.find_by_mac(session.mac_address).try(:pi_location) %></td>
               </tr>
