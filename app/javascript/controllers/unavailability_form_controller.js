@@ -7,6 +7,7 @@ import {
   instantToWall,
   startOfDay,
   storedRule,
+  wallEnd,
   wallFromCalendar,
   wallOfField,
   wallToInstant,
@@ -157,9 +158,7 @@ export default class extends TypedController {
     } else {
       const start = wallFromCalendar(entry.startStr);
       this.startTimeTarget.value = fieldValue(start);
-      this.endTimeTarget.value = fieldValue(
-        entry.endStr ? wallFromCalendar(entry.endStr) : start + HOUR_MS,
-      );
+      this.endTimeTarget.value = fieldValue(wallEnd(entry.endStr, start));
     }
   }
 

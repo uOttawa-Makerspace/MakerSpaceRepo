@@ -80,6 +80,32 @@ RSpec.describe Admin::EventsController, type: :controller do
       end
     end
 
+    context "with recurring event updating all from the night the clocks go back" do
+      let(:first) { Time.zone.local(2027, 10, 31, 1, 30) }
+      let!(:weekly) do
+        create(:event, space: space, created_by: admin_user, event_type: "other", title: "Sunday lab",
+                       start_time: first, end_time: first + 1.hour,
+                       recurrence_rule: "DTSTART:20271031T053000Z\nRRULE:FREQ=WEEKLY;BYDAY=SU")
+      end
+      let(:posted) do
+        { title: "Renamed", event_type: "other", space_id: space.id, utc_start_time: "2027-11-07T05:30:00Z",
+          utc_end_time: "2027-11-07T07:30:00Z", recurrence_rule: "DTSTART;TZID=America/Toronto:20271107T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU" }
+      end
+
+      # The dialog posts the form's wall times, 01:30 to 02:30, which are two real hours that night.
+      it "keeps the series' start and length when the times are as the dialog filled them" do
+        patch :update, params: { id: weekly.id, update_scope: "all", keep_series_times: "1", event: posted }
+
+        expect(weekly.reload).to have_attributes(title: "Renamed", start_time: first, end_time: first + 1.hour)
+      end
+
+      it "takes the posted length when the times were changed" do
+        patch :update, params: { id: weekly.id, update_scope: "all", event: posted }
+
+        expect(weekly.reload).to have_attributes(start_time: first, end_time: first + 2.hours)
+      end
+    end
+
     context "with recurring event updating this occurrence only" do
       let!(:recurring_event) { create(:event, :recurring, space: space, created_by: admin_user) }
 

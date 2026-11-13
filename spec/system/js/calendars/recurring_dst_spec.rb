@@ -170,10 +170,9 @@ RSpec.describe "Recurring events across the clock changes", type: :system do
           end
         end
 
-        # Only the title is edited. Admin page (events), disagreement "skipped hour form": the form is filled with
-        # 02:30 to 03:30, both of which are the instant 07:30Z, so the server refuses the zero-length series and
-        # nothing is saved. Staff page: the form holds the occurrence, 03:30 to 04:30, left as filled, so the series
-        # is renamed and keeps its own 02:30 start and length.
+        # Only the title is edited: the form holds the occurrence as filled and sends the series' own start and length, so
+        # the series is renamed and keeps its 02:30 start (the admin page's form holds 02:30 to 03:30 there, the staff
+        # page's 03:30 to 04:30).
         it "saves 'Update all events' with only the title changed from the change-day occurrence", js: true, skip_bullet: true do
           open_calendar(page_kind, week)
           open_change_day_event(page_kind, week)
@@ -182,10 +181,7 @@ RSpec.describe "Recurring events across the clock changes", type: :system do
           series.reload
 
           expect([series.title, series.start_time, series.recurrence_rule]).to eq(
-            {
-              admin: [title, eastern.local(2027, 3, 7, 2, 30), "DTSTART:20270307T073000Z\nRRULE:FREQ=WEEKLY;BYDAY=SU"],
-              staff: ["Renamed series", eastern.local(2027, 3, 7, 2, 30), "DTSTART;TZID=America/Toronto:20270307T023000\nRRULE:FREQ=WEEKLY;BYDAY=SU"]
-            }.fetch(page_kind)
+            ["Renamed series", eastern.local(2027, 3, 7, 2, 30), "DTSTART;TZID=America/Toronto:20270307T023000\nRRULE:FREQ=WEEKLY;BYDAY=SU"]
           )
         end
 
@@ -230,9 +226,8 @@ RSpec.describe "Recurring events across the clock changes", type: :system do
           series.reload
 
           expect([series.title, series.start_time, series.recurrence_rule]).to eq(["Renamed series", eastern.local(2027, 10, 31, 1, 30), "DTSTART;TZID=America/Toronto:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU"])
-          # The staff dialog sends the series' own length (the form showed 01:30 to 02:30, two real hours that
-          # night); the admin dialog still sends the form's times for an event.
-          expect(series.end_time - series.start_time).to eq(page_kind == :staff ? 1.hour : 2.hours)
+          # Both dialogs send the series' own length (the form showed 01:30 to 02:30, two real hours that night).
+          expect(series.end_time - series.start_time).to eq(1.hour)
         end
 
         it "ends the series with 'This and following events'", js: true, skip_bullet: true do

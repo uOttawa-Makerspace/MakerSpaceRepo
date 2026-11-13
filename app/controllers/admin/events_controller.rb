@@ -8,11 +8,7 @@ class Admin::EventsController < AdminAreaController
   def create
     participants = params[:staff_select].presence || []
 
-    title = if event_params[:title].blank? || event_params[:title].strip.empty?
-      event_params[:event_type].capitalize
-    else 
-      event_params[:title]
-    end 
+    title = event_params[:title].presence || event_params[:event_type].capitalize
 
     @event = Event.new(
       title: title,
@@ -54,11 +50,7 @@ class Admin::EventsController < AdminAreaController
 
     participants = params[:staff_select].presence || []
 
-    title = if event_params[:title].blank? || event_params[:title].strip.empty?
-      event_params[:event_type].capitalize
-    else 
-      event_params[:title]
-    end 
+    title = event_params[:title].presence || event_params[:event_type].capitalize
 
     update_scope = if @event.recurrence_rule.present?
       params[:update_scope]
@@ -102,12 +94,7 @@ class Admin::EventsController < AdminAreaController
         flash[:alert] = validation_message(@event, "failed_saves.event_update")
       end
     when "all"
-      old_date_new_time_start = helpers.combine_date_and_time(
-        @event.start_time,
-        @start_time
-      )
-      duration = (@end_time - @start_time).to_i
-      old_date_new_time_end = old_date_new_time_start + duration
+      old_date_new_time_start, old_date_new_time_end = series_times
 
       rule_to_use = series_rule.with_time_from(event_params[:recurrence_rule], at: old_date_new_time_start)
 
@@ -389,6 +376,15 @@ class Admin::EventsController < AdminAreaController
 
   # Excludes the occurrence from the series and creates it as its own event. Both happen in one
   # transaction, so a failure leaves the series as it was.
+  # The series' start and end after "update all": its own when the dialog sends its times as it filled them
+  # (keep_series_times), else the series' start date at the posted clock time, for the posted length.
+  def series_times
+    return [@event.start_time, @event.end_time] if params[:keep_series_times] == "1"
+
+    start = helpers.combine_date_and_time(@event.start_time, @start_time)
+    [start, start + (@end_time - @start_time).to_i]
+  end
+
   def update_this_occurrence(title, participants)
     exclusion_start_time = helpers.combine_date_and_time(
       @start_time,

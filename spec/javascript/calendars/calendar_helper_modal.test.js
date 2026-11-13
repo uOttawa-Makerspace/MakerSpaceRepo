@@ -183,6 +183,20 @@ describe("eventClick", () => {
     expect($("end_time_field").value).toBe("2027-03-17T11:00");
   });
 
+  // FullCalendar drops the end of an occurrence whose wall-clock end is its start: one real hour from the first
+  // 01:30 of the night the clocks go back.
+  it("ends an occurrence FullCalendar gives no end one wall-clock hour after its start on the night the clocks go back", () => {
+    eventClick(
+      fcEvent({
+        startStr: "2027-11-07T01:30:00-04:00",
+        end: null,
+        endStr: "",
+      }),
+    );
+    expect($("start_time_field").value).toBe("2027-11-07T01:30");
+    expect($("end_time_field").value).toBe("2027-11-07T02:30");
+  });
+
   it("checks all-day and locks the end field", () => {
     eventClick(
       fcEvent({

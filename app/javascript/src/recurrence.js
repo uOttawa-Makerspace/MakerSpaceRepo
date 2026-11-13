@@ -11,7 +11,8 @@ import { RRule } from "rrule";
  */
 
 const ZONE = "America/Toronto";
-const DAY_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
 
 const wallFields = new Intl.DateTimeFormat("en-CA", {
   timeZone: ZONE,
@@ -75,6 +76,15 @@ export function fieldValue(wallMs) {
 /* A wall time as a date field value ("2026-03-30"). */
 export function dateValue(wallMs) {
   return fieldValue(wallMs).slice(0, 10);
+}
+
+/*
+ * The wall end of a timed calendar entry: its own, or one wall-clock hour after
+ * the start when the calendar gives none (it drops an end equal to the start:
+ * one real hour from the first 1:30 of the night the clocks go back).
+ */
+export function wallEnd(endStr, startWall) {
+  return endStr ? wallFromCalendar(endStr) : startWall + HOUR_MS;
 }
 
 /* The wall time at midnight starting the day of a wall time. */
