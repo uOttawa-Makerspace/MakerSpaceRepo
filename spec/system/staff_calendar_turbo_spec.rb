@@ -13,7 +13,6 @@ RSpec.describe "Staff calendar under Turbo navigation", type: :system do
   let!(:staff) { create(:user, :staff, space_id: space.id) }
 
   before do
-    create(:staff_space, user: staff, space: space)
     create(:event, space: space, title: "Team sync", event_type: "meeting",
                    start_time: Time.zone.local(2026, 11, 10, 10), end_time: Time.zone.local(2026, 11, 10, 11))
   end
