@@ -417,7 +417,7 @@ class UsersController < SessionsController
     @certifications = @repo_user.certifications.highest_level
     @skills = Skill.includes(trainings: %i[proficient_projects learning_modules])
     @proficient_projects_awarded = proc { |training| training.awarded_proficient_projects(@repo_user) }
-    @learning_modules_completed = proc { |training| training.completed_learning_modules(@repo_user) }
+    @learning_modules_completed = proc { |training| training.learning_modules_completed(@repo_user) }
     @recomended_hours = proc { |training, levels| training.recommended_hours(levels) }
     if @user.key_certification.nil? && @user.eql?(@repo_user) &&
          (

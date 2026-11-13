@@ -141,7 +141,10 @@ RSpec.describe Training, type: :model do
       training = Training.includes(:proficient_projects, :learning_modules).find(t.id)
 
       expect(training.awarded_proficient_projects(user)).to eq([awarded])
-      expect(training.completed_learning_modules(user)).to eq([done])
+      expect(training.learning_modules_completed(user)).to eq([done])
+      expect(training.learning_modules_completed(user, "beginner")).to eq([done])
+      expect(training.learning_modules_completed(user, "Beginner")).to eq([done])
+      expect(training.learning_modules_completed(user, "intermediate")).to be_empty
       expect(training.recommended_hours(%w[Beginner Intermediate])).to eq(3)
       expect(training.recommended_hours(nil)).to eq(0)
     end

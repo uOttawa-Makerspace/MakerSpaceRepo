@@ -76,7 +76,7 @@ class VolunteersController < SessionsController
     @remaining_trainings = current_user.remaining_trainings
     @skills = Skill.includes(trainings: [:proficient_projects, :learning_modules])
     @proficient_projects_awarded = proc { |training| training.awarded_proficient_projects(current_user) }
-    @learning_modules_completed = proc { |training| training.completed_learning_modules(current_user) }
+    @learning_modules_completed = proc { |training| training.learning_modules_completed(current_user) }
     @recommended_hours = proc { |training, levels| training.recommended_hours(levels) }
   end
 
