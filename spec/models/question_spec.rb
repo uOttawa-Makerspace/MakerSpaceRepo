@@ -72,17 +72,27 @@ RSpec.describe Question, type: :model do
       expect(Question.find(question.id).answers.order(:id).map { |a| a.description.to_plain_text }).to eq((0..3).map { |i| "Edited #{i}" })
     end
 
-    it "loads the answer texts together instead of one at a time" do
+    def selects_while
+      queries = []
+      callback = ->(*, payload) { queries << payload[:sql] if payload[:sql].start_with?("SELECT") }
+      ActiveSupport::Notifications.subscribed(callback, "sql.active_record") { yield }
+      queries
+    end
+
+    it "loads the answer texts together and their embedded files together" do
       fresh = Question.find(question.id)
       attributes = answers_attributes_for(question)
-      rich_text_queries = []
-      callback = lambda do |*, payload|
-        rich_text_queries << payload[:sql] if payload[:sql].include?("action_text_rich_texts") && payload[:sql].start_with?("SELECT")
-      end
-      ActiveSupport::Notifications.subscribed(callback, "sql.active_record") do
-        fresh.update_from_form(description: "Changed?", answers_attributes: attributes)
-      end
-      expect(rich_text_queries.size).to eq(1)
+      queries = selects_while { fresh.update_from_form(description: "Changed?", answers_attributes: attributes) }
+      expect(queries.grep(/FROM "action_text_rich_texts"/).size).to eq(1)
+      expect(queries.grep(/FROM "active_storage_attachments".*"record_type" = \$1/m).size).to eq(1)
+    end
+
+    it "loads the answer texts together and does not load embedded files when the form is refused" do
+      fresh = Question.find(question.id)
+      attributes = answers_attributes_for(question).tap { |a| a["1"][:description] = "" }
+      queries = selects_while { fresh.update_from_form(answers_attributes: attributes) }
+      expect(queries.grep(/FROM "action_text_rich_texts"/).size).to eq(1)
+      expect(queries.grep(/SELECT "active_storage_attachments"\.\*/)).to be_empty
     end
 
     it "refuses an answer without text and keeps the stored text" do

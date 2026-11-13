@@ -36,10 +36,17 @@ class Question < ApplicationRecord
   # Saves form changes (including trainings and answers) only when the form rules pass.
   def update_from_form(attributes)
     with_transaction_returning_status do
-      preload_answers_with_texts
+      preload_answer_texts
       assign_attributes(attributes)
-      save(context: :question_form)
+      next false unless valid?(:question_form)
+      preload_answer_embeds
+      save(validate: false)
     end
+  end
+
+  # Loads the stored answers with their texts together, so reading each text costs no query of its own.
+  def preload_answer_texts
+    ActiveRecord::Associations::Preloader.new(records: [self], associations: { answers: :rich_text_description }).call
   end
 
   private
@@ -50,9 +57,10 @@ class Question < ApplicationRecord
     errors.add(:base, :answer_text_required)
   end
 
-  # Loads the stored answers with their texts and embedded files together, so assigning and checking each text costs no query of its own.
-  def preload_answers_with_texts
-    ActiveRecord::Associations::Preloader.new(records: [self], associations: { answers: { rich_text_description: :embeds_attachments } }).call
+  # Saving checks each changed text for embedded files, so they are loaded together before the save.
+  def preload_answer_embeds
+    texts = answers.target.filter_map(&:rich_text_description)
+    ActiveRecord::Associations::Preloader.new(records: texts, associations: :embeds_attachments).call
   end
 
   def exactly_one_correct_answer

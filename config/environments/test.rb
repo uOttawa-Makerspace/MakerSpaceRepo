@@ -114,10 +114,6 @@ Rails.application.configure do
       Bullet.n_plus_one_query_enable     = true
       Bullet.unused_eager_loading_enable = true
 
-      # Question forms preload each answer's text with its embedded files; the files are read only
-      # when the save gets as far as checking the texts for changes, not when the form is refused first.
-      Bullet.add_safelist type: :unused_eager_loading, class_name: "ActionText::RichText", association: :embeds_attachments
-
       # Safelist common polymorphic or ActiveStorage false-positives if needed:
       # Bullet.add_safelist type: :n_plus_one_query, class_name: "ActiveStorage::Attachment", association: :blob
     end
