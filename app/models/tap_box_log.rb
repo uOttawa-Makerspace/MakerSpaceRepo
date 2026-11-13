@@ -262,7 +262,8 @@ class TapBoxLog < ApplicationRecord
       details: {
         reason: "student_id_mismatch",
         differing_field: "student number",
-        suggestion: "Student may have mistyped their student number during sign-up"
+        faculty_membership: "not granted",
+        suggestion: "No faculty membership was granted from this answer. Check the student card against the account, then correct the student number or the card link"
       }
     )
   end

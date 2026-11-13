@@ -154,10 +154,78 @@ RSpec.describe User::UoengConcern, type: :model do
       end
     end
 
-    it "logs a student-id mismatch but still evaluates the details" do
-      stub_api(body: { "student_number" => "999999999", "student_this_semester" => true, "faculty" => "GENIE" })
-      expect(eng.validate_uoeng_membership).to be_a(Membership)
-      expect(logs.map(&:event_type)).to include(TapBoxLog::WARNING)
+    describe "when the student number in the answer differs from the one on the account" do
+      # The answer shape uOEng sends: the number is `emplid`, an integer.
+      let(:other_student) do
+        { "emplid" => 999_999_999, "first_name" => "Ann", "last_name" => "B", "email_addr" => "ann@example.test",
+          "student_this_semester" => true, "fulltime" => true, "faculty" => "GENIE", "program_level" => "undergraduate",
+          "program_options" => [""], "courses_enrolled" => [] }
+      end
+
+      before { stub_api(body: other_student) }
+
+      it "grants no faculty membership and answers :mismatch" do
+        expect(eng.validate_uoeng_membership).to eq(:mismatch)
+        expect(eng.memberships).to be_empty
+      end
+
+      it "keeps an existing faculty membership as it is" do
+        m = paid_faculty_membership(eng)
+        expect(eng.validate_uoeng_membership).to eq(:mismatch)
+        expect(m.reload.status).to eq("paid")
+      end
+
+      it "keeps the typed student number" do
+        eng.validate_uoeng_membership
+        expect(eng.reload.student_id).to eq("300000001")
+      end
+
+      it "writes a warning row for staff saying the grant was withheld" do
+        eng.validate_uoeng_membership
+        row = logs.find { |l| l.details&.dig("reason") == "student_id_mismatch" }
+        expect(row.event_type).to eq(TapBoxLog::WARNING)
+        expect(row.user).to eq(eng)
+        expect(row.details).to include("faculty_membership" => "not granted")
+        expect(row.details["suggestion"]).to include("No faculty membership was granted")
+      end
+
+      it "also blocks when the answer sends the number as student_number" do
+        stub_api(body: genie.merge("student_number" => "999999999"))
+        expect(eng.validate_uoeng_membership).to eq(:mismatch)
+        expect(eng.memberships).to be_empty
+      end
+    end
+
+    describe "when the student number in the answer matches the one on the account" do
+      it "grants the membership and writes no mismatch row, for an integer emplid" do
+        stub_api(body: genie.merge("emplid" => 300_000_001))
+        expect(eng.validate_uoeng_membership).to be_a(Membership)
+        expect(logs.map { |l| l.details&.dig("reason") }).not_to include("student_id_mismatch")
+      end
+
+      {
+        ["012345678", 12_345_678] => true,
+        ["012345678", "012345678"] => true,
+        ["123456789", 123_456_780] => false,
+        ["A12345", "a12345"] => false,
+        ["A12345", "A12345"] => true
+      }.each do |(typed, sent), granted|
+        it "#{granted ? 'grants' : 'withholds'} the membership for typed #{typed.inspect} and answer #{sent.inspect}" do
+          eng.update_column(:student_id, typed)
+          stub_api(body: genie.merge("emplid" => sent))
+          expect(eng.validate_uoeng_membership).to(granted ? be_a(Membership) : eq(:mismatch))
+        end
+      end
+
+      it "grants the membership for a student_number string" do
+        stub_api(body: genie.merge("student_number" => "300000001"))
+        expect(eng.validate_uoeng_membership).to be_a(Membership)
+      end
+
+      it "grants the membership when the answer carries no student number" do
+        stub_api(body: genie)
+        expect(eng.validate_uoeng_membership).to be_a(Membership)
+      end
     end
 
     it "logs a name mismatch" do
@@ -167,7 +235,7 @@ RSpec.describe User::UoengConcern, type: :model do
     end
 
     it "stores only the differing field in the student-id mismatch row" do
-      stub_api(body: { "student_number" => "999999999", "student_this_semester" => true, "faculty" => "GENIE" })
+      stub_api(body: { "emplid" => 999_999_999, "student_this_semester" => true, "faculty" => "GENIE" })
       eng.validate_uoeng_membership
       row = logs.find { |l| l.details&.dig("reason") == "student_id_mismatch" }
       expect(row.details).to include("differing_field" => "student number")
