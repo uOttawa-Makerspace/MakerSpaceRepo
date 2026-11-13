@@ -140,6 +140,256 @@ en:
             <li>a staff member.</li>
         </ul>
         <p>For any questions, contact us at <a href="mailto:ceed@uottawa.ca">ceed@uottawa.ca</a></p>
+
+    locker_named: "Locker %{specifier}"
+    indefinite: "Indefinite"
+    edit: "Edit"
+    view: "View"
+    expired: "Expired"
+    contacted: "Contacted"
+    actions_column: "Actions"
+    select_variant: "Select variant..."
+    select_a_locker: "Select a locker"
+    change_locker_size: "Change locker size"
+    request_a_locker: "Request a locker"
+    audiences:
+      general: "General"
+      staff: "Staff"
+      gng: "GNG"
+      gng_design: "GNG Design"
+    requested_as_types:
+      general: "General"
+      staff: "Staff"
+      student: "Student"
+    request_type_labels:
+      staff: "CEED staff member"
+      student: "GNG student"
+      general: "General request"
+    state_badge:
+      reviewing: "Reviewing"
+      await_payment: "Await payment"
+      active: "Active"
+      cancelled: "Cancelled"
+    history_state:
+      reviewing: "reviewing"
+      await_payment: "await_payment"
+      active: "active"
+      cancelled: "cancelled"
+    index:
+      heading: "Locker Management"
+      show_requests: "Show pending locker requests & active rentals"
+      assign_intro: "Assign a locker to someone, active immediately. The locker owner will be notified by email. Intended to assign lockers to staff."
+      rentals_enabled: "New locker rentals are enabled."
+      rentals_disabled: "New locker rentals are disabled."
+      disable_rentals: "Click here to disable locker rentals"
+      enable_rentals: "Click here to enable locker rentals"
+      enabling_note_html: "Enabling lockers will enable %{link}, and will display links to it on the homepage and resources header dropdown."
+      request_form_link: "locker request form submissions"
+      configure_options: "Configure locker options"
+      toggle_settings: "Toggle settings"
+      inventory: "Locker Inventory"
+      make_range: "Make a range of lockers"
+      make_single: "Make a single locker"
+      no_lockers: "There are no lockers on record."
+      edit_current: "Edit current lockers"
+    bulk_edit:
+      title: "Bulk edit lockers"
+      delete_selected: "Delete Selected"
+      update: "Update Lockers"
+    inventory:
+      bulk_edit: "Bulk edit"
+      inline_editing: "Inline editing"
+      search_hint_html: '<strong>Search hint:</strong> You can search by locker #, tenant name, username, student ID, email, notes, or status (<code class="text-body-secondary">expired</code>, <code class="text-body-secondary">free</code>, <code class="text-body-secondary">staff</code>, <code class="text-body-secondary">gng</code>).'
+      size_and_sku: "Size & SKU"
+      type: "Type"
+      owned_by: "Owned by"
+      expires: "Expires"
+      approved: "Approved"
+      status: "Status"
+      changing_size: "Changing size..."
+      staff_note_tooltip: "Staff Note (click inline editing to edit)"
+      add_staff_note: "Add staff note..."
+      locker_note_tooltip: "Locker Note (click inline editing to edit)"
+      add_note: "Add note..."
+      valid: "Valid"
+      free: "Free"
+      size_number: "Size #%{id}"
+    size_control:
+      product_link_label: "Enter the shopify product link from the admin page here. This will attempt to extract the product ID from the URL and place it below."
+      product_link_placeholder: "URL should look like https://admin.shopify.com/store/uottawa-makerspace/products/10478024917048"
+      extracted_gid: "Extracted GID: gid://shopify/Product/"
+      extracted_product_id: "Extracted product ID"
+      currently_linked_html: "Currently linked with %{product}"
+      nothing: "nothing"
+      main_product: "Main product"
+      main_product_intro: "This is the product where product variants are chosen and assigned to a locker for checkout."
+      status: "Status"
+      product_id: "Product ID"
+      received_pricing: "Received pricing"
+      price_cad: "%{price} CAD"
+      variants_attached: "Variants attached"
+      product_variants: "Product variants"
+      variants_intro_html: 'Locker sizes are product variants defined at Makerstore to indicate the price of the locker and display name Locker sizes defined on makerepo are used to track inventory and availability. Each are linked by the product variant''s GID. <a href="#">Click here to go to the locker sync tool.</a>'
+      store_variant: "Makerstore product variant"
+      title: "Title"
+      sku: "SKU"
+      variant_id: "Variant ID"
+      linked_to: "Linked to:"
+      delete_variant: "Delete variant"
+      create_local_size: "Create local size"
+      unlinked_sizes: "Unlinked Local Sizes"
+      link: "Link"
+      locker_sizes: "Locker Sizes"
+      sizes_intro: "List of locker sizes available on Makerepo. This is what users request when filling out a locker rental request. Each locker size has a Makerstore product variant associated with it."
+      locker_size: "Locker size"
+      lockers_associated: "Lockers associated"
+      shopify_gid: "Shopify GID"
+      new_size: "Create a new locker size"
+      new_size_intro: "Create a new locker size and link it to a store product variant."
+      dimensions: "Locker dimensions"
+      dimensions_placeholder: "For example, 16x16"
+      checkout_variant: "Select a product variant to use for checkout"
+      load_failed: "Failed to load product information."
+      no_link: "No valid link assigned..."
+    new_locker:
+      range_intro: "Create lockers with numbers start from up to and including end of range. For example, 100 to 150 would create 50 lockers named 100, 101, 102..."
+      ranging_from: "Create new lockers ranging from"
+      to: "to"
+      first_number: "First locker number"
+      last_number: "Last locker number"
+      already_present_html: "The following lockers are <b>already present</b> and will be skipped"
+      will_be_created: "The following lockers will be created"
+      single_title: "Make a single lockers"
+      single_intro: "Create a single locker"
+    show:
+      title: "Locker %{specifier} History"
+      back: "Back to Locker Inventory"
+      edit_details: "Edit Locker Details"
+      specifier: "Specifier / Number"
+      locker_size: "Locker Size"
+      audience: "Audience / Type"
+      physical_note: "Physical Locker Note (Maintenance / Hardware)"
+      physical_note_placeholder: "e.g. Broken latch, bottom locker, reserved for robotics demo..."
+      physical_note_help: "These notes stay with this physical locker permanently regardless of who is currently renting it."
+      save: "Save Locker Changes"
+      current_status: "Current Status"
+      rented_by_since_html: "rented by <strong>%{user}</strong> since %{date}"
+      view_rental: "View rental details"
+      unoccupied: "Unoccupied"
+      history: "Rental History"
+      history_intro: "Log of previous owners of this locker"
+      no_history: "No rental history for this locker."
+      delete: "Delete locker"
+    admin:
+      title: "Locker manager"
+      heading: "Locker Rentals"
+      intro: "Review pending requests and manage active rentals"
+      requests: "Requests"
+      requests_intro: "Lockers that are pending review and have not been looked at yet."
+      no_requests: "No pending requests."
+      active_rentals: "Active Rentals"
+      active_intro: "Lockers that have been dealt with (awaiting payment or currently occupied)."
+      no_active: "No active rentals."
+    assign_form:
+      user: "Assign to User"
+      user_prompt: "Search for a user by name or username..."
+      locker_prompt: "Search for a locker..."
+      end_date: "End Date"
+      indefinite: "Indefinite (No expiry)"
+      staff_notes: "Staff Notes (Internal)"
+      staff_notes_placeholder: "Internal staff notes for this rental assignment..."
+      submit: "Assign Locker"
+    assign_page:
+      title: "Assign locker to a user"
+      intro: "Use this form to assign a locker to a user."
+    expired_page:
+      heading: "Expired locker rentals"
+      expired_on: "Expired on"
+      action: "Action"
+      expired_on_ago: "Expired on %{date}, %{time} ago"
+      view_rental: "View rental"
+    rentals_index:
+      intro: "Here you can see your locker rental history"
+      active: "Active"
+      until: "Until %{date}"
+      view_details: "View details"
+      ceed_lockers: "CEED Lockers"
+      under_review: "Under review"
+      awaiting_payment: "Awaiting payment"
+      ceed_lockers_intro: "Various lockers located around the STEM building"
+      review_request: "Review request"
+      history: "My locker history"
+    request_form:
+      available_count: "Available count"
+      size: "Size"
+      cost: "Cost"
+      cost_per_semester: "$%{price} per semester"
+      available_caption: "Current lockers available are"
+      not_accepted: "Locker requests are not currently accepted."
+      pending_html: "You have a pending request for a locker submitted on <b>%{date}</b>. You will receive a response shortly. %{link}"
+      view_pending: "View current locker request"
+      awaiting_payment_html: "Your request has been accepted, and now is pending payment to be finalized. %{link}"
+      view_and_checkout: "Click here to view your request and to proceed to checkout"
+      requested_as: "I am a "
+      choose_one: "Choose one"
+      preferred_locker: "You can request for a specific locker, if it is available (optional)"
+      location_note: "Locker location is dependent on availability."
+      course: "What course are you enrolled in?"
+      section: "What section are you in?"
+      group: "What is your group number?"
+      notes: "Notes with request:"
+      submit: "Submit request"
+      back: "Back"
+      errors: "Errors:"
+    rental_table:
+      requested_as: "Requested as"
+      requested_on: "Requested on"
+    rental:
+      inventory: "Locker Inventory"
+      requests_and_rentals: "Locker Requests & Rentals"
+      back_to_mine: "Back to My Lockers"
+      not_provided: "Not provided"
+      user_notes: "User Request Notes"
+      indefinite_rental: "Indefinite Rental"
+      no_expiry: "No Expiry"
+      does_not_expire: "Does not expire"
+      renew: "Renew Locker"
+      checkout: "Proceed to Checkout"
+      staff_notes: "Staff Internal Notes"
+      staff_notes_placeholder: "Internal staff notes for this specific rental (visible to staff only)..."
+      update_staff_notes: "Update Staff Notes"
+    staff_actions:
+      title: "Staff Actions"
+      send_to_checkout: "Send to Checkout"
+      no_checkout: "Locker was requested as student/staff and cannot be sent to checkout. If this request is valid, assign it now. If not, cancel the request"
+      checkout_intro: "Notify the user by email that their locker is approved and ready for payment."
+      move: "Move Locker"
+      assign_now: "Assign Now"
+      assign_intro: "Immediately assign or move a locker without requiring payment."
+      end_rental: "End Rental"
+      cancel_request: "Cancel Request"
+      finished: "This locker request has been finished and cannot be re-enabled."
+    profile_tab:
+      no_active: "No active rentals..."
+      submit_request: "Submit a locker request"
+    flash:
+      created: "Created locker #%{specifier}"
+      range_created: "Lockers created"
+      updated: "Locker updated successfully"
+      removed: "Locker removed"
+      bulk_deleted: "Selected lockers deleted"
+      bulk_updated: "Lockers updated"
+      assigned: "Locker assigned"
+      rental_updated: "Locker rental updated"
+      renewal_started: "Locker renewal started. Please complete checkout to renew your locker."
+  date:
+    formats:
+      rental_date: "%B %-d, %Y" # November 3, 2026
+      rental_day: "%-d %b" # 3 Nov
+  time:
+    formats:
+      rental_time: "%B %d, %Y %H:%M" # November 03, 2026 14:30
+      rental_day_time: "%d %b %H:%M" # 03 Nov 14:30
 fr:
   lockers:
     locker: Casier
@@ -147,7 +397,7 @@ fr:
     locker_number: Numéro de casier
     locker_rentals: Locations de casiers
     locker_request: Demande de casier
-    all_locker_requests: Tous les demandes de casiers
+    all_locker_requests: Toutes les demandes de casiers
 
     new_locker_request: Nouvelle demande de casier
     view_locker_request: Détails de la demande de casier
@@ -155,7 +405,7 @@ fr:
 
     locker_dashboard: Gestion des casiers
     all_locker_rentals: Toutes les locations de casier
-    your_locker_requests: Votre demandes de casiers
+    your_locker_requests: Vos demandes de casiers
     assigned_lockers: Casiers assignés
     assign_a_locker: Assigner un casier
 
@@ -221,11 +471,10 @@ fr:
     actions:
       cancel_request: Annuler la demande
       cancel_request_description: |
-        Réfuser or annuler cette demande.
-        L'utilisateur sera notifié de l'annulation or réfusal de sa demande.
-        Le casier sera disponible pour une nouvelle affectation.
+        Refuser cette demande. L'utilisateur sera avisé du refus de sa demande.
       end_rental_description: |
-        Terminer cette location de casier. L'utilisateur sera notifié de l'annulation. Si donné une période de grâce, l'utilisateur sera informé qu'il a une semaine pour vider le casier.
+        Terminer cette location de casier. L'utilisateur sera avisé par courriel.
+        Si une période de grâce est accordée, il sera informé qu'il dispose d'une semaine pour vider le casier.
 
     held_payments:
       title: "Payé, décision requise"
@@ -272,15 +521,265 @@ fr:
     new_request:
       header: Nouvelle demande de casier
       description_html: |
-        <p>Ici vous pouvez demander une location d'une caiser. Des casiers sont disponibles pour des étudiants de uOttawa et les members de la communauté.</p>
-        <p>Dès que votre demande est envoyée, nous l'exameinerons et verifierons de la disponibilité.
-        Vous serez notifié par courriel quand votre demande est approuvé et est prêt pour la payement.
-        Vous pouvez annuler la demande à tout moment, cependant après la payement la frais de la location de casier est non-remboursable.
-        <b>Vous pouvez avoir juste une seule demande active à la fois.</b></p>
+        <p>Ici, vous pouvez demander la location d'un casier. Des casiers sont offerts aux étudiants de l'Université d'Ottawa et aux membres de la communauté.</p>
+        <p>Dès que votre demande est envoyée, nous l'examinerons et vérifierons la disponibilité.
+        Vous serez avisé par courriel lorsque votre demande sera approuvée et prête pour le paiement.
+        Vous pouvez annuler votre demande à tout moment jusqu'au paiement; une fois payés, les frais de location du casier ne sont pas remboursables.
+        <b>Vous ne pouvez avoir qu'une seule demande en attente à la fois.</b></p>
 
-        <p>Vouz pouvez être approuvé pour une caiser sans frais si vous êtes:</p>
+        <p>Vous pourriez obtenir un casier gratuitement si vous êtes :</p>
         <ul>
-            <li>un étudiant avec un projet pour GNG1503, GNG2501, ou une autre cours de conception, ou</li>
+            <li>un étudiant ayant un projet pour GNG1503, GNG2501 ou un autre cours de conception, ou</li>
             <li>un membre du personnel.</li>
         </ul>
-        <p>Si vous avez de questions, contactez-nous à <a href="mailto:ceed@uottawa.ca">ceed@uottawa.ca</a></p>
+        <p>Pour toute question, contactez-nous à <a href="mailto:ceed@uottawa.ca">ceed@uottawa.ca</a></p>
+
+    locker_named: "Casier %{specifier}"
+    indefinite: "Indéterminée"
+    edit: "Modifier"
+    view: "Voir"
+    expired: "Expiré"
+    contacted: "Contacté"
+    actions_column: "Actions"
+    select_variant: "Choisissez une variante..."
+    select_a_locker: "Choisissez un casier"
+    change_locker_size: "Changer la taille du casier"
+    request_a_locker: "Demander un casier"
+    audiences:
+      general: "Général"
+      staff: "Personnel"
+      gng: "GNG"
+      gng_design: "Conception GNG"
+    requested_as_types:
+      general: "Général"
+      staff: "Personnel"
+      student: "Étudiant"
+    request_type_labels:
+      staff: "Membre du personnel du CEED"
+      student: "Étudiant en GNG"
+      general: "Demande générale"
+    state_badge:
+      reviewing: "En révision"
+      await_payment: "En attente de paiement"
+      active: "Active"
+      cancelled: "Annulée"
+    history_state:
+      reviewing: "en révision"
+      await_payment: "en attente de paiement"
+      active: "active"
+      cancelled: "annulée"
+    index:
+      heading: "Gestion des casiers"
+      show_requests: "Afficher les demandes de casiers en attente et les locations actives"
+      assign_intro: "Assignez un casier à quelqu'un, actif immédiatement. Le titulaire du casier sera avisé par courriel. Destiné à l'attribution de casiers au personnel."
+      rentals_enabled: "Les nouvelles locations de casiers sont activées."
+      rentals_disabled: "Les nouvelles locations de casiers sont désactivées."
+      disable_rentals: "Cliquez ici pour désactiver les locations de casiers"
+      enable_rentals: "Cliquez ici pour activer les locations de casiers"
+      enabling_note_html: "Activer les casiers permet %{link} et affiche des liens vers ce formulaire sur la page d'accueil et dans le menu Ressources de l'en-tête."
+      request_form_link: "l'envoi du formulaire de demande de casier"
+      configure_options: "Configurer les options des casiers"
+      toggle_settings: "Afficher les paramètres"
+      inventory: "Inventaire des casiers"
+      make_range: "Créer une plage de casiers"
+      make_single: "Créer un seul casier"
+      no_lockers: "Aucun casier n'est enregistré."
+      edit_current: "Modifier les casiers actuels"
+    bulk_edit:
+      title: "Modifier des casiers en lot"
+      delete_selected: "Supprimer la sélection"
+      update: "Mettre à jour les casiers"
+    inventory:
+      bulk_edit: "Modifier en lot"
+      inline_editing: "Modification en ligne"
+      search_hint_html: '<strong>Astuce de recherche :</strong> vous pouvez rechercher par numéro de casier, nom du locataire, nom d''utilisateur, numéro d''étudiant, courriel, remarques ou statut (<code class="text-body-secondary">expired</code>, <code class="text-body-secondary">free</code>, <code class="text-body-secondary">staff</code>, <code class="text-body-secondary">gng</code>).'
+      size_and_sku: "Taille et UGS"
+      type: "Type"
+      owned_by: "Loué par"
+      expires: "Expire le"
+      approved: "Approuvé"
+      status: "Statut"
+      changing_size: "Changement de taille..."
+      staff_note_tooltip: "Remarque du personnel (activez la modification en ligne pour la modifier)"
+      add_staff_note: "Ajouter une remarque du personnel..."
+      locker_note_tooltip: "Remarque sur le casier (activez la modification en ligne pour la modifier)"
+      add_note: "Ajouter une remarque..."
+      valid: "Valide"
+      free: "Libre"
+      size_number: "Taille n° %{id}"
+    size_control:
+      product_link_label: "Entrez ici le lien du produit Shopify copié de la page d'administration. L'identifiant du produit sera extrait de l'URL et placé ci-dessous."
+      product_link_placeholder: "L'URL devrait ressembler à https://admin.shopify.com/store/uottawa-makerspace/products/10478024917048"
+      extracted_gid: "GID extrait : gid://shopify/Product/"
+      extracted_product_id: "Identifiant du produit extrait"
+      currently_linked_html: "Actuellement lié à %{product}"
+      nothing: "aucun produit"
+      main_product: "Produit principal"
+      main_product_intro: "C'est le produit dont les variantes sont choisies et assignées à un casier pour le paiement."
+      status: "Statut"
+      product_id: "Identifiant du produit"
+      received_pricing: "Prix reçu"
+      price_cad: "%{price} $ CA"
+      variants_attached: "Variantes associées"
+      product_variants: "Variantes du produit"
+      variants_intro_html: 'Les tailles de casiers sont des variantes de produit définies dans la Makerstore pour indiquer le prix du casier et le nom affiché. Les tailles de casiers définies dans MakerRepo servent à suivre l''inventaire et la disponibilité. Elles sont liées par le GID de la variante du produit. <a href="#">Cliquez ici pour accéder à l''outil de synchronisation des casiers.</a>'
+      store_variant: "Variante de produit de la Makerstore"
+      title: "Titre"
+      sku: "UGS"
+      variant_id: "Identifiant de la variante"
+      linked_to: "Lié à :"
+      delete_variant: "Supprimer la variante"
+      create_local_size: "Créer une taille locale"
+      unlinked_sizes: "Tailles locales non liées"
+      link: "Lier"
+      locker_sizes: "Tailles de casiers"
+      sizes_intro: "Liste des tailles de casiers offertes dans MakerRepo. C'est ce que les utilisateurs demandent en remplissant une demande de location de casier. Chaque taille de casier est associée à une variante de produit de la Makerstore."
+      locker_size: "Taille du casier"
+      lockers_associated: "Casiers associés"
+      shopify_gid: "GID Shopify"
+      new_size: "Créer une nouvelle taille de casier"
+      new_size_intro: "Créez une nouvelle taille de casier et liez-la à une variante de produit de la boutique."
+      dimensions: "Dimensions du casier"
+      dimensions_placeholder: "Par exemple, 16x16"
+      checkout_variant: "Choisissez une variante de produit à utiliser pour le paiement"
+      load_failed: "Les renseignements sur le produit n'ont pas pu être chargés."
+      no_link: "Aucun lien valide n'est assigné..."
+    new_locker:
+      range_intro: "Crée des casiers numérotés du début à la fin de la plage, fin incluse. Par exemple, de 100 à 150 crée les casiers 100, 101, 102..."
+      ranging_from: "Créer de nouveaux casiers de"
+      to: "à"
+      first_number: "Premier numéro de casier"
+      last_number: "Dernier numéro de casier"
+      already_present_html: "Les casiers suivants <b>existent déjà</b> et seront ignorés"
+      will_be_created: "Les casiers suivants seront créés"
+      single_title: "Créer un seul casier"
+      single_intro: "Créer un seul casier"
+    show:
+      title: "Historique du casier %{specifier}"
+      back: "Retour à l'inventaire des casiers"
+      edit_details: "Modifier les détails du casier"
+      specifier: "Désignation / numéro"
+      locker_size: "Taille du casier"
+      audience: "Public / type"
+      physical_note: "Remarque sur le casier physique (entretien / matériel)"
+      physical_note_placeholder: "p. ex. loquet brisé, casier du bas, réservé pour une démonstration de robotique..."
+      physical_note_help: "Ces remarques restent liées à ce casier physique en permanence, peu importe qui le loue."
+      save: "Enregistrer les modifications du casier"
+      current_status: "Statut actuel"
+      rented_by_since_html: "loué par <strong>%{user}</strong> depuis le %{date}"
+      view_rental: "Voir les détails de la location"
+      unoccupied: "Libre"
+      history: "Historique des locations"
+      history_intro: "Liste des anciens locataires de ce casier"
+      no_history: "Aucun historique de location pour ce casier."
+      delete: "Supprimer le casier"
+    admin:
+      title: "Gestion des locations de casiers"
+      heading: "Locations de casiers"
+      intro: "Examinez les demandes en attente et gérez les locations actives"
+      requests: "Demandes"
+      requests_intro: "Casiers en attente de révision qui n'ont pas encore été examinés."
+      no_requests: "Aucune demande en attente."
+      active_rentals: "Locations actives"
+      active_intro: "Casiers déjà traités (en attente de paiement ou occupés)."
+      no_active: "Aucune location active."
+    assign_form:
+      user: "Assigner à l'utilisateur"
+      user_prompt: "Rechercher un utilisateur par nom ou nom d'utilisateur..."
+      locker_prompt: "Rechercher un casier..."
+      end_date: "Date de fin"
+      indefinite: "Indéterminée (sans expiration)"
+      staff_notes: "Remarques du personnel (internes)"
+      staff_notes_placeholder: "Remarques internes du personnel sur cette attribution..."
+      submit: "Assigner le casier"
+    assign_page:
+      title: "Assigner un casier à un utilisateur"
+      intro: "Utilisez ce formulaire pour assigner un casier à un utilisateur."
+    expired_page:
+      heading: "Locations de casiers expirées"
+      expired_on: "Expirée le"
+      action: "Action"
+      expired_on_ago: "Expirée le %{date}, il y a %{time}"
+      view_rental: "Voir la location"
+    rentals_index:
+      intro: "Consultez ici l'historique de vos locations de casiers"
+      active: "Active"
+      until: "Jusqu'au %{date}"
+      view_details: "Voir les détails"
+      ceed_lockers: "Casiers du CEED"
+      under_review: "En révision"
+      awaiting_payment: "En attente de paiement"
+      ceed_lockers_intro: "Divers casiers situés dans le pavillon STEM"
+      review_request: "Voir la demande"
+      history: "Mon historique de casiers"
+    request_form:
+      available_count: "Nombre disponible"
+      size: "Taille"
+      cost: "Coût"
+      cost_per_semester: "%{price} $ par session"
+      available_caption: "Casiers actuellement disponibles"
+      not_accepted: "Les demandes de casiers ne sont pas acceptées pour le moment."
+      pending_html: "Vous avez une demande de casier en attente, soumise le <b>%{date}</b>. Vous recevrez une réponse sous peu. %{link}"
+      view_pending: "Voir la demande de casier actuelle"
+      awaiting_payment_html: "Votre demande a été acceptée et attend maintenant le paiement pour être finalisée. %{link}"
+      view_and_checkout: "Cliquez ici pour voir votre demande et passer au paiement"
+      requested_as: "Je suis "
+      choose_one: "Choisissez une option"
+      preferred_locker: "Vous pouvez demander un casier précis, s'il est disponible (facultatif)"
+      location_note: "L'emplacement du casier dépend de la disponibilité."
+      course: "À quel cours êtes-vous inscrit?"
+      section: "Dans quelle section êtes-vous?"
+      group: "Quel est votre numéro de groupe?"
+      notes: "Remarques sur la demande :"
+      submit: "Envoyer la demande"
+      back: "Retour"
+      errors: "Erreurs :"
+    rental_table:
+      requested_as: "Demandé en tant que"
+      requested_on: "Demandé le"
+    rental:
+      inventory: "Inventaire des casiers"
+      requests_and_rentals: "Demandes et locations de casiers"
+      back_to_mine: "Retour à mes casiers"
+      not_provided: "Non fourni"
+      user_notes: "Remarques de l'utilisateur sur la demande"
+      indefinite_rental: "Location sans fin"
+      no_expiry: "Aucune expiration"
+      does_not_expire: "N'expire pas"
+      renew: "Renouveler le casier"
+      checkout: "Passer au paiement"
+      staff_notes: "Remarques internes du personnel"
+      staff_notes_placeholder: "Remarques internes du personnel sur cette location (visibles par le personnel seulement)..."
+      update_staff_notes: "Mettre à jour les remarques"
+    staff_actions:
+      title: "Actions du personnel"
+      send_to_checkout: "Envoyer au paiement"
+      no_checkout: "Ce casier a été demandé en tant qu'étudiant ou membre du personnel et ne peut pas être envoyé au paiement. Si la demande est valide, assignez-le maintenant. Sinon, annulez la demande"
+      checkout_intro: "Avise l'utilisateur par courriel que son casier est approuvé et prêt pour le paiement."
+      move: "Déplacer le casier"
+      assign_now: "Assigner maintenant"
+      assign_intro: "Assigne ou déplace immédiatement un casier sans exiger de paiement."
+      end_rental: "Terminer la location"
+      cancel_request: "Annuler la demande"
+      finished: "Cette demande de casier est terminée et ne peut pas être réactivée."
+    profile_tab:
+      no_active: "Aucune location active..."
+      submit_request: "Soumettre une demande de casier"
+    flash:
+      created: "Casier n° %{specifier} créé"
+      range_created: "Casiers créés"
+      updated: "Casier mis à jour"
+      removed: "Casier supprimé"
+      bulk_deleted: "Casiers sélectionnés supprimés"
+      bulk_updated: "Casiers mis à jour"
+      assigned: "Casier assigné"
+      rental_updated: "Location de casier mise à jour"
+      renewal_started: "Renouvellement du casier commencé. Veuillez effectuer le paiement pour renouveler votre casier."
+  date:
+    formats:
+      rental_date: "%-d %B %Y" # 3 novembre 2026
+      rental_day: "%-d %b" # 3 nov.
+  time:
+    formats:
+      rental_time: "%-d %B %Y à %H:%M" # 3 novembre 2026 à 14:30
+      rental_day_time: "%-d %b %H:%M" # 3 nov. 14:30

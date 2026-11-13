@@ -28,6 +28,14 @@ RSpec.describe LiteralTextScan do
     expect(arguments(%(<%= link_to "MakerRepo", root_path %>))).to eq([])
   end
 
+  it "ignores a submitted value or a label's field name, but not words in those places" do
+    expect(arguments(%(<%= f.button name: "state", value: "await_payment" do %>))).to eq([])
+    expect(arguments(%(<%= label_tag "assign_indefinite", t("x") %>))).to eq([])
+    expect(arguments(%(<%= f.submit value: "Save changes" %>))).to eq(["Save changes"])
+    expect(arguments(%(<%= label_tag "Indefinite" %>))).to eq(["Indefinite"])
+    expect(arguments(%(<%= link_to "active", root_path %>))).to eq(["active"])
+  end
+
   it "reports a literal attribute and visible words" do
     expect(described_class.literal_attributes(%(<img alt="A logo">))).to eq(["A logo"])
     expect(described_class.literal_attributes(%(<img alt="<%= t('x') %>">))).to eq([])

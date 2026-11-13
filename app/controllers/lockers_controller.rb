@@ -38,7 +38,7 @@ class LockersController < AdminAreaController
     @locker = Locker.new(locker_params)
 
     if @locker.save
-      flash[:notice] = "Created locker ##{@locker.specifier}"
+      flash[:notice] = t('lockers.flash.created', specifier: @locker.specifier)
       redirect_to @locker
     else
       flash.now[:alert] = validation_message(@locker, "errors.lockers.locker_not_saved")
@@ -66,7 +66,7 @@ class LockersController < AdminAreaController
       )
     unsaved = @lockers.reject(&:persisted?)
     if unsaved.empty?
-      flash[:notice] = 'Lockers created'
+      flash[:notice] = t('lockers.flash.range_created')
     else
       flash[:alert] = I18n.t('errors.lockers.range_not_created', lockers: specifiers_of(unsaved))
     end
@@ -78,7 +78,7 @@ class LockersController < AdminAreaController
     if @locker.update(locker_params)
       respond_to do |format|
         format.html do
-          flash[:notice] = 'Locker updated successfully'
+          flash[:notice] = t('lockers.flash.updated')
           redirect_to @locker
         end
         format.json { head :no_content }
@@ -99,7 +99,7 @@ class LockersController < AdminAreaController
   def destroy
     @locker = Locker.find(params[:id])
     if @locker.destroy
-      flash[:notice] = 'Locker removed'
+      flash[:notice] = t('lockers.flash.removed')
       redirect_to lockers_path
     else
       redirect_to @locker,
@@ -141,7 +141,7 @@ class LockersController < AdminAreaController
     refused = []
     Locker.where(id: params[:id]).find_each { |locker| refused << (locker.specifier.presence || "##{locker.id}") unless locker.destroy }
     if refused.empty?
-      flash[:notice] = 'Selected lockers deleted'
+      flash[:notice] = t('lockers.flash.bulk_deleted')
     else
       flash[:alert] = I18n.t('errors.lockers.bulk_not_deleted', lockers: Locker.sort_specifiers(refused).to_sentence)
     end
@@ -156,7 +156,7 @@ class LockersController < AdminAreaController
       .find_each { |locker| failed << locker unless locker.update(locker_params) }
 
     if failed.empty?
-      flash[:notice] = 'Lockers updated'
+      flash[:notice] = t('lockers.flash.bulk_updated')
     else
       flash[:alert] = I18n.t('errors.lockers.bulk_not_updated', lockers: specifiers_of(failed))
     end

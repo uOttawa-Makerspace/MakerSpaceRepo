@@ -1,33 +1,32 @@
-<% provide :title, 'Locker dashboard' %>
+<% provide :title, t('lockers.locker_dashboard') %>
 
 <div class="container my-4">
-    <h1 class="text-center mb-3">Locker Management</h1>
+    <h1 class="text-center mb-3"><%= t('lockers.index.heading') %></h1>
     <div class="text-center mb-4">
-        <%= link_to 'Show pending locker requests & active rentals', admin_locker_rentals_path, class: 'fw-bold link-primary text-decoration-none' %>
+        <%= link_to t('lockers.index.show_requests'), admin_locker_rentals_path, class: 'fw-bold link-primary text-decoration-none' %>
     </div>
 
     <div class="card mb-4 border shadow-sm">
         <div class="card-header bg-body-tertiary">
-            <h2 class="h5 mb-0">Assign a locker</h2>
+            <h2 class="h5 mb-0"><%= t('lockers.assign_a_locker') %></h2>
         </div>
         <div class="card-body">
-            <p class="text-body-secondary">Assign a locker to someone, active immediately. The locker owner will be notified by email. Intended to assign lockers to staff.</p>
+            <p class="text-body-secondary"><%= t('lockers.index.assign_intro') %></p>
             <%= render 'locker_rentals/assign_locker_form' %>
         </div>
     </div>
 
     <div class="text-center border rounded bg-body-tertiary p-4 mb-4 shadow-sm">
         <% if LockerOption.lockers_enabled %>
-            <div class="fs-4 mb-2"><i class="fa-solid fa-check text-success me-2"></i> New locker rentals are enabled.</div>
-            <%= button_to 'Click here to disable locker rentals', enabled_lockers_path,
+            <div class="fs-4 mb-2"><i class="fa-solid fa-check text-success me-2"></i> <%= t('lockers.index.rentals_enabled') %></div>
+            <%= button_to t('lockers.index.disable_rentals'), enabled_lockers_path,
                           method: :put, params: {value: 'f'}, class: 'btn btn-danger my-2' %>
         <% else %>
-            <div class="fs-4 mb-2"><i class="fa-solid fa-xmark text-danger me-2"></i> New locker rentals are disabled.</div>
-            <%= button_to 'Click here to enable locker rentals', enabled_lockers_path,
+            <div class="fs-4 mb-2"><i class="fa-solid fa-xmark text-danger me-2"></i> <%= t('lockers.index.rentals_disabled') %></div>
+            <%= button_to t('lockers.index.enable_rentals'), enabled_lockers_path,
                           method: :put, params: {value: 't'}, class: 'btn btn-success my-2' %>
         <% end %>
-        <p class="text-body-secondary mb-0">Enabling lockers will enable <%= link_to "locker request form submissions", locker_rentals_path, class: 'link-primary' %>,
-            and will display links to it on the homepage and resources header dropdown.</p>
+        <p class="text-body-secondary mb-0"><%= t('lockers.index.enabling_note_html', link: link_to(t('lockers.index.request_form_link'), locker_rentals_path, class: 'link-primary')) %></p>
     </div>
 
     <!-- Collapsible Configure Locker Options Box -->
@@ -40,9 +39,9 @@
              aria-controls="collapseLockerOptions"
              style="cursor: pointer;">
             <h2 class="h5 mb-0">
-                <i class="fa-solid fa-sliders me-2"></i> Configure locker options
+                <i class="fa-solid fa-sliders me-2"></i> <%= t('lockers.index.configure_options') %>
             </h2>
-            <span class="btn btn-sm btn-outline-secondary">Toggle settings <i class="fa-solid fa-chevron-down ms-1"></i></span>
+            <span class="btn btn-sm btn-outline-secondary"><%= t('lockers.index.toggle_settings') %> <i class="fa-solid fa-chevron-down ms-1"></i></span>
         </div>
         <div class="collapse" id="collapseLockerOptions">
             <div class="card-body">
@@ -51,23 +50,23 @@
         </div>
     </div>
 
-    <h2 class="text-center my-4" id="lockerInventory">Locker Inventory</h2>
+    <h2 class="text-center my-4" id="lockerInventory"><%= t('lockers.index.inventory') %></h2>
 
     <div class="d-flex gap-2 mb-3">
         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#newRangeLockerModal">
-            <i class="fa-solid fa-plus-circle"></i> Make a range of lockers
+            <i class="fa-solid fa-plus-circle"></i> <%= t('lockers.index.make_range') %>
         </button>
 
         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#newLockerModal">
-            <i class="fa-solid fa-plus"></i> Make a single locker
+            <i class="fa-solid fa-plus"></i> <%= t('lockers.index.make_single') %>
         </button>
     </div>
 
     <div>
         <% if @lockers.blank? %>
-            <p class="text-body-secondary">There are no lockers on record.</p>
+            <p class="text-body-secondary"><%= t('lockers.index.no_lockers') %></p>
         <% else %>
-            <h3 class="h5 mb-3">Edit current lockers</h3>
+            <h3 class="h5 mb-3"><%= t('lockers.index.edit_current') %></h3>
             <%= render 'locker_bulk_edit_modal' %>
             <%= render 'lockers_inventory_table' %>
         <% end %>
