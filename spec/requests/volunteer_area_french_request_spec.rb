@@ -34,6 +34,15 @@ RSpec.describe "Volunteer area in French", type: :request do
       expect(text).to include("Aperçu de la tâche", "2.0 heures", "Capacité : 3", "Découpeuse laser", "En cours (1 assigné(s))")
     end
 
+    it "lets the task search find a task by its category in the page language" do
+      get volunteer_tasks_path(locale: "fr")
+      search = Nokogiri::HTML(response.body).at_css(".task-item-card-col")["data-searchable-text"]
+      expect(search).to include("events", "événements")
+
+      get volunteer_tasks_path(locale: "en")
+      expect(Nokogiri::HTML(response.body).at_css(".task-item-card-col")["data-searchable-text"]).to start_with("setup crew events makerspace")
+    end
+
     it "labels the category and certification choices of the task form in French and submits the stored names" do
       get new_volunteer_task_path(locale: "fr")
       page = Nokogiri::HTML(response.body)
