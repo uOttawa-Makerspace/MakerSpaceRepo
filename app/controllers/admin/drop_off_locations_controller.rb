@@ -15,27 +15,27 @@ class Admin::DropOffLocationsController < AdminAreaController
   def create
     @new_location = DropOffLocation.new(drop_off_location_params)
     if @new_location.save
-      flash[:notice] = "Drop-off Location added successfully!"
+      flash[:notice] = I18n.t("admin_pages.drop_off_locations.flash.added")
     else
-      flash[:alert] = "Input is invalid"
+      flash[:alert] = I18n.t("admin_pages.drop_off_locations.flash.invalid")
     end
     redirect_to admin_drop_off_locations_path
   end
 
   def update
     if @location.update(params.expect(drop_off_location: [:name]))
-      flash[:notice] = "Drop-off Location renamed successfully"
+      flash[:notice] = I18n.t("admin_pages.drop_off_locations.flash.renamed")
     else
-      flash[:alert] = "Input is invalid"
+      flash[:alert] = I18n.t("admin_pages.drop_off_locations.flash.invalid")
     end
     redirect_to admin_drop_off_locations_path
   end
 
   def destroy
     if @location.destroy
-      flash[:notice] = "Drop-off Location Deleted successfully"
+      flash[:notice] = I18n.t("admin_pages.drop_off_locations.flash.deleted")
     else
-      flash[:alert] = "An error occured while deleting the Drop-off Location."
+      flash[:alert] = I18n.t("admin_pages.drop_off_locations.flash.not_deleted")
     end
     redirect_to admin_drop_off_locations_path
   end

@@ -23,6 +23,6 @@ class Admin::CcMoneyClaimEmailsController < AdminAreaController
   def send_claim_mail(cc_money, email)
     MsrMailer.send_cc_money_email(email, cc_money.cc, cc_money.claim_token).deliver_later
     Rails.logger.info("CC claim email for cc_money #{cc_money.id} resent to #{email} by user #{current_user.id} at #{Time.current.iso8601}")
-    flash[:notice] = "Claim email for #{cc_money.cc} CC sent to #{email} at #{I18n.l(Time.current, format: :short)}."
+    flash[:notice] = I18n.t("admin_pages.cc_moneys.flash.claim_sent", cc: cc_money.cc, email: email, at: I18n.l(Time.current, format: :short))
   end
 end

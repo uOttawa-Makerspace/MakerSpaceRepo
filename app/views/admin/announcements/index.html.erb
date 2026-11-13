@@ -1,13 +1,13 @@
 <div class="text-center">
   <br />
-  <h2 class="fw-bold">Announcements</h2>
+  <h2 class="fw-bold"><%= t('admin_pages.announcements.title') %></h2>
 
-  <%= link_to 'New Announcement', new_admin_announcement_path, class: 'btn btn-primary m-1' %>
+  <%= link_to t('admin_pages.announcements.new'), new_admin_announcement_path, class: 'btn btn-primary m-1' %>
 
   <br><br>
 
   <% if !@announcements.blank? %>
-    <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
+    <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="<%= t('admin_pages.announcements.find_placeholder') %>" class="form-control mx-auto">
 
     <br />
 
@@ -15,13 +15,13 @@
       <table class="table sessions-table  table-striped">
         <thead class="table-primary">
           <tr>
-            <th>Date Submitted <span onclick="sortTable('sessions-table', 0, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Description <span onclick="sortTable('sessions-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Public<span onclick="sortTable('sessions-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Active?<span onclick="sortTable('sessions-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Created By<span onclick="sortTable('sessions-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Dismissed By<span onclick="sortTable('sessions-table', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th class="action-header">Action</th>
+            <th><%= t('admin_pages.announcements.date_submitted') %> <span onclick="sortTable('sessions-table', 0, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th><%= t('admin_pages.common.description') %> <span onclick="sortTable('sessions-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th><%= t('admin_pages.announcements.public') %><span onclick="sortTable('sessions-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th><%= t('admin_pages.announcements.active') %><span onclick="sortTable('sessions-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th><%= t('admin_pages.announcements.created_by') %><span onclick="sortTable('sessions-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th><%= t('admin_pages.announcements.dismissed_by') %><span onclick="sortTable('sessions-table', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th class="action-header"><%= t('admin_pages.common.action') %></th>
           </tr>
         </thead>
         <tbody>
@@ -52,13 +52,13 @@
 
 
             <td>
-              <span data-bs-toggle="tooltip" title="<%= User.where(id: AnnouncementDismiss.includes(:user).where(announcement_id: a.id).map(&:user_id)).pluck(:username).size > 5 ? "#{User.where(id: AnnouncementDismiss.includes(:user).where(announcement_id: a.id).map(&:user_id)).pluck(:username).take(5).join(', ')} And more" : User.where(id: AnnouncementDismiss.includes(:user).where(announcement_id: a.id).map(&:user_id)).pluck(:username).join(', ') %>">Dismissed by: <%= AnnouncementDismiss.where(announcement_id: a.id).count > 0 ? "#{AnnouncementDismiss.where(announcement_id: a.id).count} User#{'s'.pluralize(AnnouncementDismiss.where(announcement_id: a.id).count)}" : 'No one' %>
+              <span data-bs-toggle="tooltip" title="<%= User.where(id: AnnouncementDismiss.includes(:user).where(announcement_id: a.id).map(&:user_id)).pluck(:username).size > 5 ? t('admin_pages.announcements.and_more', names: User.where(id: AnnouncementDismiss.includes(:user).where(announcement_id: a.id).map(&:user_id)).pluck(:username).take(5).join(', ')) : User.where(id: AnnouncementDismiss.includes(:user).where(announcement_id: a.id).map(&:user_id)).pluck(:username).join(', ') %>"><%= t('admin_pages.announcements.dismissed_by_count', who: AnnouncementDismiss.where(announcement_id: a.id).count > 0 ? t('admin_pages.announcements.dismissed_users', count: AnnouncementDismiss.where(announcement_id: a.id).count) : t('admin_pages.announcements.dismissed_no_one')) %>
               </span>
             </td>
             <td class="action-cell">
-              <%= link_to 'Edit', edit_admin_announcement_path(a.id), class: 'btn btn-primary d-block w-100 btn-sm' if current_user.staff? %>
-              <%= link_to 'Show', admin_announcement_path(a.id), class: 'btn btn-info d-block w-100 btn-sm my-2' %>
-              <%= button_to 'Delete', { controller: :announcements, action: :destroy, id: a.id }, method: :delete,
+              <%= link_to t('admin_pages.common.edit'), edit_admin_announcement_path(a.id), class: 'btn btn-primary d-block w-100 btn-sm' if current_user.staff? %>
+              <%= link_to t('admin_pages.common.show'), admin_announcement_path(a.id), class: 'btn btn-info d-block w-100 btn-sm my-2' %>
+              <%= button_to t('admin_pages.common.delete'), { controller: :announcements, action: :destroy, id: a.id }, method: :delete,
                                                                                                   **confirmation_options(t('confirmations.announcements.delete')),
                                                                                                   class: 'btn btn-danger btn-sm d-block w-100 me-0' %>
             </td>
@@ -70,7 +70,7 @@
     </div>
   <% else %>
     <div class="m-5">
-      No Announcements were created yet.
+      <%= t('admin_pages.announcements.empty') %>
     </div>
     <br>
   <% end %>

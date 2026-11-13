@@ -16,7 +16,7 @@ class Admin::ContactInfosController < AdminAreaController
     @contact_info = ContactInfo.new(fields)
     if @contact_info.save
       redirect_to admin_contact_infos_path,
-                  notice: "You've successfully created a new Contact Info !"
+                  notice: I18n.t("admin_pages.contact_infos.flash.created")
     else
       @contact_info.opening_hours.build if @contact_info.opening_hours.blank?
       render :new, status: :unprocessable_content
@@ -30,13 +30,13 @@ class Admin::ContactInfosController < AdminAreaController
 
   def update
     contact_info = ContactInfo.find(params[:id])
-    flash_write(contact_info, "contact_infos.not_updated", "Contact Info updated") { contact_info.update(contact_infos_params) }
+    flash_write(contact_info, "contact_infos.not_updated", I18n.t("admin_pages.contact_infos.flash.updated")) { contact_info.update(contact_infos_params) }
     redirect_to admin_contact_infos_path
   end
 
   def destroy
     contact_info = ContactInfo.find(params[:id])
-    flash_write(contact_info, "contact_infos.not_deleted", "Contact Info Deleted", destroy: true) { contact_info.destroy }
+    flash_write(contact_info, "contact_infos.not_deleted", I18n.t("admin_pages.contact_infos.flash.deleted"), destroy: true) { contact_info.destroy }
     redirect_to admin_contact_infos_path
   end
 

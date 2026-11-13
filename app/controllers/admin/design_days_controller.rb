@@ -34,10 +34,10 @@ class Admin::DesignDaysController < AdminAreaController
           metadata: floorplan.blob.metadata.merge(floorplan_title: title)
         )
       end
-      flash[:notice] = 'Design day configuration updated'
+      flash[:notice] = I18n.t("admin_pages.design_days.flash.updated")
       redirect_to @design_day
     else
-      flash[:alert] = 'Failed to update configuration'
+      flash[:alert] = I18n.t("admin_pages.design_days.flash.not_updated")
       render :show, status: :unprocessable_content
     end
   end

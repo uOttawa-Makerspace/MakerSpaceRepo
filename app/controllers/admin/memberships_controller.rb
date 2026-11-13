@@ -9,7 +9,7 @@ class Admin::MembershipsController < AdminAreaController
 
   def update
     if @membership_tier.update(membership_tier_params)
-      flash[:success] = "Membership tier updated successfully."
+      flash[:success] = I18n.t("admin_pages.memberships.flash.updated")
     else
       flash[:alert] = @membership_tier.errors.full_messages.join(", ")
     end

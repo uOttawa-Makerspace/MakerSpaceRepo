@@ -41,27 +41,17 @@ module AnnouncementsHelper
     if (a.end_date == nil) or (a.end_date >= Time.zone.today)
       case a.active
       when true
-        "Yes"
+        t("admin_pages.common.yes")
       when false
-        "No"
+        t("admin_pages.common.no")
       end
     else
-      "Yes but the publishing date is over."
+      t("admin_pages.announcements.expired")
     end
   end
 
+  # The label of an announcement's audience, or nil for an unknown one.
   def return_public(public)
-    case public
-    when "volunteer"
-      "Volunteers"
-    when "staff"
-      "Staff"
-    when "regular_user"
-      "All Users"
-    when "admin"
-      "Admins"
-    when "all"
-      "All Visitors (Even not signed in)"
-    end
+    t(public, scope: "admin_pages.announcements.audiences") if Announcement::PUBLIC_GOALS.include?(public)
   end
 end

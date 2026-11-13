@@ -1,9 +1,9 @@
-<% provide(:title, 'Teams') %>
+<% provide(:title, t('admin_pages.teams.page_title')) %>
 <section>
-  <h2 class="m-0 fw-bold py-4 text-center">Team Management</h2>
+  <h2 class="m-0 fw-bold py-4 text-center"><%= t('admin_pages.teams.management') %></h2>
 
   <div class="d-flex flex-row gap-2 justify-content-center mb-4">
-    <%= link_to 'Create Team', new_admin_team_path, class: 'btn btn-success' %>
+    <%= link_to t('admin_pages.teams.create'), new_admin_team_path, class: 'btn btn-success' %>
   </div>
 
   <div class="row gy-3">
@@ -15,12 +15,12 @@
             </div>
             <div class="card-body">
               <div class="d-flex flex-row align-items-center justify-content-between flex-nowrap">
-                <p class="card-text">Team Captain: <%= link_to team.captain.name, user_path(team.captain.username), target: '_blank', rel: 'noopener' unless team.captain.nil? %></p>
-                <p class="card-text">Members: <%= team.members.count %></p>
+                <p class="card-text"><%= t('admin_pages.teams.captain_label') %><%= link_to team.captain.name, user_path(team.captain.username), target: '_blank', rel: 'noopener' unless team.captain.nil? %></p>
+                <p class="card-text"><%= t('admin_pages.teams.members_label', count: team.members.count) %></p>
               </div>
               <div class="d-flex flex-row align-items-center justify-content-center gap-2 flex-nowrap mt-2">
-                <%= link_to 'Show', admin_team_path(team.id), class: 'btn btn-primary' %>
-                <%= link_to 'Edit', edit_admin_team_path(team.id), class: 'btn btn-secondary' %>
+                <%= link_to t('admin_pages.common.show'), admin_team_path(team.id), class: 'btn btn-primary' %>
+                <%= link_to t('admin_pages.common.edit'), edit_admin_team_path(team.id), class: 'btn btn-secondary' %>
               </div>
             </div>
           </div>

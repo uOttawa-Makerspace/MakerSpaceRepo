@@ -7,7 +7,7 @@ class Admin::JobServiceGroupsController < AdminAreaController
 
   def create
     @job_service_group = JobServiceGroup.new(job_service_group_params)
-    flash_write(@job_service_group, "job_service_groups.not_created", "The Service Group has been created!") { @job_service_group.save }
+    flash_write(@job_service_group, "job_service_groups.not_created", I18n.t("admin_pages.job_settings.flash.group_created")) { @job_service_group.save }
     redirect_to settings_job_orders_path
   end
 
@@ -15,12 +15,12 @@ class Admin::JobServiceGroupsController < AdminAreaController
   end
 
   def update
-    flash_write(@job_service_group, "job_service_groups.not_updated", "The Service Group has been updated") { @job_service_group.update(job_service_group_params) }
+    flash_write(@job_service_group, "job_service_groups.not_updated", I18n.t("admin_pages.job_settings.flash.group_updated")) { @job_service_group.update(job_service_group_params) }
     redirect_to settings_job_orders_path
   end
 
   def destroy
-    flash_write(@job_service_group, "job_service_groups.not_deleted", "The Service Group has been deleted successfully", destroy: true) { @job_service_group.destroy }
+    flash_write(@job_service_group, "job_service_groups.not_deleted", I18n.t("admin_pages.job_settings.flash.group_deleted"), destroy: true) { @job_service_group.destroy }
     redirect_to settings_job_orders_path
   end
 

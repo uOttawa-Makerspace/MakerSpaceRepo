@@ -1,6 +1,4 @@
 class Admin::KeysController < AdminAreaController
-  HOLDER_NOT_APPROVED_MESSAGE = "The key holder must have an approved key request."
-
   before_action :set_key,
                 only: %i[
                   show
@@ -30,7 +28,7 @@ class Admin::KeysController < AdminAreaController
     if @key.hands_out_by_edit?
       redirect_to admin_keys_path, alert: Key::HAND_OUT_REFUSAL
     elsif @key.save
-      flash[:notice] = "Successfully created key."
+      flash[:notice] = I18n.t("admin_pages.keys.flash.created")
       redirect_to admin_keys_path
     else
       flash[:alert] = validation_message(@key, "errors.admin.keys.not_created")
@@ -59,7 +57,7 @@ class Admin::KeysController < AdminAreaController
 
   def update
     @key.update_from_edit!(key_params)
-    redirect_to admin_keys_path, notice: "The key was successfully updated."
+    redirect_to admin_keys_path, notice: I18n.t("admin_pages.keys.flash.updated")
   rescue Key::StateError => e
     redirect_to admin_keys_path, alert: e.message
   rescue ActiveRecord::RecordInvalid => e
@@ -67,7 +65,7 @@ class Admin::KeysController < AdminAreaController
   end
 
   def destroy
-    flash_write(@key, "keys.not_deleted", "Successfully deleted key.", destroy: true) { @key.destroy }
+    flash_write(@key, "keys.not_deleted", I18n.t("admin_pages.keys.flash.deleted"), destroy: true) { @key.destroy }
     redirect_to admin_keys_path
   end
 
@@ -90,11 +88,11 @@ class Admin::KeysController < AdminAreaController
     end
 
     unless holder_approved?(user)
-      redirect_to admin_keys_path, alert: HOLDER_NOT_APPROVED_MESSAGE and return
+      redirect_to admin_keys_path, alert: I18n.t("admin_pages.keys.flash.holder_not_approved") and return
     end
 
     @key.assign_to!(user, key_params, params[:deposit_amount])
-    redirect_to admin_keys_path, notice: "Successfully assigned key"
+    redirect_to admin_keys_path, notice: I18n.t("admin_pages.keys.flash.assigned")
   rescue ActiveRecord::RecordInvalid, Key::StateError => e
     redirect_to admin_keys_path,
                 alert: failure_message("not_assigned", e)
@@ -102,7 +100,7 @@ class Admin::KeysController < AdminAreaController
 
   def revoke_key
     @key.revoke!(deposit_return_date_param)
-    redirect_to admin_keys_path, notice: "Successfully revoked key"
+    redirect_to admin_keys_path, notice: I18n.t("admin_pages.keys.flash.revoked")
   rescue ActiveRecord::RecordInvalid, Key::StateError => e
     redirect_to admin_keys_path,
                 alert: failure_message("not_revoked", e)
@@ -113,13 +111,13 @@ class Admin::KeysController < AdminAreaController
   end
 
   def approve_key_request
-    answer_key_request("request_not_approved", "Successfully approved key request.") do
+    answer_key_request("request_not_approved", I18n.t("admin_pages.keys.flash.request_approved")) do
       @key_request.update(status: :approved)
     end
   end
 
   def deny_key_request
-    answer_key_request("request_not_denied", "Successfully denied key request.") do
+    answer_key_request("request_not_denied", I18n.t("admin_pages.keys.flash.request_denied")) do
       denied = @key_request.deny(params[:denial_reason])
       if denied
         KeyRequestMailer.send_key_request_denied(@key_request.id, @key_request.denial_reason).deliver_later
@@ -153,9 +151,9 @@ class Admin::KeysController < AdminAreaController
 
   def request_label(key_request)
     if key_request.blank?
-      " (No request form)"
+      I18n.t("admin_pages.keys.no_request_form")
     elsif key_request.status_waiting_for_approval?
-      " (Request form awaiting approval)"
+      I18n.t("admin_pages.keys.request_awaiting")
     else
       ""
     end
@@ -189,14 +187,14 @@ class Admin::KeysController < AdminAreaController
     key_id = params[:id].present? ? params[:id] : params[:key_id]
     @key = Key.find_by(id: key_id)
 
-    redirect_to admin_keys_path, alert: "The key id was not found." if @key.nil?
+    redirect_to admin_keys_path, alert: I18n.t("admin_pages.keys.flash.key_not_found") if @key.nil?
   end
 
   def set_key_request
     @key_request = KeyRequest.find_by(id: params[:id])
 
     if @key_request.nil?
-      redirect_to admin_keys_path, alert: "The key request id was not found."
+      redirect_to admin_keys_path, alert: I18n.t("admin_pages.keys.flash.request_not_found")
     end
   end
 end

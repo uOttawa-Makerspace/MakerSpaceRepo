@@ -1,29 +1,29 @@
 <section class="w-75 mx-auto">
-  <h2 class="m-0 fw-bold py-4 text-center">Key #<%= @key.number %> - <%= @key.status.humanize.capitalize %></h2>
+  <h2 class="m-0 fw-bold py-4 text-center"><%= t('admin_pages.keys.show_title', number: @key.number, status: t(@key.status, scope: 'admin_pages.keys.statuses')) %></h2>
 
   <div class="mb-5 d-flex flex-row align-items-center justify-content-center gap-3 d-print-none">
-    <%= link_to 'View Certifications', key_certification_path(@key.display_user.key_certification.id), class: 'btn btn-primary' unless @key.key_request.nil? || @key.display_user.key_certification.nil? %>
-    <%= link_to 'View Key Transactions', admin_key_history_path(key_id: @key.id), class: 'btn btn-primary' %>
-    <%= button_tag 'Print Page', id: 'print-button', class: 'btn btn-primary' %>
+    <%= link_to t('admin_pages.keys.view_certifications'), key_certification_path(@key.display_user.key_certification.id), class: 'btn btn-primary' unless @key.key_request.nil? || @key.display_user.key_certification.nil? %>
+    <%= link_to t('admin_pages.keys.view_transactions'), admin_key_history_path(key_id: @key.id), class: 'btn btn-primary' %>
+    <%= button_tag t('admin_pages.keys.print_page'), id: 'print-button', class: 'btn btn-primary' %>
   </div>
 
   <div class="mb-5">
-    <h4 class="mb-3">Key Information</h4>
-    <h6><span class="fw-bold">Key Type:</span> <%= @key.key_type.humanize.capitalize %></h6>
-    <h6><span class="fw-bold">Key Number:</span> <%= @key.number %></h6>
-    <h6><span class="fw-bold">Keycode:</span> <%= @key.get_keycode %></h6>
-    <h6><span class="fw-bold">Space:</span> <%= @key.key_type_regular? ? @key.space.name : 'N/A' %></h6>
-    <h6><span class="fw-bold">User:</span> <%= staff_user_link(@key.display_user, target: '_blank', rel: 'noopener') %></h6>
-    <h6><span class="fw-bold">Supervisor:</span> <%= staff_user_link(@key.display_supervisor, target: '_blank', rel: 'noopener') %></h6>
-    <h6><span class="fw-bold">Status:</span> <%= @key.status.humanize.capitalize %></h6>
+    <h4 class="mb-3"><%= t('admin_pages.keys.key_information') %></h4>
+    <h6><span class="fw-bold"><%= t('admin_pages.keys.label_key_type') %></span> <%= t(@key.key_type, scope: 'admin_pages.keys.key_types') %></h6>
+    <h6><span class="fw-bold"><%= t('admin_pages.keys.label_key_number') %></span> <%= @key.number %></h6>
+    <h6><span class="fw-bold"><%= t('admin_pages.keys.label_keycode') %></span> <%= @key.get_keycode %></h6>
+    <h6><span class="fw-bold"><%= t('admin_pages.keys.label_space') %></span> <%= @key.key_type_regular? ? @key.space.name : t('admin_pages.common.not_applicable') %></h6>
+    <h6><span class="fw-bold"><%= t('admin_pages.keys.label_user') %></span> <%= staff_user_link(@key.display_user, target: '_blank', rel: 'noopener') %></h6>
+    <h6><span class="fw-bold"><%= t('admin_pages.keys.label_supervisor') %></span> <%= staff_user_link(@key.display_supervisor, target: '_blank', rel: 'noopener') %></h6>
+    <h6><span class="fw-bold"><%= t('admin_pages.keys.label_status') %></span> <%= t(@key.status, scope: 'admin_pages.keys.statuses') %></h6>
 
     <div class="mt-4">
       <div class="card mb-3">
         <div class="card-header bg-primary text-light">
-          Notes
+          <%= t('admin_pages.keys.notes') %>
         </div>
         <div class="card-body">
-          <%= @key.additional_info.empty? ? 'None' : sanitize(@key.additional_info) %>
+          <%= @key.additional_info.empty? ? t('admin_pages.keys.none') : sanitize(@key.additional_info) %>
         </div>
       </div>
     </div>
@@ -31,17 +31,17 @@
 
   <% unless @key.key_request.nil? %>
     <div class="mb-5">
-      <h4 class="mb-3">User Information</h4>
-      <h6><span class="fw-bold">User Status:</span> <%= @key.key_request.user_status.humanize.capitalize %></h6>
-      <h6><span class="fw-bold">Email:</span> <%= @key.display_user&.email %></h6>
-      <h6><span class="fw-bold">Student/Employee Number:</span> <%= @key.key_request.student_number %></h6>
-      <h6><span class="fw-bold">Phone Number:</span> <%= @key.key_request.phone_number %></h6>
-      <h6><span class="fw-bold">Emergency Contact:</span> <%= @key.key_request.emergency_contact %></h6>
-      <h6><span class="fw-bold">Relation to Emergency Contact:</span> <%= @key.key_request.emergency_contact_relation %></h6>
-      <h6><span class="fw-bold">Emergency Contact Phone Number:</span> <%= @key.key_request.emergency_contact_phone_number %></h6>
-      <h6><span class="fw-bold">Read and understood lab rules:</span> <%= @key.key_request.read_lab_rules? ? 'yes' : 'no' %></h6>
-      <h6><span class="fw-bold">Read and understood policies:</span> <%= @key.key_request.read_policies? ? 'yes' : 'no' %></h6>
-      <h6><span class="fw-bold">Read and accepted agreement:</span> <%= @key.key_request.read_agreement? ? 'yes' : 'no' %></h6>
+      <h4 class="mb-3"><%= t('admin_pages.keys.user_information') %></h4>
+      <h6><span class="fw-bold"><%= t('admin_pages.keys.label_user_status') %></span> <%= @key.key_request.user_status.humanize.capitalize %></h6>
+      <h6><span class="fw-bold"><%= t('admin_pages.keys.label_email') %></span> <%= @key.display_user&.email %></h6>
+      <h6><span class="fw-bold"><%= t('admin_pages.keys.label_student_number') %></span> <%= @key.key_request.student_number %></h6>
+      <h6><span class="fw-bold"><%= t('admin_pages.keys.label_phone_number') %></span> <%= @key.key_request.phone_number %></h6>
+      <h6><span class="fw-bold"><%= t('admin_pages.keys.label_emergency_contact') %></span> <%= @key.key_request.emergency_contact %></h6>
+      <h6><span class="fw-bold"><%= t('admin_pages.keys.label_emergency_relation') %></span> <%= @key.key_request.emergency_contact_relation %></h6>
+      <h6><span class="fw-bold"><%= t('admin_pages.keys.label_emergency_phone') %></span> <%= @key.key_request.emergency_contact_phone_number %></h6>
+      <h6><span class="fw-bold"><%= t('admin_pages.keys.label_read_rules') %></span> <%= @key.key_request.read_lab_rules? ? t('admin_pages.keys.answer_yes') : t('admin_pages.keys.answer_no') %></h6>
+      <h6><span class="fw-bold"><%= t('admin_pages.keys.label_read_policies') %></span> <%= @key.key_request.read_policies? ? t('admin_pages.keys.answer_yes') : t('admin_pages.keys.answer_no') %></h6>
+      <h6><span class="fw-bold"><%= t('admin_pages.keys.label_read_agreement') %></span> <%= @key.key_request.read_agreement? ? t('admin_pages.keys.answer_yes') : t('admin_pages.keys.answer_no') %></h6>
     </div>
 
     <div class="mb-5 d-none d-print-block">
@@ -74,14 +74,14 @@
     </div>
 
     <div class="mb-5">
-      <h4 class="mb-3">Safety Questionnaire Answers</h4>
+      <h4 class="mb-3"><%= t('admin_pages.keys.safety_answers') %></h4>
       <% (1..KeyRequest::NUMBER_OF_QUESTIONS).each do |i| %>
         <div class="card mb-3">
           <div class="card-header bg-primary text-light">
             <%= "Q#{i} - #{KeyRequest::QUESTIONS[i - 1]}" %><br>
           </div>
           <div class="card-body">
-            <%= @key.key_request.send("question_#{i}").nil? ? 'No Answer' : @key.key_request.send("question_#{i}") %>
+            <%= @key.key_request.send("question_#{i}").nil? ? t('admin_pages.keys.no_answer') : @key.key_request.send("question_#{i}") %>
           </div>
         </div>
       <% end %>
@@ -122,7 +122,7 @@
     </div>
 
     <div class="mb-5 d-none d-print-block">
-      <h4 class="mb-3 text-center">Staff Files:</h4>
+      <h4 class="mb-3 text-center"><%= t('admin_pages.keys.staff_files') %></h4>
 
       <% (1..KeyCertification::NUMBER_OF_STAFF_FILES).each do |i| %>
         <% if !@key.display_user.key_certification.nil? && @key.display_user.key_certification.send("pdf_file_#{i}").attached? %>
@@ -135,14 +135,14 @@
         <% else %>
           <div class="mb-5">
             <h5>
-              <%= KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>: not attached
+              <%= t('admin_pages.keys.not_attached', file: KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize) %>
             </h5>
           </div>
         <% end %>
       <% end %>
     </div>
     <div class="mb-5 d-none d-print-block">
-      <h4 class="mb-3 text-center">Supervisor Files:</h4>
+      <h4 class="mb-3 text-center"><%= t('admin_pages.keys.supervisor_files') %></h4>
 
       <% ((KeyCertification::NUMBER_OF_STAFF_FILES + 1)..KeyCertification::TOTAL_NUMBER_OF_FILES).each do |i| %>
         <% if !@key.display_user.key_certification.nil? && @key.display_user.key_certification.send("pdf_file_#{i}").attached? %>
@@ -155,7 +155,7 @@
         <% else %>
           <div class="mb-5">
             <h5>
-              <%= KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>: not attached
+              <%= t('admin_pages.keys.not_attached', file: KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize) %>
             </h5>
           </div>
         <% end %>

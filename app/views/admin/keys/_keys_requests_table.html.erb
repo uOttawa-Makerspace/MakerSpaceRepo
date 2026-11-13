@@ -2,15 +2,15 @@
   <table class="<%= "table text-center m-0 #{table_name}" %>">
     <thead class="table-primary">
     <tr>
-      <th>User<span onclick="sortTable('<%= table_name %>', 0)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Space<span onclick="sortTable('<%= table_name %>', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Supervisor<span onclick="sortTable('<%= table_name %>', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Email<span onclick="sortTable('<%= table_name %>', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Student/Employee #<span onclick="sortTable('<%= table_name %>', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Phone Number<span onclick="sortTable('<%= table_name %>', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Emergency Contact<span onclick="sortTable('<%= table_name %>', 6)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Certifications<span onclick="sortTable('<%= table_name %>', 7)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Actions</th>
+      <th><%= t('admin_pages.common.user') %><span onclick="sortTable('<%= table_name %>', 0)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_pages.common.space') %><span onclick="sortTable('<%= table_name %>', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_pages.common.supervisor') %><span onclick="sortTable('<%= table_name %>', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_pages.common.email') %><span onclick="sortTable('<%= table_name %>', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_pages.keys.student_number') %><span onclick="sortTable('<%= table_name %>', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_pages.common.phone_number') %><span onclick="sortTable('<%= table_name %>', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_pages.keys.emergency_contact') %><span onclick="sortTable('<%= table_name %>', 6)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_pages.keys.certifications') %><span onclick="sortTable('<%= table_name %>', 7)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_pages.common.actions') %></th>
     </tr>
     </thead>
     <tbody>
@@ -30,16 +30,16 @@
           <td>
             <% certification = key_request.display_user&.key_certification %>
             <% if certification %>
-              <%= certification.get_key_certs_attached %>/<%= KeyCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
-              <%= certification.get_supervisor_certs_attached %>/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
+              <%= t('admin_pages.keys.staff_files_count', attached: certification.get_key_certs_attached, total: KeyCertification::NUMBER_OF_STAFF_FILES) %><br>
+              <%= t('admin_pages.keys.supervisor_files_count', attached: certification.get_supervisor_certs_attached, total: KeyCertification::NUMBER_OF_SUPERVISOR_FILES) %>
             <% else %>
-              0/<%= KeyCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
-              0/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
+              <%= t('admin_pages.keys.staff_files_count', attached: 0, total: KeyCertification::NUMBER_OF_STAFF_FILES) %><br>
+              <%= t('admin_pages.keys.supervisor_files_count', attached: 0, total: KeyCertification::NUMBER_OF_SUPERVISOR_FILES) %>
             <% end %>
           </td>
           <td>
-            <%= link_to 'Show', key_request_path(key_request.id), class: 'w-100 py-1 mb-1 btn btn-secondary' %>
-            <%= button_to 'Approve', approve_key_request_admin_keys_path(id: key_request.id), class: 'w-100 py-1 mb-1 btn btn-success', method: :patch if key_request.status_waiting_for_approval? %>
+            <%= link_to t('admin_pages.common.show'), key_request_path(key_request.id), class: 'w-100 py-1 mb-1 btn btn-secondary' %>
+            <%= button_to t('admin_pages.keys.approve'), approve_key_request_admin_keys_path(id: key_request.id), class: 'w-100 py-1 mb-1 btn btn-success', method: :patch if key_request.status_waiting_for_approval? %>
             <% if key_request.status_waiting_for_approval? %>
               <%= render KeyRequestDenyFormComponent.new(key_request: key_request, input_class: 'form-control-sm mb-1', button_class: 'w-100 py-1 btn btn-danger') %>
             <% end %>

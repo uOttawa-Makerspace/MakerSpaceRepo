@@ -1,7 +1,7 @@
-<%= link_to 'Back', admin_announcement_path, class: 'float-end' %>
+<%= link_to t('admin_pages.common.back'), admin_announcement_path, class: 'float-end' %>
 
 <div class="padding-10 text-center">
-  <h2 class="text-center pt-2 mb-5 fw-bold">Annoucement</h2>
+  <h2 class="text-center pt-2 mb-5 fw-bold"><%= t('admin_pages.announcements.show_title') %></h2>
 
   <br />
 
@@ -11,12 +11,12 @@
 
   <div class="row">
     <div class="col-6">
-      <b>Public:</b> <%= return_public(@announcement.public_goal) %>
+      <b><%= t('admin_pages.announcements.public_label') %></b> <%= return_public(@announcement.public_goal) %>
       <br />
       <br />
     </div>
     <div class="col-6">
-      <b>Created By:</b> <%= link_to @announcement.user.name.titleize, user_path(@announcement.user.username), class: 'username' %>
+      <b><%= t('admin_pages.announcements.created_by_label') %></b> <%= link_to @announcement.user.name.titleize, user_path(@announcement.user.username), class: 'username' %>
       <br />
       <br />
     </div>

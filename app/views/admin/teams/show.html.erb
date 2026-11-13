@@ -1,17 +1,17 @@
 <section>
-  <h2 class="m-0 fw-bold pt-4 pb-5 text-center">Team #<%= @team.id %> - <%= @team.name %></h2>
+  <h2 class="m-0 fw-bold pt-4 pb-5 text-center"><%= t('admin_pages.teams.show_title', id: @team.id, name: @team.name) %></h2>
 
   <div class="mb-5">
     <%= form_for @team, url: { controller: 'admin/teams', action: 'add_member' } do |f| %>
       <div class="row">
         <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
-          <%= label_tag :member_id, 'Search users to add', for: 'search_users_add', id: 'team_member_label', class: 'form-label' %>
+          <%= label_tag :member_id, t('admin_pages.teams.search_users'), for: 'search_users_add', id: 'team_member_label', class: 'form-label' %>
           <div class="mb-2 input-group">
             <%= select_tag :member_id, '', class: 'form-control', id: 'search_users_add', aria: { labelledby: 'team_member_label' } %>
-            <%= select_tag :role, options_for_select(TeamMembership.roles.map { |k, _v| [k.humanize.capitalize, k] }), class: 'form-control', aria: { label: t('common.names.role') } %>
+            <%= select_tag :role, options_for_select(TeamMembership.roles.map { |k, _v| [t(k, scope: 'admin_pages.teams.roles'), k] }), class: 'form-control', aria: { label: t('common.names.role') } %>
           </div>
           <div class="text-center">
-            <%= f.submit 'Add Member', class: 'd-inline btn btn-primary' %>
+            <%= f.submit t('admin_pages.teams.add_member'), class: 'd-inline btn btn-primary' %>
           </div>
         </div>
       </div>
@@ -19,27 +19,27 @@
   </div>
 
   <div>
-    <h5 class="text-center">Team Members</h5>
+    <h5 class="text-center"><%= t('admin_pages.teams.team_members') %></h5>
 
     <table class="table table-striped">
       <thead class="table-primary">
         <tr>
-          <td>User</td>
-          <td>Role</td>
-          <td>Date Added</td>
-          <td>Actions</td>
+          <td><%= t('admin_pages.common.user') %></td>
+          <td><%= t('admin_pages.teams.role') %></td>
+          <td><%= t('admin_pages.teams.date_added') %></td>
+          <td><%= t('admin_pages.common.actions') %></td>
         </tr>
       </thead>
       <tbody>
         <% @team_members.each do |tm| %>
           <tr>
             <td><%= link_to tm.user.name, user_path(tm.user.username), target: '_blank', rel: 'noopener' %></td>
-            <td><%= tm.role.humanize.capitalize %></td>
+            <td><%= t(tm.role, scope: 'admin_pages.teams.roles') %></td>
             <td><%= tm.created_at.strftime('%Y-%m-%d') %></td>
             <td>
-              <%= button_to 'Promote', promote_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-success', method: :patch, **confirmation_options(t('confirmations.teams.promote', name: tm.user.name)) if tm.role_regular_member? %>
-              <%= button_to 'Demote', demote_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-warning', method: :patch, **confirmation_options(t('confirmations.teams.demote', name: tm.user.name)) if tm.role_lead? %>
-              <%= button_to 'Remove', remove_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-danger', method: :delete, **confirmation_options(t('confirmations.teams.remove', name: tm.user.name)) unless tm.role_captain? %>
+              <%= button_to t('admin_pages.teams.promote'), promote_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-success', method: :patch, **confirmation_options(t('confirmations.teams.promote', name: tm.user.name)) if tm.role_regular_member? %>
+              <%= button_to t('admin_pages.teams.demote'), demote_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-warning', method: :patch, **confirmation_options(t('confirmations.teams.demote', name: tm.user.name)) if tm.role_lead? %>
+              <%= button_to t('admin_pages.common.remove'), remove_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-danger', method: :delete, **confirmation_options(t('confirmations.teams.remove', name: tm.user.name)) unless tm.role_captain? %>
             </td>
           </tr>
         <% end %>

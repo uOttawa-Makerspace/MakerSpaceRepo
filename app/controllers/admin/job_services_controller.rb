@@ -7,7 +7,7 @@ class Admin::JobServicesController < AdminAreaController
 
   def create
     @job_service = JobService.new(job_service_params)
-    flash_write(@job_service, "job_services.not_created", "The Service has been created!") { @job_service.save }
+    flash_write(@job_service, "job_services.not_created", I18n.t("admin_pages.job_settings.flash.service_created")) { @job_service.save }
     redirect_to settings_job_orders_path
   end
 
@@ -15,12 +15,12 @@ class Admin::JobServicesController < AdminAreaController
   end
 
   def update
-    flash_write(@job_service, "job_services.not_updated", "The Service has been updated") { @job_service.update(job_service_params) }
+    flash_write(@job_service, "job_services.not_updated", I18n.t("admin_pages.job_settings.flash.service_updated")) { @job_service.update(job_service_params) }
     redirect_to settings_job_orders_path
   end
 
   def destroy
-    flash_write(@job_service, "job_services.not_deleted", "The Service has been deleted successfully", destroy: true) { @job_service.destroy }
+    flash_write(@job_service, "job_services.not_deleted", I18n.t("admin_pages.job_settings.flash.service_deleted"), destroy: true) { @job_service.destroy }
     redirect_to settings_job_orders_path
   end
 
