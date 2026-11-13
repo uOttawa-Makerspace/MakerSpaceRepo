@@ -62,4 +62,16 @@ RSpec.describe "Proficient projects page", type: :request do
     expect(response.body.scan(I18n.t("devprog.proficient_project.added")).size).to eq(1)
     expect(response.body.scan("cart-button").size).to eq(1)
   end
+
+  it "renders when every visible project is already bought or in progress" do
+    projects = add_training_with_projects("Epsilon", 2)
+    order = create(:order, :completed, user: user)
+    projects.each { |project| create(:order_item, proficient_project: project, order: order, status: "In progress") }
+    content_login!(user)
+
+    get proficient_projects_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body.scan("pp-status-button").size).to eq(2)
+  end
 end
