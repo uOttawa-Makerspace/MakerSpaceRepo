@@ -5,6 +5,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
 import { makeCalendarAccessible } from "../src/calendar_accessibility.js";
+import { closeSaved } from "../src/calendar_dialog.js";
 import { editableUnavailability } from "../src/unavailability_event.js";
 
 // The hosts listed in the failed-calendars header: a JSON list of strings and
@@ -32,7 +33,7 @@ const TypedController = /** @type {new () => Controller<HTMLElement> & {
   unknownHostValue: string,
   feedFailureValue: string,
   feedUrlValue: string,
-  unavailabilityFormOutlet: { openForAdd(options?: { returnFocusTo?: HTMLElement }): void, openForEdit(event: any): void, openForRange(range: { start: string, end: string }): void },
+  unavailabilityFormOutlet: { element: HTMLElement, openForAdd(options?: { returnFocusTo?: HTMLElement }): void, openForEdit(event: any): void, openForRange(range: { start: string, end: string }): void },
   importedEventDetailsOutlet: { show(event: any, returnFocusTo?: HTMLElement | null): void },
 }} */ (/** @type {unknown} */ (Controller));
 
@@ -63,6 +64,12 @@ export default class extends TypedController {
   disconnect() {
     this.calendar?.destroy();
     this.calendar = null;
+  }
+
+  // The dialog saved or deleted: close it and fetch the entries again.
+  saved() {
+    closeSaved(this.unavailabilityFormOutlet.element);
+    this.calendar.refetchEvents();
   }
 
   addUnavailability(event) {

@@ -17,11 +17,19 @@ vi.mock("@fullcalendar/core", () => ({
     destroy() {
       this.destroyed = true;
     }
+    refetchEvents() {
+      this.refetched = true;
+    }
   },
 }));
 vi.mock("@fullcalendar/daygrid", () => ({ default: {} }));
 vi.mock("@fullcalendar/timegrid", () => ({ default: {} }));
 vi.mock("@fullcalendar/interaction", () => ({ default: {} }));
+
+const closeSaved = vi.fn();
+vi.mock("../../../app/javascript/src/calendar_dialog.js", () => ({
+  closeSaved,
+}));
 
 const accessible = vi.fn();
 vi.mock("../../../app/javascript/src/calendar_accessibility.js", () => ({
@@ -38,7 +46,7 @@ const { default: UnavailabilitiesCalendar } =
   await import("../../../app/javascript/controllers/unavailabilities_calendar_controller.js");
 
 const PAGE = `
-<div data-controller="unavailabilities-calendar" data-unavailabilities-calendar-feed-url-value="/staff/unavailabilities/json" data-unavailabilities-calendar-failure-template-value="{host} could not be loaded" data-unavailabilities-calendar-unknown-host-value="a linked calendar" data-unavailabilities-calendar-feed-failure-value="Your calendar could not be loaded" data-unavailabilities-calendar-unavailability-form-outlet="#modal" data-unavailabilities-calendar-imported-event-details-outlet="#details">
+<div data-controller="unavailabilities-calendar" data-action="calendar:saved@document->unavailabilities-calendar#saved" data-unavailabilities-calendar-feed-url-value="/staff/unavailabilities/json" data-unavailabilities-calendar-failure-template-value="{host} could not be loaded" data-unavailabilities-calendar-unknown-host-value="a linked calendar" data-unavailabilities-calendar-feed-failure-value="Your calendar could not be loaded" data-unavailabilities-calendar-unavailability-form-outlet="#modal" data-unavailabilities-calendar-imported-event-details-outlet="#details">
   <div id="calendar_container" data-unavailabilities-calendar-target="container" style="display:none">
     <button id="addUnavailabilityButton" data-action="click->unavailabilities-calendar#addUnavailability"></button>
     <div id="calendar" data-unavailabilities-calendar-target="calendar"><p id="stale">old</p></div>
@@ -112,6 +120,13 @@ describe("staff unavailabilities calendar", () => {
     expect(document.getElementById("spinner_container").style.display).toBe(
       "none",
     );
+  });
+
+  it("closes the dialog and fetches the entries again when it saved", async () => {
+    const cal = await boot();
+    document.dispatchEvent(new CustomEvent("calendar:saved"));
+    expect(closeSaved).toHaveBeenCalledWith(document.getElementById("modal"));
+    expect(cal.refetched).toBe(true);
   });
 
   it("destroys the calendar when the element leaves the page", async () => {

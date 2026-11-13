@@ -1,160 +1,58 @@
 class Admin::EventsController < AdminAreaController
   include CalendarWindowed
+  include CalendarDialog
   layout "admin_area"
 
   before_action :parse_event_times, only: %i[create update]
   before_action :parse_view_range, if: :view_range_action?
 
   def create
-    participants = Array.wrap(params[:staff_select].presence)
+    @event = Event.new(**dialog_fields, space_id: event_params[:space_id], recurrence_rule: event_params[:recurrence_rule].presence,
+                                        start_time: @start_time, end_time: @end_time, created_by_id: current_user.id)
+    assignments = Array.wrap(params[:staff_select].presence).map { |staff_id| EventAssignment.new(event: @event, user_id: staff_id) }
 
-    title = event_params[:title].presence || event_params[:event_type].capitalize
-
-    @event = Event.new(
-      title: title,
-      description: event_params[:description],
-      # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
-      start_time: @start_time,
-      end_time: @end_time,
-      recurrence_rule: event_params[:recurrence_rule].presence,
-      created_by_id: current_user.id,
-      space_id: event_params[:space_id],
-      event_type: event_params[:event_type],
-      training_id: event_params[:training_id],
-      language: event_params[:language],
-      course_name_id: event_params[:course_name]
-    )
-
-    unless participants.empty?
-      @event_assignments = participants.map do |staff_id|
-        EventAssignment.new(
-          event: @event,
-          user_id: staff_id
-        )
-      end
-    end
-
-    saved = @event.save && Array(@event_assignments).all?(&:save)
+    saved = @event.save && assignments.all?(&:save)
     @event.push_to_google_later if @event.persisted?
 
-    if saved
-      flash[:notice] = "Event created successfully."
-    else
-      flash[:alert] = validation_message(@event, "failed_saves.event_create")
-    end
-    redirect_back(fallback_location: admin_calendar_index_path)
+    saved ? dialog_done(notice: "Event created successfully.") : dialog_done(alert: validation_message(@event, "failed_saves.event_create"))
   end
 
   def update
     @event = Event.find(params[:id])
-
     participants = Array.wrap(params[:staff_select].presence)
-
-    title = event_params[:title].presence || event_params[:event_type].capitalize
-
     update_scope = @event.recurrence_rule.present? ? params[:update_scope] : "non-recurring"
 
     case update_scope
     when "non-recurring"
       start_time, end_time = @event.times_after_update(@start_time, @end_time, keep: keep_dialog_times?)
-      if @event.update(
-        title: title,
-        description: event_params[:description],
-        # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
-        start_time: start_time,
-        end_time: end_time,
-        recurrence_rule: event_params[:recurrence_rule].presence,
-        updated_by: current_user,
-        space_id: event_params[:space_id],
-        event_type: event_params[:event_type],
-        training_id: event_params[:training_id],
-        language: event_params[:language],
-        course_name_id: event_params[:course_name]
-        )
-
-        @event.event_assignments.destroy_all
-        attach_participants(@event, participants)
-
-        @event.push_to_google_later
-
-        flash[:notice] = "Event updated successfully."
-      else
-        flash[:alert] = validation_message(@event, "failed_saves.event_update")
-      end
+      save_edit(participants, start_time: start_time, end_time: end_time, space_id: event_params[:space_id],
+                              recurrence_rule: event_params[:recurrence_rule].presence)
     when "all"
-      old_date_new_time_start, old_date_new_time_end = @event.times_after_update(@start_time, @end_time, keep: keep_dialog_times?, series: true)
-
-      rule_to_use = series_rule.with_time_from(event_params[:recurrence_rule], at: old_date_new_time_start)
-
-      if @event.update(
-          title: title,
-          description: event_params[:description],
-          start_time: old_date_new_time_start,
-          end_time: old_date_new_time_end,
-          recurrence_rule: rule_to_use,
-          updated_by: current_user,
-          event_type: event_params[:event_type],
-          training_id: event_params[:training_id],
-          language: event_params[:language],
-          course_name_id: event_params[:course_name]
-          )
-
-        @event.event_assignments.destroy_all
-        attach_participants(@event, participants)
-
-        @event.push_to_google_later
-
-        flash[:notice] = "Event updated successfully."
-      else
-        flash[:alert] = validation_message(@event, "failed_saves.event_update")
-      end
+      start_time, end_time = @event.times_after_update(@start_time, @end_time, keep: keep_dialog_times?, series: true)
+      save_edit(participants, start_time: start_time, end_time: end_time,
+                              recurrence_rule: series_rule.with_time_from(event_params[:recurrence_rule], at: start_time))
     when "this"
-      update_this_occurrence(title, participants)
+      update_this_occurrence(participants)
     else
       flash[:alert] = "Invalid update scope."
     end
 
-    redirect_back(fallback_location: admin_calendar_index_path)
+    dialog_done
   end
 
   def delete_with_scope
     @event = Event.find(params[:id])
-    scope = params[:scope]
+    return remove_event("Event deleted.") if @event.recurrence_rule.blank?
 
-    if @event.recurrence_rule.blank?
-      # No recurrence: just delete it normally
-      destroy_event(@event)
-      redirect_back(fallback_location: admin_calendar_index_path, notice: "Event deleted.")
-      return
-    end
-
-    case scope
-    when "single"
-      occurrence_start = parse_time(params[:start_date])
-      return redirect_back(fallback_location: admin_calendar_index_path, alert: t("admin_events.start_date_required")) unless occurrence_start
-
-      @event.update!(recurrence_rule: series_rule.without_occurrence(occurrence_start), updated_by: current_user)
-      @event.push_to_google_later
-      redirect_back(fallback_location: admin_calendar_index_path, notice: "This occurrence deleted.")
-      
-    when "following"
-      occurrence_start = parse_time(params[:start_date])
-      return redirect_back(fallback_location: admin_calendar_index_path, alert: t("admin_events.start_date_required")) unless occurrence_start
-
-      @event.update!(recurrence_rule: series_rule.ending_before(occurrence_start), updated_by: current_user)
-      @event.push_to_google_later
-      redirect_back(fallback_location: admin_calendar_index_path, notice: "This and following deleted.")
-      
-    when "all"
-      destroy_event(@event)
-      redirect_back(fallback_location: admin_calendar_index_path, notice: "Event series deleted.")
-      
-    else
-      redirect_back(fallback_location: admin_calendar_index_path, alert: "Invalid delete scope: #{scope}")
+    case params[:scope]
+    when "single" then shorten_series("This occurrence deleted.") { |start| series_rule.without_occurrence(start) }
+    when "following" then shorten_series("This and following deleted.") { |start| series_rule.ending_before(start) }
+    when "all" then remove_event("Event series deleted.")
+    else dialog_done(alert: "Invalid delete scope: #{params[:scope]}")
     end
   rescue ActiveRecord::RecordInvalid => e
     # A series stored with a sub-daily rule no longer validates.
-    redirect_back(fallback_location: admin_calendar_index_path, alert: validation_message(e.record, "failed_saves.event_update"))
+    dialog_done(alert: validation_message(e.record, "failed_saves.event_update"))
   end
 
   def json
@@ -248,7 +146,7 @@ class Admin::EventsController < AdminAreaController
       end
     end
 
-    redirect_back(fallback_location: admin_calendar_index_path)
+    dialog_done
   end
 
   def delete_drafts
@@ -318,7 +216,7 @@ class Admin::EventsController < AdminAreaController
     @end_time = parse_time(event_params[:utc_end_time])
     return if @start_time && @end_time
 
-    redirect_back(fallback_location: admin_calendar_index_path, alert: t("admin_events.times_required"))
+    dialog_done(alert: t("admin_events.times_required"))
   end
 
   # delete_drafts, and publish when it publishes a whole range rather than one event
@@ -355,13 +253,14 @@ class Admin::EventsController < AdminAreaController
 
   # Excludes the occurrence from the series and creates it as its own event. Both happen in one
   # transaction, so a failure leaves the series as it was.
-  def update_this_occurrence(title, participants)
+  def update_this_occurrence(participants)
     excluded, start_time, end_time = @event.occurrence_after_update(@start_time, @end_time, keep: keep_dialog_times?)
     updated_rule = series_rule.appending_exdate(excluded)
 
     # The replacement is checked before anything is saved: saving the series pushes to Google, which a
     # rollback cannot undo. A failure after this point (a database error) can still leave Google ahead.
-    @new_event = build_occurrence_event(title, start_time, end_time)
+    @new_event = Event.new(**dialog_fields, space_id: event_params[:space_id], start_time: start_time, end_time: end_time,
+                           recurrence_rule: nil, created_by_id: current_user.id)
     raise ActiveRecord::RecordInvalid, @new_event unless @new_event.valid?
 
     series_updated = Event.transaction do
@@ -407,6 +306,21 @@ class Admin::EventsController < AdminAreaController
   end
 
   # Destroys the event, then queues the removal of its Google copy (read before the row is gone).
+  def remove_event(notice)
+    destroy_event(@event)
+    dialog_done(notice: notice)
+  end
+
+  # Gives the series a new rule from the occurrence the dialog was opened on (the block gets its start).
+  def shorten_series(notice)
+    start = parse_time(params[:start_date])
+    return dialog_done(alert: t("admin_events.start_date_required")) unless start
+
+    @event.update!(recurrence_rule: yield(start), updated_by: current_user)
+    @event.push_to_google_later
+    dialog_done(notice: notice)
+  end
+
   def destroy_event(event)
     google_event_id = event.google_event_id
     calendar_id = event.google_calendar
@@ -418,21 +332,23 @@ class Admin::EventsController < AdminAreaController
     params[:keep_series_times] == "1"
   end
 
-  def build_occurrence_event(title, start_time, end_time)
-    Event.new(
-      title: title,
-      description: event_params[:description],
-      # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
-      start_time: start_time,
-      end_time: end_time,
-      recurrence_rule: nil,
-      created_by_id: current_user.id,
-      space_id: event_params[:space_id],
-      event_type: event_params[:event_type],
-      training_id: event_params[:training_id],
-      language: event_params[:language],
-      course_name_id: event_params[:course_name]
-    )
+  # The fields every save of the dialog writes; a blank title becomes the capitalized event type.
+  def dialog_fields
+    { title: event_params[:title].presence || event_params[:event_type].capitalize, description: event_params[:description],
+      event_type: event_params[:event_type], training_id: event_params[:training_id], language: event_params[:language],
+      course_name_id: event_params[:course_name] }
+  end
+
+  # Updates the event with the dialog's fields and `changes`, then replaces its staff and pushes it to Google.
+  def save_edit(participants, **changes)
+    if @event.update(**dialog_fields, **changes, updated_by: current_user)
+      @event.event_assignments.destroy_all
+      attach_participants(@event, participants)
+      @event.push_to_google_later
+      flash[:notice] = "Event updated successfully."
+    else
+      flash[:alert] = validation_message(@event, "failed_saves.event_update")
+    end
   end
 
   def attach_participants(event, participants)

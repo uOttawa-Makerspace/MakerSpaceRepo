@@ -100,15 +100,14 @@ RSpec.describe "Recurring events across the clock changes", type: :system do
     change_day_event(page_kind, week).click
     shown = page_kind == :admin ? "#eventModal[data-shown='true']" : "#unavailabilityModal.show"
     expect(page).to have_css(shown)
-    # a document the form submit replaces does not have this mark
-    page.execute_script("document.body.dataset.beforeReload = '1'")
+    # a document a page load replaces does not have this mark
+    page.execute_script("document.body.dataset.sameDocument = '1'")
   end
 
-  # The submit replaces the page: wait for the new document, then for the calendar to draw again.
-  def wait_for_reload(page_kind, week)
-    expect(page).to have_no_css("body[data-before-reload]", visible: :all)
-    wait_for_admin_calendar_scripts if page_kind == :admin
-    show_week(page_kind, week)
+  # The dialog saves in the same document: wait for it to close; the calendar redraws in place.
+  def wait_for_saved(page_kind)
+    expect(page).to have_no_css(page_kind == :admin ? "#eventModal.show" : "#unavailabilityModal.show")
+    expect(page).to have_css("body[data-same-document]", visible: :all)
   end
 
   def choose_delete(label)
@@ -152,13 +151,13 @@ RSpec.describe "Recurring events across the clock changes", type: :system do
         # The dialog posts the instant of the clicked occurrence, 03:30 daylight time (07:30Z), and the server stores
         # that exclusion. The staff page draws the server's occurrences, so the deleted one is gone. Disagreement
         # "deleted occurrence stays visible" on the admin page: it turns the exclusion into the wall time 03:30,
-        # which no occurrence of its 02:30 repeat has, so the occurrence is still drawn after the page reloads.
+        # which no occurrence of its 02:30 repeat has, so the occurrence is still drawn after the calendar redraws.
         it "removes the occurrence deleted with 'This event' from the staff page only", js: true, skip_bullet: true do
           open_calendar(page_kind, week)
           open_change_day_event(page_kind, week)
           choose_delete("This event")
           eventually { series.reload.recurrence_rule.include?("EXDATE") }
-          wait_for_reload(page_kind, week)
+          wait_for_saved(page_kind)
 
           # Every dialog delete or update-all writes the start line in the one form edits use,
           # DTSTART;TZID=America/Toronto with the Toronto wall time, so the exact rules below start that way.
@@ -177,7 +176,7 @@ RSpec.describe "Recurring events across the clock changes", type: :system do
           open_calendar(page_kind, week)
           open_change_day_event(page_kind, week)
           edit_title_for_all("Renamed series")
-          wait_for_reload(page_kind, week)
+          wait_for_saved(page_kind)
           series.reload
 
           expect([series.title, series.start_time, series.recurrence_rule]).to eq(
@@ -190,7 +189,7 @@ RSpec.describe "Recurring events across the clock changes", type: :system do
           open_change_day_event(page_kind, week)
           choose_delete("This and following events")
           eventually { series.reload.recurrence_rule.include?("UNTIL=") }
-          wait_for_reload(page_kind, week)
+          wait_for_saved(page_kind)
 
           expect(series.reload.recurrence_rule).to eq("DTSTART;TZID=America/Toronto:20270307T023000\nRRULE:FREQ=WEEKLY;BYDAY=SU;UNTIL=20270313T073000Z")
         end
@@ -212,7 +211,7 @@ RSpec.describe "Recurring events across the clock changes", type: :system do
           open_change_day_event(page_kind, week)
           choose_delete("This event")
           eventually { series.reload.recurrence_rule.include?("EXDATE") }
-          wait_for_reload(page_kind, week)
+          wait_for_saved(page_kind)
 
           expect(series.reload.recurrence_rule).to eq("DTSTART;TZID=America/Toronto:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU\nEXDATE:20271107T053000Z")
           expect(page).to have_no_css(occurrence_css(page_kind, week), text: title, visible: :all)
@@ -222,7 +221,7 @@ RSpec.describe "Recurring events across the clock changes", type: :system do
           open_calendar(page_kind, week)
           open_change_day_event(page_kind, week)
           edit_title_for_all("Renamed series")
-          wait_for_reload(page_kind, week)
+          wait_for_saved(page_kind)
           series.reload
 
           expect([series.title, series.start_time, series.recurrence_rule]).to eq(["Renamed series", eastern.local(2027, 10, 31, 1, 30), "DTSTART;TZID=America/Toronto:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU"])
@@ -235,7 +234,7 @@ RSpec.describe "Recurring events across the clock changes", type: :system do
           open_change_day_event(page_kind, week)
           choose_delete("This and following events")
           eventually { series.reload.recurrence_rule.include?("UNTIL=") }
-          wait_for_reload(page_kind, week)
+          wait_for_saved(page_kind)
 
           expect(series.reload.recurrence_rule).to eq("DTSTART;TZID=America/Toronto:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU;UNTIL=20271106T053000Z")
           expect(page).to have_no_css(occurrence_css(page_kind, week), text: title, visible: :all)

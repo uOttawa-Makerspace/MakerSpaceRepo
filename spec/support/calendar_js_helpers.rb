@@ -20,6 +20,14 @@ module CalendarJsHelpers
   # drawn. It then marks the modal ready (and enables "+ Add Event").
   def wait_for_admin_calendar_scripts
     expect(page).to have_css("#eventModal[data-ready='true']", visible: :all)
+    page.execute_script("window.sameDocument = true")
+  end
+
+  # A dialog save closes the dialog and redraws the calendar in the same document: no page was loaded since
+  # the calendar scripts were ready.
+  def expect_saved_in_place
+    expect(page).to have_no_css("#eventModal.show")
+    expect(page.evaluate_script("window.sameDocument")).to be(true)
   end
 
   # Types into a datetime-local field the way a person would (Capybara fires

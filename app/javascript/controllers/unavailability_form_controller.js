@@ -282,11 +282,9 @@ export default class extends TypedController {
   // Modal events
   // ---------------------------------------
   confirmExit(event) {
-    const confirmed = confirm(this.exitMessageValue);
-    if (!confirmed) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
+    if (this.element.dataset.saved || confirm(this.exitMessageValue)) return;
+    event.preventDefault();
+    event.stopPropagation();
   }
 
   reset() {

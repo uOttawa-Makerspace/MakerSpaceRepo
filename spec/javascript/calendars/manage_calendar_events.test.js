@@ -488,6 +488,17 @@ describe("submit", () => {
     submit();
     expect($("title").value).toBe("   ");
   });
+  it("closes a saved dialog without asking", async () => {
+    await load();
+    const modal = $("eventModal");
+    vi.stubGlobal("confirm", vi.fn());
+    modal.dataset.saved = "true";
+    const hide = new Event("hide.bs.modal", { cancelable: true });
+    modal.dispatchEvent(hide);
+    expect(confirm).not.toHaveBeenCalled();
+    expect(hide.defaultPrevented).toBe(false);
+  });
+
   it("marks the event window ready once shown and clears it on a confirmed close", async () => {
     await load();
     const modal = $("eventModal");

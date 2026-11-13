@@ -1,5 +1,13 @@
 // @vitest-environment happy-dom
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi,
+} from "vitest";
 import { Application } from "@hotwired/stimulus";
 
 // A stand-in for FullCalendar that records its options and lets the test play
@@ -46,6 +54,11 @@ vi.mock("@fullcalendar/core", () => ({
     askAll(info) {
       this.options.eventSources.forEach((source) => this.ask(source.id, info));
     }
+    refetchEvents() {
+      this.options.eventSources.forEach((source) =>
+        this.ask(source.id, this.info),
+      );
+    }
     getEventSourceById(id) {
       return { refetch: () => this.ask(id, this.info) };
     }
@@ -65,6 +78,11 @@ vi.mock("bootstrap", () => ({
   },
 }));
 
+const closeSaved = vi.fn();
+vi.mock("../../../app/javascript/src/calendar_dialog.js", () => ({
+  closeSaved,
+}));
+
 const eventClick = vi.fn();
 const eventCreate = vi.fn();
 vi.mock("../../../app/javascript/src/calendar_helper.js", () => ({
@@ -81,7 +99,7 @@ const box = (target, id, value, action, { checked = true, color } = {}) =>
 function page({ hidden = {} } = {}) {
   const shown = (param, value) => !(hidden[param] || []).includes(value);
   return `
-<div data-controller="admin-calendar" data-admin-calendar-events-url-value="/admin/events/json/7" data-admin-calendar-unavailabilities-url-value="/admin/calendar/unavailabilities_json/7" data-admin-calendar-imported-url-value="/admin/calendar/imported_calendars_json/7">
+<div data-controller="admin-calendar" data-action="calendar:saved@document->admin-calendar#saved" data-admin-calendar-events-url-value="/admin/events/json/7" data-admin-calendar-unavailabilities-url-value="/admin/calendar/unavailabilities_json/7" data-admin-calendar-imported-url-value="/admin/calendar/imported_calendars_json/7">
   <section id="calendar_container" data-admin-calendar-target="container" style="display:none">
     ${box("allStaffEvents", "checkbox-all-events", "all-events", "toggleAllStaffEvents", { color: "#919191" })}
     ${box("allStaff", "checkbox-all", "all", "toggleAllStaff", { color: "#919191" })}
@@ -102,6 +120,7 @@ function page({ hidden = {} } = {}) {
     <div id="calendar" data-admin-calendar-target="calendar"><p id="stale">old</p></div>
   </section>
   <div id="spinner_container" data-admin-calendar-target="spinner"></div>
+  <div id="eventModal" data-admin-calendar-target="dialog"></div>
 </div>`;
 }
 
@@ -251,6 +270,25 @@ afterEach(() => {
   application?.stop();
   document.body.innerHTML = "";
   vi.restoreAllMocks();
+});
+
+describe("a saved dialog", () => {
+  it("closes the dialog and asks the events and unavailabilities again, not the imported calendars", async () => {
+    const calendar = await boot();
+    fetchMock.mockClear();
+    events[0].events[0].title = "Opening (renamed)";
+    onTestFinished(() => (events[0].events[0].title = "Opening"));
+
+    document.dispatchEvent(new CustomEvent("calendar:saved"));
+    await settle();
+
+    expect(closeSaved).toHaveBeenCalledWith($("eventModal"));
+    expect(fetchMock.mock.calls.map(([url]) => url.split("?")[0])).toEqual([
+      "/admin/events/json/7",
+      "/admin/calendar/unavailabilities_json/7",
+    ]);
+    expect(titles(calendar.drawn.events)).toContain("Opening (renamed)");
+  });
 });
 
 describe("loading the calendar", () => {

@@ -15,6 +15,7 @@ vi.mock("../../../app/javascript/src/tabledata", () => ({}));
 vi.mock("../../../app/javascript/src/accordion-load", () => ({}));
 vi.mock("../../../app/javascript/src/clipboard", () => ({}));
 vi.mock("../../../app/javascript/src/theme", () => ({}));
+vi.mock("../../../app/javascript/src/calendar_saved", () => ({}));
 vi.mock("trix", () => ({}));
 vi.mock("@hotwired/turbo-rails", () => ({}));
 vi.mock("../../../app/javascript/controllers", () => ({}));

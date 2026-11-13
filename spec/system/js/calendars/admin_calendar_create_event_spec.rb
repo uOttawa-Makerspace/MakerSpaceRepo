@@ -145,6 +145,8 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     click_button "Save Draft"
 
     expect(page).to have_text("Event created successfully.")
+    expect_saved_in_place
+    expect(page).to have_css(".fc-timegrid-event", text: "Planning chat", visible: :all)
     event = Event.find_by!(title: "Planning chat")
     expect(event.event_type).to eq("meeting")
     expect(event.draft).to be(true)

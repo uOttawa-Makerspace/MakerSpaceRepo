@@ -348,8 +348,7 @@ onPageLoad("#eventModal", () => {
   // Confirm before modal exit
   const modal = document.getElementById("eventModal");
   modal.addEventListener("hide.bs.modal", (e) => {
-    const confirmExit = confirm(modal.dataset.exitMessage);
-    if (!confirmExit) {
+    if (!modal.dataset.saved && !confirm(modal.dataset.exitMessage)) {
       e.preventDefault();
       e.stopPropagation();
       return;

@@ -29,64 +29,32 @@ function resetModalState() {
   delete document.getElementById("keep_series_times").dataset.filled;
   const saveButton = document.getElementById("save_button");
   const saveButtonContainer = document.getElementById("save_button_container");
-  const dropdownSaveContainer = document.getElementById(
-    "dropdown_save_button_container",
-  );
-  const updateDropdown = document.getElementById("update_dropdown");
   const eventTypeSelect = document.getElementById("event_type_select");
   const staffSelect = document.getElementById("staff_select");
 
-  // Move save button back to main container
-  if (
-    saveButton &&
-    saveButtonContainer &&
-    !saveButtonContainer.contains(saveButton)
-  ) {
+  // Save button back in its own container, labelled for a new draft
+  if (!saveButtonContainer.contains(saveButton)) {
     saveButtonContainer.appendChild(saveButton);
   }
+  saveButton.value = "Save Draft";
+  document.getElementById("update_dropdown").style.display = "none";
 
-  // Hide the update dropdown
-  if (updateDropdown) {
-    updateDropdown.style.display = "none";
-  }
+  // Back to the form for a new event: no PATCH/DELETE method, the create address
+  form.querySelector('input[name="_method"]')?.remove();
+  form.action = "/admin/events";
 
-  // Reset save button text
-  if (saveButton) {
-    saveButton.value = "Save Draft";
-  }
+  // Event type unlocked, and its unavailability marks removed
+  eventTypeSelect.disabled = false;
+  eventTypeSelect.value = "";
+  eventTypeSelect.parentElement.querySelector(".lock-indicator")?.remove();
+  form
+    .querySelector('input[name="staff_unavailability[event_type]"]')
+    ?.remove();
 
-  // Remove any _method input (used for PATCH/DELETE)
-  const methodInput = form?.querySelector('input[name="_method"]');
-  if (methodInput) methodInput.remove();
-
-  // Reset form action
-  if (form) {
-    form.action = "/admin/events";
-  }
-
-  // Reset event type select
-  if (eventTypeSelect) {
-    eventTypeSelect.disabled = false;
-    eventTypeSelect.value = "";
-
-    // Remove lock indicator if present
-    const lockIndicator =
-      eventTypeSelect.parentElement?.querySelector(".lock-indicator");
-    if (lockIndicator) lockIndicator.remove();
-
-    // Remove hidden type input
-    const hiddenTypeInput = form?.querySelector(
-      'input[name="staff_unavailability[event_type]"]',
-    );
-    if (hiddenTypeInput) hiddenTypeInput.remove();
-  }
-
-  // Reset staff select
-  if (staffSelect) {
-    staffSelect.innerHTML = "";
-    staffSelect.setAttribute("multiple", "multiple");
-    staffSelect.name = "staff_select[]";
-  }
+  // Staff select empty and multiple
+  staffSelect.innerHTML = "";
+  staffSelect.setAttribute("multiple", "multiple");
+  staffSelect.name = "staff_select[]";
 
   // Reset recurrence fields
   const frequency = document.querySelector("#recurrence_frequency");
