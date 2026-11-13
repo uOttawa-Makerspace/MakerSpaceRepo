@@ -56,6 +56,8 @@ RSpec.describe "Translated templates" do
     app/views/learning_area/_scorm_problem.html.erb
     app/views/learning_module_track/index.html.erb
     app/views/cc_moneys/index.html.erb
+    app/views/discount_codes/index.html.erb
+    app/views/discount_codes/new.html.erb
     app/views/lockers/index.html.erb
     app/views/lockers/show.html.erb
     app/views/lockers/_locker_bulk_edit_modal.html.erb

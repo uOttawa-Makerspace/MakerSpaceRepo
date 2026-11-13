@@ -49,7 +49,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       it "shows the empty state when the user has none" do
         shop_log_in!(user)
         get discount_codes_path
-        expect(response.body).to include("You don't have any coupons.")
+        expect(response.body).to include("You don&#39;t have any coupons.")
       end
 
       it "gives staff and admin the same own-codes-only view" do
@@ -88,10 +88,18 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(card.css("h5.card-title p, h5.card-title form")).to be_empty
       end
 
+      it "is written in French when the locale is fr" do
+        create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 50)
+        shop_log_in!(user)
+        get new_discount_code_path(locale: "fr")
+        expect(response.body).to include("Échangez vos CC!", "Prix du coupon: 50 CC")
+        expect(response.body).not_to include("Coupon price")
+      end
+
       it "shows the sold-out message when nothing is unclaimed" do
         shop_log_in!(user)
         get new_discount_code_path
-        expect(response.body).to include("we don't have any coupons to offer")
+        expect(response.body).to include("there are no coupons available right now")
       end
     end
 
