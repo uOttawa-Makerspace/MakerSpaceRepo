@@ -89,6 +89,15 @@ RSpec.describe LearningModule, type: :model do
       create(:learning_module, shortcut_name: nil)
       expect { LearningModule.find_by_shortcut!('---') }.to raise_error(ActiveRecord::RecordNotFound)
     end
+
+    it 'matches no module stored with an empty shortcut for a value that is blank once normalised' do
+      older = create(:learning_module)
+      LearningModule.where(id: older.id).update_all("shortcut_name = ''") # as stored before blanks became nil
+      expect(LearningModule.connection.select_value("SELECT shortcut_name FROM learning_modules WHERE id = #{older.id}")).to eq('')
+      ['---', ' ', ''].each do |value|
+        expect { LearningModule.find_by_shortcut!(value) }.to raise_error(ActiveRecord::RecordNotFound)
+      end
+    end
   end
 
   describe 'Scopes' do

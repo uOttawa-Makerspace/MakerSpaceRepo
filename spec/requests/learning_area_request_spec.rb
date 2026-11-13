@@ -143,6 +143,18 @@ RSpec.describe "Learning area", type: :request do
       end
     end
 
+    it "answers 404 for a shortcut that is blank once normalised while a module is stored with an empty shortcut" do
+      older = create(:learning_module, title: "Empty shortcut")
+      LearningModule.where(id: older.id).update_all("shortcut_name = ''") # as stored before blanks became nil
+      expect(LearningModule.connection.select_value("SELECT shortcut_name FROM learning_modules WHERE id = #{older.id}")).to eq('')
+      sign_in_as(:regular)
+      ["/learning_area/s/---", "/learning_area/s/%20"].each do |path|
+        get path
+        expect(response).to have_http_status(:not_found)
+        expect(response.body).not_to include("Empty shortcut")
+      end
+    end
+
     it "still resolves a real shortcut when modules without one exist" do
       create(:learning_module, title: "No shortcut", shortcut_name: nil)
       sign_in_as(:regular)
