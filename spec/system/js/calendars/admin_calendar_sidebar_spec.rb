@@ -241,7 +241,7 @@ RSpec.describe "Admin calendar: sidebar and toolbar", type: :system do
       find("#publish_drafts_button").click
       click_button "Confirm Publish"
 
-      expect(page).to have_text("1 event(s) published.")
+      expect_flash("1 event(s) published.")
       expect(draft.reload.draft).to be(false)
       expect(outside.reload.draft).to be(true)
     end
@@ -251,7 +251,7 @@ RSpec.describe "Admin calendar: sidebar and toolbar", type: :system do
       find("#delete_drafts_button").click
       click_button "Confirm Delete"
 
-      expect(page).to have_text("1 draft event(s) deleted.")
+      expect_flash("1 draft event(s) deleted.")
       expect(Event.exists?(draft.id)).to be(false)
       expect(Event.exists?(outside.id)).to be(true)
     end
@@ -279,7 +279,7 @@ RSpec.describe "Admin calendar: sidebar and toolbar", type: :system do
       JS
       within("#copyEventsModal") { click_button "Copy Events" }
 
-      expect(page).to have_text("1 published event(s) copied to 2027-03-28.")
+      expect_flash("1 published event(s) copied to 2027-03-28.")
       copy = Event.where(title: "Open lab", draft: true).first
       expect(copy.start_time).to eq(eastern.local(2027, 3, 30, 10))
     end
@@ -290,7 +290,7 @@ RSpec.describe "Admin calendar: sidebar and toolbar", type: :system do
       expect(page).to have_css("#copyEventsModal.show")
       within("#copyEventsModal") { click_button "Copy Events" }
 
-      expect(page).to have_text("Please fill out all fields before copying.")
+      expect_flash("Please fill out all fields before copying.")
     end
 
     # Closing the dialog throws "flatpickr is not a function" from its hide handler; the dialog still closes.
