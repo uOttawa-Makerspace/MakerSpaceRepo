@@ -150,6 +150,13 @@ RSpec.describe "Calendar dialog answers", type: :request do
       expect_stream("Unavailability deleted.")
     end
 
+    it "refuses an update of a one-off entry whose times cannot be read, and keeps the record" do
+      bad = { staff_unavailability: { title: "Moved", utc_start_time: "not a time", utc_end_time: "" } }
+      patch staff_unavailability_path(record), params: bad, headers: turbo
+      expect_stream("Failed to update")
+      expect(record.reload.title).to eq("Unavailable")
+    end
+
     context "with a repeating entry" do
       let(:repeating) do
         create(:staff_unavailability, user: admin, start_time: Time.utc(2027, 4, 5, 14), end_time: Time.utc(2027, 4, 5, 15),

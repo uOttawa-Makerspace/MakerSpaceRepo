@@ -163,7 +163,7 @@ RSpec.describe "Recurring events across the clock changes", type: :system do
           # DTSTART;TZID=America/Toronto with the Toronto wall time, so the exact rules below start that way.
           expect(series.reload.recurrence_rule).to eq("DTSTART;TZID=America/Toronto:20270307T023000\nRRULE:FREQ=WEEKLY;BYDAY=SU\nEXDATE:20270314T073000Z")
           if page_kind == :admin
-            expect(change_day_event(page_kind, week).text).to include("2:30")
+            expect(page).to have_css(occurrence_css(page_kind, week), text: "2:30", visible: :all)
           else
             expect(page).to have_no_css(occurrence_css(page_kind, week), text: title, visible: :all)
           end

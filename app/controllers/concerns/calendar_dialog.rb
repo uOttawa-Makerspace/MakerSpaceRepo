@@ -8,16 +8,14 @@ module CalendarDialog
 
   private
 
-  # The flash of this answer: only for this response when it is a stream, for the next page when it is a redirect.
-  def dialog_flash
-    request.format.turbo_stream? ? flash.now : flash
-  end
-
+  # A redirect carries the messages to the next page; a stream shows them in this response only.
   def dialog_done(notice: nil, alert: nil)
-    { notice: notice, alert: alert }.compact.each { |kind, text| dialog_flash[kind] = text }
     respond_to do |format|
-      format.html { redirect_to after_dialog_path }
-      format.turbo_stream { render "calendar_dialog/done" }
+      format.html { redirect_to after_dialog_path, notice: notice, alert: alert }
+      format.turbo_stream do
+        { notice: notice, alert: alert }.compact.each { |kind, text| flash.now[kind] = text }
+        render "calendar_dialog/done"
+      end
     end
   end
 
@@ -25,15 +23,13 @@ module CalendarDialog
     url_from(request.referer) || admin_calendar_index_path
   end
 
-  # Gives `record` the series rule the block builds for the occurrence the dialog was opened on (`start_date`), then
-  # answers with `notice`, or with `start_missing` when the dialog sent no usable start.
-  def shorten_series(record, notice, start_missing, **changes)
+  # Cuts the series of `record` (change: :without_occurrence or :ending_before) at the occurrence the dialog was
+  # opened on (`start_date`). False, and nothing saved, when the dialog sent no usable start.
+  def shorten_series(record, change)
     start = parse_time(params[:start_date])
-    return dialog_done(alert: start_missing) unless start
+    return false unless start
 
-    record.update!(recurrence_rule: yield(start), **changes)
-    record.try(:push_to_google_later)
-    dialog_done(notice: notice)
+    record.update!(recurrence_rule: RecurrenceRule.new(record.recurrence_rule, record.start_time).public_send(change, start))
   end
 
   # The time as UTC, or nil when the text is missing or not a time.

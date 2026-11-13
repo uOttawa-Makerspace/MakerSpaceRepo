@@ -122,31 +122,22 @@ function setFormScope(scope) {
 
   // Update specific fields
   Object.entries(fieldMappings).forEach(([fieldId, paramName]) => {
-    const field = document.getElementById(fieldId);
-    if (field) {
-      field.name = `${scope}[${paramName}]`;
-    }
+    document.getElementById(fieldId).name = `${scope}[${paramName}]`;
   });
 
   // Handle staff select specifically
   const staffSelect = document.getElementById("staff_select");
-  if (staffSelect) {
-    if (scope === "staff_unavailability") {
-      staffSelect.name = "staff_unavailability[user_id]";
-      staffSelect.removeAttribute("multiple");
-    } else {
-      staffSelect.name = "staff_select[]";
-      staffSelect.setAttribute("multiple", "multiple");
-    }
+  if (scope === "staff_unavailability") {
+    staffSelect.name = "staff_unavailability[user_id]";
+    staffSelect.removeAttribute("multiple");
+  } else {
+    staffSelect.name = "staff_select[]";
+    staffSelect.setAttribute("multiple", "multiple");
   }
 
   // Handle space_id
-  const spaceIdField = form.querySelector(
-    'input[id$="space_id"], input[name$="[space_id]"]',
-  );
-  if (spaceIdField) {
-    spaceIdField.name = `${scope}[space_id]`;
-  }
+  form.querySelector('input[id$="space_id"], input[name$="[space_id]"]').name =
+    `${scope}[space_id]`;
 }
 
 // -------------------
