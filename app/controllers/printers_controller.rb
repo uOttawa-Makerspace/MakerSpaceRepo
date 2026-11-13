@@ -102,7 +102,7 @@ class PrintersController < StaffAreaController
     respond_to do |format|
       # blame the client if something goes wrong
       format.json do
-        render json: flash, status: flash[:alert] ? :bad_request : :ok
+        render json: flash.to_h, status: flash[:alert] ? :bad_request : :ok
       end
       format.html { redirect_to staff_printers_printers_path }
     end
