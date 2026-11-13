@@ -29,6 +29,7 @@ en:
         certification_not_revoked: "The certification was not removed."
         locked_once_awarded: "The training, level and trainer of a completed training session cannot be changed."
         instructor_not_assignable: "Only an admin can choose another instructor."
+        space_not_assigned: "You are not assigned to this space."
       my_calendar:
         space_required: "Choose a space to show its calendar."
         space_not_assigned: "You are not assigned to this space."

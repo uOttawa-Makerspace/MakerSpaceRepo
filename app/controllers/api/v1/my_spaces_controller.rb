@@ -23,6 +23,9 @@ module Api
         end
 
         space = Space.find(raw)
+        refuse_unworkable_space(space)
+        return if performed?
+
         # update_columns: like change_space it stamps updated_at, but a stored profile
         # that fails a newer validation must not block switching space.
         current_user.update_columns(space_id: space.id, updated_at: Time.current)

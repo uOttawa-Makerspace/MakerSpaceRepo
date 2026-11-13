@@ -29,6 +29,7 @@ fr:
         certification_not_revoked: "La certification n'a pas été retirée."
         locked_once_awarded: "La formation, le niveau et le formateur d'une séance de formation terminée ne peuvent pas être modifiés."
         instructor_not_assignable: "Seul un administrateur peut choisir un autre formateur."
+        space_not_assigned: "Vous n'êtes pas affecté à cet espace."
       my_calendar:
         space_required: "Choisissez un espace pour afficher son calendrier."
         space_not_assigned: "Vous n'êtes pas affecté à cet espace."

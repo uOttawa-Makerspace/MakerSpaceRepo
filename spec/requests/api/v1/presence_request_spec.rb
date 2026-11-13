@@ -8,10 +8,12 @@ RSpec.describe "/api/v1/spaces/:id/presence", type: :request do
 
   let(:json_headers) { { "CONTENT_TYPE" => "application/json", "ACCEPT" => "application/json" } }
   let(:admin) { create(:user, :admin) }
-  let(:staff) { create(:user, :staff) }
   let(:regular) { create(:user) }
   let!(:space) { create(:space) }
   let!(:other_space) { create(:space) }
+  let(:unassigned_space) { create(:space) }
+  # Staff assigned to both spaces; admins are assigned nowhere and may work in any space.
+  let(:staff) { create(:user, :staff).tap { |u| [space, other_space].each { |s| StaffSpace.create!(user: u, space: s) } } }
   let(:visitor) { create(:user, :regular_user) }
 
   PRESENCE_USER_KEYS = %w[id username name email flagged avatar_url certifications signed_safety_sheet membership_status].freeze
@@ -28,6 +30,42 @@ RSpec.describe "/api/v1/spaces/:id/presence", type: :request do
 
   def in_space(user, target = space, out: 2.hours.from_now)
     create(:lab_session, user: user, space: target, sign_in_time: 1.hour.ago, sign_out_time: out)
+  end
+
+  describe "a space the staff member is not assigned to" do
+    def expect_space_not_assigned
+      expect(response).to have_http_status(:forbidden)
+      expect(error).to include("code" => "space_not_assigned", "message" => "You are not assigned to that space")
+    end
+
+    it "403s staff reading, signing in or signing out there, writing nothing" do
+      in_space(visitor, unassigned_space)
+      api_get "/api/v1/spaces/#{unassigned_space.id}/presence", as: staff
+      expect_space_not_assigned
+      expect { api_send :post, "/api/v1/spaces/#{unassigned_space.id}/presence", { username: regular.username }, as: staff }
+        .not_to change(LabSession, :count)
+      expect_space_not_assigned
+      api_send :delete, "/api/v1/spaces/#{unassigned_space.id}/presence/#{visitor.username}", as: staff
+      expect_space_not_assigned
+      expect(LabSession.where(user: visitor, space: unassigned_space).active.count).to eq(1)
+    end
+
+    it "lets an admin with no assignments read, sign in and sign out there" do
+      api_get "/api/v1/spaces/#{unassigned_space.id}/presence", as: admin
+      expect(response).to have_http_status(:ok)
+      api_send :post, "/api/v1/spaces/#{unassigned_space.id}/presence", { username: visitor.username }, as: admin
+      expect(response).to have_http_status(:no_content)
+      api_send :delete, "/api/v1/spaces/#{unassigned_space.id}/presence/#{visitor.username}", as: admin
+      expect(response).to have_http_status(:no_content)
+    end
+
+    it "lets staff keep working in the saved space they are no longer assigned to" do
+      staff.update_columns(space_id: unassigned_space.id)
+      api_send :post, "/api/v1/spaces/#{unassigned_space.id}/presence", { username: visitor.username }, as: staff
+      expect(response).to have_http_status(:no_content)
+      api_get "/api/v1/spaces/#{unassigned_space.id}/presence", as: staff
+      expect(body["users"].map { |u| u["id"] }).to eq([visitor.id])
+    end
   end
 
   describe "GET /api/v1/spaces/:id/presence" do

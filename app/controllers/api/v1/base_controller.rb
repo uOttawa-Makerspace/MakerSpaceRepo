@@ -12,7 +12,7 @@ module Api
     # session is never read or written.
     #
     # Errors are always `{error: {code:, message:, fields?:}}` with a real status:
-    # 400 bad_request, 406 not_acceptable, 401 unauthenticated, 403 forbidden, 404 not_found,
+    # 400 bad_request, 406 not_acceptable, 401 unauthenticated, 403 forbidden / space_not_assigned, 404 not_found,
     # 422 validation_failed / parameter_missing, 423 account_locked, 429 rate_limited,
     # 500 internal_error (see json_internal_errors).
     # Every error also carries `reference`: the first 8 characters of the request id (X-Request-Id),
@@ -114,6 +114,13 @@ module Api
 
       def authorization_denied
         render_error(:forbidden, "Not allowed", status: :forbidden)
+      end
+
+      # Staff work only in the spaces User#can_work_in? allows (admins in any); the same rule as the staff dashboard.
+      def refuse_unworkable_space(space)
+        return if current_user.can_work_in?(space)
+
+        render_error(:space_not_assigned, "You are not assigned to that space", status: :forbidden)
       end
 
       def render_error(code, message, status:, fields: nil, **extra)

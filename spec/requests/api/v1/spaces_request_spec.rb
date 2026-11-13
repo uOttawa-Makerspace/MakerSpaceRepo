@@ -6,10 +6,12 @@ require "rails_helper"
 RSpec.describe "/api/v1 spaces and /api/v1/me/space", type: :request do
   let(:json_headers) { { "CONTENT_TYPE" => "application/json", "ACCEPT" => "application/json" } }
   let(:admin) { create(:user, :admin) }
-  let(:staff) { create(:user, :staff) }
-  let(:regular) { create(:user) }
   let!(:space_a) { create(:space, name: "Alpha Lab") }
   let!(:space_b) { create(:space, name: "Beta Lab") }
+  let(:unassigned_space) { create(:space, name: "Gamma Lab") }
+  # Staff assigned to Alpha and Beta; admins are assigned nowhere and may work in any space.
+  let(:staff) { create(:user, :staff).tap { |u| [space_a, space_b].each { |s| StaffSpace.create!(user: u, space: s) } } }
+  let(:regular) { create(:user) }
 
   def body = response.parsed_body
   def error = body["error"]
@@ -61,10 +63,11 @@ RSpec.describe "/api/v1 spaces and /api/v1/me/space", type: :request do
     end
 
     it "404s when there is no space at all" do
+      loner = create(:user, :staff)
       User.update_all(space_id: nil)
       LabSession.delete_all
       Space.destroy_all
-      api_get "/api/v1/me/space", as: staff
+      api_get "/api/v1/me/space", as: loner
       expect(response).to have_http_status(:not_found)
       expect(error["code"]).to eq("not_found")
     end
@@ -88,6 +91,36 @@ RSpec.describe "/api/v1 spaces and /api/v1/me/space", type: :request do
       end
       api_get "/api/v1/me/space", as: staff
       expect(body["id"]).to eq(space_a.id)
+    end
+
+    it "403s staff switching to a space they are not assigned to, and leaves them where they were" do
+      staff.update_columns(space_id: space_a.id)
+      api_send :put, "/api/v1/me/space", { space_id: unassigned_space.id }, as: staff
+      expect(response).to have_http_status(:forbidden)
+      expect(error).to include("code" => "space_not_assigned", "message" => "You are not assigned to that space")
+      expect(staff.reload.space_id).to eq(space_a.id)
+    end
+
+    it "403s staff with no assignments, even for the first space the dashboard falls back to" do
+      loner = create(:user, :staff)
+      api_send :put, "/api/v1/me/space", { space_id: Space.first.id }, as: loner
+      expect(response).to have_http_status(:forbidden)
+      expect(error["code"]).to eq("space_not_assigned")
+      expect(loner.reload.space_id).to be_nil
+    end
+
+    it "lets staff stay in a saved space they are no longer assigned to" do
+      staff.update_columns(space_id: unassigned_space.id)
+      api_send :put, "/api/v1/me/space", { space_id: unassigned_space.id }, as: staff
+      expect(response).to have_http_status(:ok)
+      expect(body).to eq("id" => unassigned_space.id, "name" => "Gamma Lab")
+      expect(staff.reload.space_id).to eq(unassigned_space.id)
+    end
+
+    it "lets an admin with no assignments switch to any space" do
+      api_send :put, "/api/v1/me/space", { space_id: unassigned_space.id }, as: admin
+      expect(response).to have_http_status(:ok)
+      expect(admin.reload.space_id).to eq(unassigned_space.id)
     end
 
     it "accepts the id as a numeric string" do

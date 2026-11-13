@@ -646,6 +646,26 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe "#can_work_in?" do
+    let(:assigned) { create(:space) }
+    let(:elsewhere) { create(:space) }
+    let(:staff) { create(:user, :staff).tap { |u| StaffSpace.create!(user: u, space: assigned) } }
+
+    it "lets staff work in the spaces they are assigned to and no other" do
+      expect(staff.can_work_in?(assigned)).to be(true)
+      expect(staff.can_work_in?(elsewhere)).to be(false)
+    end
+
+    it "lets staff keep working in the saved space they are no longer assigned to" do
+      staff.update_columns(space_id: elsewhere.id)
+      expect(staff.can_work_in?(elsewhere)).to be(true)
+    end
+
+    it "lets an admin with no assignments work in any space" do
+      expect(create(:user, :admin).can_work_in?(elsewhere)).to be(true)
+    end
+  end
+
   describe "role predicates" do
     it "pins admin?/staff? by the role column" do
       expect(build(:user, role: "admin")).to have_attributes(admin?: true, staff?: true)

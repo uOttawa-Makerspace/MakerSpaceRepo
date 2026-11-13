@@ -99,6 +99,11 @@ class TrainingSession < ApplicationRecord
     actor.admin? || user_id == actor.id
   end
 
+  # Staff open sessions only in a space they may work in (User#can_work_in?); a missing space is left to validation.
+  def space_workable_by?(actor)
+    space.nil? || actor.can_work_in?(space)
+  end
+
   def completed?
     certifications.any?
   end

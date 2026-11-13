@@ -11,7 +11,8 @@ require "rails_helper"
 RSpec.describe "Staff training sessions", type: :request do
   let(:space) { create(:space) }
   let(:training) { create(:training, spaces: [space]) }
-  let!(:trainer) { create(:user, :staff) }
+  # The trainer is assigned to the space; admins are assigned nowhere and may work in any space.
+  let!(:trainer) { create(:user, :staff).tap { |u| StaffSpace.create!(user: u, space: space) } }
   let!(:record) { create(:training_session, user: trainer, training: training, space: space, level: "Beginner") }
   let(:student) { create(:user, :regular_user) }
 
@@ -150,6 +151,18 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(response).to redirect_to(root_path)
         expect(flash[:alert]).to eq(message)
         post staff_training_sessions_path(format: :json), params: create_params(user_id: other.id)
+        expect(JSON.parse(response.body)).to match("created" => false, "error" => message, "reference" => be_a(String))
+      end
+
+      it "refuses staff opening a session in a space they are not assigned to, with a message, creating nothing" do
+        elsewhere = create(:space)
+        training.spaces << elsewhere
+        message = "You are not assigned to this space."
+        expect { post staff_training_sessions_path, params: create_params(training_session: { space_id: elsewhere.id }) }
+          .not_to change(TrainingSession, :count)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq(message)
+        post staff_training_sessions_path(format: :json), params: create_params(training_session: { space_id: elsewhere.id })
         expect(JSON.parse(response.body)).to match("created" => false, "error" => message, "reference" => be_a(String))
       end
 
@@ -613,6 +626,14 @@ RSpec.describe "Staff training sessions", type: :request do
     it "creates the session as themselves when no user_id is sent" do
       post staff_training_sessions_path, params: create_params
       expect(TrainingSession.unscoped.order(:id).last.user_id).to eq(controller.send(:current_user).id)
+    end
+
+    it "opens a session in a space no one assigned them to" do
+      elsewhere = create(:space)
+      training.spaces << elsewhere
+      expect { post staff_training_sessions_path, params: create_params(training_session: { space_id: elsewhere.id }) }
+        .to change(TrainingSession, :count).by(1)
+      expect(TrainingSession.unscoped.order(:id).last.space_id).to eq(elsewhere.id)
     end
 
     it "can create a session for another trainer by passing user_id" do

@@ -33,17 +33,19 @@ Always JSON, always a real status:
 
 `code` is a stable machine string (branch on it, not on `message`); `fields` appears on 422 only; `reference` is on every error body and is the first 8 characters of the request id (the `X-Request-Id` response header): quote it when reporting a problem, it finds the request in the server logs and error tracker; some errors add extra keys (for example `support_email`).
 
-| Status | Meaning                                                            | Typical codes                                                     |
-| ------ | ------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| 400    | Malformed request                                                  | `bad_request`                                                     |
-| 401    | Missing/invalid/expired credentials                                | `unauthenticated`, `invalid_credentials`, `invalid_refresh_token` |
-| 403    | Authenticated but not allowed                                      | `forbidden`, `account_inactive`, `account_unconfirmed`            |
-| 404    | No such record or route (any unknown `/api/v1/...` path, any verb) | `not_found`                                                       |
-| 409    | Retry with the newest stored refresh token                         | `refresh_in_progress`                                             |
-| 422    | Validation or missing parameter                                    | `validation_failed`, `parameter_missing`, `last_admin`            |
-| 423    | Account locked                                                     | `account_locked`                                                  |
-| 429    | Rate limited                                                       | `rate_limited`                                                    |
-| 503    | Upstream unavailable, nothing saved                                | `service_unavailable`                                             |
+| Status | Meaning                                                            | Typical codes                                                                |
+| ------ | ------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| 400    | Malformed request                                                  | `bad_request`                                                                |
+| 401    | Missing/invalid/expired credentials                                | `unauthenticated`, `invalid_credentials`, `invalid_refresh_token`            |
+| 403    | Authenticated but not allowed                                      | `forbidden`, `account_inactive`, `account_unconfirmed`, `space_not_assigned` |
+| 404    | No such record or route (any unknown `/api/v1/...` path, any verb) | `not_found`                                                                  |
+| 409    | Retry with the newest stored refresh token                         | `refresh_in_progress`                                                        |
+| 422    | Validation or missing parameter                                    | `validation_failed`, `parameter_missing`, `last_admin`                       |
+| 423    | Account locked                                                     | `account_locked`                                                             |
+| 429    | Rate limited                                                       | `rate_limited`                                                               |
+| 503    | Upstream unavailable, nothing saved                                | `service_unavailable`                                                        |
+
+`space_not_assigned` (403, message "You are not assigned to that space"): a staff member named a space they may not work in. Staff work in the spaces they are assigned to and in the space they already hold (`users.space_id`); admins work in any space. The web staff dashboard applies the same rule. Nothing is changed.
 
 401 responses carry `WWW-Authenticate: Bearer realm="makerepo"`.
 

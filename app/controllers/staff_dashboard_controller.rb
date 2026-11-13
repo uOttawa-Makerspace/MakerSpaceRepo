@@ -196,7 +196,7 @@ class StaffDashboardController < StaffAreaController
     if new_space.nil?
       http_status = :not_found
       message = "Space not found"
-    elsif switch_refused?(new_space)
+    elsif !current_user.can_work_in?(new_space)
       http_status = :not_found
       message = "You are not assigned to that space"
     elsif current_user.update(space_id: new_space.id)
@@ -220,11 +220,6 @@ class StaffDashboardController < StaffAreaController
         end
       end
     end
-  end
-
-  # Staying in the space the user already holds is always allowed; any other space needs an assignment (or admin).
-  def switch_refused?(new_space)
-    new_space.id != current_user.space_id && !current_user.can_work_in?(new_space)
   end
 
   # Links a card to a user through Rfid.link_to_user!, so a card no reader ever

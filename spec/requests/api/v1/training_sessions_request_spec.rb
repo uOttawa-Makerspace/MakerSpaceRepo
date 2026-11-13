@@ -8,7 +8,9 @@ RSpec.describe "/api/v1 training sessions", type: :request do
   let(:space) { create(:space, name: "Alpha Lab") }
   let(:training) { create(:training, spaces: [space]) }
   let(:admin) { create(:user, :admin) }
-  let(:staff) { create(:user, :staff) }
+  # Staff assigned to Alpha Lab; admins are assigned nowhere and may work in any space.
+  let(:staff) { create(:user, :staff).tap { |u| StaffSpace.create!(user: u, space: space) } }
+  let(:unassigned_space) { create(:space, name: "Beta Lab") }
   let(:other_staff) { create(:user, :staff) }
   let(:regular) { create(:user, :regular_user) }
   let(:student) { create(:user, :regular_user) }
@@ -100,6 +102,17 @@ RSpec.describe "/api/v1 training sessions", type: :request do
       expect(body["trainings"]).to eq([[training.id, training.name_en]])
     end
 
+    it "403s staff asking for a space they are not assigned to; an admin gets any space" do
+      unassigned_training = create(:training, spaces: [unassigned_space])
+      api_get "/api/v1/training_session_options?space_id=#{unassigned_space.id}", as: staff
+      expect(response).to have_http_status(:forbidden)
+      expect(error).to include("code" => "space_not_assigned", "message" => "You are not assigned to that space")
+
+      api_get "/api/v1/training_session_options?space_id=#{unassigned_space.id}", as: admin
+      expect(response).to have_http_status(:ok)
+      expect(body["trainings"]).to eq([[unassigned_training.id, unassigned_training.name_en]])
+    end
+
     it "404s an unknown or malformed space_id" do
       api_get "/api/v1/training_session_options?space_id=0", as: staff
       expect(response).to have_http_status(:not_found)
@@ -143,6 +156,21 @@ RSpec.describe "/api/v1 training sessions", type: :request do
       expect { api_post "/api/v1/training_sessions", payload.merge(instructor_id: other_staff.id), as: staff }
         .not_to change(TrainingSession, :count)
       expect(response).to have_http_status(:forbidden)
+    end
+
+    it "403s staff opening a session in a space they are not assigned to, creating nothing" do
+      training.spaces << unassigned_space
+      expect { api_post "/api/v1/training_sessions", payload.merge(space_id: unassigned_space.id), as: staff }
+        .not_to change(TrainingSession, :count)
+      expect(response).to have_http_status(:forbidden)
+      expect(error).to include("code" => "space_not_assigned", "message" => "You are not assigned to that space")
+    end
+
+    it "lets an admin with no assignments open a session in any space" do
+      training.spaces << unassigned_space
+      api_post "/api/v1/training_sessions", payload.merge(space_id: unassigned_space.id), as: admin
+      expect(response).to have_http_status(:created)
+      expect(TrainingSession.find(body["id"]).space_id).to eq(unassigned_space.id)
     end
 
     it "lets an admin pick another staff member as instructor" do

@@ -1168,8 +1168,11 @@ class User < ApplicationRecord
     admin? ? Space.all : Space.where(id: staff_spaces.select(:space_id))
   end
 
+  # Whether this user may work in the space (switch to it, sign people in and out, open training sessions there):
+  # one of their workable spaces, or the space they already hold, so a saved space they are no longer assigned to
+  # keeps working until they leave it. The staff dashboard and /api/v1 both ask this.
   def can_work_in?(space)
-    workable_spaces.exists?(space.id)
+    space.id == space_id || workable_spaces.exists?(space.id)
   end
 
   def internal?

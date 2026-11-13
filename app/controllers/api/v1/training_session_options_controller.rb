@@ -8,9 +8,10 @@ module Api
       before_action :require_staff!
 
       # The legacy form always used the caller's space (assigned, else the first). An
-      # explicit space_id picks another one; an unknown id is a 404.
+      # explicit space_id picks another one the caller may work in; an unknown id is a 404.
       def show
-        space = params[:space_id].present? ? Space.find(space_id_param) : (current_user.space || Space.first)
+        space = params[:space_id].present? ? requested_space : (current_user.space || Space.first)
+        return if performed?
         raise ActiveRecord::RecordNotFound if space.nil?
 
         render json: {
@@ -23,6 +24,12 @@ module Api
       end
 
       private
+
+      def requested_space
+        space = Space.find(space_id_param)
+        refuse_unworkable_space(space)
+        space
+      end
 
       def space_id_param
         raw = params[:space_id]
