@@ -168,6 +168,12 @@ class LearningModule < ApplicationRecord
     self.title = title.upcase_first
   end
 
+  # The module whose shortcut link this is. The value is normalised like the stored shortcut, and a value
+  # that is blank once normalised matches no module, not one that has no shortcut.
+  def self.find_by_shortcut!(shortcut)
+    where.not(shortcut_name: nil).find_by!(shortcut_name: shortcut)
+  end
+
   def self.filter_by_attribute(attribute, value)
     if attribute == 'level'
       filter_by_level(value)

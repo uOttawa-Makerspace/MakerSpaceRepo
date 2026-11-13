@@ -133,6 +133,24 @@ RSpec.describe "Learning area", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
+    ["/learning_area/s/%20", "/learning_area/s/---"].each do |path|
+      it "answers 404 for #{path}, a shortcut that is blank once normalised, even with modules that have none" do
+        create(:learning_module, title: "No shortcut", shortcut_name: nil)
+        sign_in_as(:regular)
+        get path
+        expect(response).to have_http_status(:not_found)
+        expect(response.body).not_to include("No shortcut")
+      end
+    end
+
+    it "still resolves a real shortcut when modules without one exist" do
+      create(:learning_module, title: "No shortcut", shortcut_name: nil)
+      sign_in_as(:regular)
+      get "/learning_area/s/#{learning_module.shortcut_name.upcase}"
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Soldering basics")
+    end
+
     it "renders a module that has no training, without a training name" do
       orphan = create(:learning_module, training: nil, title: "Orphan")
       sign_in_as(:regular)

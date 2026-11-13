@@ -282,7 +282,7 @@ class LearningAreaController < DevelopmentProgramsController
   def set_learning_module
     @learning_module =
       if params[:shortcut]
-        LearningModule.find_by!(shortcut_name: params[:shortcut])
+        LearningModule.find_by_shortcut!(params[:shortcut])
       else
         LearningModule.find(params[:id])
       end

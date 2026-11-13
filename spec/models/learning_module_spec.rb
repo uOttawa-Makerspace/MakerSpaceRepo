@@ -79,6 +79,18 @@ RSpec.describe LearningModule, type: :model do
     end
   end
 
+  describe '.find_by_shortcut!' do
+    it 'finds the module by its normalised shortcut' do
+      lm = create(:learning_module, shortcut_name: 'laser_101')
+      expect(LearningModule.find_by_shortcut!(' Laser 101 ')).to eq(lm)
+    end
+
+    it 'matches no module without a shortcut for a value that is blank once normalised' do
+      create(:learning_module, shortcut_name: nil)
+      expect { LearningModule.find_by_shortcut!('---') }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+  end
+
   describe 'Scopes' do
     context '#filter_by_level' do
       it 'should only get private repos' do
