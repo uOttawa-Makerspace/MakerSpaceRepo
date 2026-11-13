@@ -203,6 +203,20 @@ RSpec.describe User::UoengConcern, type: :model do
         expect(logs.map { |l| l.details&.dig("reason") }).not_to include("student_id_mismatch")
       end
 
+      {
+        ["012345678", 12_345_678] => true,
+        ["012345678", "012345678"] => true,
+        ["123456789", 123_456_780] => false,
+        ["A12345", "a12345"] => false,
+        ["A12345", "A12345"] => true
+      }.each do |(typed, sent), granted|
+        it "#{granted ? 'grants' : 'withholds'} the membership for typed #{typed.inspect} and answer #{sent.inspect}" do
+          eng.update_column(:student_id, typed)
+          stub_api(body: genie.merge("emplid" => sent))
+          expect(eng.validate_uoeng_membership).to(granted ? be_a(Membership) : eq(:mismatch))
+        end
+      end
+
       it "grants the membership for a student_number string" do
         stub_api(body: genie.merge("student_number" => "300000001"))
         expect(eng.validate_uoeng_membership).to be_a(Membership)

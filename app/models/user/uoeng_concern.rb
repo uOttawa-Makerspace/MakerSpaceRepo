@@ -195,7 +195,17 @@ module User::UoengConcern
     # uOEng sends the student number as `emplid`; `student_number` is read as a fallback.
     def uoeng_student_number_differs?(parsed)
       verified = parsed["emplid"].presence || parsed["student_number"].presence
-      student_id.present? && verified.present? && verified.to_s != student_id.to_s
+      student_id.present? && verified.present? && !same_student_number?(verified, student_id)
+    end
+
+    # All-digit numbers are compared as numbers, so an integer answer that lost
+    # a leading zero still matches; anything else is compared as text.
+    def same_student_number?(verified, typed)
+      verified = verified.to_s.strip
+      typed = typed.to_s.strip
+      return verified == typed unless [verified, typed].all?(/\A\d+\z/)
+
+      Integer(verified, 10) == Integer(typed, 10)
     end
   end
 end
