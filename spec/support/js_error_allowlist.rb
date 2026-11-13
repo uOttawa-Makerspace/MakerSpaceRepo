@@ -17,14 +17,14 @@ module JsErrorCheck
   # matches the whole message, so a longer message never passes by sharing a
   # prefix with a known one.
   ORIGIN = %r{https?://[^/\s]+}.source
-  STATUS_TEXT = { 404 => "Not Found", 422 => "Unprocessable Content", 500 => "Internal Server Error" }.freeze
+  STATUS_TEXT = { 404 => "Not Found", 422 => "Unprocessable (?:Entity|Content)", 500 => "Internal Server Error" }.freeze
 
   def self.request_failed(url_path, status)
     Regexp.new("\\A#{ORIGIN}#{url_path} - Failed to load resource: the server responded with a status of #{status} \\(#{STATUS_TEXT.fetch(status)}\\)\\z")
   end
 
-  def self.script_error(script, text)
-    Regexp.new("\\A#{ORIGIN}/\\S*#{script} \\d+:\\d+ #{text}\\z")
+  def self.script_error(script, text, url: "/\\S*#{script}")
+    Regexp.new("\\A#{ORIGIN}#{url} \\d+:\\d+ #{text}\\z")
   end
 
   ALLOWLIST = [
@@ -33,7 +33,7 @@ module JsErrorCheck
     { id: "js-error-01", path: %r{\A/job_orders/new\z}, message: /\A\S+ \d+:\d+ Uncaught SyntaxError: missing \) after argument list\z/ },
     # the 500 from GET /locker_rentals for an indefinite active
     # rental is logged by Chrome as a SEVERE resource error.
-    { id: "js-error-03", path: %r{\A/locker_rentals\z}, message: request_failed("/locker_rentals", 500) },
+    { id: "js-error-03", path: %r{\A(?:#{ORIGIN})?/locker_rentals(?:\z|\s)}, message: request_failed("/locker_rentals", 500) },
     # Pages load third-party scripts (Cloudflare Turnstile, UserWay widget)
     # after the page has loaded, and ignore a failed load; repository and
     # proposal pages embed YouTube videos and their thumbnails. The system
@@ -44,29 +44,29 @@ module JsErrorCheck
     { id: "js-error-04", path: %r{\Ahttps://(challenges\.cloudflare\.com|cdn\.userway\.org|(www|img)\.youtube\.com)/}, message: /\Ahttps:\/\/\S+ - Failed to load resource: net::ERR_NAME_NOT_RESOLVED\z/ },
     # the home/changelog hours widget calls /open_hours, which
     # fetches external ICS feeds (unreachable in tests: 500).
-    { id: "js-error-07", path: %r{\A#{ORIGIN}/open_hours\b}, message: request_failed("/open_hours", 500) },
+    { id: "js-error-07", path: %r{\A(?:#{ORIGIN})?/open_hours(?:\z|[/?\s])}, message: request_failed("/open_hours", 500) },
     # the badge SVG is rendered with empty width/height attributes.
     { id: "js-error-10", path: %r{\A/badges/\d+\z}, message: /\A(\S+ \d+:\d+ )?Error: <svg> attribute (width|height): Unexpected end of attribute\z/ },
     # the admin calendar script requests its JSON endpoints with an
     # empty id (404) and then fails to parse the HTML.
-    { id: "js-error-11", path: %r{\A/admin/(calendar|events)\b}, message: request_failed("/admin/(calendar/unavailabilities_json/|events/json/|calendar|calendar/imported_calendars_json/)", 404) },
-    { id: "js-error-11", path: %r{\A/admin/(calendar|events)\b}, message: script_error("\\S+", "Uncaught \\(in promise\\) SyntaxError: .*") },
+    { id: "js-error-11", path: %r{\A/admin/(calendar|events)(?:\z|[/?])}, message: request_failed("/admin/(calendar/unavailabilities_json/|events/json/|calendar|calendar/imported_calendars_json/)", 404) },
+    { id: "js-error-11", path: %r{\A/admin/(calendar|events)(?:\z|[/?])}, message: script_error("", "Uncaught \\(in promise\\) SyntaxError: .*", url: "/admin/(?:calendar/unavailabilities_json/|events/json/|calendar|calendar/imported_calendars_json/)") },
     # Opening the add-event modal asks for /admin/calendar/staff_json/:id,
     # which no route serves (404); the staff list is filled from another feed.
-    { id: "js-error-staff-json", path: %r{\A/admin/calendar\b}, message: request_failed("/admin/calendar/staff_json/\\d+", 404) },
+    { id: "js-error-staff-json", path: %r{\A/admin/calendar(?:\z|[/?])}, message: request_failed("/admin/calendar/staff_json/\\d+", 404) },
     # Calendar page scripts (pinned by the calendar characterization specs).
     # Saving an unavailability from the staff select reads an option without its unavailable dates.
-    { id: "js-error-cal-staff-option", path: %r{\A/admin/calendar\b}, message: script_error("calendar-[\\w-]+\\.js", "Uncaught TypeError: Cannot read properties of undefined \\(reading 'split'\\)") },
+    { id: "js-error-cal-staff-option", path: %r{\A/admin/calendar(?:\z|[/?])}, message: script_error("calendar-[\\w-]+\\.js", "Uncaught TypeError: Cannot read properties of undefined \\(reading 'split'\\)") },
     # The copy-events dialog calls flatpickr on an element that has no plugin.
-    { id: "js-error-cal-copy-flatpickr", path: %r{\A/admin/calendar\b}, message: script_error("calendar-[\\w-]+\\.js", "Uncaught TypeError: \\w+\\.flatpickr is not a function") },
+    { id: "js-error-cal-copy-flatpickr", path: %r{\A/admin/calendar(?:\z|[/?])}, message: script_error("calendar-[\\w-]+\\.js", "Uncaught TypeError: \\w+\\.flatpickr is not a function") },
     # A refused staff colour answers 422; Chrome logs it as a resource error while the page shows a toast.
-    { id: "js-error-color-422", path: %r{\A/admin/calendar\b}, message: request_failed("/admin/calendar/update_color", 422) },
+    { id: "js-error-color-422", path: %r{\A/admin/calendar(?:\z|[/?])}, message: request_failed("/admin/calendar/update_color", 422) },
     # Refused bookings answer 422; Chrome logs each as a resource error.
-    { id: "js-error-booking-422", path: %r{\A/sub_space_booking\b}, message: request_failed("/sub_space_booking", 422) },
+    { id: "js-error-booking-422", path: %r{\A/sub_space_booking(?:\z|[/?])}, message: request_failed("/sub_space_booking", 422) },
     # After a delete the page follows the redirect with a JSON request that answers 404.
-    { id: "js-error-booking-delete-404", path: %r{\A/sub_space_booking\b}, message: request_failed("/sub_space_booking#booking-tab", 404) },
+    { id: "js-error-booking-delete-404", path: %r{\A/sub_space_booking(?:\z|[/?])}, message: request_failed("/sub_space_booking#booking-tab", 404) },
     # The select-dates dialog writes into a template row that is missing.
-    { id: "js-error-booking-dates-row", path: %r{\A/sub_space_booking\b}, message: script_error("sub_space_booking-[\\w-]+\\.js", "Uncaught TypeError: Cannot set properties of null \\(setting 'innerHTML'\\)") },
+    { id: "js-error-booking-dates-row", path: %r{\A/sub_space_booking(?:\z|[/?])}, message: script_error("sub_space_booking-[\\w-]+\\.js", "Uncaught TypeError: Cannot set properties of null \\(setting 'innerHTML'\\)") },
     # the Bootstrap tooltip of a locker row note throws when the
     # row's hover text is rewritten after an inline save.
     { id: "js-error-12", path: %r{\A/lockers\z}, message: script_error("bootstrap\\.esm-[\\w-]+\\.js", "Uncaught TypeError: Cannot convert undefined or null to object") },

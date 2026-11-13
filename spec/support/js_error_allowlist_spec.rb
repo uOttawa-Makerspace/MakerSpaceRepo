@@ -61,7 +61,7 @@ RSpec.describe JsErrorCheck do
   end
 
   it "does not allow an allowed message on a page it was not allowlisted for" do
-    _path, message = self.class.row_samples.fetch("js-error-03")
+    _path, message = self.class.row_samples.fetch("js-error-booking-422")
     expect(described_class.allowed?("/other", message)).to be(false)
   end
 
@@ -74,5 +74,30 @@ RSpec.describe JsErrorCheck do
   it "does not allow another status on the same URL" do
     message = "#{origin}/locker_rentals - Failed to load resource: the server responded with a status of 404 (Not Found)"
     expect(described_class.allowed?("/locker_rentals", message)).to be(false)
+  end
+
+  it "allows the locker rentals failure logged while another page is open" do
+    message = "#{origin}/locker_rentals - Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    expect(described_class.allowed?("/admin/lockers", message)).to be(true)
+  end
+
+  it "accepts both Chrome spellings of the 422 status and no other" do
+    line = "#{origin}/sub_space_booking - Failed to load resource: the server responded with a status of 422"
+    expect(described_class.allowed?("/sub_space_booking", "#{line} (Unprocessable Entity)")).to be(true)
+    expect(described_class.allowed?("/sub_space_booking", "#{line} (Unprocessable Content)")).to be(true)
+    expect(described_class.allowed?("/sub_space_booking", "#{line} (Bad Request)")).to be(false)
+  end
+
+  it "does not allow a page whose path only starts like an allowed page" do
+    message = "#{origin}/admin/calendar/update_color - Failed to load resource: the server responded with a status of 422 (Unprocessable Content)"
+    expect(described_class.allowed?("/admin/calendar", message)).to be(true)
+    expect(described_class.allowed?("/admin/calendar/x", message)).to be(true)
+    expect(described_class.allowed?("/admin/calendar-x", message)).to be(false)
+  end
+
+  it "allows the calendar script parse failure only for the admin calendar URLs" do
+    error = "10:5 Uncaught (in promise) SyntaxError: Unexpected token '<'"
+    expect(described_class.allowed?("/admin/calendar", "#{origin}/admin/events/json/ #{error}")).to be(true)
+    expect(described_class.allowed?("/admin/calendar", "#{origin}/vite-test/assets/other.js #{error}")).to be(false)
   end
 end
