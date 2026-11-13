@@ -370,15 +370,15 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       expect(StaffSpace.where(user: staff, space: space).count).to eq(1)
     end
 
-    it "shows the current space selected even when unassigned, and switching to it succeeds" do
+    it "shows the current space selected even when unassigned, but refuses switching to it" do
       StaffSpace.where(user: staff).destroy_all
       get staff_dashboard_index_path
       selected = Nokogiri::HTML(response.body).css("select#set_space_id option[selected]").map { |o| o["value"] }
       expect(selected).to eq([space.id.to_s])
 
       put "/staff_dashboard/change_space", params: { space_id: space.id }, as: :json
-      expect(response).to have_http_status(:ok)
-      expect(staff.reload.space_id).to eq(space.id)
+      expect(response).to have_http_status(:not_found)
+      expect(response.parsed_body["error"]).to eq("You are not assigned to that space")
     end
 
     it "tells a staff member with no assigned spaces to ask an admin" do

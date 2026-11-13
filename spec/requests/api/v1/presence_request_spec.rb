@@ -59,12 +59,16 @@ RSpec.describe "/api/v1/spaces/:id/presence", type: :request do
       expect(response).to have_http_status(:no_content)
     end
 
-    it "lets staff keep working in the saved space they are no longer assigned to" do
+    it "403s staff in a saved space they are no longer assigned to: listing, sign-in and sign-out stay refused" do
+      in_space(visitor, unassigned_space)
       staff.update_columns(space_id: unassigned_space.id)
-      api_send :post, "/api/v1/spaces/#{unassigned_space.id}/presence", { username: visitor.username }, as: staff
-      expect(response).to have_http_status(:no_content)
       api_get "/api/v1/spaces/#{unassigned_space.id}/presence", as: staff
-      expect(body["users"].map { |u| u["id"] }).to eq([visitor.id])
+      expect_space_not_assigned
+      api_send :post, "/api/v1/spaces/#{unassigned_space.id}/presence", { username: regular.username }, as: staff
+      expect_space_not_assigned
+      api_send :delete, "/api/v1/spaces/#{unassigned_space.id}/presence/#{visitor.username}", as: staff
+      expect_space_not_assigned
+      expect(LabSession.where(user: visitor, space: unassigned_space).active.count).to eq(1)
     end
   end
 

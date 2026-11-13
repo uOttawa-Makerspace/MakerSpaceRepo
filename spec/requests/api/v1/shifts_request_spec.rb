@@ -18,6 +18,8 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
   def shifts(query = {}, id: space.id, as: staff)
     get "/api/v1/spaces/#{id}/shifts", params: query, headers: json_headers.merge(as ? auth(as) : {})
   end
+  before { StaffSpace.find_or_create_by!(user: staff, space: space) }
+
   def window = { start: (t0 - 1.day).iso8601, end: (t0 + 7.days).iso8601 }
   def shift(attrs = {}) = create(:event, { space: space, event_type: "shift", title: "Shift", start_time: t0, end_time: t0 + 2.hours }.merge(attrs))
 
@@ -27,6 +29,17 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
     shifts(window, as: regular)
     expect(response).to have_http_status(:forbidden)
     expect(error["code"]).to eq("forbidden")
+  end
+
+  it "403s staff for a space they are not assigned to, even when it is their saved space, and lists it for an admin" do
+    create(:event, space: other_space, event_type: "shift", title: "Shift", start_time: t0, end_time: t0 + 1.hour)
+    staff.update_columns(space_id: other_space.id)
+    shifts(window, id: other_space.id)
+    expect(response).to have_http_status(:forbidden)
+    expect(error).to include("code" => "space_not_assigned", "message" => "You are not assigned to that space")
+    shifts(window, id: other_space.id, as: admin)
+    expect(response).to have_http_status(:ok)
+    expect(body.size).to eq(1)
   end
 
   it "lists published shifts with the exact keys, for staff and admin" do
@@ -112,7 +125,7 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
       get "/api/v1/spaces/#{space.id}/shifts", params: window, headers: json_headers.merge(token)
     end
     expect(body.size).to eq(4)
-    expect(count).to be <= 7 # token user, space, events, assignments, users, staff_spaces, + slack
+    expect(count).to be <= 8 # token user, space, assignment check, events, assignments, users, staff_spaces, + slack
   end
 
   it "404s an unknown space and a non-integer id" do

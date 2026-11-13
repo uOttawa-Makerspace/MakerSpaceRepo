@@ -434,15 +434,7 @@ class Admin::UsersController < AdminAreaController
       user = User.find_by(id: user_id)
       next unless user&.staff?
 
-      space_list = Array(space_ids).map(&:to_i).reject(&:zero?)
-      
-      # Create new staff spaces
-      space_list.each do |space_id|
-        StaffSpace.find_or_create_by(space_id: space_id, user: user)
-      end
-      
-      # Remove spaces not in the list
-      user.staff_spaces.where.not(space_id: space_list).destroy_all
+      user.assign_spaces!(Array(space_ids).map(&:to_i).reject(&:zero?))
     end
     
     flash[:notice] = "Successfully changed spaces for the user(s)."

@@ -19,6 +19,7 @@ fr:
       copy_failed: "Le texte n'a pas pu être copié. Sélectionnez-le et copiez-le manuellement."
       network: "Le serveur est inaccessible. Vérifiez votre connexion et réessayez."
     staff:
+      space_not_assigned: "Vous n'êtes pas affecté à cet espace."
       dashboard:
         import_no_file: "Choisissez un tableur (.xls ou .xlsx) contenant les utilisateurs à enregistrer."
         import_file_type: "%{name} n'est pas un tableur. Téléversez un fichier .xls ou .xlsx."

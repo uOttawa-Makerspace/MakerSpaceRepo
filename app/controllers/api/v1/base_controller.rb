@@ -117,10 +117,12 @@ module Api
       end
 
       # Staff work only in the spaces User#can_work_in? allows (admins in any); the same rule as the staff dashboard.
+      # Renders the 403 and answers true when the space is refused; a missing space is left to the caller.
       def refuse_unworkable_space(space)
-        return if current_user.can_work_in?(space)
+        return false if space.nil? || current_user.can_work_in?(space)
 
         render_error(:space_not_assigned, "You are not assigned to that space", status: :forbidden)
+        true
       end
 
       def render_error(code, message, status:, fields: nil, **extra)

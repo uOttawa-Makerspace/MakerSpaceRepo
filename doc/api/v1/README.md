@@ -46,7 +46,7 @@ Always JSON, always a real status:
 | 429    | Rate limited                                                       | `rate_limited`                                                                   |
 | 503    | Upstream unavailable, nothing saved                                | `service_unavailable`                                                            |
 
-`space_not_assigned` (403, message "You are not assigned to that space"): a staff member named a space they may not work in. Staff work in the spaces they are assigned to and in the space they already hold (`users.space_id`); admins work in any space. The web staff dashboard applies the same rule. Nothing is changed.
+`space_not_assigned` (403, message "You are not assigned to that space"): a staff member named a space they may not work in. Staff work only in the spaces they are assigned to (a saved space they are no longer assigned to does not count); admins work in any space. The staff dashboard, the kiosk, the shifts feed and the staff tap endpoint apply the same rule. Nothing is changed.
 
 401 responses carry `WWW-Authenticate: Bearer realm="makerepo"`.
 

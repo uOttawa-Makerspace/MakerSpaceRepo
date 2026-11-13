@@ -23,9 +23,11 @@ module Api
         return invalid(:card_number, "is invalid") unless Rfid.valid_card_number?(card)
 
         raw_space = params.require(:space_id)
-        return invalid(:space_id, "must be a space id") unless raw_space.is_a?(Integer) || (raw_space.is_a?(String) && raw_space.match?(/\A\d{1,18}\z/))
+        return invalid(:space_id, "must be a space id") unless space_id?(raw_space)
 
         space = Space.find(raw_space)
+        return if refuse_unworkable_space(space)
+
         TapBoxLog.log_card_tap(card_number: card, mac_address: nil, space_id_param: raw_space)
         result = RfidTap.call(card: card, space: space, mac_address: nil, tap_start: tap_start)
         if result.signed?
@@ -37,6 +39,10 @@ module Api
       end
 
       private
+
+      def space_id?(raw)
+        raw.is_a?(Integer) || (raw.is_a?(String) && raw.match?(/\A\d{1,18}\z/))
+      end
 
       def invalid(field, message)
         render_error(:validation_failed, "Validation failed", status: :unprocessable_content, fields: { field => [message] })

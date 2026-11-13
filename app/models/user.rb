@@ -1176,10 +1176,27 @@ class User < ApplicationRecord
   end
 
   # Whether this user may work in the space (switch to it, sign people in and out, open training sessions there):
-  # one of their workable spaces, or the space they already hold, so a saved space they are no longer assigned to
-  # keeps working until they leave it. The staff dashboard and /api/v1 both ask this.
+  # an admin in any space, otherwise only a space they are assigned to. The saved space (users.space_id) alone does
+  # not count. The staff dashboard, /api/v1, the kiosk and the shifts feed all ask this.
   def can_work_in?(space)
-    space.id == space_id || workable_spaces.exists?(space.id)
+    workable_spaces.exists?(space.id)
+  end
+
+  # The space the staff app opens in: the saved space when they may work in it, else the first space they may work
+  # in (the lowest id), else nil.
+  def current_space
+    workable_spaces.find_by(id: space_id) || workable_spaces.order(:id).first
+  end
+
+  # Makes space_ids the spaces this staff member is assigned to: adds the missing ones and removes the others. A
+  # removed space that was their saved space is cleared too (admins keep theirs: they work in any space), so they are not left in a space they no longer work in.
+  def assign_spaces!(space_ids)
+    transaction do
+      space_ids.each { |id| StaffSpace.find_or_create_by(space_id: id, user: self) }
+      removed = staff_spaces.where.not(space_id: space_ids)
+      update_columns(space_id: nil) if space_id && !admin? && removed.exists?(space_id: space_id)
+      removed.destroy_all
+    end
   end
 
   def internal?

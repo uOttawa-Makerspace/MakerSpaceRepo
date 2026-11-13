@@ -34,8 +34,9 @@ The data is the published (non-draft) `events` of `event_type = "shift"` that ad
 - `background` is `#3788d8` for an unassigned shift, otherwise a gradient of the assignees' space colours (`staff_spaces.color`, default `#3788d8`).
 - Only the fields the app reads are sent: no `name`, `draft`, `hasCurrentUser`, and no email or other user column (assignee display names appear in `title`).
 
-| Status    | `error.code`                    | When                                                                                                                                |
-| --------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| 401 / 403 | `unauthenticated` / `forbidden` | No token / not staff                                                                                                                |
-| 404       | `not_found`                     | No such space (or a non-integer id)                                                                                                 |
-| 422       | `validation_failed`             | `start`/`end` missing or not ISO 8601, `end` before `start`, range over 100 days, or `user_id` not an integer (`fields` names each) |
+| Status    | `error.code`                    | When                                                                                                                                    |
+| --------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 401 / 403 | `unauthenticated` / `forbidden` | No token / not staff                                                                                                                    |
+| 403       | `space_not_assigned`            | Staff (non-admin) named a space they are not assigned to (admins may read any space); `message` is "You are not assigned to that space" |
+| 404       | `not_found`                     | No such space (or a non-integer id)                                                                                                     |
+| 422       | `validation_failed`             | `start`/`end` missing or not ISO 8601, `end` before `start`, range over 100 days, or `user_id` not an integer (`fields` names each)     |

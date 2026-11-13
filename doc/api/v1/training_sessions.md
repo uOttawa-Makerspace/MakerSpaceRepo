@@ -34,7 +34,7 @@ The caller's OWN sessions (the instructor is the caller), also for admins. Newes
 
 ## GET /api/v1/training_session_options?space_id=
 
-Form data, computed as legacy `new` does. `space_id` is optional: omitted means the caller's space (assigned, else the first space), as legacy always did. Unknown or non-numeric `space_id`: 404. A `space_id` the caller may not work in (staff: not assigned to it and not their current space; admins may use any space): 403 `space_not_assigned`, "You are not assigned to that space".
+Form data, computed as legacy `new` does. `space_id` is optional: omitted means the caller's space (assigned, else the first space), as legacy always did. Unknown or non-numeric `space_id`: 404. A `space_id` the caller may not work in (staff: not assigned to it; admins may use any space): 403 `space_not_assigned`, "You are not assigned to that space".
 
 200:
 
@@ -65,7 +65,7 @@ Request: `{ "space_id": 3, "training_id": 4, "level": "Beginner", "course": "ENG
 | --------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 401 / 403 | `unauthenticated` / `forbidden` | No token / not staff                                                                                                                                                                                                                                        |
 | 403       | `forbidden`                     | Staff (non-admin) sent an `instructor_id` that is not their own; nothing is created                                                                                                                                                                         |
-| 403       | `space_not_assigned`            | Staff (non-admin) named an existing space they are not assigned to and do not hold as their current space; `message` is "You are not assigned to that space"; nothing is created                                                                            |
+| 403       | `space_not_assigned`            | Staff (non-admin) named an existing space they are not assigned to; `message` is "You are not assigned to that space"; nothing is created                                                                                                                   |
 | 422       | `validation_failed`             | `fields` keyed by `space_id` (missing/unknown), `training_id` (missing/unknown/not offered in the space), `level` (not one of the three levels), `course`, `instructor_id` (admin only: not a staff member), `user_ids` (not a list of ids, or unknown ids) |
 | 400       | `idempotency_key_required`      | No `Idempotency-Key` header, or a blank one or one longer than 255 characters; nothing is created. The message asks the user to reload the app (an app that does not send the header is out of date). Checked after sign-in and role, before the body       |
 | 422       | `idempotency_key_reused`        | The key was already used by this user for a different request (another body); nothing is created                                                                                                                                                            |

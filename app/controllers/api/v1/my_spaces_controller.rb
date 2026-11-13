@@ -6,13 +6,11 @@ module Api
     class MySpacesController < BaseController
       before_action :require_staff!
 
-      # Same default as the legacy dashboard (StaffAreaController#default_space):
-      # the assigned space, else the first one; 404 when no space exists at all.
+      # The saved space when the caller may work in it, else the first space they may work in
+      # (User#current_space); { "space": null } when they have none.
       def show
-        space = current_user.space || Space.first
-        raise ActiveRecord::RecordNotFound if space.nil?
-
-        render json: SpaceSerializer.call(space)
+        space = current_user.current_space
+        render json: space ? SpaceSerializer.call(space) : { space: nil }
       end
 
       def update

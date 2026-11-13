@@ -10,6 +10,16 @@ RSpec.describe "Kiosks", type: :request do
   let!(:space) { create(:space) }
   let(:visitor) { create(:user, :regular_user) }
 
+  # Staff work only in the spaces they are assigned to; admins in any.
+  def sign_in_assigned(role)
+    sign_in_as(role).tap { |user| StaffSpace.create!(user: user, space: space) if role == :staff }
+  end
+
+  def expect_refused_space
+    expect(response).to redirect_to(kiosk_index_path)
+    expect(flash[:alert]).to eq("You are not assigned to that space.")
+  end
+
   def expect_bounced
     expect(response).to redirect_to(root_path)
     expect(flash[:alert]).to eq("You cannot access this area.")
@@ -49,7 +59,7 @@ RSpec.describe "Kiosks", type: :request do
 
     %i[staff admin].each do |role|
       it "lets #{role} open index, show and edit" do
-        sign_in_as(role)
+        sign_in_assigned(role)
         get kiosk_index_path
         expect(response).to have_http_status(:ok)
         expect(response.body).to include(space.name)
@@ -63,15 +73,61 @@ RSpec.describe "Kiosks", type: :request do
     end
   end
 
+  describe "a space the staff member is not assigned to" do
+    let!(:elsewhere) { create(:space) }
+    let(:staff) { sign_in_assigned(:staff) }
+
+    it "lists only the spaces staff may work in, and every space for an admin" do
+      staff
+      get kiosk_index_path
+      expect(response.body).to include(space.name)
+      expect(response.body).not_to include(elsewhere.name)
+      sign_in_as(:admin)
+      get kiosk_index_path
+      expect(response.body).to include(space.name, elsewhere.name)
+    end
+
+    it "refuses to open its kiosk page, even when it is their saved space" do
+      staff.update_columns(space_id: elsewhere.id)
+      get kiosk_path(elsewhere.id)
+      expect_refused_space
+    end
+
+    it "refuses to sign anyone in or out there, writing nothing" do
+      staff
+      LabSession.create!(user: visitor, space: elsewhere, sign_in_time: 1.hour.ago, sign_out_time: 5.hours.from_now)
+      expect do
+        post kiosk_sign_email_path(elsewhere.id), params: { visitor: visitor.username, entering: "true" }
+        expect_refused_space
+        post kiosk_sign_email_path(elsewhere.id), params: { visitor: visitor.username, leaving: "true" }
+        expect_refused_space
+      end.not_to change { [LabSession.count, KioskSignEvent.count] }
+      expect(LabSession.where(user: visitor, space: elsewhere).active.count).to eq(1)
+    end
+
+    it "refuses with the French message for a French-speaking staff member" do
+      staff.update_columns(locale: "fr")
+      get kiosk_path(elsewhere.id)
+      expect(flash[:alert]).to eq("Vous n'êtes pas affecté à cet espace.")
+    end
+
+    it "lets an admin with no assignments open it and sign people in" do
+      sign_in_as(:admin)
+      get kiosk_path(elsewhere.id)
+      expect(response).to have_http_status(:ok)
+      expect { post kiosk_sign_email_path(elsewhere.id), params: { visitor: visitor.username, entering: "true" } }.to change(LabSession, :count).by(1)
+    end
+  end
+
   describe "GET /kiosk/:id" do
     it "redirects to the kiosk index for an unknown space" do
-      sign_in_as(:staff)
+      sign_in_assigned(:staff)
       get kiosk_path(0)
       expect(response).to redirect_to(kiosk_index_path)
     end
 
     it "renders without a layout (full html document of its own)" do
-      sign_in_as(:staff)
+      sign_in_assigned(:staff)
       get kiosk_path(space.id)
       expect(response.body).to include("<title>#{space.name} Kiosk</title>")
       expect(response.body).not_to include("navbar-expand-xl")
@@ -79,7 +135,7 @@ RSpec.describe "Kiosks", type: :request do
   end
 
   describe "POST /kiosk/:id/sign_email" do
-    before { sign_in_as(:staff) }
+    before { sign_in_assigned(:staff) }
 
     it "signs a visitor in by username with a 6 hour session and redirects to the kiosk" do
       expect { post kiosk_sign_email_path(space.id), params: { visitor: visitor.username, entering: "true" } }.to change(LabSession, :count).by(1)
@@ -152,7 +208,7 @@ RSpec.describe "Kiosks", type: :request do
     end
 
     describe "sign-in log" do
-      let!(:staff) { sign_in_as(:staff) }
+      let!(:staff) { sign_in_assigned(:staff) }
 
       def post_sign(visitor_param, action, space_id: space.id)
         post kiosk_sign_email_path(space_id), params: { visitor: visitor_param, action => "true" }

@@ -277,6 +277,8 @@ RSpec.describe "/api/v1 RFID", type: :request do
   describe "POST /api/v1/rfid_taps" do
     let!(:card) { create(:rfid, user: owner, mac_address: nil) }
 
+    before { StaffSpace.create!(user: staff, space: space_a) }
+
     def tap(payload = { card_number: card.card_number, space_id: space_a.id }, as: staff)
       api_send :post, "/api/v1/rfid_taps", payload, as: as
     end
@@ -288,6 +290,16 @@ RSpec.describe "/api/v1 RFID", type: :request do
         tap(as: regular)
         expect(response).to have_http_status(:forbidden)
       end.not_to change { [LabSession.count, Rfid.count, TapBoxLog.count] }
+    end
+
+    it "403s staff tapping in a space they are not assigned to, writing nothing" do
+      other = { card_number: card.card_number, space_id: space_b.id }
+      expect { tap(other) }.not_to change { [LabSession.count, Rfid.count, TapBoxLog.count] }
+      expect(response).to have_http_status(:forbidden)
+      expect(error).to include("code" => "space_not_assigned", "message" => "You are not assigned to that space")
+      staff.update_columns(space_id: space_b.id)
+      expect { tap(other) }.not_to change(LabSession, :count)
+      expect(response).to have_http_status(:forbidden)
     end
 
     it "signs the card's owner in with exactly {success: 'RFID sign in'} (staff and admin), then out" do

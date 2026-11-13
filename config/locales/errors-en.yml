@@ -19,6 +19,7 @@ en:
       copy_failed: "The text could not be copied. Select it and copy it by hand."
       network: "The server could not be reached. Check your connection and try again."
     staff:
+      space_not_assigned: "You are not assigned to that space."
       dashboard:
         import_no_file: "Choose a spreadsheet (.xls or .xlsx) of users to sign in."
         import_file_type: "%{name} is not a spreadsheet. Upload an .xls or .xlsx file."

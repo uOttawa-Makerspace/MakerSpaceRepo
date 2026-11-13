@@ -24,10 +24,7 @@ module Api
         return replay(previous, digest) if previous
 
         input = CreateInput.new(params, current_user)
-        return render_error(:forbidden, "Only an admin may choose another instructor", status: :forbidden) if input.foreign_instructor_denied?
-
-        refuse_unworkable_space(input.space) if input.space
-        return if performed?
+        return if refused_create?(input)
         return render_input_errors(input.errors) unless input.valid?
 
         session = build_session(input)
@@ -41,6 +38,15 @@ module Api
       end
 
       private
+
+      # Renders the refusal and answers true when the caller may not open this session.
+      def refused_create?(input)
+        if input.foreign_instructor_denied?
+          render_error(:forbidden, "Only an admin may choose another instructor", status: :forbidden)
+          return true
+        end
+        refuse_unworkable_space(input.space)
+      end
 
       def build_session(input)
         session = TrainingSession.new(input.attributes)
