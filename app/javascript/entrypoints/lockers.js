@@ -1,3 +1,4 @@
+import { Tooltip } from "bootstrap";
 import TomSelect from "tom-select";
 import DataTable from "datatables.net-bs5";
 import "datatables.net-select-bs5";
@@ -17,7 +18,7 @@ document.addEventListener("turbo:load", function () {
 });
 
 // Handle grabbing the product gid on link paste
-function handleLinkInput() {
+export function handleLinkInput() {
   const url = this.value;
   const match = url.match(/\/products\/(\d+)/i);
   const id = match ? match[1] : null;
@@ -29,7 +30,7 @@ function handleLinkInput() {
 }
 
 // Goes through a Set of numbers and returns the start and end of any continuous ranges in it
-const findContiguous = (set) => {
+export const findContiguous = (set) => {
   const sorted = [...set].map(Number).sort((a, b) => a - b);
   if (sorted.length === 0) return [];
   const groups = [];
@@ -47,7 +48,7 @@ const findContiguous = (set) => {
   return groups;
 };
 
-function validateRange() {
+export function validateRange() {
   const modal = document.querySelector("#newRangeLockerModal");
   if (!modal) return;
 
@@ -252,10 +253,9 @@ document.addEventListener("turbo:load", function () {
           const tooltipWrapper = this.closest('[data-bs-toggle="tooltip"]');
           if (tooltipWrapper) {
             tooltipWrapper.setAttribute("title", this.value || "No note");
-            const existingTooltip =
-              bootstrap.Tooltip.getInstance(tooltipWrapper);
+            const existingTooltip = Tooltip.getInstance(tooltipWrapper);
             if (existingTooltip) existingTooltip.dispose();
-            new bootstrap.Tooltip(tooltipWrapper);
+            new Tooltip(tooltipWrapper);
           }
 
           setTimeout(() => this.classList.remove("is-valid"), 1500);

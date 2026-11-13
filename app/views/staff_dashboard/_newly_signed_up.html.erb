@@ -8,14 +8,15 @@
                 <%= user.email %>
             </td>
             <td class="action-cell" >
-                <% if user.lab_sessions.last %>
-                    <% if user.lab_sessions.sort_by(&:sign_out_time).last.sign_out_time > Time.zone.now && user.lab_sessions.sort_by(&:sign_out_time).last.space_id == @space.id %>
-                        <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username] }, method: :put, class: 'btn btn-default x-button' %>
+                <% newest_ending = user.lab_sessions.max_by(&:sign_out_time) %>
+                <% if newest_ending %>
+                    <% if newest_ending.sign_out_time > Time.zone.now && newest_ending.space_id == @space.id %>
+                        <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username] }, method: :put, class: 'btn btn-default x-button', aria: { label: t('common.sign_out') } %>
                     <% else %>
-                        <%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username] }, method: :put, class: 'btn btn-default check-button' %>
+                        <%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username] }, method: :put, class: 'btn btn-default check-button', aria: { label: t('common.sign_in') } %>
                     <% end %>
                  <% else %>
-                    <%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username] }, method: :put, class: 'btn btn-default check-button' %>
+                    <%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username] }, method: :put, class: 'btn btn-default check-button', aria: { label: t('common.sign_in') } %>
                 <% end %>
             </td>
         </tr>

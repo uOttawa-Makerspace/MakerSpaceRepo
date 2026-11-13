@@ -23,7 +23,7 @@ RUN addgroup -g 1000 -S rails && \
 ENV RAILS_ENV="staging" \
     BUNDLE_DEPLOYMENT="1" \
     BUNDLE_PATH="/usr/local/bundle" \
-    BUNDLE_WITHOUT="development:test:deploy" \
+    BUNDLE_WITHOUT="development:test" \
     LD_PRELOAD="/usr/lib/libjemalloc.so.2" \
     RUBYOPT="--yjit" \
     HUSKY="0" \

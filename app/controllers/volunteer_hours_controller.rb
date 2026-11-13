@@ -9,26 +9,25 @@ class VolunteerHoursController < VolunteersController
 
   def index
     @user = current_user
-    scope = VolunteerHour.where(user_id: @user.id).order(created_at: :desc)
+    scope = VolunteerHour.where(user_id: @user.id).includes(:volunteer_task).order(created_at: :desc)
     @pagy, @user_volunteer_hours = pagy(scope, limit: 50)
     @total_hours =
       calculate_hours(@user_volunteer_hours.approved.pluck(:total_time))
+    load_new_hour_form
+  end
 
-    @new_volunteer_hour = VolunteerHour.new
-    @volunteer_tasks =
-      VolunteerTask
-        .joins(:volunteer_task_joins)
-        .where("volunteer_task_joins.user_id = ?", current_user.id)
-        .order(created_at: :desc)
-        .pluck(:title, :id)
+  def new
+    load_new_hour_form
   end
 
   def create
-    @volunteer_hour = VolunteerHour.new(volunteer_hour_params)
-    @volunteer_hour.user_id = @user.try(:id)
-    if @volunteer_hour.save!
+    @volunteer_hour = VolunteerHour.new(user_id: @user.try(:id))
+    if @volunteer_hour.save_hand_logged(volunteer_hour_params)
       redirect_to volunteer_hours_path
       flash[:notice] = "You've successfully sent your volunteer working hours"
+    else
+      redirect_to volunteer_hours_path,
+                  alert: @volunteer_hour.errors.full_messages.to_sentence
     end
   end
 
@@ -55,10 +54,10 @@ class VolunteerHoursController < VolunteersController
 
   def update
     volunteer_hour = VolunteerHour.find(params[:id])
-    if volunteer_hour.update(volunteer_hour_params)
+    if volunteer_hour.save_hand_logged(volunteer_hour_params)
       flash[:notice] = "Volunteer hour updated"
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = volunteer_hour.errors.full_messages.to_sentence
     end
     define_redirect(current_user.role)
   end
@@ -93,6 +92,17 @@ class VolunteerHoursController < VolunteersController
   end
 
   private
+
+  def load_new_hour_form
+    @new_volunteer_hour = VolunteerHour.new
+    @volunteer_tasks =
+      VolunteerTask
+        .joins(:volunteer_task_joins)
+        .merge(VolunteerTaskJoin.active)
+        .where("volunteer_task_joins.user_id = ?", current_user.id)
+        .order(created_at: :desc)
+        .pluck(:title, :id)
+  end
 
   def volunteer_hour_params
     permitted = %i[volunteer_task_id date_of_task total_time]

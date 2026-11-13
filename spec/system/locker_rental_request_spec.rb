@@ -49,8 +49,7 @@ RSpec.describe "Locker rental request", type: :system do
 
   it "shows the closed notice instead of a form when lockers are disabled" do
     LockerOption.lockers_enabled = false
-    log_in_as(user)
-    visit new_locker_rental_path
+    log_in_as(user, to: new_locker_rental_path)
     expect(page).to have_text("Locker requests are not currently accepted.")
     expect(page).not_to have_button("Submit request")
   end

@@ -1,7 +1,9 @@
 class JobOrderStatus < ApplicationRecord
+  include DisplayUser
   belongs_to :job_order, optional: true
   belongs_to :job_status, optional: true
   belongs_to :user, optional: true
+  display_user_for :user
 
   validates :job_status_id, presence: true
   validates :user_id, presence: true

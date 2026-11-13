@@ -26,25 +26,33 @@ RSpec.describe VolunteerHoursController, type: :controller do
 
   describe "#create" do
     context "create" do
-      it "should create the hours" do
-        user = create(:user, :volunteer_with_volunteer_program)
-        session[:user_id] = user.id
-        session[:expires_at] = Time.zone.now + 10_000
-        create(:volunteer_task)
-        hours_params =
-          FactoryBot.attributes_for(
-            :volunteer_hour,
-            :not_processed,
-            user_id: user.id,
-            volunteer_task_id: VolunteerTask.last.id
+      shared_examples "creating the hours" do
+        it "should create the hours" do
+          user = create(:user, :volunteer_with_volunteer_program)
+          session[:user_id] = user.id
+          session[:expires_at] = Time.zone.now + 10_000
+          create(:volunteer_task)
+          hours_params =
+            FactoryBot.attributes_for(
+              :volunteer_hour,
+              :not_processed,
+              user_id: user.id,
+              volunteer_task_id: VolunteerTask.last.id
+            )
+          expect {
+            post :create, params: { volunteer_hour: hours_params }
+          }.to change(VolunteerHour, :count).by(1)
+          expect(response).to redirect_to volunteer_hours_path
+          expect(flash[:notice]).to eq(
+            "You've successfully sent your volunteer working hours"
           )
-        expect {
-          post :create, params: { volunteer_hour: hours_params }
-        }.to change(VolunteerHour, :count).by(1)
-        expect(response).to redirect_to volunteer_hours_path
-        expect(flash[:notice]).to eq(
-          "You've successfully sent your volunteer working hours"
-        )
+        end
+      end
+
+      it_behaves_like "creating the hours"
+
+      context "in the Eastern evening", :eastern_evening do
+        it_behaves_like "creating the hours"
       end
     end
   end

@@ -16,10 +16,10 @@
     <tbody>
       <% key_requests.each do |key_request| %>
         <tr>
-          <td><%= link_to key_request.user.name, user_path(key_request.user.username), target: '_blank', rel: 'noopener' %></td>
+          <td><%= staff_user_link(key_request.display_user, target: '_blank', rel: 'noopener') %></td>
           <td><%= key_request.space.name %></td>
-          <td><%= link_to key_request.supervisor.name, user_path(key_request.supervisor.username), target: '_blank', rel: 'noopener' %></td>
-          <td><%= key_request.user&.email %></td>
+          <td><%= staff_user_link(key_request.display_supervisor, target: '_blank', rel: 'noopener') %></td>
+          <td><%= key_request.display_user&.email %></td>
           <td><%= key_request.student_number %></td>
           <td><%= key_request.phone_number %></td>
           <td>
@@ -28,9 +28,10 @@
             <%= key_request.emergency_contact_phone_number %>
           </td>
           <td>
-            <% if !key_request.user.key_certification.nil? %>
-              <%= key_request.user.key_certification.get_key_certs_attached %>/<%= KeyCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
-              <%= key_request.user.key_certification.get_supervisor_certs_attached %>/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
+            <% certification = key_request.display_user&.key_certification %>
+            <% if certification %>
+              <%= certification.get_key_certs_attached %>/<%= KeyCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
+              <%= certification.get_supervisor_certs_attached %>/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
             <% else %>
               0/<%= KeyCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
               0/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)

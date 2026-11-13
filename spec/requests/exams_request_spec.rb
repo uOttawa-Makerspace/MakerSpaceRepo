@@ -32,6 +32,19 @@ RSpec.describe "Exams", type: :request do
     end
   end
 
+  def attach_image(question)
+    question.images.attach(io: File.open(Rails.root.join("spec/support/assets/test.png")), filename: "test.png", content_type: "image/png")
+  end
+
+  def add_question_with_image
+    question = create(:question, level: "Beginner")
+    fixture[:training].questions << question
+    Answer.create!(question: question, correct: true, description: "right #{question.id}")
+    3.times { |i| Answer.create!(question: question, correct: false, description: "wrong #{i}") }
+    attach_image(question)
+    { question: question }
+  end
+
   def answer!(exam, entry, correct: true)
     answer = correct ? entry[:correct] : entry[:wrongs].first
     post exam_responses_path(format: :js), params: { exam_id: exam.id, answer_id: answer.id }
@@ -52,8 +65,7 @@ RSpec.describe "Exams", type: :request do
       expect(response.body).not_to include("Start Exam")
     end
 
-    # N+1 pinned
-    it "lists only the signed-in user's own exams with Start/Resume links", skip_bullet: true do
+    it "lists only the signed-in user's own exams with Start/Resume links" do
       mine = new_exam
       resumed = new_exam(status: Exam::STATUS[:incomplete])
       new_exam(user: create(:user, :regular_user))
@@ -66,8 +78,20 @@ RSpec.describe "Exams", type: :request do
     end
 
     # an expired exam cannot be started or resumed, so it says Expired
-    # N+1 pinned
-    it "shows Expired instead of Start/Resume for expired ungraded exams, and keeps graded ones as they are", skip_bullet: true do
+    it "reads each exam's training in a constant number of queries" do
+      2.times { new_exam }
+      log_in!(student)
+      get exams_path # warm up
+      tables = %w[trainings training_sessions]
+      few = selects_on(*tables) { get exams_path }
+      3.times { new_exam }
+      many = selects_on(*tables) { get exams_path }
+
+      expect(response.body.scan("Start Exam").size).to eq(5)
+      expect(many.size).to eq(few.size)
+    end
+
+    it "shows Expired instead of Start/Resume for expired ungraded exams, and keeps graded ones as they are" do
       new_exam.update!(expired_at: 1.hour.ago)
       new_exam(status: Exam::STATUS[:incomplete]).update!(expired_at: 1.hour.ago)
       create(:exam, user: student, training_session: session_record, status: Exam::STATUS[:failed],
@@ -119,8 +143,7 @@ RSpec.describe "Exams", type: :request do
       expect(flash[:alert]).to eq("You cannot access this area.")
     end
 
-    # N+1 pinned
-    it "renders the questions to the owner and flips the status to incomplete", skip_bullet: true do
+    it "renders the questions to the owner and flips the status to incomplete" do
       log_in!(student)
       get exam_path(exam)
       expect(response).to have_http_status(:ok)
@@ -132,8 +155,41 @@ RSpec.describe "Exams", type: :request do
       expect(response.body).to match(/<form[^>]*method="post"[^>]*action="#{Regexp.escape(finish_exam_exams_path(exam_id: exam.id))}"/)
     end
 
-    # N+1 pinned
-    it "never marks which answer is correct in the page (no answer leakage)", skip_bullet: true do
+    it "reads the answers, their text and the images of the questions in a constant number of queries" do
+      log_in!(student)
+      tables = %w[answers action_text_rich_texts active_storage_attachments active_storage_blobs]
+      fixture[:questions].each { |entry| attach_image(entry[:question]) }
+      get exam_path(exam) # warm up
+      few = selects_on(*tables) { get exam_path(exam) }
+      more = Array.new(3) { add_question_with_image }
+      bigger = new_exam(questions: fixture[:questions] + more)
+      many = selects_on(*tables) { get exam_path(bigger) }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body.scan("examResponse(").size).to eq(6 * 4)
+      expect(many.size).to eq(few.size)
+    end
+
+    it "reads the owner's recorded answers in a constant number of queries" do
+      log_in!(student)
+      record_answers = lambda do |taken|
+        taken.exam_questions.includes(question: :answers).each do |eq|
+          ExamResponse.create!(exam_question: eq, answer: eq.question.answers.first)
+        end
+      end
+      record_answers.call(exam)
+      get exam_path(exam) # warm up
+      few = selects_on("exam_responses") { get exam_path(exam) }
+      bigger = new_exam(questions: fixture[:questions] + Array.new(3) { add_question_with_image })
+      record_answers.call(bigger)
+      many = selects_on("exam_responses") { get exam_path(bigger) }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body.scan("checked=true").size).to eq(6)
+      expect(many.size).to eq(few.size)
+    end
+
+    it "never marks which answer is correct in the page (no answer leakage)" do
       log_in!(student)
       get exam_path(exam)
       main = response.body[/<section class="container">.*<\/section>/m]
@@ -141,8 +197,7 @@ RSpec.describe "Exams", type: :request do
       expect(main).to include("Question 1").and include("Question 3")
     end
 
-    # N+1 pinned
-    it "shows the owner's earlier answer as checked", skip_bullet: true do
+    it "shows the owner's earlier answer as checked" do
       log_in!(student)
       chosen = answer!(exam, fixture[:questions].first, correct: false)
       get exam_path(exam)
@@ -151,8 +206,7 @@ RSpec.describe "Exams", type: :request do
 
     %i[staff admin].each do |role|
       # only the owner's first visit starts the exam; staff/admin just look at it
-      # N+1 pinned
-      it "lets #{role} open the student's exam without starting it", skip_bullet: true do
+      it "lets #{role} open the student's exam without starting it" do
         sign_in_as(role)
         get exam_path(exam)
         expect(response).to have_http_status(:ok)
@@ -162,15 +216,13 @@ RSpec.describe "Exams", type: :request do
 
     # the Finish button is for the owner only; staff reviewers can still
     # look at an exam that expired, read-only
-    # N+1 pinned
-    it "shows the Finish button to the owner only", skip_bullet: true do
+    it "shows the Finish button to the owner only" do
       log_in!(student)
       get exam_path(exam)
       expect(response.body).to include("Finish Exam")
     end
 
-    # N+1 pinned
-    it "leaves the owner's answer radios enabled", skip_bullet: true do
+    it "leaves the owner's answer radios enabled" do
       log_in!(student)
       get exam_path(exam)
       inputs = response.body.scan(/<input [^>]*type="radio"[^>]*>/)
@@ -179,16 +231,14 @@ RSpec.describe "Exams", type: :request do
     end
 
     %i[staff admin].each do |role|
-      # N+1 pinned
-      it "shows #{role} the student's exam without a Finish button", skip_bullet: true do
+      it "shows #{role} the student's exam without a Finish button" do
         sign_in_as(role)
         get exam_path(exam)
         expect(response).to have_http_status(:ok)
         expect(response.body).not_to include("Finish Exam")
       end
 
-      # N+1 pinned
-      it "lets #{role} read an expired ungraded exam without changing it", skip_bullet: true do
+      it "lets #{role} read an expired ungraded exam without changing it" do
         exam.update!(expired_at: 1.minute.ago)
         sign_in_as(role)
         get exam_path(exam)
@@ -198,8 +248,7 @@ RSpec.describe "Exams", type: :request do
       end
 
       # the answer inputs are read-only for a reviewer
-      # N+1 pinned
-      it "renders the answer radios disabled for #{role}, with and without a saved answer", skip_bullet: true do
+      it "renders the answer radios disabled for #{role}, with and without a saved answer" do
         ExamResponse.create!(exam_question: exam.exam_questions.first,
                              answer: fixture[:questions].first[:correct], correct: true)
         sign_in_as(role)
@@ -238,8 +287,7 @@ RSpec.describe "Exams", type: :request do
       end
     end
 
-    # N+1 pinned
-    it "lets the owner resume an incomplete exam", skip_bullet: true do
+    it "lets the owner resume an incomplete exam" do
       exam.update!(status: Exam::STATUS[:incomplete])
       log_in!(student)
       get exam_path(exam)
@@ -322,12 +370,10 @@ RSpec.describe "Exams", type: :request do
       expect(response).to have_http_status(:internal_server_error)
     end
 
-    # the response is saved BEFORE the format check, so an HTML post stores the answer and then 500s (UnknownFormat)
-    it "stores the answer and then fails with UnknownFormat for a non-JS request" do
+    it "stores the answer and answers 204 whatever the request format" do
       log_in!(student)
       expect { post_answer(entry[:correct], format: :html) }.to change(ExamResponse, :count).by(1)
-      expect(response).to have_http_status(:not_acceptable).or have_http_status(:internal_server_error)
-      expect(error_text).to include("ActionController::UnknownFormat")
+      expect(response).to have_http_status(:no_content)
     end
 
     # answers are rejected (403) once the exam is graded
@@ -393,7 +439,7 @@ RSpec.describe "Exams", type: :request do
         get user_path(student.username)
         expect(response).to have_http_status(:ok)
         expect(response.body).to include(fixture[:training].localized_name)
-        expect(response.body).to include("/badges/#{cert.id}")
+        expect(response.body).to include("/badges/#{cert.share_token}")
       end
     end
 
@@ -660,21 +706,20 @@ RSpec.describe "Exams", type: :request do
       expect(Exam.find_by!(user: student).questions).not_to include(other_level)
     end
 
-    # a session whose training has no questions at its level crashes (RangeError in random_records)
-    # AFTER the first user's exam row was saved: an empty exam is left behind, nobody is emailed, later users are skipped
-    it "answers 500 (RangeError) when the training has no questions at that level, leaving an empty exam behind" do
+    # a session whose training has no questions at its level is refused before any exam is saved
+    it "refuses with a message and saves nothing when the training has no questions at that level" do
       empty = build_exam_fixture(question_count: 0)
       empty[:session].users << create(:user, :regular_user)
       sign_in_as(:admin)
-      expect { perform_enqueued_jobs { create_from_training(empty[:session]) } }.to change(Exam, :count).by(1)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("RangeError")
-      expect(Exam.last.exam_questions.count).to eq(0)
+      expect { perform_enqueued_jobs { create_from_training(empty[:session]) } }.not_to change(Exam, :count)
+      expect(response).to redirect_to(staff_training_session_path(empty[:session].id))
+      expect(flash[:alert]).to eq("This training has no questions at this level, so no exams were created.")
       expect(deliveries).to be_empty
     end
 
     it "does nothing for a session without users but still redirects" do
       empty = create(:training_session, user: session_record.user)
+      empty.training.questions << create(:question, level: empty.level)
       expect { create_from_training(empty) }.not_to change(Exam, :count)
       expect(response).to redirect_to(staff_dashboard_index_path(space_id: empty.space.id))
     end
@@ -738,6 +783,14 @@ RSpec.describe "Exams", type: :request do
     it "does not require the user to be enrolled in the session" do
       stranger = create(:user, :regular_user)
       expect { create_for_single_user(stranger) }.to change { Exam.where(user: stranger).count }.by(1)
+    end
+
+    it "refuses with a message and saves nothing when the training has no questions at that level" do
+      empty = build_exam_fixture(question_count: 0)
+      sign_in_as(:admin)
+      expect { create_for_single_user(empty[:user], empty[:session]) }.not_to change(Exam, :count)
+      expect(response).to redirect_to(staff_training_session_path(empty[:session].id))
+      expect(flash[:alert]).to eq("This training has no questions at this level, so no exams were created.")
     end
 
     it "makes a guest sign in and issues nothing" do
@@ -815,11 +868,11 @@ RSpec.describe "Exams", type: :request do
     end
   end
 
-  describe "POST /exams (no create action)" do
-    it "answers 404 (ActionNotFound) because the route has no action" do
-      post exams_path
-      expect(response).to have_http_status(:not_found)
-      expect(error_text).to include("AbstractController::ActionNotFound")
+  describe "POST /exams (no exams route)" do
+    it "is not routed to the exams controller and creates no exam" do
+      sign_in_as(:admin)
+      expect(Rails.application.routes.recognize_path("/exams", method: :post)[:controller]).not_to eq("exams")
+      expect { post "/exams" }.not_to change(Exam, :count)
     end
   end
 end

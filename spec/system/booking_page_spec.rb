@@ -12,9 +12,6 @@ RSpec.describe "Booking page look-and-feel", type: :system do
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)
     @declined_status = create(:booking_status, :rejected)
-    stub_const("BookingStatus::PENDING", @pending_status)
-    stub_const("BookingStatus::APPROVED", @approved_status)
-    stub_const("BookingStatus::DECLINED", @declined_status)
   end
 
   let(:space) { create(:space) }
@@ -60,8 +57,7 @@ RSpec.describe "Booking page look-and-feel", type: :system do
 
   it "admins additionally get the Admin Panel tab" do
     admin = create(:user, :admin, booking_approval: true)
-    log_in_as(admin)
-    visit sub_space_booking_index_path(room: subspace.id)
+    log_in_as(admin, to: sub_space_booking_index_path(room: subspace.id))
 
     expect(page).to have_css("#booking-admin-tab-btn", text: "ADMIN PANEL")
     expect(page).to have_css("#pending-accordion", visible: :all)
@@ -71,8 +67,7 @@ RSpec.describe "Booking page look-and-feel", type: :system do
 
   it "unapproved visitors get the access-request panel instead of tabs" do
     unapproved = create(:user, :regular_user, booking_approval: false)
-    log_in_as(unapproved)
-    visit sub_space_booking_index_path(room: subspace.id)
+    log_in_as(unapproved, to: sub_space_booking_index_path(room: subspace.id))
 
     expect(page).not_to have_css("#booking-tab-list")
     expect(page).to have_text("Request Booking Access")
@@ -87,8 +82,7 @@ RSpec.describe "Booking page look-and-feel", type: :system do
     UserBookingApproval.create!(user: unapproved, identity: "Other",
                                 approved: false, comments: "please",
                                 date: Date.today)
-    log_in_as(unapproved)
-    visit sub_space_booking_index_path(room: subspace.id)
+    log_in_as(unapproved, to: sub_space_booking_index_path(room: subspace.id))
 
     expect(page).to have_text("Access Pending")
     expect(page).to have_text(

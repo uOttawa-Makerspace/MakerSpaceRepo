@@ -11,9 +11,6 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)
     @declined_status = create(:booking_status, :rejected)
-    stub_const("BookingStatus::PENDING", @pending_status)
-    stub_const("BookingStatus::APPROVED", @approved_status)
-    stub_const("BookingStatus::DECLINED", @declined_status)
     ActionMailer::Base.deliveries.clear
   end
 
@@ -68,15 +65,15 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     expect(booking.user).to eq(user)
     expect(booking.name).to eq("Robot team")
     expect(booking.sub_space).to eq(subspace)
-    expect(booking.sub_space_booking_status.booking_status).to eq(@pending_status)
+    expect(booking.booking_status).to eq(@pending_status)
     needs = deliver_mail.select { |m| m.subject == "Booking needs approval" }
     expect(needs.map(&:to)).to eq([[manager.email]])
 
     as_actor(:admin) do
-      log_in_as(admin)
-      visit sub_space_booking_index_path(room: subspace.id)
+      log_in_as(admin, to: sub_space_booking_index_path(room: subspace.id))
       find("#booking-admin-tab-btn").click
       expect(page).to have_css("#pendingBody", text: "Robot team")
+      audit_accessibility("booking admin panel")
       within(:xpath, "//tr[.//strong[contains(.,'Robot team')] or contains(.,'Robot team')][.//button[contains(.,'Approve')]]") do
         click_button "Approve"
       end
@@ -84,7 +81,7 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     end
 
     booking.reload
-    expect(booking.sub_space_booking_status.booking_status).to eq(@approved_status)
+    expect(booking.booking_status).to eq(@approved_status)
     expect(booking.approved_by).to eq(admin)
     approved = deliver_mail.select { |m| m.subject == "Booking approved" }
     expect(approved.map(&:to)).to eq([[user.email]])
@@ -112,49 +109,46 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     end
 
     bookings = SubSpaceBooking.where(name: "Club night").order(:start_time)
-    # the series loop books one occurrence AFTER the chosen
-    # recurring end date (day+21 for an end of day+15).
-    expect(bookings.count).to eq(4)
+    # recurring_end is inclusive: the last occurrence is the latest one on or
+    # before it (day+14 for an end of day+15).
+    expect(bookings.count).to eq(3)
     expect(bookings.map(&:recurring_booking_id).uniq.size).to eq(1)
-    expect(bookings.map { |b| b.start_time.to_date }).to eq([day, day + 7, day + 14, day + 21])
+    expect(bookings.map { |b| b.start_time.to_date }).to eq([day, day + 7, day + 14])
 
     as_actor(:admin) do
-      log_in_as(admin)
-      visit sub_space_booking_index_path(room: subspace.id)
+      log_in_as(admin, to: sub_space_booking_index_path(room: subspace.id))
       find("#booking-admin-tab-btn").click
       expect(page).to have_css("#pendingBody", text: "Club night")
       click_button title: "Approve All"
       expect(page).to have_text("Bookings approved successfully.")
     end
     bookings.each do |b|
-      expect(b.reload.sub_space_booking_status.booking_status).to eq(@approved_status)
+      expect(b.reload.booking_status).to eq(@approved_status)
     end
     approved = deliver_mail.select { |m| m.subject == "Booking approved" }
-    expect(approved.map(&:to)).to eq([[user.email]] * 4)
+    expect(approved.map(&:to)).to eq([[user.email]] * 3)
   end
 
-  it "rejects a booking that overlaps a blocking booking (server 422; the UI shows no toast)" do
+  it "rejects a booking that overlaps a blocking booking (server 422; the UI toasts the reason)" do
     # The overlap check compares the zoned instants the model stores,
     # so a block stored at 09:00-12:00 Toronto catches the 10:00 UI booking.
     blocker = create(:sub_space_booking, sub_space: subspace, user: admin, name: "Maintenance",
                                          description: "closed", blocking: true,
                                          start_time: Time.zone.parse(stamp(day, 9)),
                                          end_time: Time.zone.parse(stamp(day, 12)))
-    blocker.sub_space_booking_status.update!(booking_status: @approved_status)
+    blocker.change_status!(@approved_status)
 
     as_actor(:user, allow_console: [%r{/sub_space_booking - Failed to load resource: .* 422}]) do
       log_in_as(user)
       open_booking_modal(day)
       fill_booking_modal(name: "Sneaky", description: "overlap")
       click_button "bookSave"
-      # The server answers 422 "TimeSlot This time slot is already booked." but
-      # the page JS calls the global `bootstrap.Toast`, which is
-      # not defined, inside a promise whose .catch swallows the error:
-      # no toast, and the modal stays open with the Book button re-enabled.
-      expect(page).to have_css("#bookSave:not([disabled])")
-      expect(page).to have_css("#bookModal.show", visible: :all)
-      expect(page).to have_no_css("#booking_toast.show")
-      expect(page.evaluate_script("typeof bootstrap")).to eq("undefined")
+      # The server answers 422 "TimeSlot This time slot is already booked."; the
+      # page closes the modal and shows it in the toast.
+      expect(page).to have_no_css("#bookModal.show", visible: :all)
+      expect(page).to have_css("#booking_toast.show")
+      expect(page).to have_css("#toast_title", text: "Booking failed")
+      expect(page).to have_css("#toast_text", text: "This time slot is already booked.")
     end
     expect(SubSpaceBooking.where(name: "Sneaky")).to be_empty
     expect(SubSpaceBooking.where(sub_space: subspace)).to contain_exactly(blocker)
@@ -174,16 +168,17 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     end
     blocker = SubSpaceBooking.find_by!(name: "Maintenance")
     expect(blocker.blocking).to be(true)
-    expect(blocker.sub_space_booking_status.booking_status).to eq(@approved_status)
+    expect(blocker.booking_status).to eq(@approved_status)
 
     as_actor(:user, allow_console: [%r{/sub_space_booking - Failed to load resource: .* 422}]) do
       log_in_as(user)
       open_booking_modal(day)
       fill_booking_modal(name: "Sneaky", description: "overlap")
       click_button "bookSave"
-      # 422 TimeSlot; the modal stays open (no toast).
-      expect(page).to have_css("#bookSave:not([disabled])")
-      expect(page).to have_css("#bookModal.show", visible: :all)
+      # 422 TimeSlot: the modal closes and the toast gives the reason.
+      expect(page).to have_no_css("#bookModal.show", visible: :all)
+      expect(page).to have_css("#booking_toast.show")
+      expect(page).to have_css("#toast_text", text: "This time slot is already booked.")
     end
     expect(SubSpaceBooking.where(name: "Sneaky")).to be_empty
   end
@@ -197,7 +192,7 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
                                          description: "closed", blocking: true,
                                          start_time: Time.zone.parse(stamp(second, 10)) + 30.minutes,
                                          end_time: Time.zone.parse(stamp(second, 11)) + 30.minutes)
-    blocker.sub_space_booking_status.update!(booking_status: @approved_status)
+    blocker.change_status!(@approved_status)
 
     as_actor(:user, allow_console: [%r{/sub_space_booking - Failed to load resource: .* 422}]) do
       log_in_as(user)

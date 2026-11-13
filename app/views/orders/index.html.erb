@@ -89,7 +89,7 @@
               <tbody>
               <% @all_orders.each do |order| %>
                 <tr>
-                  <td class="username"><p> <%= link_to order.user&.username, user_path(order.user&.username) if order.user&.username %></p></td>
+                  <td class="username"><p> <%= staff_user_link(order.display_user, attribute: :username) %></p></td>
                   <td>
                     <% order.order_items.each do |order_item| %>
                       <p><b><%= link_to order_item.proficient_project.title, proficient_project_path(order_item.proficient_project.id) %></b> / <%= order_item.quantity %></p>

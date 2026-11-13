@@ -98,7 +98,7 @@ RSpec.describe StaticPagesController, type: :controller do
       it "should send reset password email" do
         user = create(:user, :regular_user)
         old_pass = user.pword.to_s
-        patch :reset_password, params: { email: user.email }
+        perform_enqueued_jobs { patch :reset_password, params: { email: user.email } }
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(User.find(user.id).pword.to_s).to eq(old_pass)
         expect(flash[:notice]).to eq(

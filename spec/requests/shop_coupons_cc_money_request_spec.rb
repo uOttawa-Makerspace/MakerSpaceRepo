@@ -349,12 +349,18 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
           .to eq({ "code" => "ABC2", "cc_cost" => 60, "dollar_cost" => 6 })
       end
 
-      it "deletes a coupon, even one a user already paid for" do
-        claimed = create(:coupon_code, :claimed, user: other)
-        # deleting a claimed coupon silently destroys what the user spent cc on, with no refund
-        expect { delete coupon_code_path(claimed) }.to change(CouponCode, :count).by(-1)
+      it "deletes an unclaimed coupon" do
+        expect { delete coupon_code_path(coupon) }.to change(CouponCode, :count).by(-1)
         expect(response).to redirect_to(coupon_codes_path)
         expect(flash[:notice]).to eq("Coupon code was successfully deleted.")
+      end
+
+      it "refuses to delete a coupon a user already paid for, and says why" do
+        claimed = create(:coupon_code, :claimed, user: other)
+        expect { delete coupon_code_path(claimed) }.not_to change(CouponCode, :count)
+        expect(response).to redirect_to(coupon_codes_path)
+        expect(flash[:alert]).to eq("A user has already claimed this coupon with CC points, so it cannot be deleted")
+        expect(claimed.reload.user).to eq(other)
       end
 
       it "404s for an unknown id" do
@@ -372,13 +378,14 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
     let(:token) { verifier.generate(unlinked.id) }
 
     describe "GET /cc_moneys" do
-      it "is public: guests see the explainer plus a zero balance card" do
+      it "is public: guests see the explainer and a sign-in prompt, with no balance card" do
         get cc_moneys_path
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("What Are CC Points?")
-        # current_user is a blank User.new for guests, so the wallet card renders "0 CCs" and a Redeem button for visitors who are not signed in
-        expect(response.body).to include("Your CC Balance")
-        expect(response.body).to match(/0\s*<small/)
+        expect(response.body).not_to include("Your CC Balance")
+        expect(response.body).not_to include("Redeem Points")
+        expect(response.body).to include("Ready to Start Earning?")
+        expect(response.body).to include(%(href="#{login_path}"))
       end
 
       it "shows signed-in users their ledger balance (not the stale cache) and last 10 activities, without locking or writing" do

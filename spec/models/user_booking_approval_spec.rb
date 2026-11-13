@@ -5,12 +5,10 @@ require "rails_helper"
 # Characterization for UserBookingApproval - request-access records.
 # Identity vocabulary is closed: JMTS/Staff/GNG/Other (controller
 # grant_booking_access! rewrites any other value to "Other").
-# A: default_scope orders EVERY query by created_at DESC, including the
+# default_scope orders EVERY query by created_at DESC, including the
 # `where(user:...).first` duplicate-request lookup.
-# B: User#user_booking_approvals carries `inverse_of: :staff`, so the
-# association's foreign key resolves to staff_id — the OWNER's association
-# list is empty and the rows surface for the STAFF who processed them; the
-# owner's list is only reachable via UserBookingApproval.where(user_id:).
+# User#user_booking_approvals lists the requests a user made (user_id);
+# User#approved_booking_requests lists the ones a staff member approved (staff_id).
 
 RSpec.describe UserBookingApproval, type: :model do
   it "requires an identity from the closed VOCABULARY and a user" do
@@ -29,7 +27,7 @@ RSpec.describe UserBookingApproval, type: :model do
     expect(valid).to be_valid
   end
 
-  it "accepts each documented identity; owner's association misses them (staff_id FK)" do
+  it "accepts each documented identity; the owner lists them, the approving staff lists them separately" do
     user = create(:user, :regular_user)
     approver = create(:user, :staff)
     %w[JMTS Staff GNG Other].each do |ident|
@@ -38,15 +36,13 @@ RSpec.describe UserBookingApproval, type: :model do
                               date: Date.today)
     end
 
-    # the owner's rows are reachable only through the raw model query
-    expect(described_class.where(user_id: user.id).map(&:identity).sort)
-      .to eq(%w[GNG JMTS Other Staff])
-
-    # ...whereas the association (keyed on staff_id, see B above)
-    # returns nothing for the owner and everything for the acting staff
-    expect(user.user_booking_approvals).to be_empty
-    expect(approver.user_booking_approvals.map(&:identity))
+    expect(user.user_booking_approvals.map(&:identity))
       .to eq(%w[Other GNG Staff JMTS]) # default_scope: newest first
+    expect(user.approved_booking_requests).to be_empty
+
+    expect(approver.user_booking_approvals).to be_empty
+    expect(approver.approved_booking_requests.map(&:identity))
+      .to eq(%w[Other GNG Staff JMTS])
   end
 
   it "default_scope orders by created_at (NEWEST first) regardless of call" do

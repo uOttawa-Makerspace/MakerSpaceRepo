@@ -7,7 +7,6 @@ RSpec.describe ChatMessageMailer, type: :mailer do
     let(:job_order) { create(:job_order) }
     let(:sender) { create(:user) }
     let(:recipient1) { create(:user) }
-    let(:recipient2) { create(:user) }
 
     let(:chat_message) do
       ChatMessage.create!(
@@ -17,14 +16,21 @@ RSpec.describe ChatMessageMailer, type: :mailer do
       )
     end
 
-    let(:mail) { described_class.new_message(chat_message, [recipient1, recipient2]) }
+    let(:mail) { described_class.new_message(chat_message, recipient1.email) }
 
     it "renders the subject" do
       expect(mail.subject).to eq("MakerRepo - Nouveau message // New message")
     end
 
-    it "sends to the recipients' emails" do
-      expect(mail.to).to match_array([recipient1.email, recipient2.email])
+    it "sends to the one recipient only" do
+      expect(mail.to).to eq([recipient1.email])
+      expect(mail.header[:bcc]).to be_nil
+    end
+
+    it "puts the sender's email address in no header" do
+      expect(mail.header[:respond_to]).to be_nil
+      expect(mail.header[:reply_to]).to be_nil
+      expect(mail.header.fields.map { |f| f.value.to_s }.join("\n")).not_to include(sender.email)
     end
 
     it "assigns @chat_message in the mailer view" do
@@ -37,6 +43,38 @@ RSpec.describe ChatMessageMailer, type: :mailer do
 
     it "assigns @sender in the mailer view" do
       expect(mail.body.encoded).to include(sender.name) if sender.respond_to?(:name)
+    end
+
+    describe "when the sender's account was deleted before delivery" do
+      before do
+        chat_message
+        sender.soft_delete!
+      end
+
+      it "still delivers, naming the sender neutrally in both languages" do
+        body = described_class.new_message(chat_message.reload, recipient1.email).body.encoded
+        expect(body).to include("from Deleted user")
+        expect(body).to include("de la part de Utilisateur supprimé")
+        expect(body).not_to include(sender.name)
+      end
+    end
+
+    it "drops a queued notification whose message was deleted before the job ran" do
+      recipient = recipient1.email
+      message = chat_message
+      ChatMessageMailer.new_message(message, recipient).deliver_later
+      message.destroy!
+
+      expect do
+        expect { perform_enqueued_jobs }.not_to raise_error
+      end.not_to change { ActionMailer::Base.deliveries.size }
+    end
+
+    it "still fails the job for an error other than a missing record" do
+      ChatMessageMailer.new_message(chat_message, recipient1.email).deliver_later
+      allow_any_instance_of(ChatMessageMailer).to receive(:sender_name).and_raise(ArgumentError, "boom")
+
+      expect { perform_enqueued_jobs }.to raise_error(ArgumentError, "boom")
     end
   end
 end

@@ -30,11 +30,6 @@ class MsrMailer < ApplicationMailer
     mail(to: @user.email, subject: "Welcome to MakerRepo")
   end
 
-  # def send_survey
-  #   all_users = User.active.pluck(:email)
-  #   mail(to: 'bruno.mrlima@gmail.com', subject: 'Richard L\'Abbé Makerspace Survey 2019', bcc: all_users)
-  # end
-
   def send_profile_update(bcc_emails)
     mail(
       to: "uottawa.makerepo@gmail.com",
@@ -42,10 +37,6 @@ class MsrMailer < ApplicationMailer
       bcc: bcc_emails
     )
   end
-
-  # def send_survey_ceed(email)
-  #   mail(to: email, subject: 'Makerspace/Brunsfield Centre Survey - $25 Amazon gift card draw!')
-  # end
 
   def send_cc_money_email(email, cc, hash)
     @cc = cc
@@ -57,101 +48,6 @@ class MsrMailer < ApplicationMailer
     @user = user
     @pp = pp
     mail(to: @user.email, subject: "Your proficient project kit order")
-  end
-
-  def send_print_user_approval_to_makerspace(id)
-    @print_id = id
-    if PrintOrder.find(id).expedited?
-      mail(
-        to: "makerspace@uottawa.ca",
-        subject: "EXPEDITED: A user has approved a print order",
-        Importance: "high",
-        "X-Priority": "1"
-      )
-    else
-      mail(
-        to: "makerspace@uottawa.ca",
-        subject: "A user has approved a print order"
-      )
-    end
-  end
-
-  def send_print_to_makerspace(id)
-    @print_id = id
-    if PrintOrder.find(id).expedited?
-      mail(
-        to: "makerspace@uottawa.ca",
-        subject: "EXPEDITED: A new print order has been submitted",
-        Importance: "high",
-        "X-Priority": "1"
-      )
-    else
-      mail(
-        to: "makerspace@uottawa.ca",
-        subject: "A new print order has been submitted"
-      )
-    end
-  end
-
-  # TODO: Change design of this email
-  def send_print_quote(
-    expedited_price,
-    user,
-    print_order,
-    comments,
-    clean_part_price,
-    resend
-  )
-    @clean_part_price = clean_part_price
-    @expedited_price = expedited_price
-    @user = user
-    @print_order = print_order
-    @comments = comments
-    @resend = resend
-    mail(
-      to: @user.email,
-      reply_to: "makerspace@uottawa.ca",
-      bcc: "uottawa.makerepo@gmail.com",
-      subject: "Your print \"#{@print_order.file.filename}\" has been approved!"
-    )
-  end
-
-  def send_print_reminder(email, id)
-    mail(to: email, subject: "Reminder for your print order ##{id}")
-  end
-
-  def send_print_declined(user, comments, filename)
-    @user = user
-    @comments = comments
-    @filename = filename
-    mail(
-      to: @user.email,
-      reply_to: "makerspace@uottawa.ca",
-      bcc: "uottawa.makerepo@gmail.com",
-      subject: "Your print \"#{filename}\" has been denied"
-    )
-  end
-
-  def send_print_finished(user, pickup_id, quote, message)
-    @quote = quote
-    @user = user
-    @pickup_id = pickup_id
-    @message = sanitize(message)
-    mail(
-      to: @user.email,
-      reply_to: "makerspace@uottawa.ca",
-      bcc: "uottawa.makerepo@gmail.com",
-      subject: "Your print is available for pickup"
-    )
-  end
-
-  def send_invoice(name, print_order)
-    @name = name
-    @print_order = print_order
-    mail(
-      to: "uomakerspaceprintinvoices@gmail.com",
-      subject: "Invoice for Order #" + @print_order.id.to_s + " "
-    )
   end
 
   def send_admin_pp_evaluation(pp)
@@ -301,10 +197,11 @@ class MsrMailer < ApplicationMailer
   # 'someone' should have a script running that grabs this email
   # and passes the attachments to CDEL
   # Power Automate grabs and sends to a folder on the CEED sharepoint
-  def send_cdel_monthly_report(to)
-    # last month
-    start_date = 1.month.ago.beginning_of_month
-    end_date = 1.month.ago.end_of_month
+  #
+  # month: the first day of the month to report on; last month when omitted.
+  def send_cdel_monthly_report(to, month: nil)
+    start_date = month ? month.in_time_zone.beginning_of_month : 1.month.ago.beginning_of_month
+    end_date = start_date.end_of_month
 
     # List of {data: csv, filename: string}
     # Look into CdelReportGenerator for details
@@ -346,13 +243,14 @@ class MsrMailer < ApplicationMailer
   #   mail(to: email, subject: 'Checklist Reminder', bcc: master_email)
   # end
 
-  def waiver_reminder_email(email)
-    mail(to: email, subject: "Please Sign The Release Agreement!")
-  end
-
-  def issue_email(name, email, subject, comments, share_email, app_version = nil)
+  # contact_email: the address the reporter typed, shown to the team when they chose to share it
+  # (the mail itself always goes to +email+). account: the signed-in user, always shown to the
+  # team because the typed name and contact details are not verified.
+  def issue_email(name, email, subject, comments, share_email, app_version = nil, contact_email: nil, account: nil)
+    @account = account
     @name = name
     @email = email
+    @contact_email = contact_email.presence || email
     @subject = subject
     @comments = comments
     @share_email = share_email
@@ -367,9 +265,10 @@ class MsrMailer < ApplicationMailer
 
   # Anonymous /api/v1 support requests: goes to the team only. The reporter's (unverified)
   # address is in Reply-To and the body, never To/Cc/Bcc, so this cannot relay mail to third parties.
-  def issue_email_to_team(name, email, subject, comments, app_version = nil)
+  def issue_email_to_team(name, email, subject, comments, app_version = nil, via: 'the MakerRepo app')
     @name = name
     @email = email
+    @via = via
     @subject = subject
     @comments = comments
     @app_version = app_version

@@ -8,7 +8,7 @@
   <!-- Top Navigation & Header -->
   <div class="row align-items-center justify-content-between mb-4 g-3">
     <div class="col-12 col-md-auto">
-      <nav aria-label="breadcrumb" class="mb-1">
+      <nav aria-label="<%= t('common.names.breadcrumb') %>" class="mb-1">
         <ol class="breadcrumb mb-0 small">
           <li class="breadcrumb-item">
             <%= link_to volunteer_tasks_path, class: "text-decoration-none text-body-secondary" do %>
@@ -187,7 +187,7 @@
           <% @photos.each do |p| %>
             <div class="card border border-secondary-subtle overflow-hidden rounded-3 shadow-sm flex-shrink-0" style="width: 80px; height: 80px;">
               <%= image_tag p.image,
-                            alt: 'Volunteer Task Thumbnail',
+                            alt: t('common.names.task_thumbnail'),
                             class: 'w-100 h-100 object-fit-cover',
                             data: { width: p.width, height: p.height } %>
             </div>

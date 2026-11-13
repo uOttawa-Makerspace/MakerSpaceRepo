@@ -11,6 +11,7 @@ RSpec.describe ProjectJoin, type: :model do
   describe "Validations" do
     context "user_id" do
       it do
+        create(:project_join, user: create(:user), project_proposal: create(:project_proposal))
         should validate_uniqueness_of(:user_id).scoped_to(:project_proposal_id)
       end
     end

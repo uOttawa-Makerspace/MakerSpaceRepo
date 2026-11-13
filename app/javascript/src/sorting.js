@@ -1,5 +1,5 @@
 window.findSession = function (table_class, id = "query") {
-  var input, filter, table, tr, i;
+  var input, filter, table, tr, i, td, bingo, j, tdj;
   input = document.getElementById(id);
   filter = input.value.toUpperCase();
   table = document.getElementsByClassName(table_class)[0];

@@ -4,7 +4,7 @@
   <!-- Top Navigation & Header -->
   <div class="row align-items-center justify-content-between mb-4 g-3">
     <div class="col-12 col-md-auto">
-      <nav aria-label="breadcrumb" class="mb-1">
+      <nav aria-label="<%= t('common.names.breadcrumb') %>" class="mb-1">
         <ol class="breadcrumb mb-0 small">
           <li class="breadcrumb-item">
             <%= link_to volunteers_path, class: "text-decoration-none text-body-secondary" do %>
@@ -188,7 +188,7 @@
                       current_level    = badge&.level
                       raw_status       = training_status(training.id, user.id)
                       clean_status     = raw_status.to_s.gsub(/color:\s*black/i, 'color: currentColor')
-                      skills_list      = (training.list_of_skills || "").split(',').map(&:strip).reject(&:blank?)
+                      skills_list      = training.skill_list
 
                       # Next level calculation
                       next_level = case current_level
@@ -200,6 +200,9 @@
                                    end
 
                       # Next level requirements
+                      next_projects_total = next_projects_done = next_projects_pct = 0
+                      next_modules_total  = next_modules_done  = next_modules_pct  = 0
+                      next_target_hours   = nil
                       if next_level.present?
                         next_projects_total = training.proficient_projects.select { |p| p.level == next_level }.size
                         next_projects_done  = @proficient_projects_awarded.call(training).where(level: next_level).size

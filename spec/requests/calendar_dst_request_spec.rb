@@ -27,7 +27,7 @@ RSpec.describe "Calendar JSON across DST changes", type: :request do
   # travel before login: the session expiry is relative to the clock at login.
   def at(now, role = :staff)
     travel_to(now)
-    sign_in_as(role)
+    sign_in_as(role).tap { |user| create(:staff_space, user: user, space: space) unless role == :admin }
   end
 
   after { travel_back }

@@ -4,7 +4,7 @@ require "rails_helper"
 
 # Chunk 16: ProjectKitsController (a DevelopmentProgramsController subclass,
 # so `grant_access` = signed_in applies first, then `staff_admin_access` for
-# new/create/destroy/mark_delivered). index and populate_kit_users are open to
+# new/create/destroy/mark_delivered/populate_kit_users). index is open to
 # any signed-in user. (The older controller spec covers the happy paths.)
 RSpec.describe "Project kits (HTTP contract)", type: :request do
   include ContentSpecHelpers
@@ -132,18 +132,32 @@ RSpec.describe "Project kits (HTTP contract)", type: :request do
   end
 
   describe "GET populate_kit_users" do
-    it "lists the matching users, with their email, for any signed-in user" do
+    it "lists the matching users to staff, with id, name and username only" do
       target = create(:user, :regular_user, name: "Kitty Searchable")
-      content_sign_in_as(:regular)
+      content_sign_in_as(:staff)
       get populate_kit_users_project_kits_path, params: { search: "kitty search" }
       expect(response).to have_http_status(:ok)
       users = response.parsed_body["users"]
-      expect(users.map { |u| u["id"] }).to eq([target.id])
-      # User#serializable_hash excludes password/access_token.
-      # The matching users are listed with their email.
-      expect(users.first).not_to have_key("password")
-      expect(users.first).not_to have_key("access_token")
-      expect(users.first["email"]).to eq(target.email)
+      expect(users).to eq([{ "id" => target.id, "name" => "Kitty Searchable", "username" => target.username }])
+    end
+
+    it "returns nothing for a too-short or wildcard search, and caps the results" do
+      create_list(:user, 35, :regular_user, name: "Capped Person")
+      content_sign_in_as(:staff)
+      ["", "ca", "%%", "%%%"].each do |term|
+        get populate_kit_users_project_kits_path, params: { search: term }
+        expect(response.parsed_body["users"]).to eq([]), term.inspect
+      end
+      get populate_kit_users_project_kits_path, params: { search: "capped" }
+      expect(response.parsed_body["users"].size).to eq(30)
+    end
+
+    it "sends a non-staff user away without a listing" do
+      create(:user, :regular_user, name: "Kitty Searchable")
+      content_sign_in_as(:regular)
+      get populate_kit_users_project_kits_path, params: { search: "kitty search" }
+      expect(response).to redirect_to(project_kits_path)
+      expect(flash[:alert]).to eq("You cannot access this area.")
     end
 
     it "bounces a guest to login" do

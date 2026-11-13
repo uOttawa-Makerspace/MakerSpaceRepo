@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# Admin::DropOffLocationsController. Non-admins bounce to "/".
+# Admin::DropOffLocationsController. Guests go to the login page, other non-admins to "/".
 
 RSpec.describe "Admin drop-off locations", type: :request do
   include SpacesSpecHelpers

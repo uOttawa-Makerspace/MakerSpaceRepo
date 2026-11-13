@@ -13,8 +13,8 @@ require "rails_helper"
 #   - the :in_time_zone("America/Toronto") round-trip of the UTC variant maps
 #     back to the values they were written with (creation is UTC-normalized,
 #     readback is evaluated as UTC then re-zoned)
-#   - update_color only flashes (no render/redirect) → the response collapses
-#     to 204 No Content even when data changed
+#   - update_color answers JSON: 200 {"status":"ok"} when the colour is saved,
+#     422 with an error message when it is not
 #   - ics_to_json route was removed → 404
 
 RSpec.describe "Admin calendar contract", type: :request do
@@ -22,9 +22,6 @@ RSpec.describe "Admin calendar contract", type: :request do
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)
     @declined_status = create(:booking_status, :rejected)
-    stub_const("BookingStatus::PENDING", @pending_status)
-    stub_const("BookingStatus::APPROVED", @approved_status)
-    stub_const("BookingStatus::DECLINED", @declined_status)
   end
 
   let(:space) { create(:space) }
@@ -55,12 +52,12 @@ RSpec.describe "Admin calendar contract", type: :request do
     expect(flash[:alert]).to eq("You are not assigned to any spaces.")
   end
 
-  # index falls back with `@user.space_id || Space.first.id` — if
-  # the DB contains NO spaces at all, Space.first is nil and `.id` raises — 500.
-  it "index 500s when no spaces exist at all" do
+  # with no spaces at all the page still renders, with the "not assigned" notice
+  it "index renders when no spaces exist at all" do
     log_in!(admin) # nothing else creates a space in this example
     get admin_calendar_index_path
-    expect(response.status).to eq(500) # NoMethodError on Space.first.id
+    expect(response.status).to eq(200)
+    expect(flash[:alert]).to eq("You are not assigned to any spaces.")
   end
 
   # NOTE: the :id segment is REQUIRED by the route, so the controller's
@@ -175,9 +172,9 @@ RSpec.describe "Admin calendar contract", type: :request do
 
     # N+1 pinned
     it "orders staff by name descending", skip_bullet: true do
-      s1 = StaffSpace.create!(space: space, color: "#111111",
+      StaffSpace.create!(space: space, color: "#111111",
                               user: create(:user, :staff, name: "Zeta"))
-      s2 = StaffSpace.create!(space: space, color: "#222222",
+      StaffSpace.create!(space: space, color: "#222222",
                               user: create(:user, :staff, name: "Alpha"))
       get utc_unavailabilities_json_admin_calendar_index_path(id: space.id)
       expect(response.parsed_body.map { |e| e["name"] })
@@ -202,22 +199,39 @@ RSpec.describe "Admin calendar contract", type: :request do
     expect(response.status).to eq(404)
   end
 
-  # update_color only ever assigns flash — no render, no redirect,
-  # and no template exists for the action — so both the success path (which
-  # also mutated data) and the failure path fall through to an empty
-  # render-less response that surfaces as 204 No Content. Verified live.
-  it "update_color returns 204 on success AND failure; color persists" do
+  it "update_color answers 200 when the colour is saved and 422 when it is not" do
     log_in!(admin)
     admin.update_column(:space_id, space.id)
     row = StaffSpace.create!(user: admin, space: space, color: "#3788d8")
 
     post update_color_admin_calendar_index_path,
          params: { user_id: admin.id, color: "#ff0000" }
-    expect(response.status).to eq(204)
-    expect(row.reload.color).to eq("#ff0000") # data changed via 204
+    expect(response.status).to eq(200)
+    expect(response.parsed_body).to eq("status" => "ok")
+    expect(row.reload.color).to eq("#ff0000")
 
     post update_color_admin_calendar_index_path, params: {}
-    expect(response.status).to eq(204) # alert branch is ALSO flash-only
+    expect(response.status).to eq(422)
+    expect(response.parsed_body).to eq("status" => "error", "error" => "No colour was chosen.")
+  end
+
+  {
+    en: ["No colour was chosen.", "That staff member is not on this space."],
+    fr: ["Aucune couleur n'a été choisie.", "Ce membre du personnel ne fait pas partie de cet espace."]
+  }.each do |locale, (blank_message, not_on_space_message)|
+    it "update_color names the reason it refused the colour (#{locale})" do
+      log_in!(admin)
+      admin.update_column(:space_id, space.id)
+      StaffSpace.create!(user: admin, space: space)
+
+      post update_color_admin_calendar_index_path, params: { user_id: admin.id, color: "", locale: locale }
+      expect(response.status).to eq(422)
+      expect(response.parsed_body).to eq("status" => "error", "error" => blank_message)
+
+      post update_color_admin_calendar_index_path, params: { user_id: staff.id, color: "#ff0000", locale: locale }
+      expect(response.status).to eq(422)
+      expect(response.parsed_body).to eq("status" => "error", "error" => not_on_space_message)
+    end
   end
 
   it "update_color only touches the staff colour in the admin's own space" do
@@ -236,7 +250,7 @@ RSpec.describe "Admin calendar contract", type: :request do
     post update_color_admin_calendar_index_path,
          params: { user_id: staff.id, color: "#ff0000" }
 
-    expect(response.status).to eq(204)
+    expect(response.status).to eq(200)
     expect(own_row.reload.color).to eq("#ff0000")
     expect(other_row.reload.color).to eq("#00ff00")
     expect(unrelated.reload.color).to eq("#0000ff")
@@ -252,22 +266,22 @@ RSpec.describe "Admin calendar contract", type: :request do
     post update_color_admin_calendar_index_path,
          params: { user_id: staff.id, color: "#ff0000" }
 
-    expect(response.status).to eq(204)
+    expect(response.status).to eq(422)
     expect(other_row.reload.color).to eq("#00ff00")
   end
 
   # --------------------------------------------------------- chunk 11 additions
 
   describe "role matrix" do
-    it "bounces guests and staff everywhere (redirect to /)" do
+    it "sends guests to the login page and staff to / everywhere" do
       [nil, :staff].each do |role|
         log_in!(create(:user, role, booking_approval: true)) if role
         get admin_calendar_index_path
-        expect(response).to redirect_to("/")
+        expect_admin_area_bounce(guest: role.nil?)
         get unavailabilities_json_admin_calendar_index_path(id: space.id)
-        expect(response).to redirect_to("/")
+        expect_admin_area_bounce(guest: role.nil?)
         post update_color_admin_calendar_index_path, params: { user_id: staff.id, color: "#ff0000" }
-        expect(response).to redirect_to("/")
+        expect_admin_area_bounce(guest: role.nil?)
       end
     end
   end
@@ -396,7 +410,7 @@ RSpec.describe "Admin calendar contract", type: :request do
     end
   end
 
-  describe "update_color failure variants (all answer 204 with an alert flash)" do
+  describe "update_color failure variants (all answer 422 and change nothing)" do
     before do
       log_in!(admin)
       admin.update_column(:space_id, space.id)
@@ -406,8 +420,8 @@ RSpec.describe "Admin calendar contract", type: :request do
       row = StaffSpace.create!(user: admin, space: space, color: "#3788d8")
       stored = row.reload.color
       post update_color_admin_calendar_index_path, params: { user_id: admin.id, color: "" }
-      expect(response.status).to eq(204)
-      expect(flash[:alert]).to eq("An error occurred, try again later.")
+      expect(response.status).to eq(422)
+      expect(response.parsed_body["error"]).to eq("No colour was chosen.")
       expect(row.reload.color).to eq(stored)
     end
 
@@ -416,15 +430,47 @@ RSpec.describe "Admin calendar contract", type: :request do
       row = StaffSpace.create!(user: staff, space: other_space, color: "#3788d8")
       stored = row.reload.color
       post update_color_admin_calendar_index_path, params: { user_id: staff.id, color: "#ff0000" }
-      expect(response.status).to eq(204)
-      expect(flash[:alert]).to eq("An error occurred, try again later.")
+      expect(response.status).to eq(422)
+      expect(response.parsed_body["error"]).to eq("That staff member is not on this space.")
       expect(row.reload.color).to eq(stored)
     end
 
-    it "flashes the success notice when the colour is applied" do
+    it "answers ok when the colour is applied" do
       StaffSpace.create!(user: admin, space: space, color: "#3788d8")
       post update_color_admin_calendar_index_path, params: { user_id: admin.id, color: "#ff0000" }
-      expect(flash[:notice]).to eq("Color updated successfully")
+      expect(response.status).to eq(200)
+      expect(response.parsed_body).to eq("status" => "ok")
+    end
+  end
+
+  describe "a blank space id" do
+    before { log_in!(admin) }
+
+    # the route needs a segment, but a space-only segment is present and blank
+    {
+      "unavailabilities_json" => "/admin/calendar/unavailabilities_json/%20",
+      "utc_unavailabilities_json" => "/admin/calendar/utc_unavailabilities_json/%20",
+      "imported_calendars_json" => "/admin/calendar/imported_calendars_json/%20"
+    }.each do |name, path|
+      it "answers 400 with an error for #{name}" do
+        get path
+        expect(response).to have_http_status(:bad_request)
+        expect(response.parsed_body).to eq("error" => "Space ID is required")
+      end
+    end
+  end
+
+  describe "update_color when the colour cannot be saved" do
+    it "answers 422 with the reason and keeps the stored colour" do
+      log_in!(admin)
+      admin.update_column(:space_id, space.id)
+      row = StaffSpace.create!(user: admin, space: space, color: "#3788d8")
+      stored = row.reload.color
+      allow_any_instance_of(StaffSpace).to receive(:update).and_return(false) # the model has no validation that refuses a colour
+      post update_color_admin_calendar_index_path, params: { user_id: admin.id, color: "#ff0000" }
+      expect(response.status).to eq(422)
+      expect(response.parsed_body).to eq("status" => "error", "error" => "That colour is not valid.")
+      expect(row.reload.color).to eq(stored)
     end
   end
 end

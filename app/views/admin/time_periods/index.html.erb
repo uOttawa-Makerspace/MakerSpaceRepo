@@ -26,11 +26,11 @@
             </td>
 
             <td>
-              <%= t.start_date.strftime('%m/%e/%Y') %>
+              <%= t.start_date&.strftime('%m/%e/%Y') %>
             </td>
 
             <td>
-              <%= t.end_date.strftime('%m/%e/%Y') %>
+              <%= t.end_date&.strftime('%m/%e/%Y') %>
             </td>
             <td class="action-cell">
               <%= link_to 'Edit', edit_admin_time_period_path(t.id), class: 'btn btn-primary d-block w-100 btn-sm mb-2' %>

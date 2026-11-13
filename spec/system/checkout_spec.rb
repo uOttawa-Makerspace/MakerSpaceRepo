@@ -135,8 +135,7 @@ RSpec.describe "Checkout", type: :system do
 
     it "disables the purchase buttons and warns when the user is cut off" do
       create(:membership, user: user, membership_tier: tier, status: "paid", end_date: 3.years.from_now)
-      log_in_as(user)
-      visit your_memberships_memberships_path
+      log_in_as(user, to: your_memberships_memberships_path)
       expect(page).to have_css(".alert.alert-warning", text: I18n.t("memberships.purchase.purchase.cutoff_tooltip"))
       expect(page).to have_css("input[type=submit][disabled]")
     end

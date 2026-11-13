@@ -5,4 +5,6 @@ class ApplicationMailer < ActionMailer::Base
   
   default from: "MakerRepo <ceedinfo@makerepo.com>"
   layout "mailer"
+
+  self.delivery_job = ApplicationMailDeliveryJob
 end

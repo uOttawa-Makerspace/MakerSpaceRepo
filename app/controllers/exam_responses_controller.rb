@@ -22,7 +22,7 @@ class ExamResponsesController < SessionsController
         )
       response.save!
     end
-    respond_to { |format| format.js { head :no_content } }
+    head :no_content
   end
 
   private

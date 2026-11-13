@@ -1,6 +1,5 @@
 /* eslint no-console:0 */
 import "trix";
-import "clipboard";
 
 // Imported from ../src/
 import "../src/validation";
@@ -11,6 +10,7 @@ import "../src/header";
 import "../src/photo_gallery";
 import "../src/requests";
 import { csrfHeaders } from "../src/csrf";
+import { showToast } from "../src/toast";
 import "../src/settings";
 import "../src/sorting";
 import "../src/tabledata";
@@ -25,7 +25,6 @@ import "../controllers";
 import.meta.glob("../images/**", { eager: true });
 
 import { Tooltip, Popover } from "bootstrap";
-import "toastr/toastr";
 import "@hotwired/turbo-rails";
 
 document.addEventListener("turbo:before-render", (event) => {
@@ -87,13 +86,18 @@ document.addEventListener("turbo:load", () => {
 const confirmMessage = (turboPrompts, sources) => {
   for (const el of sources) {
     if (!el) continue;
-    if (el.dataset.turboConfirm) return turboPrompts ? null : el.dataset.turboConfirm;
+    if (el.dataset.turboConfirm)
+      return turboPrompts ? null : el.dataset.turboConfirm;
     if (el.dataset.confirm) return el.dataset.confirm;
   }
   return null;
 };
 
-const confirmOrCancel = (event, el, { turboPrompts = false, sources = [el] } = {}) => {
+const confirmOrCancel = (
+  event,
+  el,
+  { turboPrompts = false, sources = [el] } = {},
+) => {
   const off = turboOffAtEvent(el);
   if (off) el.dataset.turbo = "false";
   const msg = confirmMessage(!off && turboPrompts, sources);
@@ -107,7 +111,10 @@ document.addEventListener(
   (event) => {
     const form = event.target;
     if (!(form instanceof HTMLFormElement)) return;
-    confirmOrCancel(event, form, { turboPrompts: true, sources: [event.submitter, form] });
+    confirmOrCancel(event, form, {
+      turboPrompts: true,
+      sources: [event.submitter, form],
+    });
   },
   true,
 );
@@ -119,7 +126,9 @@ document.addEventListener(
       event.target instanceof Element &&
       event.target.closest("a[data-turbo-confirm], a[data-confirm]");
     if (!link) return;
-    confirmOrCancel(event, link, { turboPrompts: Boolean(link.dataset.turboMethod) });
+    confirmOrCancel(event, link, {
+      turboPrompts: Boolean(link.dataset.turboMethod),
+    });
   },
   true,
 );
@@ -154,6 +163,13 @@ window.setSpace = async function () {
 
     if (response.ok) {
       window.location.reload();
+    } else {
+      let message = "Could not change space";
+      try {
+        const data = await response.json();
+        if (data.error) message = data.error;
+      } catch (_) {}
+      showToast(message, { type: "error" });
     }
   } catch (error) {
     console.error("Failed to update space:", error);

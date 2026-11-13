@@ -1,4 +1,9 @@
 class JobStatus < ApplicationRecord
+  include Translatable
+
+  # English is the bare name / description column, French is name_fr / description_fr.
+  translates :name, :description, prefix: "t_", bare_en: true
+
   validates :name, presence: true, uniqueness: true
 
   # The one table of the statuses the job order workflow depends on: key -> row name.
@@ -66,12 +71,4 @@ class JobStatus < ApplicationRecord
   end
 
   reset_lookup_cache!
-
-  def t_name
-    I18n.locale == :fr ? name_fr : name
-  end
-
-  def t_description
-    I18n.locale == :fr ? description_fr : description
-  end
 end

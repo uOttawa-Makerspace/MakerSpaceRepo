@@ -21,11 +21,13 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
   end
 
   describe "access matrix" do
-    it "sends guests to / (ensure_admin runs before signed_in; no login redirect)" do
-      # unlike LockerRentals, guests are not
-      # sent to the login page here.
+    it "sends guests to the login page, back to the page they asked for" do
       get lockers_path
-      expect(response).to redirect_to("/")
+      expect(response).to redirect_to(login_path(back_to: "/lockers"))
+
+      expect { post locker_sizes_path, params: { locker_size: { size: "X", shopify_gid: "g" } } }
+        .not_to change(LockerSize, :count)
+      expect(response).to redirect_to(login_path)
     end
 
     it "redirects non-admins (regular and staff) to / on lockers#index, with no flash" do
@@ -33,7 +35,39 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
         log_in!(user)
         get lockers_path
         expect(response).to redirect_to("/")
+        expect(flash[:alert]).to be_nil
       end
+    end
+
+    it "redirects non-admins on every lockers action, with no flash, and changes nothing" do
+      locker = create(:locker)
+      size = create(:locker_size)
+      [regular, staff].each do |user|
+        log_in!(user)
+        expect { post lockers_path, params: { locker: { specifier: "Z-1", locker_size_id: size.id } } }
+          .not_to change(Locker, :count)
+        expect(response).to redirect_to("/")
+        expect(flash[:alert]).to be_nil
+        expect { delete locker_path(locker) }.not_to change(Locker, :count)
+        expect(response).to redirect_to("/")
+        expect(flash[:alert]).to be_nil
+      end
+    end
+
+    it "refuses to delete a locker size that has lockers, redirecting with the reason" do
+      log_in!(create(:user, :admin))
+      locker = create(:locker)
+      expect { delete locker_size_path(locker.locker_size) }.not_to change(LockerSize, :count)
+      expect(response).to redirect_to(lockers_path)
+      expect(flash[:alert]).to include("lockers")
+    end
+
+    it "deletes a locker size that has no lockers" do
+      log_in!(create(:user, :admin))
+      size = create(:locker_size)
+      expect { delete locker_size_path(size) }.to change(LockerSize, :count).by(-1)
+      expect(response).to redirect_to(lockers_path)
+      expect(flash[:alert]).to be_nil
     end
 
     it "redirects non-admins away from locker_sizes mutations and does not apply them" do
@@ -89,6 +123,15 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(flash[:alert]).to eq("Specifier has already been taken")
     end
 
+    it "POST create with a duplicate specifier does not show its alert on the next page" do
+      existing = create(:locker, specifier: "C-3")
+      post lockers_path, params: { locker: { specifier: "C-3", locker_size_id: existing.locker_size_id } }
+      expect(response.body).to include("Specifier has already been taken")
+
+      get lockers_path
+      expect(response.body).not_to include("Specifier has already been taken")
+    end
+
     it "PATCH update changes notes (HTML redirect, JSON 204) and 422s when invalid" do
       locker = create(:locker, specifier: "D-1")
       patch locker_path(locker), params: { locker: { notes: "dented" } }
@@ -102,6 +145,12 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       other = create(:locker, specifier: "D-2")
       patch locker_path(locker), params: { locker: { specifier: other.specifier } }
       expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to eq("Specifier has already been taken")
+      expect(locker.reload.specifier).to eq("D-1")
+
+      patch locker_path(locker, format: :json), params: { locker: { specifier: other.specifier } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["specifier"]).to eq(["has already been taken"])
       expect(locker.reload.specifier).to eq("D-1")
     end
 
@@ -139,8 +188,7 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(flash[:alert]).to eq("Range end must be larger than range start")
     end
 
-    # N+1 pinned
-    it "PATCH bulk_edit updates or deletes the selected ids", skip_bullet: true do
+    it "PATCH bulk_edit updates or deletes the selected ids" do
       a = create(:locker)
       b = create(:locker)
       patch bulk_edit_lockers_path, params: { id: [a.id, b.id], locker: { notes: "bulk" } }
@@ -207,13 +255,12 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(response).to redirect_to(lockers_path(anchor: "productVariants"))
     end
 
-    it "POST create with invalid data silently creates nothing and still redirects" do
-      # result of LockerSize.create/update is ignored (silent failure)
+    it "POST create with invalid data creates nothing and redirects with the reasons" do
       expect do
         post locker_sizes_path, params: { locker_size: { size: "", shopify_gid: "" } }
       end.not_to change(LockerSize, :count)
       expect(response).to redirect_to(lockers_path(anchor: "productVariants"))
-      expect(flash[:alert]).to be_nil
+      expect(flash[:alert]).to include("Size")
     end
 
     it "PATCH update changes a size; DELETE destroys it" do
@@ -225,6 +272,7 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       patch locker_size_path(size), params: { locker_size: { size: "" } }
       expect(response).to redirect_to(lockers_path)
       expect(size.reload.size).to eq("Huge")
+      expect(flash[:alert]).to include("Size")
 
       expect { delete locker_size_path(size) }.to change(LockerSize, :count).by(-1)
       expect(response).to redirect_to(lockers_path)
@@ -237,8 +285,7 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
   end
 
   describe "models" do
-    # N+1 pinned
-    it "Locker.available excludes lockers with an active rental and filters by audience", skip_bullet: true do
+    it "Locker.available excludes lockers with an active rental and filters by audience" do
       free = create(:locker, audience: "gng")
       taken = create(:locker_rental, :active).locker
       reserved = create(:locker_rental, :await_payment).locker
@@ -247,6 +294,14 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(Locker.available("gng")).to include(free)
       expect(Locker.available("staff")).not_to include(free)
       expect(Locker.assigned).to contain_exactly(taken)
+    end
+
+    it "Locker.available does not load the sizes, which only the callers that render them preload" do
+      create_list(:locker, 3)
+
+      lockers = nil
+      expect(count_queries { lockers = Locker.available.to_a }).to eq(1)
+      expect(lockers.map { |locker| locker.association(:locker_size).loaded? }).to all(be(false))
     end
 
     it "validates Locker and LockerSize" do

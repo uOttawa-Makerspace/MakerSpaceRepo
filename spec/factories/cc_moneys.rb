@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :cc_money do
     association :user, :regular_user
-    cc { Faker::Number.number(digits: 2) }
+    cc { 10 }
 
     trait :with_volunteer_task do
       association :volunteer_task

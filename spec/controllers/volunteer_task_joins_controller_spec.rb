@@ -75,12 +75,12 @@ RSpec.describe VolunteerTaskJoinsController, type: :controller do
 
   describe "#remove" do
     context "remove" do
-      it "should delete a join" do
+      it "should mark the join inactive and keep it" do
         task = create(:volunteer_task)
         user = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        create(
+        join = create(
           :volunteer_task_join,
           :active,
           user_id: user.id,
@@ -94,7 +94,8 @@ RSpec.describe VolunteerTaskJoinsController, type: :controller do
                      volunteer_task_id: task.id
                    }
                  }
-        }.to change(VolunteerTaskJoin, :count).by(-1)
+        }.not_to change(VolunteerTaskJoin, :count)
+        expect(join.reload.active).to be(false)
         expect(flash[:notice]).to eq("User was removed from the Volunteer Task")
         expect(response).to have_http_status(302)
       end

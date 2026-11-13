@@ -13,10 +13,17 @@ RSpec.describe MembershipTier, type: :model do
   describe "#title" do
     let(:tier) { build(:membership_tier, title_en: "Day", title_fr: "Jour") }
 
-    it "picks the FR title only for the :fr symbol locale" do
+    it "picks the title of the requested locale, symbol or string" do
       expect(tier.title(:fr)).to eq("Jour")
       expect(tier.title(:en)).to eq("Day")
-      expect(tier.title("fr")).to eq("Day") # string locale falls through
+      expect(tier.title("fr")).to eq("Jour")
+    end
+
+    it "falls back to the other language when the requested one is blank" do
+      tier.title_fr = ""
+      I18n.with_locale(:fr) { expect(tier.title).to eq("Day") }
+      tier.assign_attributes(title_en: " ", title_fr: "Jour")
+      expect(tier.title).to eq("Jour")
     end
 
     it "defaults to I18n.locale" do

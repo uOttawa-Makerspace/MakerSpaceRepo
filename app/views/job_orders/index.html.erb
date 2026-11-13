@@ -15,7 +15,7 @@
         <p><%= link_to "#{t('job_orders.public_page.order')} ##{draft.id}", edit_job_order_job_task_path(draft.id, draft.job_tasks.first, step: 1) %></p>
       <% end %>
     <% end %>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="<%= t('common.close') %>"></button>
   </div>
 <% end %>
 

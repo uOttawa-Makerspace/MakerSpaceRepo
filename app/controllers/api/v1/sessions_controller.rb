@@ -30,7 +30,7 @@ module Api
         when :unconfirmed
           render_error(:account_unconfirmed, "Please confirm your account before logging in.", status: :forbidden)
         else
-          result.user ? render_new_session(result.user) : render_bad_credentials(result.candidate)
+          result.user ? render_new_session(result.user) : render_bad_credentials
         end
       end
 
@@ -82,15 +82,14 @@ module Api
 
       def render_locked(user)
         render_error(:account_locked,
-                     "Your account has been locked due to too many failed login attempts. Please contact an administrator at #{SUPPORT_EMAIL} to unlock your account#{CredentialAuthenticator.lock_wait_suffix(user)}.",
+                     "Your account has been locked due to too many failed login attempts. Use the unlock link in your email or contact an administrator at #{SUPPORT_EMAIL} to unlock your account#{CredentialAuthenticator.lock_wait_suffix(user)}.",
                      status: :locked, support_email: SUPPORT_EMAIL)
       end
 
       # Unknown login and wrong password answer identically (no account
-      # enumeration). The attempt that reaches the limit answers as locked.
-      def render_bad_credentials(user)
-        return render_locked(user) if user && user.auth_attempts >= User::MAX_AUTH_ATTEMPTS
-
+      # enumeration), including the attempt that reaches the limit and any wrong
+      # password for a locked account; the locked answer needs the right password.
+      def render_bad_credentials
         render_error(:invalid_credentials, "Invalid login or password", status: :unauthorized)
       end
 

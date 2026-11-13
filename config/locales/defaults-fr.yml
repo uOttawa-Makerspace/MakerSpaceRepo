@@ -1,0 +1,88 @@
+# French counterparts of the defaults Rails (and file_validators) ship in English (active_model, active_record,
+# active_support and action_view locale files). Without them a French page that renders model
+# errors, form buttons, dates or numbers has no text for the key. Keys the project already
+# defines in fr.yml (activerecord.errors.messages.blank, .inclusion and
+# .restrict_dependent_destroy.has_many, date month names, time formats, datetime distances) are
+# deliberately absent here: a key must be defined in one file only.
+fr:
+  errors:
+    format: "%{attribute} %{message}"
+    messages:
+      model_invalid: "Validation échouée : %{errors}"
+      inclusion: "n'est pas inclus(e) dans la liste"
+      exclusion: "n'est pas disponible"
+      invalid: "n'est pas valide"
+      confirmation: "ne concorde pas avec %{attribute}"
+      accepted: "doit être accepté(e)"
+      empty: "doit être rempli(e)"
+      blank: "doit être rempli(e)"
+      present: "doit être vide"
+      too_long:
+        one: "est trop long (pas plus d'un caractère)"
+        other: "est trop long (pas plus de %{count} caractères)"
+      password_too_long: "est trop long"
+      too_short:
+        one: "est trop court (au moins un caractère)"
+        other: "est trop court (au moins %{count} caractères)"
+      wrong_length:
+        one: "ne fait pas la bonne longueur (doit comporter un seul caractère)"
+        other: "ne fait pas la bonne longueur (doit comporter %{count} caractères)"
+      not_a_number: "n'est pas un nombre"
+      not_an_integer: "doit être un nombre entier"
+      greater_than: "doit être supérieur à %{count}"
+      greater_than_or_equal_to: "doit être supérieur ou égal à %{count}"
+      equal_to: "doit être égal à %{count}"
+      less_than: "doit être inférieur à %{count}"
+      less_than_or_equal_to: "doit être inférieur ou égal à %{count}"
+      other_than: "doit être différent de %{count}"
+      in: "doit être dans %{count}"
+      odd: "doit être impair"
+      even: "doit être pair"
+      required: "doit exister"
+      taken: "n'est pas disponible"
+      # file_validators gem (size and content type validations on uploads)
+      file_size_is_in: "la taille du fichier doit être comprise entre %{min} et %{max}"
+      file_size_is_less_than: "la taille du fichier doit être inférieure à %{count}"
+      file_size_is_less_than_or_equal_to: "la taille du fichier doit être inférieure ou égale à %{count}"
+      file_size_is_greater_than: "la taille du fichier doit être supérieure à %{count}"
+      file_size_is_greater_than_or_equal_to: "la taille du fichier doit être supérieure ou égale à %{count}"
+      allowed_file_content_types: "le fichier doit être de l'un des types suivants : %{types}"
+      excluded_file_content_types: "le fichier ne peut pas être de type %{types}"
+  activerecord:
+    errors:
+      messages:
+        record_invalid: "Validation échouée : %{errors}"
+        restrict_dependent_destroy:
+          has_one: "Impossible de supprimer l'enregistrement car un(e) %{record} dépendant(e) existe"
+  helpers:
+    select:
+      prompt: "Veuillez choisir"
+    submit:
+      create: "Créer %{model}"
+      update: "Modifier %{model}"
+      submit: "Enregistrer %{model}"
+  date:
+    formats:
+      default: "%d/%m/%Y"
+      short: "%e %b"
+      long: "%e %B %Y"
+    day_names: [dimanche, lundi, mardi, mercredi, jeudi, vendredi, samedi]
+    abbr_day_names: [dim, lun, mar, mer, jeu, ven, sam]
+    order:
+      - day
+      - month
+      - year
+  time:
+    formats:
+      default: "%d %B %Y %H:%M:%S"
+    am: "am"
+    pm: "pm"
+  datetime:
+    relative:
+      future: "dans %{time}"
+      past: "il y a %{time}"
+  support:
+    array:
+      words_connector: ", "
+      two_words_connector: " et "
+      last_word_connector: " et "

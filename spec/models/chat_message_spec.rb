@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # ChatMessage: scopes, the unread counter, timestamp formatting across
-# midnight and the notification hook (throttle boundary and Draft skip) by
+# midnight and the notification (throttle boundary and Draft skip) by
 # delivered outcome.
 
 RSpec.describe ChatMessage, type: :model do
@@ -94,10 +94,10 @@ RSpec.describe ChatMessage, type: :model do
     end
   end
 
-  describe "notification after_save" do
+  describe "#notify_participants" do
     def create_at(time, sender, text)
       travel_to(time) do
-        perform_enqueued_jobs { described_class.create!(job_order: order, sender: sender, message: text) }
+        perform_enqueued_jobs { order.post_chat_message(text, sender) }
       end
     end
 
@@ -123,11 +123,16 @@ RSpec.describe ChatMessage, type: :model do
       expect(ActionMailer::Base.deliveries.map(&:to)).to all(eq([owner.email]))
     end
 
+    it "sends nothing for a message that was only created, not posted" do
+      perform_enqueued_jobs { described_class.create!(job_order: order, sender: staff, message: "quiet") }
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
     it "sends nothing while the order is still a Draft" do
       draft = make_job_order!(owner: owner, status_key: :draft)
       perform_enqueued_jobs do
-        described_class.create!(job_order: draft, sender: owner, message: "first")
-        described_class.create!(job_order: draft, sender: staff, message: "reply")
+        draft.post_chat_message("first", owner)
+        draft.post_chat_message("reply", staff)
       end
       expect(ActionMailer::Base.deliveries).to be_empty
     end

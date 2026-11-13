@@ -1,4 +1,8 @@
 class OpeningHour < ApplicationRecord
+  include Translatable
+
+  translates :notes, :target
+
   belongs_to :contact_info
 
   # constants lol
@@ -14,12 +18,4 @@ class OpeningHour < ApplicationRecord
   default_scope -> { order(:id) }
 
   delegate :tag, to: "ApplicationController.helpers"
-
-  def notes
-    I18n.locale == :fr ? notes_fr : notes_en
-  end
-
-  def target
-    I18n.locale == :fr ? target_fr : target_en
-  end
 end

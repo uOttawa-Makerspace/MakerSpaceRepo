@@ -1,6 +1,9 @@
 class Admin::EventsController < AdminAreaController
   layout "admin_area"
 
+  before_action :parse_event_times, only: %i[create update]
+  before_action :parse_view_range, if: :view_range_action?
+
   def create
     participants = params[:staff_select].presence || []
 
@@ -14,8 +17,8 @@ class Admin::EventsController < AdminAreaController
       title: title,
       description: event_params[:description],
       # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
-      start_time: Time.parse(event_params[:utc_start_time]).utc,
-      end_time: Time.parse(event_params[:utc_end_time]).utc,
+      start_time: @start_time,
+      end_time: @end_time,
       recurrence_rule: event_params[:recurrence_rule].presence,
       created_by_id: current_user.id,
       space_id: event_params[:space_id],
@@ -34,11 +37,10 @@ class Admin::EventsController < AdminAreaController
       end
     end
 
-    if @event.save && Array(@event_assignments).all?(&:save)
+    saved = @event.save && Array(@event_assignments).all?(&:save)
+    @event.push_to_google_later if @event.persisted?
 
-      @event.reload
-      Event.upsert_event(@event) unless @event.draft
-
+    if saved
       flash[:notice] = "Event created successfully."
     else
       flash[:alert] = "Failed to create event: #{@event.errors.full_messages.to_sentence}"
@@ -69,8 +71,8 @@ class Admin::EventsController < AdminAreaController
         title: title,
         description: event_params[:description],
         # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
-        start_time: Time.parse(event_params[:utc_start_time]).utc,
-        end_time: Time.parse(event_params[:utc_end_time]).utc,
+        start_time: @start_time,
+        end_time: @end_time,
         recurrence_rule: event_params[:recurrence_rule].presence,
         created_by_id: current_user.id,
         space_id: event_params[:space_id],
@@ -92,9 +94,8 @@ class Admin::EventsController < AdminAreaController
           @event.event_assignments << @event_assignments
         end
 
-        @event.reload
-        Event.upsert_event(@event) unless @event.draft
-        
+        @event.push_to_google_later
+
         flash[:notice] = "Event updated successfully."
       else
         flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
@@ -102,9 +103,9 @@ class Admin::EventsController < AdminAreaController
     when "all"
       old_date_new_time_start = helpers.combine_date_and_time(
         @event.start_time.utc, 
-        Time.parse(event_params[:utc_start_time]).utc
+        @start_time
       )
-      duration = (Time.parse(event_params[:utc_end_time]).utc - Time.parse(event_params[:utc_start_time]).utc).to_i
+      duration = (@end_time - @start_time).to_i
       old_date_new_time_end = old_date_new_time_start + duration
 
       old_rrule, old_dtstart, old_extra_lines = helpers.parse_rrule_and_dtstart(@event.recurrence_rule)
@@ -150,56 +151,14 @@ class Admin::EventsController < AdminAreaController
           @event.event_assignments << @event_assignments
         end
 
-        @event.reload
-        Event.upsert_event(@event) unless @event.draft
+        @event.push_to_google_later
 
         flash[:notice] = "Unavailability updated successfully."
       else
         flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
       end
     when "this"
-      exclusion_start_time = helpers.combine_date_and_time(
-        Time.parse(event_params[:utc_start_time]).utc, 
-        @event.start_time.utc
-      )
-
-      updated_rule = helpers.add_exdate_to_rrule(@event.recurrence_rule, exclusion_start_time)
-
-      unless @event.update(recurrence_rule: updated_rule)
-        flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
-        return redirect_back(fallback_location: admin_calendar_index_path)
-      end
-
-      @new_event = Event.create!(
-        title: title,
-        description: event_params[:description],
-        # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
-        start_time: Time.parse(event_params[:utc_start_time]).utc,
-        end_time: Time.parse(event_params[:utc_end_time]).utc,
-        recurrence_rule: nil,
-        created_by_id: current_user.id,
-        space_id: event_params[:space_id],
-        event_type: event_params[:event_type],
-        training_id: event_params[:training_id],
-        language: event_params[:language],
-        course_name_id: event_params[:course_name]
-      )
-
-      # Update event assignments
-      unless participants.empty?
-        @event_assignments = participants.map do |staff_id|
-          EventAssignment.new(
-            event: @new_event,
-            user_id: staff_id
-          )
-        end
-        @new_event.event_assignments << @event_assignments
-      end 
-
-      @new_event.reload
-      Event.upsert_event(@new_event) unless @new_event.draft
-
-      flash[:notice] = "This event occurrence updated successfully."
+      update_this_occurrence(title, participants)
     else
       flash[:alert] = "Invalid update scope."
     end
@@ -213,19 +172,18 @@ class Admin::EventsController < AdminAreaController
 
     if @event.recurrence_rule.blank?
       # No recurrence: just delete it normally
-      @event.destroy
+      destroy_event(@event)
       redirect_back(fallback_location: admin_calendar_index_path, notice: "Event deleted.")
       return
     end
 
     case scope
     when "single"
-      if params[:start_date].blank?
-        return redirect_back(fallback_location: admin_calendar_index_path, alert: "Start date is required.")
-      end
-      
+      occurrence_start = parse_time(params[:start_date])
+      return redirect_back(fallback_location: admin_calendar_index_path, alert: t("admin_events.start_date_required")) unless occurrence_start
+
       rrule_line, dtstart, rest_of_lines = helpers.parse_rrule_and_dtstart(@event.recurrence_rule)
-      exdate = Time.parse(params[:start_date]).utc.strftime("%Y%m%dT%H%M%SZ")
+      exdate = occurrence_start.strftime("%Y%m%dT%H%M%SZ")
       
       rule = RRule::Rule.new(rrule_line, dtstart: dtstart || @event.start_time)
       recurrence_lines = [
@@ -235,15 +193,15 @@ class Admin::EventsController < AdminAreaController
       ]
       
       @event.update!(recurrence_rule: (recurrence_lines + rest_of_lines).join("\n"))
+      @event.push_to_google_later
       redirect_back(fallback_location: admin_calendar_index_path, notice: "This occurrence deleted.")
       
     when "following"
-      if params[:start_date].blank?
-        return redirect_back(fallback_location: admin_calendar_index_path, alert: "Start date is required.")
-      end
-      
+      occurrence_start = parse_time(params[:start_date])
+      return redirect_back(fallback_location: admin_calendar_index_path, alert: t("admin_events.start_date_required")) unless occurrence_start
+
       rrule_line, dtstart, rest_of_lines = helpers.parse_rrule_and_dtstart(@event.recurrence_rule)
-      previous_day = Time.parse(params[:start_date]).utc - 24.hours
+      previous_day = occurrence_start - 24.hours
       rrule_line = "#{helpers.remove_until_from_rrule(rrule_line)};UNTIL=#{previous_day.strftime("%Y%m%dT%H%M%SZ")}"
       
       rule = RRule::Rule.new(rrule_line, dtstart: dtstart || @event.start_time)
@@ -253,10 +211,11 @@ class Admin::EventsController < AdminAreaController
       ]
       
       @event.update!(recurrence_rule: (recurrence_lines + rest_of_lines).join("\n"))
+      @event.push_to_google_later
       redirect_back(fallback_location: admin_calendar_index_path, notice: "This and following deleted.")
       
     when "all"
-      @event.destroy
+      destroy_event(@event)
       redirect_back(fallback_location: admin_calendar_index_path, notice: "Event series deleted.")
       
     else
@@ -332,16 +291,15 @@ class Admin::EventsController < AdminAreaController
 
   def publish
     if params[:id].blank?
-      start_date = Time.parse(params[:view_start_date]).utc
-      end_date = Time.parse(params[:view_end_date]).utc
       space_id = params[:space_id]
       return redirect_back(fallback_location: admin_calendar_index_path, alert: "Space ID is required.") if space_id.blank?
 
       updated_count = 0
       failures = []
 
-      Event.where(space_id: space_id, start_time: start_date..end_date, draft: true).find_each do |event|
+      Event.where(space_id: space_id, start_time: @view_start..@view_end, draft: true).find_each do |event|
         if event.update(draft: false)
+          event.push_to_google_later
           updated_count += 1
         else
           failures << "#{event.title.presence || "Event ##{event.id}"} (#{event.errors.full_messages.to_sentence})"
@@ -353,6 +311,7 @@ class Admin::EventsController < AdminAreaController
     else
       @event = Event.find(params[:id])
       if @event.update(draft: false)
+        @event.push_to_google_later
         flash[:notice] = "Event published successfully."
       else
         flash[:alert] = "Failed to publish event: #{@event.errors.full_messages.to_sentence}"
@@ -363,13 +322,12 @@ class Admin::EventsController < AdminAreaController
   end
 
   def delete_drafts
-    start_date = Time.parse(params[:view_start_date]).utc
-    end_date = Time.parse(params[:view_end_date]).utc
     space_id = params[:space_id]
     return redirect_back(fallback_location: admin_calendar_index_path, alert: "Space ID is required.") if space_id.blank?
 
-    draft_events = Event.where(space_id: space_id, start_time: start_date..end_date, draft: true, recurrence_rule: [nil, ""])
-    deleted_count = draft_events.destroy_all.size
+    draft_events = Event.where(space_id: space_id, start_time: @view_start..@view_end, draft: true, recurrence_rule: [nil, ""]).includes(:space).to_a
+    draft_events.each { |event| destroy_event(event) }
+    deleted_count = draft_events.size
         
     redirect_back(fallback_location: admin_calendar_index_path, 
       notice: "#{deleted_count} draft event(s) deleted. Any recurring events were untouched and must be deleted separately.")
@@ -399,25 +357,10 @@ class Admin::EventsController < AdminAreaController
 
       copied_count = 0
 
-      events_to_copy.find_each do |event|
-        days_offset = (event.start_time.to_date - start_date.to_date).to_i
-        event_offset = event.start_time - event.start_time.beginning_of_day
-        new_start = new_start_date + days_offset.days + event_offset
-        new_end = event.end_time.present? ? (new_start + (event.end_time - event.start_time)) : nil
-
-        new_event = event.dup
-        new_event.start_time = new_start
-        new_event.end_time = new_end
-        new_event.draft = true
-        new_event.google_event_id = ""
-        new_event.save!
-
-        copied_count += 1
-
-        event.event_assignments.each do |assignment|
-          new_event.event_assignments.create!(
-            assignment.attributes.except("id", "event_id", "created_at", "updated_at")
-          )
+      Event.transaction do
+        events_to_copy.find_each do |event|
+          copy_event_as_draft(event, start_date, new_start_date)
+          copied_count += 1
         end
       end
 
@@ -429,6 +372,120 @@ class Admin::EventsController < AdminAreaController
   end
 
   private
+
+  # Parses the posted start and end times once; a missing or unparsable value answers with an alert.
+  def parse_event_times
+    @start_time = parse_time(event_params[:utc_start_time])
+    @end_time = parse_time(event_params[:utc_end_time])
+    return if @start_time && @end_time
+
+    redirect_back(fallback_location: admin_calendar_index_path, alert: t("admin_events.times_required"))
+  end
+
+  # delete_drafts, and publish when it publishes a whole range rather than one event
+  def view_range_action?
+    action_name == "delete_drafts" || (action_name == "publish" && params[:id].blank?)
+  end
+
+  def parse_view_range
+    @view_start = parse_time(params[:view_start_date])
+    @view_end = parse_time(params[:view_end_date])
+    return if @view_start && @view_end
+
+    redirect_back(fallback_location: admin_calendar_index_path, alert: t("admin_events.dates_required"))
+  end
+
+  # The time in UTC, or nil when the value is blank or not a time.
+  def parse_time(value)
+    Time.parse(value.to_s).utc
+  rescue ArgumentError
+    nil
+  end
+
+  # Excludes the occurrence from the series and creates it as its own event. Both happen in one
+  # transaction, so a failure leaves the series as it was.
+  def update_this_occurrence(title, participants)
+    exclusion_start_time = helpers.combine_date_and_time(
+      @start_time,
+      @event.start_time.utc
+    )
+    updated_rule = helpers.add_exdate_to_rrule(@event.recurrence_rule, exclusion_start_time)
+
+    # The replacement is checked before anything is saved: saving the series pushes to Google, which a
+    # rollback cannot undo. A failure after this point (a database error) can still leave Google ahead.
+    @new_event = build_occurrence_event(title)
+    raise ActiveRecord::RecordInvalid, @new_event unless @new_event.valid?
+
+    series_updated = Event.transaction do
+      next false unless @event.update(recurrence_rule: updated_rule)
+
+      @new_event.save!
+      attach_participants(@new_event, participants)
+      true
+    end
+
+    if series_updated
+      @event.push_to_google_later
+      @new_event.push_to_google_later
+      flash[:notice] = "This event occurrence updated successfully."
+    else
+      flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
+    end
+  end
+
+  # Copies one event (and its assignments) as a draft on the matching day of the target week, at the same wall
+  # clock time in the app's time zone.
+  def copy_event_as_draft(event, start_date, new_start_date)
+    days_offset = (event.start_time.to_date - start_date.to_date).to_i
+    day = new_start_date + days_offset.days
+    new_start = day.change(hour: event.start_time.hour, min: event.start_time.min,
+                           sec: event.start_time.sec, usec: event.start_time.usec)
+    new_end = event.end_time.present? ? (new_start + (event.end_time - event.start_time)) : nil
+
+    new_event = event.dup
+    new_event.start_time = new_start
+    new_event.end_time = new_end
+    new_event.draft = true
+    new_event.google_event_id = nil
+    new_event.google_calendar_id = nil
+    new_event.save!
+
+    event.event_assignments.each do |assignment|
+      new_event.event_assignments.create!(
+        assignment.attributes.except("id", "event_id", "created_at", "updated_at")
+      )
+    end
+  end
+
+  # Destroys the event, then queues the removal of its Google copy (read before the row is gone).
+  def destroy_event(event)
+    google_event_id = event.google_event_id
+    calendar_id = event.google_calendar
+    Event.remove_from_google_later(google_event_id, calendar_id, event.id) if event.destroy
+  end
+
+  def build_occurrence_event(title)
+    Event.new(
+      title: title,
+      description: event_params[:description],
+      # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
+      start_time: @start_time,
+      end_time: @end_time,
+      recurrence_rule: nil,
+      created_by_id: current_user.id,
+      space_id: event_params[:space_id],
+      event_type: event_params[:event_type],
+      training_id: event_params[:training_id],
+      language: event_params[:language],
+      course_name_id: event_params[:course_name]
+    )
+  end
+
+  def attach_participants(event, participants)
+    return if participants.empty?
+
+    event.event_assignments << participants.map { |staff_id| EventAssignment.new(event: event, user_id: staff_id) }
+  end
 
   def event_params
     params.require(:event).permit(

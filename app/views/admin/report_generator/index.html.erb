@@ -8,7 +8,7 @@
       <div class="mb-3 col-md-4">
         <div class="form-check">
           <%= radio_button_tag(:range_type, :semester, (params[:range_type] == 'semester') || params[:range_type].nil?, class: 'form-check-input', id: 'semester_radio') %>
-          <%= label_tag(:range_type_semester, 'Semester', class: 'form-check-label') %>
+          <%= label_tag('semester_radio', 'Semester', class: 'form-check-label') %>
         </div>
       </div>
       
@@ -31,7 +31,7 @@
       <div class="mb-3 col-md-4">
         <div class="form-check">
           <%= radio_button_tag(:range_type, :date_range, params[:range_type] == 'date_range', class: 'form-check-input', id: 'date_range_radio') %>
-          <%= label_tag(:range_type_date_range, 'Date Range', class: 'form-check-label') %>
+          <%= label_tag('date_range_radio', 'Date Range', class: 'form-check-label') %>
         </div>
       </div>
 

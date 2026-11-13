@@ -12,11 +12,10 @@
 - `/app/views`: contains directories of HTML files which act as the user interface
 
 - `/db`: contains the database schema and migration files
-
   - **Note**: `/db/schema.rb` should only be modified from migrations and should not be directly modified
 
 - `/config/routes.rb`: contains all the HTTP routes within our app
-- `/config/schedule.rb`: contains CRON jobs that are run at specific intervals
+- `/config/recurring.yml`: the scheduled tasks, run by Solid Queue in the `worker` container
 - `/config/locales`: contains the english and french translation files used in certain parts of the app
 
 - `/spec`: contains tests & factories that are used in our github workflow
@@ -58,7 +57,6 @@
   - `Navbar --> Profile Dropdown --> Admin Area --> Staff Management Dropdown --> Shifts`
   - URL: `/admin/shifts/shifts`
 - Staff can view their shifts (but can't edit them) at:
-
   - `Navbar --> Profile Dropdown --> Staff Area --> Shifts`
   - URL: `/staff/shifts_schedule`
 
@@ -74,7 +72,6 @@
   - `Navbar --> Profile Dropdown --> Admin Area --> Staff Management Dropdown --> Unavailabilities`
   - URL: `/admin/shifts`
 - Staff can view and enter their unavailabilities at:
-
   - `Navbar --> Profile Dropdown --> Profile --> Staff Dropdown --> Staff Unavailabilities`
   - URL: `/staff_availabilities`
 

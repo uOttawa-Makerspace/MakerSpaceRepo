@@ -9,12 +9,18 @@ import { rrulestr } from "rrule";
 import { Tooltip } from "bootstrap";
 
 import { eventClick, eventCreate } from "./calendar_helper.js";
+import { onPageLoad } from "./on_page";
 
-document.addEventListener("turbo:load", async () => {
+onPageLoad("#calendar", async () => {
   const calendarEl = document.getElementById("calendar");
-  if (!calendarEl) return;
 
   let hiddenUserIds = new Set();
+  const hiddenEventTypes = new Set(
+    new URLSearchParams(window.location.search)
+      .getAll("hidden_events")
+      .flatMap((value) => value.split(","))
+      .filter((type) => type !== ""),
+  );
 
   const calendar = new Calendar(calendarEl, {
     plugins: [timeGridPlugin, dayGridPlugin, rrulePlugin, interactionPlugin],
@@ -150,7 +156,7 @@ document.addEventListener("turbo:load", async () => {
       "events_checkbox_container",
     );
     if (checkboxContainer) {
-      appendCheckbox(eventSource, checkboxContainer, "hidden_events");
+      appendEventTypeCheckbox(eventSource, checkboxContainer);
     }
   });
 
@@ -158,7 +164,7 @@ document.addEventListener("turbo:load", async () => {
     id: "staffEvents",
     events: (info, successCallback) => {
       const filtered = [];
-      for (const src of eventsData) {
+      for (const src of eventsData.filter(isEventTypeShown)) {
         for (const ev of src.events) {
           const assigned = (ev.extendedProps.assignedUsers || []).map((u) =>
             u.id.toString(),
@@ -483,6 +489,50 @@ document.addEventListener("turbo:load", async () => {
     if (isHidden) {
       calendar.getEventSourceById(eventSource.id)?.remove();
     }
+  }
+
+  /**
+   * Whether events of this type (the id of a grouped event source) are shown.
+   */
+  function isEventTypeShown(eventSource) {
+    return !hiddenEventTypes.has(eventSource.id.toString());
+  }
+
+  /**
+   * Shows or hides one event type. All types live in the single "staffEvents"
+   * source, so the change is applied by refetching that source.
+   */
+  function setEventTypeHidden(type, hidden) {
+    if (hidden) {
+      hiddenEventTypes.add(type);
+    } else {
+      hiddenEventTypes.delete(type);
+    }
+    updateHiddenParam(type, "hidden_events", hidden);
+    calendar.getEventSourceById("staffEvents")?.refetch();
+  }
+
+  /**
+   * Appends a checkbox that shows or hides one event type.
+   */
+  function appendEventTypeCheckbox(eventSource, containerElem) {
+    const type = eventSource.id.toString();
+    const { checkbox, label } = createCheckboxElement(
+      type,
+      eventSource.events[0].extendedProps.name,
+      eventSource.color,
+    );
+    checkbox.checked = !hiddenEventTypes.has(type);
+    checkbox.addEventListener("change", () =>
+      setEventTypeHidden(type, !checkbox.checked),
+    );
+
+    const checkboxDiv = document.createElement("div");
+    checkboxDiv.className = "m-2 d-flex align-items-center gap-1";
+    checkboxDiv.appendChild(checkbox);
+    checkboxDiv.appendChild(label);
+    containerElem.appendChild(checkboxDiv);
+    containerElem.previousElementSibling.style.display = "block";
   }
 
   /**

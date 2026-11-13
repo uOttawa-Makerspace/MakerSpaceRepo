@@ -1,5 +1,5 @@
 class LockerSize < ApplicationRecord
-  has_many :lockers
+  has_many :lockers, dependent: :restrict_with_error
 
   # Size is just a string
   validates :size, presence: true

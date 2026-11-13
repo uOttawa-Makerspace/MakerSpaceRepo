@@ -26,13 +26,15 @@ RSpec.describe SubSpace, type: :model do
     expect(SubSpace.new(space: space, name: "Room")).to be_valid
   end
 
-  # SubSpace#destroy with bookings raises InvalidForeignKey (dependent: :destroy removes the status before the booking row); the admin controller works around it with manual cleanup + delete.
-  it "cannot be destroyed while it has bookings (FK violation)" do
+  # A booking's status row refuses its own destroy while the booking points at it, so the room's destroy is
+  # refused; the admin controller removes bookings with destroy_with_status! first.
+  it "cannot be destroyed while it has bookings" do
     create(:booking_status, :pending)
     room = create(:sub_space)
     create(:sub_space_booking, sub_space: room)
-    expect { room.destroy }.to raise_error(ActiveRecord::InvalidForeignKey)
+    expect(room.destroy).to be(false)
     expect(SubSpaceBooking.count).to eq(1)
+    expect(described_class.exists?(room.id)).to be(true)
   end
 
   it "destroys when it has no bookings" do

@@ -14,9 +14,6 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)
     @declined_status = create(:booking_status, :rejected)
-    stub_const("BookingStatus::PENDING", @pending_status)
-    stub_const("BookingStatus::APPROVED", @approved_status)
-    stub_const("BookingStatus::DECLINED", @declined_status)
     ActionMailer::Base.deliveries.clear
   end
 
@@ -33,7 +30,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
   end
 
   def status_name(booking)
-    booking.reload.sub_space_booking_status.booking_status.name
+    booking.reload.booking_status.name
   end
 
   def raw_wall(booking, column = "start_time")
@@ -55,7 +52,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
                      { sub_space: subspace, user: owner,
                        start_time: DateTime.parse("2027-04-03 10:00"),
                        end_time: DateTime.parse("2027-04-03 11:00") }.merge(attrs))
-    booking.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+    booking.change_status!(@pending_status)
     booking
   end
 
@@ -65,7 +62,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     row = create(:sub_space_booking, sub_space: target, user: user, name: "Block",
                                      start_time: Time.zone.parse(start_wall),
                                      end_time: Time.zone.parse(end_wall), blocking: true)
-    row.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+    row.change_status!(@approved_status)
     row
   end
 
@@ -184,7 +181,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     end
   end
 
-  describe "POST create mails" do
+  describe "POST create mails", :perform_jobs do
     it "a pending booking mails the space managers only" do
       managed = create(:space, :with_space_managers)
       room = create(:sub_space, space: managed, approval_required: true,
@@ -198,16 +195,15 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(mail.to).to match_array(managed.space_managers.map(&:email))
     end
 
-    # the mail text says "made in <room> by <booking NAME>", not the user
-    it "names the booking title (not the user) in the needs-approval mail body" do
+    it "names the booker (not the booking title) in the needs-approval mail body" do
       managed = create(:space, :with_space_managers)
       room = create(:sub_space, space: managed, approval_required: true,
                                 max_automatic_approval_hour: nil)
       log_in!(user)
       create_booking(room, name: "Robot Club")
       body = ActionMailer::Base.deliveries.last.body.encoded
-      expect(body).to include("A booking has been made in #{room.name} by Robot Club for Desc")
-      expect(body).not_to include(user.name)
+      expect(body).to include("A booking has been made in #{room.name} by #{user.name} for Desc")
+      expect(body).not_to include("Robot Club")
     end
 
     it "an auto-approved booking by a regular user delivers two mails: managers first, then the booker" do
@@ -231,37 +227,50 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(ActionMailer::Base.deliveries.last.to).to eq([admin.email])
     end
 
-    # with no space managers the needs-approval mail is silently
-    # skipped, so a Pending booking waits with nobody notified.
-    # mails are sent with deliver_now inside the request, so an SMTP
-    # failure turns into a 500 AFTER the booking and its status were saved.
-    it "answers 500 when delivery fails, but the booking is already saved" do
+    # The mails are queued after the booking is saved, so a delivery failure
+    # neither fails the request nor undoes the booking.
+    it "answers 204 and keeps the booking when mail delivery fails", perform_jobs: false do
       managed = create(:space, :with_space_managers)
       room = create(:sub_space, space: managed, approval_required: true, max_automatic_approval_hour: nil)
       allow_any_instance_of(Mail::TestMailer).to receive(:deliver!).and_raise(Net::SMTPFatalError, "550 rejected")
       log_in!(user)
       create_booking(room)
 
-      expect(response).to have_http_status(:internal_server_error)
-      expect(status_name(SubSpaceBooking.find_by!(name: "Fresh"))).to eq("Pending")
+      expect(response).to have_http_status(:no_content)
+      booking = SubSpaceBooking.find_by!(name: "Fresh")
+      expect(status_name(booking)).to eq("Pending")
+
+      # the failure only surfaces when the queued job runs, and leaves the booking as it was
+      expect { perform_enqueued_jobs }.to raise_error(Net::SMTPFatalError)
+      expect(SubSpaceBooking.find_by!(name: "Fresh")).to eq(booking)
+      expect(status_name(booking.reload)).to eq("Pending")
     end
 
-    it "sends nothing for a pending booking when the space has no managers" do
+    it "queues the needs-approval mail instead of delivering it in the request", perform_jobs: false do
+      managed = create(:space, :with_space_managers)
+      room = create(:sub_space, space: managed, approval_required: true, max_automatic_approval_hour: nil)
+      log_in!(user)
+      expect { create_booking(room) }.to have_enqueued_mail(BookingMailer, :send_booking_needs_approval)
+    end
+
+    it "mails the MTC mailbox and reports the missing managers for a pending booking in a space without managers" do
       room = create(:sub_space, space: space, approval_required: true,
                                 max_automatic_approval_hour: nil)
+      expect(Rails.error).to receive(:report).with(an_instance_of(RuntimeError), hash_including(severity: :warning))
       log_in!(user)
       create_booking(room)
 
       expect(response).to have_http_status(:no_content)
       expect(status_name(SubSpaceBooking.find_by!(name: "Fresh"))).to eq("Pending")
-      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(ActionMailer::Base.deliveries.flat_map(&:to)).to eq(["mtc@uottawa.ca"])
     end
 
-    it "sends only the booker's approved mail for an auto-approved booking in a space without managers" do
+    it "mails the MTC mailbox, then the booker, for an auto-approved booking in a space without managers" do
+      expect(Rails.error).to receive(:report).with(an_instance_of(RuntimeError), hash_including(severity: :warning))
       log_in!(user)
       create_booking(subspace)
-      expect(ActionMailer::Base.deliveries.map(&:subject)).to eq(["Booking approved"])
-      expect(ActionMailer::Base.deliveries.last.to).to eq([user.email])
+      expect(ActionMailer::Base.deliveries.map(&:subject)).to eq(["Booking automatically approved.", "Booking approved"])
+      expect(ActionMailer::Base.deliveries.map(&:to)).to eq([["mtc@uottawa.ca"], [user.email]])
     end
   end
 
@@ -284,21 +293,20 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       SubSpaceBooking.where(name: name).order(:start_time).map { |b| raw_wall(b)[0..9] }
     end
 
-    # the loop books `start + recurrence` while `start < recurring_end`,
-    # so a series ending mid-period overshoots recurring_end by one occurrence.
-    it "books one occurrence PAST recurring_end when the end falls mid-period" do
+    # recurring_end is the last day an occurrence may fall on.
+    it "stops at the last occurrence on or before recurring_end when the end falls mid-period" do
       post_series(name: "Over", end_on: "2027-02-16")
       expect(response).to have_http_status(:no_content)
-      expect(walls_of("Over")).to eq(%w[2027-02-03 2027-02-10 2027-02-17])
+      expect(walls_of("Over")).to eq(%w[2027-02-03 2027-02-10])
     end
 
     # a series may span at most 365 days (with
     # weekly the densest, at most 54 occurrences).
-    # A full year is still allowed (with the overshoot, 54 weekly occurrences).
+    # A full year is still allowed (53 weekly occurrences).
     it "allows a series of exactly a year, and refuses one day more with a 422 (en and fr)" do
       post_series(name: "Year", end_on: "2028-02-03")
       expect(response).to have_http_status(:no_content)
-      expect(SubSpaceBooking.where(name: "Year").count).to eq(54)
+      expect(SubSpaceBooking.where(name: "Year").count).to eq(53)
 
       post_series(name: "TooLong", end_on: "2028-02-04")
       expect(response).to have_http_status(:unprocessable_content)
@@ -341,22 +349,43 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(SubSpaceBooking.find_by!(name: "FormString").recurring_booking_id).to be_nil
     end
 
-    # when the FIRST occurrence conflicts, the series carries on
-    # and books the rest. The 422 now says so: how many were booked and the
-    # dates that were not, and no success notice is set.
-    it "still creates the later occurrences when the first one conflicts (422 with a partial series)" do
+    # When the first occurrence cannot be booked the whole series is refused:
+    # nothing is saved, no mail is sent, and one 422 says why.
+    it "refuses the whole series when the first occurrence conflicts" do
       blocking_row(subspace, "2027-02-03 10:30", "2027-02-03 11:30")
-      post_series(name: "NoFirst")
+      expect { post_series(name: "NoFirst") }.not_to change(SubSpaceBooking.where(name: "NoFirst"), :count)
+      message = "The series was not created because the first occurrence, 2027-02-03, could not be booked. " \
+                "This time slot is already booked."
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."],
-                                         "booked" => 2, "failed" => ["2027-02-03"],
-                                         "summary" => "Booked 2 of 3 occurrences. Not booked: 2027-02-03.")
+                                         "summary" => message)
+      expect(flash[:alert]).to eq(message)
       expect(flash[:notice]).to be_nil
-      expect(flash[:alert]).to eq("Booked 2 of 3 occurrences. Not booked: 2027-02-03.")
-      expect(walls_of("NoFirst")).to eq(%w[2027-02-10 2027-02-17])
+      expect(RecurringBooking.count).to eq(0)
     end
 
-    it "mails only for the first occurrence of a pending series" do
+    it "answers the refused series in French" do
+      blocking_row(subspace, "2027-02-03 10:30", "2027-02-03 11:30")
+      post sub_space_booking_index_path(locale: "fr"), as: :json,
+           params: { sub_space_booking: {
+             sub_space_id: subspace.id, start_time: "2027-02-03 10:00", end_time: "2027-02-03 11:00",
+             name: "NoFirstFr", description: "D", recurring: true, recurring_frequency: "weekly",
+             recurring_end: "2027-02-17"
+           } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["summary"]).to start_with("La série n'a pas été créée")
+      expect(SubSpaceBooking.where(name: "NoFirstFr")).to be_empty
+    end
+
+    it "keeps a partial series when only a later occurrence conflicts" do
+      blocking_row(subspace, "2027-02-10 10:30", "2027-02-10 11:30")
+      post_series(name: "LaterOnly")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to include("booked" => 2, "failed" => ["2027-02-10"])
+      expect(walls_of("LaterOnly")).to eq(%w[2027-02-03 2027-02-17])
+    end
+
+    it "mails only for the first occurrence of a pending series", :perform_jobs do
       managed = create(:space, :with_space_managers)
       room = create(:sub_space, space: managed, approval_required: true,
                                 max_automatic_approval_hour: nil)
@@ -640,7 +669,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
           log_in!(user)
           week_booking(user, "06", "10:00", "12:00") # 2h already used
           own = week_booking(user, "07", "10:00", "11:00")
-          own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+          own.change_status!(@pending_status)
 
           update_times(own, "10:00", "12:00") # 2h + 2h > 3h
           expect(response).to have_http_status(:unprocessable_content)
@@ -662,7 +691,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
           log_in!(user)
           week_booking(user, "06", "10:00", "12:00")
           own = week_booking(user, "07", "10:00", "11:00")
-          own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+          own.change_status!(@pending_status)
 
           update_times(own, "11:00", "12:00") # moved: 2h + 1h = 3h, exactly the quota
           expect(response).to have_http_status(:ok)
@@ -676,7 +705,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
           log_in!(user)
           week_booking(user, "06", "10:00", "13:00") # 3h
           own = week_booking(user, "07", "10:00", "13:00") # 3h: 6h in a 3h week
-          own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+          own.change_status!(@pending_status)
 
           patch update_path_for(own), as: :json, params: {
             sub_space_booking: { start_time: "2027-04-07 10:00", end_time: "2027-04-07 13:00",
@@ -697,7 +726,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
           log_in!(user)
           week_booking(user, "06", "10:00", "12:00") # 2h this week
           own = week_booking(user, "07", "10:00", "11:00")
-          own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+          own.change_status!(@pending_status)
 
           patch update_path_for(own), as: :json, params: {
             sub_space_booking: { start_time: "2027-04-14 10:00", end_time: "2027-04-14 13:00",
@@ -713,7 +742,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
           week_booking(create(:user, :regular_user), "06", "10:00", "16:00")
           log_in!(user)
           own = week_booking(user, "07", "10:00", "11:00")
-          own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+          own.change_status!(@pending_status)
           update_times(own, "10:00", "12:00")
           expect(response).to have_http_status(:ok)
 
@@ -756,7 +785,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
 
   # ------------------------------------------------------------ access requests
 
-  describe "request_access routing" do
+  describe "request_access routing", :perform_jobs do
     let(:applicant) { create(:user, :regular_user, booking_approval: false) }
 
     before do
@@ -872,6 +901,113 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     end
   end
 
+  describe "approving access requests that are already approved" do
+    let(:admin) { create(:user, :admin, booking_approval: true) }
+    let(:applicant) { create(:user, :regular_user, booking_approval: false) }
+
+    before { log_in!(admin) }
+
+    it "approve by id is refused the second time: no mail and the approver is unchanged" do
+      uba = UserBookingApproval.create!(user: applicant, identity: "Other", approved: false,
+                                        comments: "c", date: Date.new(2027, 1, 1))
+      perform_enqueued_jobs { put approve_access_sub_space_booking_index_path, params: { id: uba.id } }
+      first_mails = ActionMailer::Base.deliveries.size
+      other_admin = create(:user, :admin, booking_approval: true)
+      log_in!(other_admin)
+      perform_enqueued_jobs { put approve_access_sub_space_booking_index_path, params: { id: uba.id } }
+
+      expect(flash[:notice]).to eq("#{applicant.name} already has booking access.")
+      expect(ActionMailer::Base.deliveries.size).to eq(first_mails)
+      expect(uba.reload.staff_id).to eq(admin.id)
+    end
+
+    it "bulk approve skips requests that are already approved" do
+      uba = UserBookingApproval.create!(user: applicant, identity: "Other", approved: true, staff: admin,
+                                        comments: "c", date: Date.new(2027, 1, 1))
+      applicant.update_column(:booking_approval, true)
+      other_admin = create(:user, :admin, booking_approval: true)
+      log_in!(other_admin)
+      perform_enqueued_jobs do
+        put bulk_approve_access_sub_space_booking_index_path, params: { user_booking_approval_ids: [uba.id] }
+      end
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(uba.reload.staff_id).to eq(admin.id)
+    end
+  end
+
+  describe "bulk approve access messages" do
+    let(:admin) { create(:user, :admin, booking_approval: true) }
+
+    def request_for(approved:)
+      user = create(:user, :regular_user, booking_approval: approved)
+      UserBookingApproval.create!(user: user, identity: "Other", approved: approved, staff: (admin if approved),
+                                  comments: "c", date: Date.new(2027, 1, 1))
+    end
+
+    before { log_in!(admin) }
+
+    it "says all were approved when none were skipped" do
+      a = request_for(approved: false)
+      put bulk_approve_access_sub_space_booking_index_path, params: { user_booking_approval_ids: [a.id] }
+      expect(flash[:notice]).to eq("All selected access requests approved successfully.")
+      expect(flash[:alert]).to be_nil
+    end
+
+    it "reports the skipped ones when only some were approved" do
+      a = request_for(approved: false)
+      b = request_for(approved: true)
+      put bulk_approve_access_sub_space_booking_index_path, params: { user_booking_approval_ids: [a.id, b.id] }
+      expect(flash[:notice]).to eq("Selected access requests approved successfully.")
+      expect(flash[:alert]).to eq("1 selected request(s) were already approved and were skipped.")
+    end
+
+    it "shows only the alert when everything was skipped" do
+      b = request_for(approved: true)
+      put bulk_approve_access_sub_space_booking_index_path, params: { user_booking_approval_ids: [b.id] }
+      expect(flash[:notice]).to be_nil
+      expect(flash[:alert]).to eq("1 selected request(s) were already approved and were skipped.")
+    end
+  end
+
+  describe "bulk approve and decline booking messages" do
+    let(:staff) { create(:user, :staff, booking_approval: true) }
+    let(:booker) { create(:user, :regular_user, booking_approval: true) }
+
+    before { log_in!(staff) }
+
+    %w[approve decline].each do |action|
+      verb = action == "approve" ? "approved" : "declined"
+
+      it "#{action}: no skipped notice when all are pending" do
+        b = pending_booking(booker)
+        put bulk_approve_decline_sub_space_booking_index_path,
+            params: { sub_space_booking_ids: [b.id], bulk_status: action }
+        expect(flash[:notice]).to eq("Bookings #{verb} successfully.")
+        expect(flash[:alert]).to be_nil
+      end
+
+      it "#{action}: notice and alert when only some are pending" do
+        b = pending_booking(booker)
+        done = pending_booking(booker, start_time: DateTime.parse("2027-04-04 10:00"),
+                                       end_time: DateTime.parse("2027-04-04 11:00"))
+        done.change_status!(@approved_status)
+        put bulk_approve_decline_sub_space_booking_index_path,
+            params: { sub_space_booking_ids: [b.id, done.id], bulk_status: action }
+        expect(flash[:notice]).to eq("Bookings #{verb} successfully.")
+        expect(flash[:alert]).to include("1 selected booking(s)")
+      end
+
+      it "#{action}: only the alert when none are pending" do
+        done = pending_booking(booker)
+        done.change_status!(@approved_status)
+        put bulk_approve_decline_sub_space_booking_index_path,
+            params: { sub_space_booking_ids: [done.id], bulk_status: action }
+        expect(flash[:notice]).to be_nil
+        expect(flash[:alert]).to include("1 selected booking(s)")
+      end
+    end
+  end
+
   describe "deny_access / bulk_approve_access branches" do
     before { log_in!(admin) }
 
@@ -891,10 +1027,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(uba.approved).to be(true)
     end
 
-    # no surrounding transaction. The default scope orders newest
-    # first, so the newer request is approved (and committed) before the older
-    # one's invalid user aborts the loop.
-    it "keeps the earlier approvals when a later one raises RecordInvalid (partial commit)" do
+    it "approves nothing and sends no mail when one of the selected requests cannot be approved" do
       good_user = create(:user, :regular_user, booking_approval: false)
       bad_user = create(:user, :regular_user, booking_approval: false)
       bad_user.update_column(:gender, "Unlisted")
@@ -904,26 +1037,38 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       newer = UserBookingApproval.create!(user: good_user, identity: "Other", approved: false,
                                           comments: "c", date: Date.new(2027, 1, 1),
                                           created_at: Time.utc(2027, 2, 1))
-      put bulk_approve_access_sub_space_booking_index_path,
-          params: { user_booking_approval_ids: [older.id, newer.id] }
+      perform_enqueued_jobs do
+        put bulk_approve_access_sub_space_booking_index_path,
+            params: { user_booking_approval_ids: [older.id, newer.id] }
+      end
 
       expect(flash[:alert]).to start_with("Failed to approve: ")
-      expect(newer.reload.approved).to be(true)
-      expect(good_user.reload.booking_approval).to be(true)
+      expect(newer.reload.approved).to be(false)
+      expect(good_user.reload.booking_approval).to be(false)
       expect(older.reload.approved).to be(false)
+      expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    # the request is destroyed BEFORE user.save!; a failing save
-    # leaves the request deleted behind an unhandled RecordInvalid (422).
-    it "deny_access deletes the request even when saving the user then raises RecordInvalid" do
+    it "deny_access removes the request and clears the user's booking access even when the user record is otherwise invalid" do
       applicant = create(:user, :regular_user, booking_approval: true)
       applicant.update_column(:gender, "Unlisted")
       uba = UserBookingApproval.create!(user: applicant, identity: "Other", approved: true,
                                         comments: "c", date: Date.new(2027, 1, 1))
       put deny_access_sub_space_booking_index_path, params: { id: uba.id }
 
-      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:notice]).to eq("Access request declined successfully.")
       expect(UserBookingApproval.exists?(uba.id)).to be(false)
+      expect(applicant.reload.booking_approval).to be(false)
+    end
+
+    it "deny_access keeps the user's access when removing the request fails" do
+      applicant = create(:user, :regular_user, booking_approval: true)
+      uba = UserBookingApproval.create!(user: applicant, identity: "Other", approved: true,
+                                        comments: "c", date: Date.new(2027, 1, 1))
+      allow_any_instance_of(UserBookingApproval).to receive(:destroy!).and_raise(ActiveRecord::RecordNotDestroyed)
+      put deny_access_sub_space_booking_index_path, params: { id: uba.id }
+
+      expect(UserBookingApproval.exists?(uba.id)).to be(true)
       expect(applicant.reload.booking_approval).to be(true)
     end
   end
@@ -946,15 +1091,49 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(mail.subject).to eq("Booking approved")
     end
 
-    # no state guard: re-approving re-sends the mail and moves approved_by
-    it "re-approving an approved booking sends the mail again and overwrites approved_by" do
+    it "re-approving an approved booking is refused: no mail and the approver is unchanged" do
       booking = pending_booking(booker, approved_by_id: booker.id, approved_at: Time.utc(2027, 1, 1))
-      booking.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+      booking.change_status!(@approved_status)
       perform_enqueued_jobs do
         put sub_space_booking_approve_path(sub_space_booking_id: booking.id)
       end
-      expect(ActionMailer::Base.deliveries.size).to eq(1)
-      expect(booking.reload.approved_by_id).to eq(staff.id)
+      expect(flash[:alert]).to include("no longer pending")
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(booking.reload.approved_by_id).to eq(booker.id)
+      expect(booking.booking_status_id).to eq(@approved_status.id)
+    end
+
+    it "declining an approved booking is refused and leaves it approved" do
+      booking = pending_booking(booker)
+      booking.change_status!(@approved_status)
+      put sub_space_booking_decline_path(sub_space_booking_id: booking.id)
+      expect(flash[:alert]).to include("no longer pending")
+      expect(booking.reload.booking_status_id).to eq(@approved_status.id)
+    end
+
+    it "bulk approve skips bookings that are not pending: no mail and the approver is unchanged for them" do
+      pending_one = pending_booking(booker)
+      done = pending_booking(create(:user, :regular_user, booking_approval: true),
+                             start_time: DateTime.parse("2027-04-04 10:00"),
+                             end_time: DateTime.parse("2027-04-04 11:00"),
+                             approved_by_id: booker.id)
+      done.change_status!(@approved_status)
+      perform_enqueued_jobs do
+        put bulk_approve_decline_sub_space_booking_index_path,
+            params: { sub_space_booking_ids: [pending_one.id, done.id], bulk_status: "approve" }
+      end
+      expect(ActionMailer::Base.deliveries.flat_map(&:to)).to eq([booker.email])
+      expect(pending_one.reload.approved_by_id).to eq(staff.id)
+      expect(done.reload.approved_by_id).to eq(booker.id)
+      expect(flash[:alert]).to include("1 selected booking(s) were no longer pending")
+    end
+
+    it "bulk decline leaves an approved booking approved" do
+      done = pending_booking(booker)
+      done.change_status!(@approved_status)
+      put bulk_approve_decline_sub_space_booking_index_path,
+          params: { sub_space_booking_ids: [done.id], bulk_status: "decline" }
+      expect(done.reload.booking_status_id).to eq(@approved_status.id)
     end
 
     it "bulk approve delivers one approved mail per booking" do
@@ -966,7 +1145,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
         put bulk_approve_decline_sub_space_booking_index_path,
             params: { sub_space_booking_ids: [b1.id, b2.id], bulk_status: "approve" }
       end
-      expect(ActionMailer::Base.deliveries.flat_map(&:to)).to eq([b1.user.email, b2.user.email])
+      expect(ActionMailer::Base.deliveries.flat_map(&:to)).to contain_exactly(b1.user.email, b2.user.email)
     end
   end
 
@@ -1006,8 +1185,8 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     end
 
     it "lists the user's own bookings newest first" do
-      older = pending_booking(user, name: "OlderMine")
-      newer = pending_booking(user, name: "NewerMine", start_time: DateTime.parse("2027-05-03 10:00"),
+      pending_booking(user, name: "OlderMine")
+      pending_booking(user, name: "NewerMine", start_time: DateTime.parse("2027-05-03 10:00"),
                                     end_time: DateTime.parse("2027-05-03 11:00"))
       pending_booking(create(:user, :regular_user, booking_approval: true), name: "NotMine")
       log_in!(user)
@@ -1019,8 +1198,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(body.index("NewerMine")).to be < body.index("OlderMine")
     end
 
-    # N+1 pinned: @supervisors reads smj.user per join row
-    it "offers the supervisor select with every space manager once, sorted by name", skip_bullet: true do
+    it "offers the supervisor select with every space manager once, sorted by name" do
       create(:space, :with_space_managers) # 2 managers
       shared = create(:user, :admin, name: "Zed Manager")
       other_space = create(:space)
@@ -1035,8 +1213,52 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(options.size).to eq(SpaceManagerJoin.all.map(&:user_id).uniq.size)
     end
 
-    # Unused eager load pinned
-    it "partitions the admin panel into current and past lists by end time", skip_bullet: true do
+    it "runs the same number of queries for the supervisor select however many managers there are" do
+      managed = create(:space, :with_space_managers)
+      log_in!(create(:user, :regular_user, booking_approval: false))
+      get sub_space_booking_index_path # warm caches
+      few = count_queries { get sub_space_booking_index_path }
+
+      4.times { managed.space_managers << create(:user, :admin) }
+      many = count_queries { get sub_space_booking_index_path }
+
+      expect(Capybara.string(response.body).all("select#supervisor option", visible: :all).size).to eq(6)
+      expect(many).to eq(few)
+    end
+
+    it "runs the same number of queries for the admin panel however many bookings it lists" do
+      travel_to(Time.zone.local(2027, 6, 15, 12, 0)) do
+        log_in!(admin)
+        [[20, @approved_status], [10, @declined_status]].each do |day, status|
+          pending_booking(user, name: "Seed#{day}", start_time: DateTime.parse("2027-06-#{day} 10:00"),
+                                end_time: DateTime.parse("2027-06-#{day} 11:00")).change_status!(status)
+        end
+        series = RecurringBooking.create!
+        [24, 25].each do |day|
+          pending_booking(user, name: "Series#{day}", recurring_booking: series, approved_by: admin,
+                                start_time: DateTime.parse("2027-06-#{day} 10:00"),
+                                end_time: DateTime.parse("2027-06-#{day} 11:00"))
+        end
+        get sub_space_booking_index_path # warm caches
+        few = count_queries { get sub_space_booking_index_path }
+
+        [[21, @approved_status], [22, @approved_status], [8, @approved_status], [9, @declined_status]].each do |day, status|
+          pending_booking(user, name: "More#{day}", start_time: DateTime.parse("2027-06-#{format('%02d', day)} 10:00"),
+                                end_time: DateTime.parse("2027-06-#{format('%02d', day)} 11:00")).change_status!(status)
+        end
+        pending_booking(user, name: "MorePending", start_time: DateTime.parse("2027-06-23 10:00"),
+                              end_time: DateTime.parse("2027-06-23 11:00"))
+        pending_booking(user, name: "Series26", recurring_booking: series, approved_by: admin,
+                              start_time: DateTime.parse("2027-06-26 10:00"),
+                              end_time: DateTime.parse("2027-06-26 11:00"))
+        many = count_queries { get sub_space_booking_index_path }
+
+        expect(response.body).to include("More21", "More8", "More9", "MorePending", "Series24")
+        expect(many).to eq(few)
+      end
+    end
+
+    it "partitions the admin panel into current and past lists by end time" do
       travel_to(Time.zone.local(2027, 6, 15, 12, 0)) do
         log_in!(admin)
         pending_booking(user, name: "FuturePending", start_time: DateTime.parse("2027-06-20 10:00"),
@@ -1045,10 +1267,10 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
                               end_time: DateTime.parse("2027-06-10 11:00"))
         approved = pending_booking(user, name: "FutureApproved", start_time: DateTime.parse("2027-06-21 10:00"),
                                          end_time: DateTime.parse("2027-06-21 11:00"))
-        approved.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+        approved.change_status!(@approved_status)
         declined = pending_booking(user, name: "PastDeclined", start_time: DateTime.parse("2027-06-09 10:00"),
                                          end_time: DateTime.parse("2027-06-09 11:00"))
-        declined.sub_space_booking_status.update!(booking_status_id: @declined_status.id)
+        declined.change_status!(@declined_status)
 
         get sub_space_booking_index_path
         expect(response).to have_http_status(:ok)
@@ -1075,7 +1297,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
                        { sub_space: subspace, user: owner,
                          start_time: DateTime.parse("2027-04-03 10:00"),
                          end_time: DateTime.parse("2027-04-03 11:00") }.merge(attrs))
-      booking.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+      booking.change_status!(@approved_status)
       booking
     end
 
@@ -1101,17 +1323,16 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(feed(admin).first["title"]).to eq("AdminOwn - D")
     end
 
-    # SubSpaceBookingStatus.find(nil) raises RecordNotFound (404)
-    # and takes the whole room feed down
-    it "answers 404 for the whole room when one booking has no status id" do
-      feed_booking(name: "Fine", description: "D")
+    it "lists the other bookings of the room when one booking has no status" do
+      fine = feed_booking(name: "Fine", description: "D")
       broken = feed_booking(name: "Broken", description: "D",
                             start_time: DateTime.parse("2027-04-04 10:00"),
                             end_time: DateTime.parse("2027-04-04 11:00"))
-      broken.update_column(:sub_space_booking_status_id, nil)
+      broken.update_column(:booking_status_id, nil)
       log_in!(user)
       get bookings_sub_space_booking_index_path, params: { room: subspace.id }
-      expect(response).to have_http_status(:not_found)
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body).map { |event| event["id"] }).to eq(["booking_#{fine.id}_#{subspace.id}"])
     end
   end
 end

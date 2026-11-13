@@ -14,12 +14,9 @@ RSpec.describe "Sub space bookings: blocked timeslots across a DST change", type
   let(:member) { create(:user, :regular_user, booking_approval: true) }
 
   before do
-    pending_status = create(:booking_status, :pending)
-    approved_status = create(:booking_status, :approved)
-    declined_status = create(:booking_status, :rejected)
-    stub_const("BookingStatus::PENDING", pending_status)
-    stub_const("BookingStatus::APPROVED", approved_status)
-    stub_const("BookingStatus::DECLINED", declined_status)
+    create(:booking_status, :pending)
+    create(:booking_status, :approved)
+    create(:booking_status, :rejected)
   end
 
   def log_in!(user)

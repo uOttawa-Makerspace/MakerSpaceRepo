@@ -18,13 +18,13 @@
         <p style="text-align: center">
           <% if badges.training_session.training.has_badge %>
             <% if badges.user_id.present? %>
-              <%= link_to(badges.user.name, user_path(User.find(badges.user_id).username)) %>
+              <%= link_to(badges.user.name, user_path(badges.user.username)) %>
             <% else %>
               <%= badges.user.name %>
             <% end %>
         </p>
 
-            <a style="width: 150px;" class="mx-auto w-100!important d-block" target="_blank" href="./badges/<%= badges.id %>">
+            <a style="width: 150px;" class="mx-auto w-100!important d-block" target="_blank" href="<%= badge_path(badges.badge_param) %>">
               <%= render "badge_icon", width: 150, height: 150, level: badges.level, name: badges.training.localized_name, skill: badges.training.skill_id %>
             </a>
           <% end %>

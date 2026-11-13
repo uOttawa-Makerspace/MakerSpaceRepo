@@ -1,17 +1,17 @@
 require "rails_helper"
 
-# Chunk 15: Admin::PiReadersController#update (AdminAreaController: non-admins,
-# guests included, are redirected to "/" silently, no flash).
+# Chunk 15: Admin::PiReadersController#update (AdminAreaController: guests go
+# to the login page, other non-admins to "/" silently, no flash).
 RSpec.describe "Admin pi readers", type: :request do
   let(:pi_reader) { create(:pi_reader) }
   let(:space) { create(:space) }
   let(:params) { { id: pi_reader.id, pi_reader_params: { space_id: space.id, pi_location: "Bench 4" } } }
 
   %i[guest regular staff volunteer].each do |role|
-    it "redirects a #{role} to / without updating" do
+    it "bounces a #{role} without updating" do
       sign_in_as(role)
       patch admin_pi_reader_path(pi_reader), params: params
-      expect(response).to redirect_to("/")
+      expect_admin_area_bounce(guest: role == :guest)
       expect(pi_reader.reload.pi_location).to eq("Room Location")
     end
   end
@@ -54,10 +54,10 @@ RSpec.describe "Admin pi readers", type: :request do
     let(:create_params) { { pi_reader_params: { pi_mac_address: "aa:bb:cc:00:11:22", space_id: space.id, pi_location: "Door" } } }
 
     %i[guest regular staff volunteer].each do |role|
-      it "redirects a #{role} to / without creating a reader" do
+      it "bounces a #{role} without creating a reader" do
         sign_in_as(role)
         expect { post admin_pi_readers_path, params: create_params }.not_to change(PiReader, :count)
-        expect(response).to redirect_to("/")
+        expect_admin_area_bounce(guest: role == :guest)
       end
     end
 

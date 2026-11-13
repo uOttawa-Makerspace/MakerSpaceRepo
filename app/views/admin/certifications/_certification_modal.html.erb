@@ -1,6 +1,6 @@
 <div class="modal-header">
   <h2 class="text-center">Demote: <b><%= certification.training.localized_name %> - <%= certification.level %></b></h2>
-  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
 </div>
 <div class="modal-body">
   <%= form_for certification, url: admin_certification_path(certification) do |f| %>

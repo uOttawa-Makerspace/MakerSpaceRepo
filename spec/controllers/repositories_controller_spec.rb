@@ -383,43 +383,28 @@ RSpec.describe RepositoriesController, type: :controller do
   end
 
   describe "#add_like" do
+    let(:owner) { create(:user, :regular_user) }
+    let(:liker) { create(:user, :regular_user) }
+    let!(:repository) { create(:repository, user_id: owner.id).tap { |r| r.users << owner } }
+
+    before do
+      session[:user_id] = liker.id
+      session[:expires_at] = Time.zone.now + 10_000
+    end
+
+    def like
+      post :add_like, params: { user_username: owner.username, id: repository.id }
+    end
+
     context "Add Like" do
       it "should add a like" do
-        user = create(:user, :regular_user)
-        session[:user_id] = user.id
-        session[:expires_at] = Time.zone.now + 10_000
-        create(:repository, user_id: user.id)
-        Repository.last.users << User.last
-        expect {
-          post :add_like,
-               params: {
-                 user_username: User.last.username,
-                 id: Repository.last.id
-               }
-        }.to change(Repository.last.likes, :count).by(1)
-        expect(User.last.reputation).to eq(5)
+        expect { like }.to change(repository.likes, :count).by(1)
+        expect(owner.reload.reputation).to eq(5)
       end
 
       it "should unlike the repository from the same user" do
-        user = create(:user, :regular_user)
-        session[:user_id] = user.id
-        session[:expires_at] = Time.zone.now + 10_000
-        create(:repository, user_id: user.id)
-        Repository.last.users << User.last
-        expect {
-          post :add_like,
-               params: {
-                 user_username: User.last.username,
-                 id: Repository.last.id
-               }
-        }.to change(Repository.last.likes, :count).by(1)
-        expect {
-          post :add_like,
-               params: {
-                 user_username: User.last.username,
-                 id: Repository.last.id
-               }
-        }.to change(Repository.last.likes, :count).by(-1)
+        expect { like }.to change(repository.likes, :count).by(1)
+        expect { like }.to change(repository.likes, :count).by(-1)
       end
     end
   end

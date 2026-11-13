@@ -12,7 +12,7 @@
     <!-- AVATAR SECTION -->
     <div class="mb-4 d-flex align-items-center gap-3">
       <div class="position-relative">
-        <%= image_tag @user.display_avatar, class: 'rounded-circle object-fit-cover border', style: 'width: 80px; height: 80px;', alt: 'Avatar' %>
+        <%= image_tag @user.display_avatar, class: 'rounded-circle object-fit-cover border', style: 'width: 80px; height: 80px;', alt: t('common.names.avatar') %>
       </div>
       <div>
         <%= f.label :avatar, t('settings.profile.choose_image'), class: 'btn btn-sm btn-outline-secondary mb-1' %>
@@ -54,19 +54,24 @@
       <h6 class="text-muted text-uppercase mb-3" style="font-size: 0.8rem; letter-spacing: 1px;">Student Details</h6>
       
       <div class="mb-3">
-        <%= f.label :student_id, t('users.new.form.student_id'), class: 'form-label' %>
-        <%= f.text_field :student_id, { class: 'form-control', inputmode: 'numeric', autocomplete: 'off', minlength: '9', maxlength: '9', pattern: '[0-9]{9}', title: '9 digit number' } %>
+        <%= f.label :student_id, t('users.new.form.student_id'), class: 'form-label required' %>
+        <%# No browser pattern: stored ids come in many lengths, and the model decides which are valid %>
+        <%= f.text_field :student_id, { class: 'form-control', inputmode: 'numeric', autocomplete: 'off' } %>
       </div>
 
       <div class="mb-3">
         <%= f.label :faculty, t('users.new.form.faculty'), class: 'form-label' %>
-        <%= f.select :faculty, [
+        <% faculty_options = [
               [t('users.new.form.arts'), 'Arts'],
               [t('users.new.form.law'), 'Law'], [t('users.new.form.education'), 'Education'],
               [t('users.new.form.engineering'), 'Engineering'], [t('users.new.form.health_sciences'), 'Health Sciences'],
               [t('users.new.form.medicine'), 'Medicine'], [t('users.new.form.science'), 'Science'],
               [t('users.new.form.social_sciences'), 'Social Sciences'], [t('users.new.form.telfer'), 'Telfer School of Management']
-            ], { prompt: t('users.new.form.choose.faculty') }, { class: 'form-select profile-select' } %>
+            ] %>
+        <%# Keep a stored faculty that is not one of the options, so saving another field does not blank it %>
+        <% current_faculty = @user.faculty_in_database %>
+        <% faculty_options.unshift([current_faculty, current_faculty]) if current_faculty.present? && faculty_options.none? { |_, value| value == current_faculty } %>
+        <%= f.select :faculty, faculty_options, { prompt: t('users.new.form.choose.faculty') }, { class: 'form-select profile-select' } %>
       </div>
 
       <div class="mb-3">

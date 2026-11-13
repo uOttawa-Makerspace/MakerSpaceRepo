@@ -14,6 +14,8 @@ class KeyCertification < ApplicationRecord
   TOTAL_NUMBER_OF_FILES = 10
   NUMBER_OF_STAFF_FILES = 9
   NUMBER_OF_SUPERVISOR_FILES = TOTAL_NUMBER_OF_FILES - NUMBER_OF_STAFF_FILES
+  PDF_FILE_ATTACHMENTS =
+    (1..TOTAL_NUMBER_OF_FILES).to_h { |i| [i, :"pdf_file_#{i}"] }.freeze
 
   FILE_NAMES = %w[
     WHMIS
@@ -49,10 +51,16 @@ class KeyCertification < ApplicationRecord
     "#{user.name.parameterize}-#{KeyCertification::FILE_NAMES[file_number - 1]}.pdf"
   end
 
+  # The attachment for file number 1..TOTAL_NUMBER_OF_FILES, nil for any other number.
+  def pdf_file_at(file_number)
+    name = PDF_FILE_ATTACHMENTS[file_number]
+    name && public_send(name)
+  end
+
   def attach_pdf_file(file_number, uploaded_file)
-    file_name = "pdf_file_#{file_number}"
-    send(file_name).attach(uploaded_file)
-    send(file_name).blob.update(filename: generate_filename(file_number))
+    attachment = pdf_file_at(file_number)
+    attachment.attach(uploaded_file)
+    attachment.blob.update(filename: generate_filename(file_number))
   end
 
   def get_key_certs_attached
@@ -80,7 +88,7 @@ class KeyCertification < ApplicationRecord
       file_param = "pdf_file_#{i}"
       if self.send(file_param).attached? &&
            !self.send(file_param).content_type.in?(%w[application/pdf])
-        errors.add(file_param.to_sym, "must be a PDF file")
+        errors.add(file_param.to_sym, :not_a_pdf)
       end
     end
   end

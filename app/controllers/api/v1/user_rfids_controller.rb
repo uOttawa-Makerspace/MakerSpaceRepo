@@ -21,21 +21,12 @@ module Api
         head :no_content
       end
 
-      # Unlinks every card the user holds (normally one) and re-homes it exactly
-      # as the legacy unlink_rfid does: its mac_address becomes the first reader of
-      # the space of the STAFF member's last lab session, so it shows up in their
-      # unlinked list. No card is a no-op.
+      # Unlinks every card the user holds (normally one) through
+      # Rfid.unlink_from_user!: its mac_address becomes the first reader of the
+      # caller's assigned space, so it shows up in their unlinked list. No card is
+      # a no-op.
       def destroy
-        user = find_user!
-        Rfid.transaction do
-          User.where(id: user.id).lock("FOR NO KEY UPDATE").take
-          reader = current_user.location != "no sign in yet" && Space.find_by(name: current_user.location)&.pi_readers&.first
-          Rfid.where(user_id: user.id).lock("FOR NO KEY UPDATE").each do |rfid|
-            rfid.user_id = nil
-            rfid.mac_address = reader.pi_mac_address if reader
-            rfid.save!
-          end
-        end
+        Rfid.unlink_from_user!(find_user!, actor: current_user)
         head :no_content
       end
 

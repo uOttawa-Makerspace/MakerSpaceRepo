@@ -166,8 +166,7 @@ RSpec.describe Admin::KeysController, type: :controller do
       end
 
       it "should update the key but not the status" do
-        kr =
-          create(
+        create(
             :key_request,
             :status_approved,
             :all_questions_answered,
@@ -304,7 +303,7 @@ RSpec.describe Admin::KeysController, type: :controller do
               }
 
         expect(flash[:alert]).to eq(
-          "Something went wrong while trying to assign the key"
+          "Something went wrong while trying to assign the key: Only a key in inventory can be assigned."
         )
         expect(KeyTransaction.count).to eq(0)
         expect(Key.last.status).to eq("unknown")
@@ -404,7 +403,7 @@ RSpec.describe Admin::KeysController, type: :controller do
               }
 
         expect(flash[:alert]).to eq(
-          "Something went wrong while trying to revoke the key"
+          "Something went wrong while trying to revoke the key: Only a held key can be revoked."
         )
       end
     end

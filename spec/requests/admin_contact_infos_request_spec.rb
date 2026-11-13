@@ -30,18 +30,18 @@ RSpec.describe "Admin::ContactInfos (HTTP contract)", type: :request do
 
         it "refuses every action and changes nothing" do
           get admin_contact_infos_path
-          expect(response.location).to eq("http://www.example.com/")
+          expect_admin_area_bounce(guest: who.nil?)
           get new_admin_contact_info_path
-          expect(response.location).to eq("http://www.example.com/")
+          expect_admin_area_bounce(guest: who.nil?)
           get edit_admin_contact_info_path(info)
-          expect(response.location).to eq("http://www.example.com/")
+          expect_admin_area_bounce(guest: who.nil?)
           expect { post admin_contact_infos_path, params: valid_params }.not_to change(ContactInfo, :count)
-          expect(response.location).to eq("http://www.example.com/")
+          expect_admin_area_bounce(guest: who.nil?)
           patch admin_contact_info_path(info), params: { contact_info: { name: "Hacked" } }
-          expect(response.location).to eq("http://www.example.com/")
+          expect_admin_area_bounce(guest: who.nil?)
           expect(info.reload.name).to eq("Front Desk")
           expect { delete admin_contact_info_path(info) }.not_to change(ContactInfo, :count)
-          expect(response.location).to eq("http://www.example.com/")
+          expect_admin_area_bounce(guest: who.nil?)
         end
       end
     end
@@ -99,10 +99,46 @@ RSpec.describe "Admin::ContactInfos (HTTP contract)", type: :request do
       expect(ContactInfo.order(:id).last.opening_hours.count).to eq(1)
     end
 
-    it "create without the contact_info param 500s (nil[] on the missing hash)" do
-      # create dereferences params[:contact_info][...] before strong params, so a missing hash is a 500, not the app's ParameterMissing redirect
+    it "create without the contact_info param redirects with the missing-parameter alert and creates nothing" do
       expect { post admin_contact_infos_path, params: {} }.not_to change(ContactInfo, :count)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to include("contact_info")
+    end
+
+    it "create with a non-hash contact_info param answers like a missing one and creates nothing" do
+      expect { post admin_contact_infos_path, params: { contact_info: "x" } }.not_to change(ContactInfo, :count)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to include("contact_info")
+    end
+
+    it "update with a non-hash contact_info param answers like a missing one and changes nothing" do
+      patch admin_contact_info_path(info), params: { contact_info: "x" }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to include("contact_info")
+      expect(info.reload.name).to eq("Front Desk")
+    end
+
+    context "when the record cannot be saved" do
+      before do
+        allow_any_instance_of(ContactInfo).to receive(:save) do |record|
+          record.errors.add(:email, "is invalid")
+          false
+        end
+      end
+
+      it "create re-renders the form with the errors and creates nothing" do
+        expect { post admin_contact_infos_path, params: valid_params }.not_to change(ContactInfo, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("Create a new Contact Info")
+        expect(response.body).to include("Email is invalid")
+        expect(response.body).to include("1 error prevented this contact info from being saved:")
+      end
+
+      it "create shows the error heading in French" do
+        post admin_contact_infos_path, params: valid_params.merge(locale: "fr")
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include(CGI.escapeHTML("1 erreur a empêché l'enregistrement de cette fiche de contact"))
+      end
     end
 
     it "update changes fields and redirects with notice" do

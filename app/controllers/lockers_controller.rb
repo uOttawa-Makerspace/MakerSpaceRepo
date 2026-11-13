@@ -1,13 +1,7 @@
 class LockersController < AdminAreaController
-  before_action :signed_in
+  # Guests are sent to the login page before the admin check can send them away.
+  prepend_before_action :signed_in
   before_action :locker_queries, only: %i[show create create_multiple update]
-
-  before_action do
-    unless current_user.staff?
-      flash[:alert] = 'You cannot access this area'
-      redirect_back(fallback_location: root_path)
-    end
-  end
 
   helper_method :rental_state_icon
 
@@ -47,7 +41,7 @@ class LockersController < AdminAreaController
       flash[:notice] = "Created locker ##{@locker.specifier}"
       redirect_to @locker
     else
-      flash[:alert] = @locker.errors.full_messages.to_sentence.to_s
+      flash.now[:alert] = @locker.errors.full_messages.to_sentence
       render :index, status: :unprocessable_entity
     end
   end
@@ -86,7 +80,13 @@ class LockersController < AdminAreaController
         format.json { head :no_content }
       end
     else
-      render :show, status: :unprocessable_content
+      respond_to do |format|
+        format.html do
+          flash.now[:alert] = @locker.errors.full_messages.to_sentence
+          render :show, status: :unprocessable_content
+        end
+        format.json { render json: @locker.errors, status: :unprocessable_content }
+      end
     end
   end
 
@@ -116,6 +116,7 @@ class LockersController < AdminAreaController
       # Update button was clicked
       Locker
         .where(id: params[:id])
+        .includes(:locker_size)
         .find_each { |locker| locker.update(locker_params) }
 
       flash[:notice] = 'Lockers updated'
