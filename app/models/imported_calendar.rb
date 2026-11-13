@@ -220,13 +220,15 @@ class ImportedCalendar
   def cancelled?(event) = event.status.to_s.casecmp?("CANCELLED")
 
   # The entry for the event's own times, or nil (reported) when it has no usable start.
+  # An all-day event with no end lasts its one day; a timed one with no end has none (a moment at its start).
   def entry_for(event, recurrence_id)
     starts_at = zoned_time(event.dtstart)
     return report_later("ICS event has no usable start", event.uid) if starts_at.nil?
 
+    all_day = event.dtstart.is_a?(Icalendar::Values::Date)
     Entry.new(uid: event.uid.to_s, recurrence_id: recurrence_id, summary: event.summary&.to_s, description: event.description&.to_s,
-              all_day: event.dtstart.is_a?(Icalendar::Values::Date), starts_at: starts_at,
-              ends_at: zoned_time(event.dtend, starts_at.time_zone), series: nil)
+              all_day: all_day, starts_at: starts_at,
+              ends_at: zoned_time(event.dtend, starts_at.time_zone) || (starts_at.advance(days: 1) if all_day), series: nil)
   end
 
   # A time of the event; a zone name that cannot be resolved is noted, to be reported once for the feed.
@@ -251,8 +253,7 @@ class ImportedCalendar
 
   # The series, unless it ended more than two months ago (by UNTIL or after its COUNT).
   def series_entry(entry, event, overrides)
-    ends_at = entry.ends_at || (entry.all_day ? entry.starts_at.advance(days: 1) : entry.starts_at)
-    series = RecurringSeries.from_ics(event, overrides, starts_at: entry.starts_at, ends_at: ends_at)
+    series = RecurringSeries.from_ics(event, overrides, starts_at: entry.starts_at, ends_at: entry.ends_at || entry.starts_at)
     entry.with(series: series) unless ended?(series)
   end
 

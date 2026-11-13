@@ -220,7 +220,7 @@ RSpec.describe CalendarHelper, type: :helper do
       expect(event[:rrule]).to start_with("DTSTART:20270115T100000")
     end
 
-    it "keeps single events and modified instances without an end, judging their age by the start" do
+    it "keeps single events and modified instances without an end (an all-day one lasts its day), judging their age by the start" do
       body = ics(
         vevent("day", ["DTSTART;VALUE=DATE:20270112", "SUMMARY:All day"]),
         vevent("old", ["DTSTART:20260801T150000Z", "SUMMARY:Old"]),
@@ -231,7 +231,7 @@ RSpec.describe CalendarHelper, type: :helper do
       stub_request(:get, url).to_return(status: 200, body: body)
       events = parse_ics_calendar(url).first[:events]
       expect(events.map { |e| e[:title] }).to match_array(["All day", "Weekly", "Moved"])
-      expect(events.find { |e| e[:title] == "All day" }).to include(allDay: true, start: "2027-01-12T00:00:00", end: nil)
+      expect(events.find { |e| e[:title] == "All day" }).to include(allDay: true, start: "2027-01-12T00:00:00", end: "2027-01-13T00:00:00")
     end
 
     it "lists a modified instance whose master event is not in the feed" do
