@@ -147,7 +147,7 @@
                 <% @project_proposal.photos.each do |photo| %>
                     <div class="file-upload-item-preview">
                         <%= hidden_field_tag "project_proposal[photos][]", photo.signed_id %>
-                        <%= image_tag photo %>
+                        <%= image_tag photo, alt: '' %>
                         <span title="<%= photo.filename %>"><%= photo.filename %></span>
                         <%= button_tag t('project_proposal.admin.delete'),
                                        class: 'file-upload-item-delete',

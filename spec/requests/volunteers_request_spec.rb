@@ -308,6 +308,14 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       expect(ivar(:@volunteer)).to eq(user)
     end
 
+    it "links only the app's own stylesheets, none from another host" do
+      vol_login!(create(:user, :regular_user))
+      get transcript_volunteers_path
+      hrefs = Nokogiri::HTML(response.body).css("link[rel=stylesheet]").map { |l| l["href"] }
+      expect(hrefs).to include(a_string_matching(/volunteer_transcript.*\.css\z/))
+      expect(hrefs).to all(start_with("/"))
+    end
+
     it "computes totals from approved requests, approved hours and CC money" do
       user = create(:user, :volunteer_with_volunteer_program)
       create(:volunteer_hour, :approved1, user: user)
