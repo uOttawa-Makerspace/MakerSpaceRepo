@@ -11,11 +11,13 @@ class CalendarWindow
   # Its message is the answer shown to the caller.
   class Invalid < StandardError; end
 
-  # Keeps everything.
-  ALL = Class.new do
+  # The window of a request with neither param: it keeps everything.
+  class Unbounded
     def records(relation) = relation
     def entries(list) = list
-  end.new
+  end
+
+  ALL = Unbounded.new
 
   attr_reader :from, :to
 

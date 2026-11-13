@@ -12,6 +12,7 @@ RSpec.describe CalendarWindow do
   describe ".from_params" do
     it "keeps everything when neither bound is given" do
       expect(described_class.from_params(ActionController::Parameters.new({}))).to be(CalendarWindow::ALL)
+      expect(CalendarWindow::ALL).to be_a(CalendarWindow::Unbounded)
     end
 
     it "reads a time without an offset as Toronto wall time, as FullCalendar sends it" do
