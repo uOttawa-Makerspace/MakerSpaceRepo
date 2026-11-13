@@ -5,8 +5,9 @@ namespace :bookings do
        "(the status row wins; the old table is never changed). Records each change in " \
        "booking_status_reconciliations and prints it."
   task reconcile_statuses: :environment do
-    # After the status column exists, every writer sets the column and the old status row together, so the
-    # two can differ only because code from before the column wrote the status row alone: the row is newer.
+    # Code from before the column wrote only the old status row, and the app now writes only the column and
+    # sets the booking's updated_at. An old row is copied only when it is newer than the booking, so a
+    # status the app changed later is never undone; a booking that differs and is not copied is listed.
     # The record rows are written by the same statement as the update.
     changed = SubSpaceBooking.connection.select_rows(<<~SQL.squish)
       WITH todo AS (
@@ -15,6 +16,7 @@ namespace :bookings do
         JOIN sub_space_booking_statuses s
           ON s.id = b.sub_space_booking_status_id AND s.sub_space_booking_id = b.id
         WHERE s.booking_status_id IS NOT NULL AND b.booking_status_id IS DISTINCT FROM s.booking_status_id
+          AND s.updated_at > b.updated_at
       ), recorded AS (
         INSERT INTO booking_status_reconciliations (sub_space_booking_id, was_booking_status_id, now_booking_status_id, created_at)
         SELECT id, was_id, now_id, now() FROM todo ORDER BY id RETURNING sub_space_booking_id
@@ -25,6 +27,14 @@ namespace :bookings do
       JOIN updated USING (id) JOIN recorded ON recorded.sub_space_booking_id = todo.id ORDER BY todo.id
     SQL
     changed.each { |id, was, now| puts "booking #{id}: booking_status_id #{was.inspect} -> #{now}" }
+    skipped = SubSpaceBooking.connection.select_values(<<~SQL.squish)
+      SELECT b.id FROM sub_space_bookings b
+      JOIN sub_space_booking_statuses s
+        ON s.id = b.sub_space_booking_status_id AND s.sub_space_booking_id = b.id
+      WHERE b.booking_status_id IS NOT NULL AND s.booking_status_id IS DISTINCT FROM b.booking_status_id
+      ORDER BY b.id
+    SQL
+    puts "#{skipped.size} booking(s) skipped, their status changed after the old row was written (ids: #{skipped.join(', ')})" if skipped.any?
     unmatched = SubSpaceBooking.where(booking_status_id: nil).pluck(:id)
     puts "#{changed.size} booking(s) changed"
     puts "#{unmatched.size} booking(s) still without a status (ids: #{unmatched.join(', ')})" if unmatched.any?

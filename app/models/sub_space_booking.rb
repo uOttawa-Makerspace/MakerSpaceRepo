@@ -75,9 +75,10 @@ class SubSpaceBooking < ApplicationRecord
   end
 
   # Changes the status of a saved booking without running validations (a booking that no longer passes
-  # some rule can still be approved or declined).
+  # some rule can still be approved or declined). Like the two methods below, it sets updated_at, which
+  # is how bookings:reconcile_statuses tells a status the app changed from one an old status row holds.
   def change_status!(status)
-    update_column(:booking_status_id, status.id)
+    update_columns(booking_status_id: status.id, updated_at: Time.current)
   end
 
   # Approves the booking if it is still pending and says whether this call did it, so only one of two
@@ -85,7 +86,8 @@ class SubSpaceBooking < ApplicationRecord
   # (no validations), so a past pending booking can still be approved.
   def approve_if_pending!(by:)
     claimed = self.class.pending.where(id: id).update_all(
-      booking_status_id: BookingStatus.approved.id, approved_at: Time.current, approved_by_id: by.id
+      booking_status_id: BookingStatus.approved.id, approved_at: Time.current, approved_by_id: by.id,
+      updated_at: Time.current
     )
     return false if claimed.zero?
 
@@ -98,7 +100,7 @@ class SubSpaceBooking < ApplicationRecord
   # writes without validations like approve_if_pending!.
   def decline_if_pending!
     claimed = self.class.pending.where(id: id).update_all(
-      booking_status_id: BookingStatus.declined.id, approved_at: nil, approved_by_id: nil
+      booking_status_id: BookingStatus.declined.id, approved_at: nil, approved_by_id: nil, updated_at: Time.current
     )
     return false if claimed.zero?
 

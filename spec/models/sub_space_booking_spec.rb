@@ -149,6 +149,26 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
     end
 
     describe "#approve_if_pending! and #decline_if_pending!" do
+      it "approve returns false the second time and changes nothing" do
+        booking = create(:sub_space_booking)
+        expect(booking.approve_if_pending!(by: booking.user)).to be(true)
+        before = described_class.find(booking.id).attributes
+
+        expect(described_class.find(booking.id).approve_if_pending!(by: create(:user, :admin))).to be(false)
+
+        expect(described_class.find(booking.id).attributes).to eq(before)
+      end
+
+      it "decline returns false the second time and changes nothing" do
+        booking = create(:sub_space_booking)
+        expect(booking.decline_if_pending!).to be(true)
+        before = described_class.find(booking.id).attributes
+
+        expect(described_class.find(booking.id).decline_if_pending!).to be(false)
+
+        expect(described_class.find(booking.id).attributes).to eq(before)
+      end
+
       it "change the status and write no old status row" do
         approved, declined = create_list(:sub_space_booking, 2)
 

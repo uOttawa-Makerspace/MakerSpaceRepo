@@ -23,6 +23,12 @@ RSpec.describe "bookings:reconcile_statuses", :booking_clock do
     $stdout = original
   end
 
+  # What code from before the column did: set the status on the old row only, so the row is newer.
+  def write_old_row(booking, status)
+    SubSpaceBookingStatus.find_by(sub_space_booking_id: booking.id)
+                         .update_columns(booking_status_id: status.id, updated_at: booking.updated_at + 1.minute)
+  end
+
   def old_row(booking)
     SubSpaceBookingStatus.find_by(sub_space_booking_id: booking.id)
   end
@@ -30,9 +36,9 @@ RSpec.describe "bookings:reconcile_statuses", :booking_clock do
   it "copies the status row into an empty column and into a stale one, and prints what it changed" do
     empty = create(:sub_space_booking, :with_old_status_row)
     stale = create(:sub_space_booking, :with_old_status_row)
-    old_row(empty).update_columns(booking_status_id: approved.id)
+    write_old_row(empty, approved)
     empty.update_column(:booking_status_id, nil)
-    old_row(stale).update_columns(booking_status_id: declined.id)
+    write_old_row(stale, declined)
 
     output = run_task
 
@@ -46,7 +52,7 @@ RSpec.describe "bookings:reconcile_statuses", :booking_clock do
   it "never changes the old status rows or a booking that already agrees" do
     agreeing = create(:sub_space_booking, :with_old_status_row)
     agreeing.change_status!(approved)
-    old_row(agreeing).update_columns(booking_status_id: approved.id)
+    write_old_row(agreeing, approved)
     rows_before = SubSpaceBookingStatus.order(:id).pluck(:id, :booking_status_id, :sub_space_booking_id, :updated_at)
 
     expect(run_task).to include("0 booking(s) changed")
@@ -57,12 +63,38 @@ RSpec.describe "bookings:reconcile_statuses", :booking_clock do
 
   it "is safe to run twice" do
     stale = create(:sub_space_booking, :with_old_status_row)
-    old_row(stale).update_columns(booking_status_id: approved.id)
+    write_old_row(stale, approved)
     run_task
     Rake::Task["bookings:reconcile_statuses"].reenable
 
     expect(run_task).to include("0 booking(s) changed")
     expect(stale.reload.booking_status).to eq(approved)
+  end
+
+  it "skips a booking the app changed after its old row was written, and lists it" do
+    changed_later = create(:sub_space_booking, :with_old_status_row)
+    stale = create(:sub_space_booking, :with_old_status_row)
+    write_old_row(changed_later, approved)
+    changed_later.update_columns(booking_status_id: declined.id, updated_at: changed_later.updated_at + 5.minutes)
+    write_old_row(stale, approved)
+
+    output = run_task
+
+    expect(changed_later.reload.booking_status).to eq(declined)
+    expect(stale.reload.booking_status).to eq(approved)
+    expect(output).to include("1 booking(s) changed")
+    expect(output).to include("1 booking(s) skipped").and include("ids: #{changed_later.id}")
+    expect(SubSpaceBooking.connection.select_value("SELECT count(*) FROM booking_status_reconciliations WHERE sub_space_booking_id = #{changed_later.id}")).to eq(0)
+  end
+
+  it "does not undo a booking approved by the app after its old row was written" do
+    booking = create(:sub_space_booking, :with_old_status_row)
+    travel_to(booking.updated_at + 5.minutes) { booking.approve_if_pending!(by: booking.user) }
+
+    run_task
+
+    expect(booking.reload).to be_approved
+    expect(old_row(booking).booking_status).to eq(pending)
   end
 
   it "leaves a booking with no matching status row alone and lists it" do
@@ -81,6 +113,12 @@ RSpec.describe "bookings:restore_reconciled_statuses", :booking_clock do
   let!(:pending) { create(:booking_status, :pending) }
   let!(:approved) { create(:booking_status, :approved) }
   let!(:declined) { create(:booking_status, :rejected) }
+
+  # What code from before the column did: set the status on the old row only, so the row is newer.
+  def write_old_row(booking, status)
+    SubSpaceBookingStatus.find_by(sub_space_booking_id: booking.id)
+                         .update_columns(booking_status_id: status.id, updated_at: booking.updated_at + 1.minute)
+  end
 
   before do
     Rails.application.load_tasks unless Rake::Task.task_defined?("bookings:reconcile_statuses")
@@ -107,9 +145,9 @@ RSpec.describe "bookings:restore_reconciled_statuses", :booking_clock do
   let!(:stale) { create(:sub_space_booking, :with_old_status_row) }
 
   before do
-    SubSpaceBookingStatus.find_by(sub_space_booking_id: empty.id).update_columns(booking_status_id: approved.id)
+    write_old_row(empty, approved)
     empty.update_column(:booking_status_id, nil)
-    SubSpaceBookingStatus.find_by(sub_space_booking_id: stale.id).update_columns(booking_status_id: declined.id)
+    write_old_row(stale, declined)
   end
 
   it "reconcile records one row per change in the same run, and none on a second run" do
@@ -123,7 +161,7 @@ RSpec.describe "bookings:restore_reconciled_statuses", :booking_clock do
   it "records nothing for a booking that already agrees" do
     agreeing = create(:sub_space_booking, :with_old_status_row)
     agreeing.change_status!(approved)
-    SubSpaceBookingStatus.find_by(sub_space_booking_id: agreeing.id).update_columns(booking_status_id: approved.id)
+    write_old_row(agreeing, approved)
 
     run("bookings:reconcile_statuses")
 
@@ -171,7 +209,7 @@ RSpec.describe "bookings:restore_reconciled_statuses", :booking_clock do
 
   it "restores a booking reconciled twice to its first value, newest change first" do
     run("bookings:reconcile_statuses")
-    SubSpaceBookingStatus.find_by(sub_space_booking_id: stale.id).update_columns(booking_status_id: approved.id)
+    write_old_row(stale, approved)
     run("bookings:reconcile_statuses")
     expect(records.select { |r| r.first == stale.id }).to eq([[stale.id, pending.id, declined.id], [stale.id, declined.id, approved.id]])
 
@@ -183,7 +221,7 @@ RSpec.describe "bookings:restore_reconciled_statuses", :booking_clock do
 
   it "does not undo an older change of a booking once a newer one was left alone" do
     run("bookings:reconcile_statuses")
-    SubSpaceBookingStatus.find_by(sub_space_booking_id: stale.id).update_columns(booking_status_id: approved.id)
+    write_old_row(stale, approved)
     run("bookings:reconcile_statuses")
     stale.change_status!(declined)
 
