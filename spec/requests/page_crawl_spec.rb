@@ -9,7 +9,16 @@ require "rails_helper"
 # reason); an entry that stops failing, or a new 500, fails the example so
 # the table is always exact. Routes the world cannot fill are skipped and
 # listed (set CRAWL_REPORT=1 to dump coverage to tmp/page_crawl_report.json).
+# The crawl runs on one fixed clock (the same instant the browser crawl uses),
+# so the world's records and the request params (calendar week, staff
+# conflicts slot) are the same whatever the real date.
 RSpec.describe "Page crawl (request level)", type: :request do
+  include ActiveSupport::Testing::TimeHelpers
+
+  CRAWL_CLOCK = Time.utc(2027, 3, 16, 16) # noon in Toronto
+
+  around { |example| travel_to(CRAWL_CLOCK) { example.run } }
+
   # route (path spec) => { role => short reason }
   ALL = PageCrawl::ROLES
   KNOWN_500 = {}.freeze
