@@ -45,7 +45,7 @@ module SystemDiagnostics
         now = monotonic
         duration = (finish - start) * 1000.0
         status = payload[:status] || payload[:response]&.status
-        location = strip_query(payload[:response]&.location) if payload.key?(:response)
+        location = strip_query(payload[:response]&.location)
         @mutex.synchronize do
           @in_flight.delete(id)
           @requests << Request.new(started: now - duration / 1000.0, finished: now, method: payload[:method],
