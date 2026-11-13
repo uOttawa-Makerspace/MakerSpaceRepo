@@ -82,9 +82,6 @@ class JobTasksController < SessionsController
 
   private
 
-  # Runs the block through JobOrder#apply_owner_change!. Returns :applied or :sent_back (with the "sent back for a
-  # new quote" notice) when the change committed; otherwise nothing was committed: redirects with the reason and
-  # returns false. The refusal has already been reported and logged by the model.
   # What the options step lists, with the lookups it needs per option made once for all of them: the task's own rows
   # (with their uploaded file) and, for job-wide options, the other task of the order that already selected them.
   def load_options_step
@@ -97,6 +94,9 @@ class JobTasksController < SessionsController
     @other_task_by_option = @job_task.other_task_ids_using(@options.select(&:is_job_wide).map(&:id))
   end
 
+  # Runs the block through JobOrder#apply_owner_change!. Returns :applied or :sent_back (with the "sent back for a
+  # new quote" notice) when the change committed; otherwise nothing was committed: redirects with the reason and
+  # returns false. The refusal has already been reported and logged by the model.
   def apply_change(&)
     result = @job_order.apply_owner_change!(actor: current_user, &)
     return refused_change(result) unless result.ok?
