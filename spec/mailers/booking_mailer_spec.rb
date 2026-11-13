@@ -184,16 +184,51 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
   end
 
   describe ".send_booking_approved" do
-    it "mails the booker" do
-      described_class.send_booking_approved(booking.id).deliver_now
+    it "mails the booker in the default language when they saved none, even when queued from a French page" do
+      I18n.with_locale(:fr) do
+        deliver_later_and_perform { described_class.send_booking_approved(booking.id).deliver_later }
+      end
 
-      mail = delivered.last
+      mail = delivered.sole
       expect(mail.to).to eq([booker.email])
       expect(mail.subject).to eq("Booking approved")
-      expect(mail.body.encoded).to include(
+      body = text_of(mail)
+      expect(body).to include("Hello Pat Booker,")
+      expect(body).to include(
         "Your booking in Laser Room for Weekly build on " \
         "March 03, 2027 10:00 to March 03, 2027 11:30 has been approved."
       )
+      expect(body).to include("You have received this email because your booking has been approved.")
+      expect(body).not_to include("Bonjour", "mars")
+    end
+
+    it "is written in French for a booker who saved French, even when queued from an English page" do
+      booker.update!(locale: "fr")
+      I18n.with_locale(:en) do
+        deliver_later_and_perform { described_class.send_booking_approved(booking.id).deliver_later }
+      end
+
+      mail = delivered.sole
+      expect(mail.subject).to eq("Réservation approuvée")
+      body = text_of(mail)
+      expect(body).to include("Bonjour Pat Booker,")
+      expect(body).to include(
+        "Votre réservation dans Laser Room pour Weekly build " \
+        "du 03 mars 2027 à 10:00 au 03 mars 2027 à 11:30 a été approuvée."
+      )
+      expect(body).to include("Vous avez reçu ce courriel parce que votre réservation a été approuvée.")
+      expect(body).not_to include("Hello", "March")
+    end
+
+    it "shows the booking description and the booker's name as text, never as markup" do
+      booker.update_column(:name, "Pat <b>Booker</b>") # older rows predate the name check
+      booking.update_columns(description: "<b>loud</b> & <script>x</script>")
+      described_class.send_booking_approved(booking.id).deliver_now
+
+      body = delivered.sole.body.decoded
+      expect(body).to include("Pat &lt;b&gt;Booker&lt;/b&gt;,")
+      expect(body).to include("&lt;b&gt;loud&lt;/b&gt; &amp; &lt;script&gt;x&lt;/script&gt;")
+      expect(body).not_to include("<script>x", "<b>loud", "<b>Booker")
     end
 
     it "sends nothing when the booker has a blank email" do
@@ -281,13 +316,45 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
                                   comments: "c", date: Date.new(2027, 1, 1))
     end
 
-    it "mails the applicant" do
-      described_class.send_booking_approval_request_approved(uba.id).deliver_now
+    it "mails the applicant in the default language when they saved none, even when queued from a French page" do
+      I18n.with_locale(:fr) do
+        deliver_later_and_perform { described_class.send_booking_approval_request_approved(uba.id).deliver_later }
+      end
 
-      mail = delivered.last
+      mail = delivered.sole
       expect(mail.to).to eq([booker.email])
       expect(mail.subject).to eq("Booking approval request accepted")
-      expect(mail.body.encoded).to include("Your booking approval request has been reviewed and accepted by an admin.")
+      body = text_of(mail)
+      expect(body).to include("Hello Pat Booker,")
+      expect(body).to include(
+        "Your booking approval request has been reviewed and accepted by an admin. " \
+        "Please go to the MakerRepo Booking page if you would like to book rooms."
+      )
+      expect(body).to include("You have received this email because your booking access request was approved.")
+      expect(mail.body.decoded).to match(%r{<a href="https?://[^"/]+/sub_space_booking">MakerRepo Booking</a>})
+      expect(body).not_to include("Bonjour")
+    end
+
+    it "is written in French for an applicant who saved French, with their name as text" do
+      booker.update_columns(locale: "fr", name: "Pat <b>Booker</b>") # older rows predate the name check
+      I18n.with_locale(:en) do
+        deliver_later_and_perform { described_class.send_booking_approval_request_approved(uba.id).deliver_later }
+      end
+
+      mail = delivered.sole
+      expect(mail.subject).to eq("Demande d'accès aux réservations acceptée")
+      body = text_of(mail)
+      expect(body).to include("Bonjour Pat <b>Booker</b>,")
+      expect(body).to include(
+        "Votre demande d'accès aux réservations a été examinée et acceptée par un administrateur. " \
+        "Veuillez aller à la page Réservation MakerRepo si vous souhaitez réserver des salles."
+      )
+      expect(body).to include(
+        "Vous avez reçu ce courriel parce que votre demande d'accès aux réservations a été approuvée."
+      )
+      expect(mail.body.decoded).to match(%r{<a href="https?://[^"/]+/sub_space_booking">Réservation MakerRepo</a>})
+      expect(mail.body.decoded).not_to include("<b>Booker")
+      expect(body).not_to include("Hello")
     end
 
     it "sends nothing when the applicant has a blank email" do

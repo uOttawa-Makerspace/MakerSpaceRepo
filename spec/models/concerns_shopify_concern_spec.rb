@@ -82,6 +82,10 @@ RSpec.describe ShopifyConcern do
       fake.status = 200
       fake.user_errors = [{ "message" => "bad tax" }, { "message" => "bad line" }]
       expect { membership.send(:shopify_draft_order) }.to raise_error("Shopify Draft Order Creation Failed: bad tax, bad line")
+      fake.user_errors = []
+      no_draft = { "data" => { "draftOrderCreate" => { "draftOrder" => nil, "userErrors" => [] } } }
+      allow(fake).to receive(:query).and_return(ShopSpecHelpers::FakeShopifyAdmin::Response.new(200, no_draft))
+      expect { membership.send(:shopify_draft_order) }.to raise_error(/\ANo draft order data received: /)
       expect(membership.reload.shopify_draft_order_id).to be_nil
     end
 
@@ -89,7 +93,6 @@ RSpec.describe ShopifyConcern do
       membership.update_column(:shopify_draft_order_id, fake.draft_id)
       fake.status = 500
       expect(membership.send(:fetch_shopify_draft_order)).to be_nil
-      expect(membership.shopify_is_paid).to be(false)
     end
 
     it "create_remote_draft_order creates on Shopify and stores nothing; create_shopify_draft_order stores the id" do

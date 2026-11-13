@@ -63,6 +63,40 @@ RSpec.describe LearningModule, type: :model do
         lm = build(:learning_module, shortcut_name: 'Hello')
         expect(lm).not_to be_valid
       end
+
+      it 'stores a blank shortcut as nil, so several modules can have none' do
+        first = create(:learning_module, shortcut_name: '')
+        second = create(:learning_module, shortcut_name: '   ')
+        expect([first.reload.shortcut_name, second.reload.shortcut_name]).to eq([nil, nil])
+      end
+
+      it 'saves a module without a shortcut next to an older one stored with an empty shortcut' do
+        older = create(:learning_module)
+        LearningModule.where(id: older.id).update_all("shortcut_name = ''") # as stored before blanks became nil
+        expect(create(:learning_module, shortcut_name: nil).shortcut_name).to be_nil
+        expect(older.reload.shortcut_name).to eq('')
+      end
+    end
+  end
+
+  describe '.find_by_shortcut!' do
+    it 'finds the module by its normalised shortcut' do
+      lm = create(:learning_module, shortcut_name: 'laser_101')
+      expect(LearningModule.find_by_shortcut!(' Laser 101 ')).to eq(lm)
+    end
+
+    it 'matches no module without a shortcut for a value that is blank once normalised' do
+      create(:learning_module, shortcut_name: nil)
+      expect { LearningModule.find_by_shortcut!('---') }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+
+    it 'matches no module stored with an empty shortcut for a value that is blank once normalised' do
+      older = create(:learning_module)
+      LearningModule.where(id: older.id).update_all("shortcut_name = ''") # as stored before blanks became nil
+      expect(LearningModule.connection.select_value("SELECT shortcut_name FROM learning_modules WHERE id = #{older.id}")).to eq('')
+      ['---', ' ', ''].each do |value|
+        expect { LearningModule.find_by_shortcut!(value) }.to raise_error(ActiveRecord::RecordNotFound)
+      end
     end
   end
 

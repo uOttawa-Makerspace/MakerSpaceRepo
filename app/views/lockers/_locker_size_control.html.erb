@@ -22,7 +22,7 @@
         <div class="row g-0">
             <div class="col-md-4">
                 <% if @locker_product_info[:image].present? %>
-                    <%= image_tag @locker_product_info[:image], class: 'rounded-start object-fit-cover w-100 h-100', style: "max-height: 15em" %>
+                    <%= image_tag @locker_product_info[:image], alt: '', class: 'rounded-start object-fit-cover w-100 h-100', style: "max-height: 15em" %>
                 <% end %>
             </div>
             <div class="col-md-8">
@@ -53,7 +53,7 @@
             <div class="row g-0">
                 <div class="col-md-3" style="max-height: 15em">
                     <% if variant[:image].present? %>
-                        <%= image_tag variant[:image], class: 'rounded-start object-fit-cover w-100 h-100' %>
+                        <%= image_tag variant[:image], alt: '', class: 'rounded-start object-fit-cover w-100 h-100' %>
                     <% else %>
                         <div class="bg-secondary-subtle w-100 h-100 rounded-start"></div>
                     <% end %>

@@ -68,10 +68,10 @@
 
               <!-- Volunteer / User Select (TomSelect Remote Search) -->
               <div class="col-12 col-sm-6">
-                <%= label_tag :user_select, class: "form-label fw-semibold text-body" do %>
+                <%= label_tag :user_select, id: "user_select_label", class: "form-label fw-semibold text-body" do %>
                   Volunteer <span class="text-danger">*</span>
                 <% end %>
-                <%= select_tag :user_id, nil, prompt: "Type to search volunteer...", class: "form-select", id: "user_select", required: true %>
+                <%= select_tag :user_id, nil, prompt: "Type to search volunteer...", class: "form-select", id: "user_select", required: true, aria: { labelledby: "user_select_label" } %>
                 <div class="form-text text-body-secondary small">Search volunteer by name.</div>
               </div>
 

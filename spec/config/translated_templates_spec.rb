@@ -31,6 +31,30 @@ RSpec.describe "Translated templates" do
     app/views/repositories/_repository_card.html.erb
     app/views/repositories/show.html.erb
     app/views/users/_repositories.html.erb
+    app/views/staff_dashboard/index.html.erb
+    app/views/staff_dashboard/search.html.erb
+    app/views/staff_dashboard/_search.html.erb
+    app/views/staff_dashboard/_signed_in_table.html.erb
+    app/views/staff_dashboard/_signed_out_table.html.erb
+    app/views/staff_dashboard/_space_activity_row.html.erb
+    app/views/staff_dashboard/_newly_signed_up.html.erb
+    app/views/staff_dashboard/_max_capacity_warning.html.erb
+    app/views/staff_dashboard/_signin_modal.html.erb
+    app/views/staff_dashboard/_flag.html.erb
+    app/views/staff_dashboard/_flag_list.html.erb
+    app/views/staff_dashboard/_no_assigned_spaces.html.erb
+    app/views/staff_dashboard/_table_broadcast.turbo_stream.erb
+    app/views/learning_area/index.html.erb
+    app/views/learning_area/show.html.erb
+    app/views/learning_area/new.html.erb
+    app/views/learning_area/edit.html.erb
+    app/views/learning_area/subskill.html.erb
+    app/views/learning_area/_form.html.erb
+    app/views/learning_area/_content.html.erb
+    app/views/learning_area/_learning_module_card.html.erb
+    app/views/learning_area/_scorm.html.erb
+    app/views/learning_area/_scorm_problem.html.erb
+    app/views/learning_module_track/index.html.erb
   ].freeze
 
   TRANSLATED_TEMPLATES.each do |path|

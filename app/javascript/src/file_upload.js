@@ -52,8 +52,9 @@ function appendFileToPreview(file, previewContainer, fieldPrefix, fieldSuffix) {
     preview.appendChild(handle);
   }
 
-  //  Thumbnail
+  //  Thumbnail (decorative: the file name beside it names the item)
   const img = document.createElement("img");
+  img.alt = "";
   const objectURL = URL.createObjectURL(file);
   img.addEventListener("error", (e) => {
     URL.revokeObjectURL(objectURL);

@@ -8,6 +8,9 @@ class Event < ApplicationRecord
     to - from > MAX_FEED_RANGE + 1.hour
   end
 
+  # The event types stored for a space, alphabetical.
+  def self.types_in(space_id) = where(space_id: space_id).distinct.order(:event_type).pluck(:event_type)
+
   belongs_to :created_by, class_name: 'User'
   # Who last edited the event in the admin calendar; empty for an event nobody has edited since it was created.
   belongs_to :updated_by, class_name: 'User', optional: true

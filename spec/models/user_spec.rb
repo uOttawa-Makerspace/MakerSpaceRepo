@@ -1060,6 +1060,18 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe "#printer_sessions_in_use" do
+    it "lists only this user's sessions still in use, oldest first, with their printer names" do
+      u = create(:user, :regular_user)
+      create(:printer_session, user: u, printer: create(:printer, :UM2P_02), in_use: true)
+      create(:printer_session, user: u, printer: create(:printer, :UM3_01), in_use: false)
+      create(:printer_session, printer: create(:printer, :RPL2_02), in_use: true)
+      create(:printer_session, user: u, printer: create(:printer, :RPL2_01), in_use: true)
+
+      expect(u.printer_sessions_in_use.map { |session| session.printer.name }).to eq(["UM2P - 02", "RPL2 - 01"])
+    end
+  end
+
   describe "#lock_account! / #record_failed_attempt! (never shorten a lock)" do
     let(:u) { create(:user, :regular_user) }
 

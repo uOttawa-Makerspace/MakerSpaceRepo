@@ -71,6 +71,8 @@ describe("choosing files", () => {
     expect(rows).toHaveLength(2);
     expect(rows[0].querySelector("span").textContent).toBe("a.png");
     expect(rows[0].querySelector("img").src).toBe("blob:a.png");
+    // The file name beside the thumbnail names it, so the image is decorative.
+    expect(rows[0].querySelector("img").getAttribute("alt")).toBe("");
     const field = rows[0].querySelector("input[type=file]");
     expect(field.hidden).toBe(true);
     expect(field.name).toBe("repo[photos][]");

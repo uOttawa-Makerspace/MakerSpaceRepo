@@ -49,7 +49,7 @@ RSpec.describe RfidTap do
     it "does not broadcast a table update or a modal" do
       freeze_time do
         tap_in
-        expect { tap_in }.not_to have_broadcasted_to("signed_in_table_space_#{space.id}").from_channel(Turbo::StreamsChannel)
+        expect { tap_in }.not_to have_broadcasted_to(StaffDashboardChannel.table_stream(space.id, :en)).from_channel(Turbo::StreamsChannel)
         expect { tap_in }.not_to have_broadcasted_to("space_event_#{space.id}")
       end
     end

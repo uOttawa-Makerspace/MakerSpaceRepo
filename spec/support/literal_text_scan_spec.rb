@@ -12,6 +12,8 @@ RSpec.describe LiteralTextScan do
     expect(arguments(%(<%= tag.p "<em>Welcome</em>" %>))).to eq(["<em>Welcome</em>"])
     expect(arguments(%(<%= link_to "Total\#{n}", root_path %>))).to eq(["Total\#{n}"])
     expect(arguments(%(<%= t("k", default: "Plain words") %>))).to eq(["Plain words"])
+    expect(arguments(%(<%= button_tag "Sign In", class: "btn" %>))).to eq(["Sign In"])
+    expect(arguments(%(<%= select_tag :user, "", prompt: "Pick a user" %>))).to eq(["Pick a user"])
   end
 
   it "ignores urls, fragments, a lone interpolation, markup without text and shared names" do
@@ -31,5 +33,10 @@ RSpec.describe LiteralTextScan do
     expect(described_class.literal_attributes(%(<img alt="<%= t('x') %>">))).to eq([])
     expect(described_class.visible_literals("<p>Hello <%= name %></p>")).to eq(["Hello"])
     expect(described_class.visible_literals("<p><%= t('x') %></p>")).to eq([])
+  end
+
+  it "ignores a path shown as written but not words around it" do
+    expect(described_class.visible_literals("<code>/learning_area/s/</code>")).to eq([])
+    expect(described_class.visible_literals("<p>Go to /help now</p>")).to eq(%w[Go to now])
   end
 end

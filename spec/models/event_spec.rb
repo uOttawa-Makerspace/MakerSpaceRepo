@@ -237,3 +237,15 @@ RSpec.describe Event, type: :model do
     end
   end
 end
+
+RSpec.describe Event, ".types_in", type: :model do
+  it "lists the event types stored for a space, alphabetical, once each" do
+    space = create(:space)
+    create(:event, space: space, event_type: "shift")
+    create(:event, space: space, event_type: "meeting")
+    create(:event, space: space, event_type: "shift")
+    create(:event, event_type: "other")
+
+    expect(described_class.types_in(space.id)).to eq(%w[meeting shift])
+  end
+end

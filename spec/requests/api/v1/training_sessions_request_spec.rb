@@ -20,7 +20,9 @@ RSpec.describe "/api/v1 training sessions", type: :request do
   def error = body["error"]
   def auth(user) = { "Authorization" => "Bearer #{ApiAccessToken.issue(user).first}" }
   def api_get(path, as: nil) = get(path, headers: json_headers.merge(as ? auth(as) : {}))
-  def api_post(path, payload = {}, as: nil) = post(path, params: payload.to_json, headers: json_headers.merge(as ? auth(as) : {}))
+  def api_post(path, payload = {}, as: nil, headers: {})
+    post(path, params: payload.to_json, headers: json_headers.merge(as ? auth(as) : {}).merge(headers))
+  end
 
   describe "GET /api/v1/training_sessions" do
     let!(:mine) { create(:training_session, user: staff, training: training, space: space, level: "Beginner", course: "Intro") }
@@ -127,15 +129,20 @@ RSpec.describe "/api/v1 training sessions", type: :request do
         user_ids: [student.id.to_s, second.id] }
     end
 
+    # Every create sends an Idempotency-Key; a new one per call unless the example passes one.
+    def post_training_session(payload, as: nil, key: SecureRandom.uuid)
+      api_post "/api/v1/training_sessions", payload, as: as, headers: { "Idempotency-Key" => key }
+    end
+
     it "401s a guest and 403s a regular user" do
-      expect { api_post "/api/v1/training_sessions", payload }.not_to change(TrainingSession, :count)
+      expect { post_training_session payload }.not_to change(TrainingSession, :count)
       expect(response).to have_http_status(:unauthorized)
-      expect { api_post "/api/v1/training_sessions", payload, as: regular }.not_to change(TrainingSession, :count)
+      expect { post_training_session payload, as: regular }.not_to change(TrainingSession, :count)
       expect(response).to have_http_status(:forbidden)
     end
 
     it "lets staff create a session with themselves as instructor" do
-      expect { api_post "/api/v1/training_sessions", payload.merge(instructor_id: staff.id), as: staff }
+      expect { post_training_session payload.merge(instructor_id: staff.id), as: staff }
         .to change(TrainingSession, :count).by(1)
       expect(response).to have_http_status(:created)
       session = TrainingSession.find(body["id"])
@@ -147,13 +154,13 @@ RSpec.describe "/api/v1 training sessions", type: :request do
 
     it "defaults the instructor to the caller when omitted and links a known course name" do
       cn = CourseName.find_or_create_by!(name: "ENG 101")
-      api_post "/api/v1/training_sessions", payload.merge(course: "ENG 101"), as: staff
+      post_training_session payload.merge(course: "ENG 101"), as: staff
       expect(response).to have_http_status(:created)
       expect(TrainingSession.find(body["id"])).to have_attributes(user_id: staff.id, course: "ENG 101", course_name_id: cn.id)
     end
 
     it "403s staff naming another instructor, creating nothing" do
-      expect { api_post "/api/v1/training_sessions", payload.merge(instructor_id: other_staff.id), as: staff }
+      expect { post_training_session payload.merge(instructor_id: other_staff.id), as: staff }
         .not_to change(TrainingSession, :count)
       expect(response).to have_http_status(:forbidden)
     end
@@ -174,14 +181,14 @@ RSpec.describe "/api/v1 training sessions", type: :request do
     end
 
     it "lets an admin pick another staff member as instructor" do
-      api_post "/api/v1/training_sessions", payload.merge(instructor_id: other_staff.id), as: admin
+      post_training_session payload.merge(instructor_id: other_staff.id), as: admin
       expect(response).to have_http_status(:created)
       expect(TrainingSession.find(body["id"]).user_id).to eq(other_staff.id)
     end
 
     it "422s an admin naming a non-staff or unknown instructor" do
       [regular.id, 0, "abc"].each do |bad|
-        api_post "/api/v1/training_sessions", payload.merge(instructor_id: bad), as: admin
+        post_training_session payload.merge(instructor_id: bad), as: admin
         expect(response).to have_http_status(:unprocessable_content)
         expect(error["fields"].keys).to eq(["instructor_id"])
       end
@@ -198,7 +205,7 @@ RSpec.describe "/api/v1 training sessions", type: :request do
       }
       cases.each do |field, variants|
         variants.each do |variant|
-          expect { api_post "/api/v1/training_sessions", payload.merge(variant), as: admin }
+          expect { post_training_session payload.merge(variant), as: admin }
             .not_to change(TrainingSession, :count)
           expect(response).to have_http_status(:unprocessable_content)
           expect(error["code"]).to eq("validation_failed")
@@ -209,18 +216,100 @@ RSpec.describe "/api/v1 training sessions", type: :request do
 
     it "422s a blank level with the list of levels, and reports every rule at once" do
       ["", " "].each do |blank|
-        api_post "/api/v1/training_sessions", payload.merge(level: blank), as: admin
+        post_training_session payload.merge(level: blank), as: admin
         expect(response).to have_http_status(:unprocessable_content)
         expect(error["fields"]).to eq("level" => ["must be one of Beginner, Intermediate, Advanced"])
       end
-      api_post "/api/v1/training_sessions", payload.merge(level: "Wizard", course: "x" * 256), as: admin
+      post_training_session payload.merge(level: "Wizard", course: "x" * 256), as: admin
       expect(error["fields"]).to eq("level" => ["must be one of Beginner, Intermediate, Advanced"],
                                     "course" => ["must be a string of at most 255 characters"])
     end
 
     it "400s malformed JSON" do
-      post "/api/v1/training_sessions", params: "{", headers: json_headers.merge(auth(staff))
+      post "/api/v1/training_sessions", params: "{",
+                                        headers: json_headers.merge(auth(staff)).merge("Idempotency-Key" => "k")
       expect(response).to have_http_status(:bad_request)
+    end
+
+    describe "Idempotency-Key" do
+      it "400s a request without a usable key, asking to reload the app, and creates nothing" do
+        [nil, "", "   ", "k" * 256].each do |key|
+          headers = key.nil? ? {} : { "Idempotency-Key" => key }
+          expect { api_post "/api/v1/training_sessions", payload, as: staff, headers: headers }
+            .not_to change(TrainingSession, :count)
+          expect(response).to have_http_status(:bad_request)
+          expect(error["code"]).to eq("idempotency_key_required")
+          expect(error["message"]).to eq("This request needs an Idempotency-Key header. Reload the app and try again.")
+          expect(error["reference"]).to be_present
+        end
+        expect(ApiIdempotencyKey.count).to eq(0)
+      end
+
+      it "accepts a key of 255 characters" do
+        post_training_session payload, as: staff, key: "k" * 255
+        expect(response).to have_http_status(:created)
+      end
+
+      it "answers a repeat of the same request with the first response and creates one session" do
+        expect { post_training_session payload, as: staff, key: "retry-1" }.to change(TrainingSession, :count).by(1)
+        first_id = body["id"]
+        expect { post_training_session payload, as: staff, key: "retry-1" }.not_to change(TrainingSession, :count)
+        expect(response).to have_http_status(:created)
+        expect(body).to eq("id" => first_id)
+        expect(TrainingSession.find(first_id).users).to match_array([student, second])
+      end
+
+      it "treats the same body with its keys in another order as the same request" do
+        post_training_session payload, as: staff, key: "retry-2"
+        first_id = body["id"]
+        reordered = payload.to_a.reverse.to_h
+        expect { post_training_session reordered, as: staff, key: "retry-2" }.not_to change(TrainingSession, :count)
+        expect(body).to eq("id" => first_id)
+      end
+
+      it "422s the same key sent with a different request, creating nothing" do
+        post_training_session payload, as: staff, key: "retry-3"
+        expect { post_training_session payload.merge(level: "Beginner"), as: staff, key: "retry-3" }
+          .not_to change(TrainingSession, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(error["code"]).to eq("idempotency_key_reused")
+        expect(error["message"]).to include("Reload the app")
+      end
+
+      it "keeps keys per user: another user's identical key creates their own session" do
+        post_training_session payload, as: staff, key: "shared"
+        first_id = body["id"]
+        expect { post_training_session payload, as: other_staff, key: "shared" }
+          .to change(TrainingSession, :count).by(1)
+        expect(body["id"]).not_to eq(first_id)
+        expect(TrainingSession.find(body["id"]).user_id).to eq(other_staff.id)
+      end
+
+      it "does not use up the key on a refused request, so a corrected retry with it creates the session" do
+        expect { post_training_session payload.merge(level: "Wizard"), as: staff, key: "fix-and-retry" }
+          .not_to change(ApiIdempotencyKey, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        post_training_session payload.merge(instructor_id: other_staff.id), as: staff, key: "fix-and-retry"
+        expect(response).to have_http_status(:forbidden)
+        expect { post_training_session payload, as: staff, key: "fix-and-retry" }
+          .to change(TrainingSession, :count).by(1)
+        expect(response).to have_http_status(:created)
+      end
+
+      # A concurrent request with the same key records it first, after this one looked for it and found
+      # nothing: this one's session is rolled back and it answers with the other request's response.
+      it "answers with the recorded response when the key is recorded first by a concurrent request" do
+        winner = create(:training_session, user: staff, training: training, space: space, level: "Intermediate")
+        allow(ApiIdempotencyKey).to receive(:record).and_wrap_original do |original, **kwargs, &block|
+          ApiIdempotencyKey.create!(user: staff, key: "raced", request_digest: kwargs[:digest],
+                                    response_status: 201, response_body: { id: winner.id })
+          original.call(**kwargs, &block)
+        end
+        expect { post_training_session payload, as: staff, key: "raced" }.not_to change(TrainingSession, :count)
+        expect(response).to have_http_status(:created)
+        expect(body).to eq("id" => winner.id)
+        expect(ApiIdempotencyKey.where(user: staff, key: "raced").count).to eq(1)
+      end
     end
   end
 

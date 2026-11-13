@@ -1,16 +1,9 @@
-<% content_for :preheader do %>
-  Makerepo - Booking
-<% end %>
+<% content_for :preheader do %><%= message.subject %><% end %>
+<% content_for :team_name do %>The MakerRepo Team<% end %>
+<% content_for :why_received do %><%= t(".why_received") %><% end %>
 
-<% content_for :team_name do %>
-  The MakerRepo Team
-<% end %>
-
-<% content_for :why_received do %>
-  You have received this email because your booking has been approved.
-<% end %>
-
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @booking.user.name %>,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t(".hello", name: @booking.user.name) %></p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  <%= sanitize(@message) %>
+  <%= t(".body", room: @sub_space.name, description: @booking.description,
+        start: l(@booking.start_time.in_time_zone, format: :long), end: l(@booking.end_time.in_time_zone, format: :long)) %>
 </p>

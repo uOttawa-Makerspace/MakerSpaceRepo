@@ -53,7 +53,7 @@ class LearningAreaController < DevelopmentProgramsController
     if @learning_module.save
       @learning_module.process_scorm_package
       redirect_to learning_area_path(@learning_module.id),
-                  notice: 'Learning Module has been successfully created.'
+                  notice: t('learning_area.flash.created')
     else
       flash.now[:alert] = validation_message(@learning_module, 'errors.learning_area.not_created')
       render 'new', status: :unprocessable_content
@@ -65,7 +65,7 @@ class LearningAreaController < DevelopmentProgramsController
     respond_to do |format|
       format.html do
         redirect_to learning_area_index_path,
-                    notice: 'Learning Module has been successfully deleted.'
+                    notice: t('learning_area.flash.deleted')
       end
       format.json { head :no_content }
     end
@@ -78,11 +78,10 @@ class LearningAreaController < DevelopmentProgramsController
     if @learning_module.update(learning_module_params)
       @learning_module.process_scorm_package
       redirect_to learning_area_path(@learning_module.id),
-                  notice: 'Learning module successfully updated.'
+                  notice: t('learning_area.flash.updated')
     else
       flash[:alert] = validation_message(@learning_module, "errors.learning_area.not_updated")
       @training_categories = Training.all.order(:name).pluck(:name, :id)
-      @training_levels ||= TrainingSession.return_levels
       @files = @learning_module.project_files_attachments.order(created_at: :asc)
       @photos = @learning_module.photos || []
       @videos = @learning_module.videos_attachments.order(created_at: :asc)
@@ -128,9 +127,9 @@ class LearningAreaController < DevelopmentProgramsController
 
   def retry_scorm
     if @learning_module.retry_scorm_extraction
-      notice = 'SCORM extraction has been queued again.'
+      notice = t('learning_area.flash.retry_queued')
     else
-      alert = 'SCORM extraction is not retryable right now.'
+      alert = t('learning_area.flash.retry_refused')
     end
     redirect_to edit_learning_area_path(@learning_module.id), notice:, alert:
   end
@@ -172,7 +171,7 @@ class LearningAreaController < DevelopmentProgramsController
     respond_to do |format|
       format.html do
         redirect_to learning_area_index_path,
-                    notice: 'Successfully reordered the learning modules!'
+                    notice: t('learning_area.flash.reordered')
       end
       format.json { render json: { status: :ok } }
     end
@@ -283,7 +282,7 @@ class LearningAreaController < DevelopmentProgramsController
   def set_learning_module
     @learning_module =
       if params[:shortcut]
-        LearningModule.find_by!(shortcut_name: params[:shortcut])
+        LearningModule.find_by_shortcut!(params[:shortcut])
       else
         LearningModule.find(params[:id])
       end
@@ -291,7 +290,7 @@ class LearningAreaController < DevelopmentProgramsController
 
   def form_training_data
     @training_categories ||= Training.all.order(:name).pluck(:name, :id)
-    @training_levels ||= LearningModule.levels.values
+    @training_levels ||= LearningModule.levels.keys.map { |key| [t("learning_area.levels.#{key}"), key] }
     @subskills ||= LearningModule.unscope(:order).distinct.pluck(:subskill)
   end
 

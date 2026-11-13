@@ -159,12 +159,12 @@
             <div class="card-header bg-body-tertiary border-bottom py-3 px-3 px-md-4">
               <h5 class="card-title fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
                 <i class="fa-solid fa-award text-primary"></i>
-                <span>Required Certifications</span>
+                <label for="task_certifications" id="task_certifications_label">Required Certifications</label>
               </h5>
             </div>
             <div class="card-body p-3 p-md-4">
               <p class="text-body-secondary small mb-2">Select all required qualifications (hold <kbd class="bg-body-secondary text-body">Ctrl</kbd>/<kbd class="bg-body-secondary text-body">Cmd</kbd> on desktop to select multiple):</p>
-              <%= select_tag :certifications_id, options_from_collection_for_select(@certifications, 'id', 'name', selected: @volunteer_task.require_trainings.pluck(:training_id)), multiple: true, id: 'task_certifications', class: 'form-select', size: 4 %>
+              <%= select_tag :certifications_id, options_from_collection_for_select(@certifications, 'id', 'name', selected: @volunteer_task.require_trainings.pluck(:training_id)), multiple: true, id: 'task_certifications', class: 'form-select', size: 4, aria: { labelledby: 'task_certifications_label' } %>
             </div>
           </div>
 
@@ -254,21 +254,21 @@
               <div class="row g-3">
                 <!-- Add Staff -->
                 <div class="col-12">
-                  <%= label_tag :staff_id, class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
+                  <%= label_tag :staff_id, id: 'staff_id_label', class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
                     <i class="fa-solid fa-user-plus text-success"></i>
                     <span>Add Staff Lead(s)</span>
                   <% end %>
-                  <%= select_tag :staff_id, options_from_collection_for_select(@staff_available, 'id', 'name'), prompt: 'Choose staff to assign...', class: 'form-select', multiple: true, size: 2 %>
+                  <%= select_tag :staff_id, options_from_collection_for_select(@staff_available, 'id', 'name'), prompt: 'Choose staff to assign...', class: 'form-select', multiple: true, size: 2, aria: { labelledby: 'staff_id_label' } %>
                 </div>
 
                 <!-- Remove Staff -->
                 <% if @staff_in_task.present? && @staff_in_task.any? %>
                   <div class="col-12">
-                    <%= label_tag :remove_staff_id, class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
+                    <%= label_tag :remove_staff_id, id: 'remove_staff_id_label', class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
                       <i class="fa-solid fa-user-minus text-danger"></i>
                       <span>Remove Assigned Staff</span>
                     <% end %>
-                    <%= select_tag :remove_staff_id, options_from_collection_for_select(@staff_in_task, 'id', 'name'), prompt: 'Select staff to remove...', class: 'form-select border-danger-subtle', multiple: true, size: 2 %>
+                    <%= select_tag :remove_staff_id, options_from_collection_for_select(@staff_in_task, 'id', 'name'), prompt: 'Select staff to remove...', class: 'form-select border-danger-subtle', multiple: true, size: 2, aria: { labelledby: 'remove_staff_id_label' } %>
                   </div>
                 <% end %>
 
@@ -276,21 +276,21 @@
 
                 <!-- Add Volunteer -->
                 <div class="col-12">
-                  <%= label_tag :volunteer_id, class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
+                  <%= label_tag :volunteer_id, id: 'volunteer_id_label', class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
                     <i class="fa-solid fa-hand-holding-heart text-success"></i>
                     <span>Add Volunteer(s)</span>
                   <% end %>
-                  <%= select_tag :volunteer_id, options_from_collection_for_select(@volunteers_available, 'id', 'name'), prompt: 'Choose volunteers to add...', class: 'form-select', multiple: true, size: 2 %>
+                  <%= select_tag :volunteer_id, options_from_collection_for_select(@volunteers_available, 'id', 'name'), prompt: 'Choose volunteers to add...', class: 'form-select', multiple: true, size: 2, aria: { labelledby: 'volunteer_id_label' } %>
                 </div>
 
                 <!-- Remove Volunteer -->
                 <% if @volunteers_in_task.present? && @volunteers_in_task.any? %>
                   <div class="col-12">
-                    <%= label_tag :remove_volunteer_id, class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
+                    <%= label_tag :remove_volunteer_id, id: 'remove_volunteer_id_label', class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
                       <i class="fa-solid fa-user-xmark text-danger"></i>
                       <span>Remove Assigned Volunteer</span>
                     <% end %>
-                    <%= select_tag :remove_volunteer_id, options_from_collection_for_select(@volunteers_in_task, 'id', 'name'), prompt: 'Select volunteer to remove...', class: 'form-select border-danger-subtle', multiple: true, size: 2 %>
+                    <%= select_tag :remove_volunteer_id, options_from_collection_for_select(@volunteers_in_task, 'id', 'name'), prompt: 'Select volunteer to remove...', class: 'form-select border-danger-subtle', multiple: true, size: 2, aria: { labelledby: 'remove_volunteer_id_label' } %>
                   </div>
                 <% end %>
               </div>

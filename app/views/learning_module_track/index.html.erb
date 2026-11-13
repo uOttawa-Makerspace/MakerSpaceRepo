@@ -1,6 +1,6 @@
 <section class="p-5">
   <div class="container text-center">
-    <h2>Skills</h2>
+    <h2><%= t('learning_module_track.index.skills') %></h2>
     <div class="row my-5 mx-auto">
 
       <div class="col-md-12">
@@ -9,7 +9,7 @@
           <h2><%= skill.name %></h2>
 
           <% unless skill.trainings.present? %>
-            <p>No trainings for this skill</p>
+            <p><%= t('learning_module_track.index.no_trainings') %></p>
           <% end %>
 
           <% skill.trainings.each do |training| %>
@@ -30,8 +30,8 @@
 
                     <p><%= training.description.presence %></p>
 
-                    <p>Modules finished : <%= LearningModule.where(id: current_user.learning_module_tracks.completed.pluck(:learning_module_id)).where(training_id: training.id).count %> / <%= training.learning_modules.count %></p>
-                    <p>Next modules to complete :</p>
+                    <p><%= t('learning_module_track.index.modules_finished', done: LearningModule.where(id: current_user.learning_module_tracks.completed.pluck(:learning_module_id)).where(training_id: training.id).count, total: training.learning_modules.count) %></p>
+                    <p><%= t('learning_module_track.index.next_modules') %></p>
                     <ul>
                       <% get_next_lm(training.id).each do |next_module| %>
                         <li><%= link_to next_module.title, learning_area_path(id: next_module.id) %></li>
@@ -64,7 +64,7 @@
           <b><%= training.localized_name %> </b> <br/>
           <%= vite_image_tag 'images/badges/none.png', class: 'skills-badges', alt: t('common.names.no_medal_picture') %>
           <br/>
-          None
+          <%= t('learning_module_track.index.no_certification') %>
         </div>
       <% end %>
     </div>

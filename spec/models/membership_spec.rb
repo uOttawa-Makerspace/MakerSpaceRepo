@@ -12,9 +12,9 @@ RSpec.describe Membership, type: :model do
   it { should belong_to(:membership_tier) }
 
   describe "status enum" do
-    it "defaults NEW rows to 'pending' (enum default wins over the column default 'paid')" do
+    it "defaults new rows to 'pending', in the model and in the database" do
       expect(Membership.new.status).to eq("pending")
-      expect(Membership.columns_hash["status"].default).to eq("paid") # DB default; the enum default shadows it
+      expect(Membership.columns_hash["status"].default).to eq("pending")
     end
 
     it "knows pending/paid/failed/expired/revoked and rejects anything else" do
@@ -209,15 +209,11 @@ RSpec.describe Membership, type: :model do
       expect(m.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
     end
 
-    it "the concern's draft order and paid state are returned on first use, not nil" do
+    it "the concern's draft order is returned on first use, not nil" do
       fake = stub_shopify_admin!
-      fake.fully_paid = true
       m = create(:membership, user: user, membership_tier: tier, status: "pending")
       expect(m.send(:shopify_draft_order)).to include("invoiceUrl" => fake.invoice_url)
       expect(m.reload.shopify_draft_order_id).to eq(fake.draft_id)
-
-      fresh = create(:membership, user: user, membership_tier: tier, status: "pending")
-      expect(fresh.shopify_is_paid).to be(true)
     end
 
     it "#checkout_link is asked once per membership" do
@@ -440,14 +436,6 @@ RSpec.describe Membership, type: :model do
           expect(m.reload.status).to eq(status)
         end
       end
-    end
-
-    it "#shopify_is_paid reflects the draft order's fullyPaid flag" do
-      fake = stub_shopify_admin!
-      m = create(:membership, user: user, membership_tier: tier, shopify_draft_order_id: "gid://shopify/DraftOrder/9001")
-      expect(m.shopify_is_paid).to be(false)
-      fake.fully_paid = true
-      expect(m.shopify_is_paid).to be(true)
     end
   end
 

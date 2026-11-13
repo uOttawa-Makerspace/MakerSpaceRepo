@@ -52,6 +52,8 @@ Form data, computed as legacy `new` does. `space_id` is optional: omitted means 
 
 ## POST /api/v1/training_sessions
 
+Headers: `Idempotency-Key: <a new UUID per submission>` is required (see Idempotency below).
+
 Request: `{ "space_id": 3, "training_id": 4, "level": "Beginner", "course": "ENG 101", "instructor_id": 7, "user_ids": [88, "89"] }`
 
 - `space_id`, `training_id`, `level` are required. `course` is optional (string, at most 255; a value matching a course name links it; `"no course"` is stored as null, as legacy). `user_ids` is optional (integers or numeric strings, duplicates ignored); trainees need not be signed in.
@@ -65,7 +67,20 @@ Request: `{ "space_id": 3, "training_id": 4, "level": "Beginner", "course": "ENG
 | 403       | `forbidden`                     | Staff (non-admin) sent an `instructor_id` that is not their own; nothing is created                                                                                                                                                                         |
 | 403       | `space_not_assigned`            | Staff (non-admin) named an existing space they are not assigned to and do not hold as their current space; `message` is "You are not assigned to that space"; nothing is created                                                                            |
 | 422       | `validation_failed`             | `fields` keyed by `space_id` (missing/unknown), `training_id` (missing/unknown/not offered in the space), `level` (not one of the three levels), `course`, `instructor_id` (admin only: not a staff member), `user_ids` (not a list of ids, or unknown ids) |
+| 400       | `idempotency_key_required`      | No `Idempotency-Key` header, or a blank one or one longer than 255 characters; nothing is created. The message asks the user to reload the app (an app that does not send the header is out of date). Checked after sign-in and role, before the body       |
+| 422       | `idempotency_key_reused`        | The key was already used by this user for a different request (another body); nothing is created                                                                                                                                                            |
 | 400       | `bad_request`                   | Malformed JSON                                                                                                                                                                                                                                              |
+
+### Idempotency
+
+The app makes one key per submission and sends the same key again when it retries that submission (for example after a timeout or a network error).
+
+- The first request with a key that creates the session records the key for the caller together with its response (`201` and `{ "id": ... }`), in the same transaction as the session.
+- A repeat with the same key by the same user and the same body answers that recorded response again (`201`, the same `id`) and creates nothing. The body is compared with its object keys in any order; values and list order must match.
+- Two requests with the same key at the same time create one session: the second waits for the first, then answers with the first one's response.
+- Keys belong to the caller: another user may send the same value and gets their own session.
+- A refused request (401, 403, 422, 400) records nothing, so the user can correct the form and retry; the app sends a new key when the form changes.
+- Recorded keys are kept (they are not expired or pruned); a key only ever answers a repeat of its own submission.
 
 ## POST /api/v1/training_sessions/:id/certifications
 

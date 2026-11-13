@@ -22,14 +22,6 @@ RSpec.describe VolunteerHour, "#save_hand_logged under concurrency", type: :mode
     User.unscoped.where(id: volunteer.id).destroy_all
   end
 
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
-    end
-  end
-
   it "stores one row and answers the second submission with the awaiting-review message" do
     leader = nil
     parked = Queue.new

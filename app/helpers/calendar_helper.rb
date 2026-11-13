@@ -9,16 +9,16 @@ module CalendarHelper
   ICS_DATE_UNTIL = /UNTIL=(\d{8})(?![\dT])/
 
   # The calendars of a feed (see ics_feed), without the failure flag.
-  def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil)
-    ics_feed(ics_url, name: name, color: color).calendars
+  def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil, window: CalendarWindow::ALL)
+    ics_feed(ics_url, name: name, color: color, window: window).calendars
   end
 
-  # The rows the calendar pages draw for an imported calendar (ImportedCalendar), repeating events as a rule text.
-  def ics_feed(ics_url, name: "Unnamed Calendar", color: nil)
+  # The rows the calendar pages draw for an imported calendar's entries in the window, repeating ones as a rule text.
+  def ics_feed(ics_url, name: "Unnamed Calendar", color: nil, window: CalendarWindow::ALL)
     return IcsFeed.new(calendars: [], failed: false) if ics_url.blank?
 
     calendar = ImportedCalendar.load(ics_url.to_s, name: name, color: color.presence || generate_color_from_id(ics_url.to_s))
-    rows = calendar.entries.map { |entry| ics_row(entry, calendar) }
+    rows = window.entries(calendar.entries).map { |entry| ics_row(entry, calendar) }
     IcsFeed.new(calendars: calendar.fetched? ? [{ id: calendar.id, color: calendar.color, events: rows }] : [], failed: calendar.failed?)
   end
 

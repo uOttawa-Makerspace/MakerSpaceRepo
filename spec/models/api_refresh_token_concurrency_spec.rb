@@ -27,14 +27,6 @@ RSpec.describe ApiRefreshToken, "concurrency", type: :model do
     end
   end
 
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
-    end
-  end
-
   it "logout racing a rotation cannot leave the successor live" do
     token = described_class.issue!(user)
     paused = Queue.new

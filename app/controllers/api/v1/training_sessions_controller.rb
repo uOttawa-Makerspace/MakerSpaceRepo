@@ -13,7 +13,16 @@ module Api
         render json: sessions.map { |s| TrainingSessionSerializer.call(s) }
       end
 
+      # Needs an Idempotency-Key header: a repeat with the same key gets the first response and creates
+      # nothing more (see doc/api/v1/training_sessions.md).
       def create
+        key = request.headers["Idempotency-Key"]
+        return render_missing_idempotency_key unless ApiIdempotencyKey.acceptable?(key)
+
+        digest = ApiIdempotencyKey.digest_of(request)
+        previous = ApiIdempotencyKey.find_by(user: current_user, key: key)
+        return replay(previous, digest) if previous
+
         input = CreateInput.new(params, current_user)
         return render_error(:forbidden, "Only an admin may choose another instructor", status: :forbidden) if input.foreign_instructor_denied?
 
@@ -21,14 +30,39 @@ module Api
         return if performed?
         return render_input_errors(input.errors) unless input.valid?
 
-        session = TrainingSession.new(input.attributes)
-        course_name = CourseName.find_by(name: session.course)
-        session.course_name = course_name if course_name
-        session.save!
+        session = build_session(input)
+        created = ApiIdempotencyKey.record(user: current_user, key: key, digest: digest, status: 201) do
+          session.save!
+          { id: session.id }
+        end
+        return replay(ApiIdempotencyKey.find_by!(user: current_user, key: key), digest) unless created
+
         render json: { id: session.id }, status: :created
       end
 
       private
+
+      def build_session(input)
+        session = TrainingSession.new(input.attributes)
+        course_name = CourseName.find_by(name: session.course)
+        session.course_name = course_name if course_name
+        session
+      end
+
+      def render_missing_idempotency_key
+        render_error(:idempotency_key_required,
+                     "This request needs an Idempotency-Key header. Reload the app and try again.",
+                     status: :bad_request)
+      end
+
+      # The response the first request with this key got, or a refusal when the key came with another request.
+      def replay(previous, digest)
+        return render json: previous.response_body, status: previous.response_status if previous.same_request?(digest)
+
+        render_error(:idempotency_key_reused,
+                     "This Idempotency-Key was already used for a different request. Reload the app and try again.",
+                     status: :unprocessable_content)
+      end
 
       def render_input_errors(fields)
         render_error(:validation_failed, "Validation failed", status: :unprocessable_content, fields: fields)

@@ -14,14 +14,6 @@ RSpec.describe User, "#approve_booking_access under concurrency", type: :model d
     User.unscoped.where(id: [admin.id, applicant.id]).delete_all
   end
 
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
-    end
-  end
-
   def blocked_backends
     ActiveRecord::Base.connection.select_value(
       "SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND datname = current_database()"

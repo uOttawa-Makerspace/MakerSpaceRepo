@@ -91,20 +91,18 @@ class PrintersController < StaffAreaController
     printer = Printer.find_by(id: printer_id) if printer_id.present?
     user = User.find_by(id: user_id) unless user_id.blank? || clear
     if (problem = printer_link_problem(printer_id, user_id, printer, user))
-      flash[:alert] = I18n.t("errors.printers.#{problem}")
+      reply = { alert: I18n.t("errors.printers.#{problem}") }
     elsif clear
       printer.release!
-      flash[:notice] = "Cleared the user."
+      reply = { notice: "Cleared the user." }
     else
       printer.assign_to!(user)
-      flash[:notice] = "Printer Session Created"
+      reply = { notice: "Printer Session Created" }
     end
     respond_to do |format|
       # blame the client if something goes wrong
-      format.json do
-        render json: flash, status: flash[:alert] ? :bad_request : :ok
-      end
-      format.html { redirect_to staff_printers_printers_path }
+      format.json { render json: reply, status: reply[:alert] ? :bad_request : :ok }
+      format.html { redirect_to staff_printers_printers_path, flash: reply }
     end
   end
 

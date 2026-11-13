@@ -42,26 +42,39 @@ class StaffDashboardChannel < ApplicationCable::Channel
     broadcast_table_updates(space_id)
   end
 
+  # The signed-in table stream of a space in one language. The dashboard subscribes in its
+  # page language, so a broadcast never replaces French rows with English ones.
+  def self.table_stream(space_id, locale = I18n.locale)
+    "signed_in_table_space_#{space_id}_#{locale}"
+  end
+
+  # Loads the rows once and renders them once per language, each to that language's stream.
   def self.broadcast_table_updates(space_id)
     # a space deleted meanwhile has no table to update
     space = Space.find_by(id: space_id)
     return unless space
 
-    Turbo::StreamsChannel.broadcast_render_to(
-      "signed_in_table_space_#{space_id}",
-      partial: 'staff_dashboard/table_broadcast',
-      locals: {
-        space: space,
-        signed_in_users:
-          space.including_walk_in_sheets(
-            User
-              .strict_loading
-              .where(id: LabSession.active.where(space: space_id).select(:user_id))
-              .includes(certifications: { training_session: %i[training user] })
-              .includes(:lab_sessions)
-          ),
-        signed_out_users: space.recently_signed_out_users_with_history
-      }
-    )
+    locals = table_locals(space)
+    I18n.available_locales.each do |locale|
+      I18n.with_locale(locale) do
+        Turbo::StreamsChannel.broadcast_render_to(table_stream(space_id, locale), partial: 'staff_dashboard/table_broadcast', locals: locals)
+      end
+    end
   end
+
+  def self.table_locals(space)
+    {
+      space: space,
+      signed_in_users:
+        space.including_walk_in_sheets(
+          User
+            .strict_loading
+            .where(id: LabSession.active.where(space: space.id).select(:user_id))
+            .includes(certifications: { training_session: %i[training user] })
+            .includes(:lab_sessions)
+        ).to_a,
+      signed_out_users: space.recently_signed_out_users_with_history
+    }
+  end
+  private_class_method :table_locals
 end

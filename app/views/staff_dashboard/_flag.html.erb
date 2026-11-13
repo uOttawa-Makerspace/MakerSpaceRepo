@@ -2,18 +2,18 @@
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="exampleModalLabel"><b><%= staff_dashboard_user.name %></b> Flags</h5>
+        <h5 class="modal-title" id="exampleModalLabel"><%= t('staff_dashboard.flags.title_html', name: staff_dashboard_user.name) %></h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
       </div>
       <div class="modal-body">
-        Flags:
+        <%= t('staff_dashboard.flags.label') %>
         <br>
         <div id="flag-modal">
           <%= render partial: 'staff_dashboard/flag_list', locals: { staff_dashboard_user: staff_dashboard_user } %>
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><%= t('common.close') %></button>
       </div>
     </div>
   </div>

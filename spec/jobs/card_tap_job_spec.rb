@@ -18,7 +18,7 @@ RSpec.describe CardTapJob, type: :job do
   end
 
   it "sends the table update on the signed-in table stream" do
-    expect { described_class.perform_now(rfid, space.id) }.to have_broadcasted_to("signed_in_table_space_#{space.id}").from_channel(Turbo::StreamsChannel)
+    expect { described_class.perform_now(rfid, space.id) }.to have_broadcasted_to(StaffDashboardChannel.table_stream(space.id, :en)).from_channel(Turbo::StreamsChannel)
   end
 
   it "queues the membership check for the same card and space, and sends no popup itself" do
