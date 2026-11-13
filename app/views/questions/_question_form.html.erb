@@ -22,10 +22,10 @@
           Please provide the question description.
         </div>
         <br />
-        Categories:
+        <label for="questions_trainings" id="questions_trainings_label">Categories:</label>
         <br />
         <div class="mt-3">
-          <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name', selected: (@question.trainings.pluck(:id) if @question.trainings.present?)), {}, { multiple: true, id: 'questions_trainings', class: 'form-control form-select' } %>
+          <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name', selected: (@question.trainings.pluck(:id) if @question.trainings.present?)), {}, { multiple: true, id: 'questions_trainings', class: 'form-control form-select', aria: { labelledby: 'questions_trainings_label' } } %>
         </div>
         <br />
         <div class="mb-3">
@@ -36,7 +36,7 @@
       <br />
 
       <div class="text-center">
-        <%= f.file_field :images, id: 'pictureInput', multiple: true %>
+        <%= f.file_field :images, id: 'pictureInput', multiple: true, aria: { label: t('common.names.select_pictures') } %>
       </div>
 
       <br />

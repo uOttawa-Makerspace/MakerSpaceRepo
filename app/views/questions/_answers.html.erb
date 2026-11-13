@@ -1,7 +1,7 @@
 <div class="mb-3">
   <p class="text-success text-center"><b>First answer</b> is the correct answer.</p>
   <%= f.fields_for :answers, @answers do |af| %>
-    <%= af.rich_text_area :description, placeholder: 'Write the answers here...', class: "form-control h-auto #{return_answer_border_color(af.object)}", required: true %>
+    <%= af.rich_text_area :description, placeholder: 'Write the answers here...', class: "form-control h-auto #{return_answer_border_color(af.object)}", required: true, aria: { label: t('common.names.answer_number', number: af.index + 1) } %>
     <% unless af.object.correct %>
       <% if af.object.persisted? %>
         <%= button_tag 'Remove', type: 'submit', form: "remove-answer-#{af.object.id}", class: 'btn btn-danger text-white float-end', **confirmation_options(t('confirmations.questions.remove_answer')) %>

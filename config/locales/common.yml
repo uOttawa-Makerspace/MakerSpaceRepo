@@ -125,6 +125,7 @@ en:
       filter_space: "Filter by space"
       filter_category: "Filter by category"
       filter_certifications: "Filter by certifications"
+      answer_number: "Answer %{number}"
   semester:
     fall: "Fall"
     winter: "Winter"
@@ -256,6 +257,7 @@ fr:
       filter_space: "Filtrer par espace"
       filter_category: "Filtrer par catégorie"
       filter_certifications: "Filtrer par certifications"
+      answer_number: "Réponse %{number}"
   semester:
     fall: "Automne"
     winter: "Hiver"
