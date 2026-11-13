@@ -1105,10 +1105,10 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
 
     def booking_for(user, **attrs)
       set_booking_status!(
-        create(:sub_space_booking,
-               { sub_space: subspace, user: user,
-                 start_time: DateTime.parse("2027-04-03 10:00"),
-                 end_time: DateTime.parse("2027-04-03 11:00") }.merge(attrs)),
+        create(:sub_space_booking, :with_old_status_row,
+               **{ sub_space: subspace, user: user,
+                   start_time: DateTime.parse("2027-04-03 10:00"),
+                   end_time: DateTime.parse("2027-04-03 11:00") }.merge(attrs)),
         @approved_status
       )
     end
@@ -1118,6 +1118,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       log_in!(owner)
       booking = booking_for(owner)
       status_id = booking.sub_space_booking_status_id
+      expect(status_id).to be_present
 
       delete sub_space_booking_delete_path(booking.id)
       expect(response).to redirect_to(
@@ -1127,6 +1128,18 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
         .to(eq("Booking for #{subspace.name} deleted successfully."))
       expect(SubSpaceBooking.find_by(id: booking.id)).to be_nil
       expect(SubSpaceBookingStatus.find_by(id: status_id)).to be_nil
+    end
+
+    it "owner delete works for a booking with no old status row" do
+      owner = create(:user, :regular_user, booking_approval: true)
+      log_in!(owner)
+      booking = create(:sub_space_booking, sub_space: subspace, user: owner,
+                       start_time: DateTime.parse("2027-04-03 10:00"), end_time: DateTime.parse("2027-04-03 11:00"))
+      expect(booking.sub_space_booking_status_id).to be_nil
+
+      delete sub_space_booking_delete_path(booking.id)
+
+      expect(SubSpaceBooking.find_by(id: booking.id)).to be_nil
     end
 
     it "non-owner hit gets the owner-or-admin alert and the row survives" do

@@ -295,7 +295,7 @@ RSpec.describe "Admin spaces", type: :request do
       end
 
       it "delete_sub_space refuses a room that has bookings and keeps the room, bookings and statuses" do
-        booking = create(:sub_space_booking, sub_space: room)
+        booking = create(:sub_space_booking, :with_old_status_row, sub_space: room)
         status_id = booking.sub_space_booking_status_id
         delete admin_space_delete_sub_space_path(space_id: space.id, id: room.id)
         expect(response).to redirect_to(edit_admin_space_path(id: space.id))

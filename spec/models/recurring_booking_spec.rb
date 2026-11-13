@@ -24,7 +24,7 @@ RSpec.describe RecurringBooking, :booking_clock, type: :model do
   it "destroy is refused and deletes NOTHING" do
     recurring = described_class.create!
     bookings = 3.times.map {
-      create(:sub_space_booking, recurring_booking: recurring,
+      create(:sub_space_booking, :with_old_status_row, recurring_booking: recurring,
              start_time: DateTime.parse("2027-03-03 10:00"),
              end_time: DateTime.parse("2027-03-03 11:00"))
     }
