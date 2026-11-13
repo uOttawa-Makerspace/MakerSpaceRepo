@@ -61,8 +61,8 @@ class VolunteerHoursController < VolunteersController
   end
 
   def volunteer_hour_requests
-    new_scope = VolunteerHour.not_processed.order(created_at: :desc)
-    old_scope = VolunteerHour.processed.order(created_at: :desc)
+    new_scope = VolunteerHour.not_processed.includes(:user, :volunteer_task).order(created_at: :desc)
+    old_scope = VolunteerHour.processed.includes(:user, :volunteer_task).order(created_at: :desc)
 
     @pagy_new, @new_volunteer_hour_requests = pagy(new_scope, page_key: "new_page", limit: 15)
     @pagy_old, @old_volunteer_hour_requests = pagy(old_scope, page_key: "old_page", limit: 15)

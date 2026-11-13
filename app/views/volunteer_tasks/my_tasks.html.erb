@@ -171,7 +171,7 @@
               </thead>
               <tbody class="divide-y">
                 <% in_progress_tasks.each do |vt| %>
-                  <% req = vt.volunteer_task_requests.where(user_id: current_user.id).not_processed.last %>
+                  <% under_review = @under_review_task_ids.include?(vt.id) %>
                   <tr>
                     <!-- Title & Category -->
                     <td class="ps-3 ps-md-4 py-3">
@@ -234,7 +234,7 @@
 
                     <!-- Status Badge -->
                     <td class="py-3">
-                      <% if req.present? %>
+                      <% if under_review %>
                         <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1 small d-inline-flex align-items-center gap-1">
                           <i class="fa-solid fa-hourglass-half text-warning"></i>
                           <span><%= t('volunteer_area.shared.under_review') %></span>
@@ -266,7 +266,7 @@
                           <span><%= t('volunteer_area.shared.details') %></span>
                         <% end %>
 
-                        <% if req.blank? %>
+                        <% unless under_review %>
                           <%= button_to create_request_volunteer_task_requests_path(id: vt.id), method: :post,
                                       **confirmation_options(t('confirmations.volunteer_tasks.submit_for_review')),
                                       class: "btn btn-sm btn-success fw-semibold d-inline-flex align-items-center justify-content-center gap-1 shadow-sm text-white" do %>

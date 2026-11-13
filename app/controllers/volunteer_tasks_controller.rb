@@ -92,7 +92,10 @@ class VolunteerTasksController < SessionsController
   end
 
   def my_tasks
-    @your_volunteer_tasks = current_user.get_volunteer_tasks_from_volunteer_joins
+    @your_volunteer_tasks = current_user.volunteer_task_joins.joined
+                                        .includes(volunteer_task: [:space, { require_trainings: :training }])
+                                        .map(&:volunteer_task)
+    @under_review_task_ids = current_user.volunteer_task_requests.not_processed.pluck(:volunteer_task_id).to_set
     @completed_task_requests = current_user.volunteer_task_requests
                                            .processed
                                            .approved
