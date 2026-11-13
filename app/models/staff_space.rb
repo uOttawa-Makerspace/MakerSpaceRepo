@@ -54,6 +54,12 @@ class StaffSpace < ApplicationRecord
          .sort_by { |member| [member[:busy] ? 0 : 1, member[:name].to_s.downcase] }
   end
 
+  # The staff ranked (conflicts) for an event planned at the times of `window`, repeating by `rule` (nil: once), over 4 weeks.
+  def self.conflicts_for(space_id, rule:, window:)
+    proposal = RecurringSeries.new(rule: rule, starts_at: window.from, ends_at: window.to)
+    conflicts(space_id, proposal.occurrences_in(CalendarWindow.new(window.from, window.from + 4.weeks)))
+  end
+
   # The calendar staff of a space for an event proposed at `occurrences` (RecurringSeries::Occurrence), each with the
   # starts of the occurrences they are unavailable for (StaffUnavailability.clashes): available staff first, each part
   # by name with accents read as their letter. With no occurrences, all are available.

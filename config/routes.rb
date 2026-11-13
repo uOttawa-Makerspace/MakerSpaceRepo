@@ -470,7 +470,7 @@ Rails.application.routes.draw do
     end
 
     namespace :calendar do
-      resource :staff_conflicts, only: :show
+      resources :staff_conflicts, only: :index
     end
     resources :calendar, only: :index do
       collection do
