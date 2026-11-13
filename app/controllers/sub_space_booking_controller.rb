@@ -805,13 +805,17 @@ class SubSpaceBookingController < SessionsController
 
   # The pending and approved bookings of the room, which are the ones the
   # calendar shows. A booking without a status is neither, so it is not listed.
+  # Bookings with no owner or a deleted owner are listed too: they still hold the room.
+  # Owners are loaded, in one query, only for the entries whose title names them.
   def feed_bookings
-    SubSpaceBooking
-      .where(sub_space_id: params[:room])
-      .joins(:user)
-      .where(booking_status_id: [BookingStatus.approved.id, BookingStatus.pending.id])
-      .includes(:user)
-      .order(:start_time, :id)
+    bookings = SubSpaceBooking
+                 .where(sub_space_id: params[:room])
+                 .where(booking_status_id: [BookingStatus.approved.id, BookingStatus.pending.id])
+                 .order(:start_time, :id)
+                 .to_a
+    ActiveRecord::Associations::Preloader.new(records: bookings.select { |booking| owner_shown?(booking) },
+                                              associations: :display_user).call
+    bookings
   end
 
   def feed_event(booking)
@@ -830,16 +834,32 @@ class SubSpaceBookingController < SessionsController
 
     title = details_visible?(booking) ? "#{booking.name} - #{booking.description}" : "Space Booked"
     title += " (Pending)" if booking.pending?
-    title += " - #{booking.user.name}" if @user.admin? && booking.user != @user
+    owner = feed_owner_name(booking)
+    title += " - #{owner}" if owner
     title
   end
 
+  # Admins see who booked someone else's slot: nothing for a booking with no owner, and the
+  # deleted-account wording for an owner whose account was deleted.
+  def feed_owner_name(booking)
+    helpers.staff_user_name(booking.display_user) if owner_shown?(booking)
+  end
+
+  def owner_shown?(booking)
+    @user.admin? && !own_booking?(booking) && !blocked_for_viewer?(booking)
+  end
+
+  # The feed is for signed-in users only, so the viewer always has an id.
+  def own_booking?(booking)
+    booking.user_id == @user.id
+  end
+
   def blocked_for_viewer?(booking)
-    booking.blocking && !booking.public && (!@user.admin? || booking.user != @user)
+    booking.blocking && !booking.public && (!@user.admin? || !own_booking?(booking))
   end
 
   def details_visible?(booking)
-    @user.admin? || booking.user == @user || booking.public
+    @user.admin? || own_booking?(booking) || booking.public
   end
 
   def current_bookings(booking_status_id, page_key: "pending_page")
