@@ -270,6 +270,16 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "shows each stored photo on edit with an empty alt, beside its visible file name" do
+      pending.photos.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")),
+                            filename: "avatar.png", content_type: "image/png")
+      content_login!(owner)
+      get edit_project_proposal_path(pending)
+      preview = Nokogiri::HTML(response.body).at_css(".file-upload-item-preview")
+      expect(preview.at_css("img")["alt"]).to eq("")
+      expect(preview.text).to include("avatar.png")
+    end
+
     it "always sends the category field, so clearing every category is submitted" do
       content_login!(owner)
       get edit_project_proposal_path(pending)
