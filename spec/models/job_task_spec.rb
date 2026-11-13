@@ -14,6 +14,20 @@ RSpec.describe JobTask, type: :model do
     it { should have_one(:job_task_quote).dependent(:destroy) }
   end
 
+  describe "factory" do
+    it "creates a task with no job type or service, which the task reports as missing information" do
+      task = create(:job_task)
+      expect(task).to be_persisted
+      expect(task.job_type).to be_nil
+      expect(task.job_service).to be_nil
+      expect(task.missing_information?).to be(true)
+    end
+
+    it "creates a task option on a created task" do
+      expect(create(:job_task_option).job_task).to be_persisted
+    end
+  end
+
   describe "Delegations" do
     it { should delegate_method(:user).to(:job_order) }
   end
