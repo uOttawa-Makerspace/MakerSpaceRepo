@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_13_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_13_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1719,6 +1719,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_13_120000) do
     t.index ["program"], name: "index_uni_programs_on_program"
   end
 
+  create_table "uoeng_profiles", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "emplid"
+    t.string "faculty_code"
+    t.string "faculty"
+    t.string "program_code"
+    t.string "level"
+    t.boolean "full_time"
+    t.boolean "current_semester"
+    t.datetime "checked_at", null: false
+    t.string "source", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_uoeng_profiles_on_user_id", unique: true
+    t.check_constraint "level::text = ANY (ARRAY['undergrad'::character varying, 'grad'::character varying]::text[])", name: "uoeng_profiles_level_known"
+    t.check_constraint "source::text = ANY (ARRAY['student_number'::character varying, 'email'::character varying]::text[])", name: "uoeng_profiles_source_known"
+  end
+
   create_table "upvotes", id: :serial, force: :cascade do |t|
     t.integer "comment_id"
     t.datetime "created_at", precision: nil, null: false
@@ -2119,6 +2137,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_13_120000) do
   add_foreign_key "training_sessions_users", "users"
   add_foreign_key "trainings", "skills"
   add_foreign_key "trainings", "spaces"
+  add_foreign_key "uoeng_profiles", "users", on_delete: :cascade
   add_foreign_key "upvotes", "comments"
   add_foreign_key "upvotes", "users"
   add_foreign_key "user_booking_approvals", "users"

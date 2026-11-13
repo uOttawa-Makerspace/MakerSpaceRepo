@@ -228,23 +228,108 @@ RSpec.describe User::UoengConcern, type: :model do
       end
     end
 
-    describe "the stored profile after a check" do
-      let(:changed_record) do
+    describe "the uOEng record after a check" do
+      let(:record) do
         { "emplid" => 300_000_001, "student_this_semester" => true, "fulltime" => false, "faculty" => "GENIE",
           "program" => "CEG", "program_description" => "Computer Engineering", "program_level" => "graduate",
-          "courses_enrolled" => [] }
+          "legal_status" => "International", "sex" => "F", "courses_enrolled" => [] }
+      end
+      let(:profile_fields) { %w[faculty program identity year_of_study student_id] }
+
+      before { travel_to Time.zone.local(2026, 11, 13, 10, 0) }
+
+      it "records each field from the answer, mapped where the app knows the code" do
+        stub_api(body: record)
+        eng.validate_uoeng_membership
+
+        expect(eng.reload.uoeng_profile).to have_attributes(
+          emplid: "300000001", faculty_code: "GENIE", faculty: "Engineering", program_code: "CEG", level: "grad",
+          full_time: false, current_semester: true, source: "student_number", checked_at: Time.current
+        )
       end
 
-      it "keeps the faculty, program, level and student number the user entered" do
-        stub_api(body: changed_record)
-        expect { eng.validate_uoeng_membership }.not_to(change { eng.reload.attributes.slice("faculty", "program", "identity", "year_of_study", "student_id") })
+      it "keeps an unknown faculty as a code with no faculty, and an unknown level as blank" do
+        stub_api(body: record.merge("faculty" => "ARTS", "program_level" => "doctoral"))
+        eng.validate_uoeng_membership
+
+        expect(eng.reload.uoeng_profile).to have_attributes(faculty_code: "ARTS", faculty: nil, level: nil)
       end
 
-      it "leaves the student number blank when the user was looked up by email" do
+      it "records the student number sent as student_number" do
+        stub_api(body: record.except("emplid").merge("student_number" => "300000001"))
+        eng.validate_uoeng_membership
+
+        expect(eng.reload.uoeng_profile.emplid).to eq("300000001")
+      end
+
+      it "updates the same row on a second check" do
+        stub_api(body: record)
+        eng.validate_uoeng_membership
+        first = eng.reload.uoeng_profile
+        travel 1.day
+        stub_api(body: record.merge("program" => "SEG", "fulltime" => true, "program_level" => "undergraduate"))
+        eng.validate_uoeng_membership
+
+        expect(UoengProfile.where(user: eng).count).to eq(1)
+        expect(eng.reload.uoeng_profile).to have_attributes(
+          id: first.id, program_code: "SEG", full_time: true, level: "undergrad", checked_at: Time.current, created_at: first.created_at
+        )
+      end
+
+      it "keeps the faculty, program, identity, year and student number the user entered" do
+        eng.update!(identity: "international_undergrad")
+        stub_api(body: record.merge("faculty" => "GENIE", "program_level" => "graduate"))
+
+        expect { eng.validate_uoeng_membership }.not_to(change { eng.reload.attributes.slice(*profile_fields) })
+        expect(eng.identity).to eq("international_undergrad")
+      end
+
+      it "records an email lookup, leaving the user's blank student number blank" do
         outsider = create(:user, :regular_user, identity: "community_member", email: "ann@uottawa.ca", student_id: nil)
-        stub_api(email_url, body: changed_record)
+        stub_api(email_url, body: record)
         outsider.validate_uoeng_membership
+
         expect(outsider.reload.student_id).to be_blank
+        expect(outsider.uoeng_profile).to have_attributes(source: "email", emplid: "300000001")
+      end
+
+      it "writes nothing when the student number does not match" do
+        stub_api(body: record.merge("emplid" => 999_999_999))
+
+        expect { eng.validate_uoeng_membership }.not_to change(UoengProfile, :count)
+      end
+
+      it "keeps the previous record when the answer does not match" do
+        stub_api(body: record)
+        eng.validate_uoeng_membership
+        stub_api(body: record.merge("emplid" => 999_999_999, "program" => "SEG"))
+
+        expect { eng.validate_uoeng_membership }.not_to(change { eng.reload.uoeng_profile.attributes })
+      end
+
+      {
+        "unavailable" => -> { stub_request(:get, id_url).to_timeout },
+        "unknown (a 404 answer)" => -> { stub_api(status: 404, body: {}) },
+        "unknown (an answer of the wrong shape)" => -> { stub_api(body: { "faculty" => 7 }) }
+      }.each do |kind, stub|
+        it "writes nothing when the service is #{kind}" do
+          instance_exec(&stub)
+
+          expect { eng.validate_uoeng_membership }.not_to change(UoengProfile, :count)
+        end
+      end
+
+      it "writes nothing when the user cannot be looked up" do
+        outsider = create(:user, :regular_user, identity: "community_member", email: "a@example.test", student_id: nil)
+
+        expect { outsider.validate_uoeng_membership }.not_to change(UoengProfile, :count)
+      end
+
+      it "records nothing about sex or legal status" do
+        stub_api(body: record)
+        eng.validate_uoeng_membership
+
+        expect(eng.reload.uoeng_profile.attributes.values.map(&:to_s)).not_to include("International", "F")
       end
     end
 

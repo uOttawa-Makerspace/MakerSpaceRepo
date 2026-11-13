@@ -18,6 +18,8 @@ module User::UoengConcern
   NO_ANSWER = %i[unknown unavailable mismatch].freeze
 
   included do
+    has_one :uoeng_profile, dependent: :destroy
+
     # Verify if user qualifies for a faculty membership. Returns the granted
     # membership, nil when the user is not engineering (any active faculty
     # membership is revoked), or :unknown / :unavailable / :mismatch when the
@@ -41,6 +43,19 @@ module User::UoengConcern
     # uOttawa email address.
     def uoeng_queryable?
       student_id.present? || email.to_s.ends_with?("@uottawa.ca")
+    end
+
+    # Keeps what uOEng said about this user (student number, faculty, program code, level,
+    # full-time and current-semester status) in the user's uOEng record, replacing the previous
+    # answer. The user's own profile fields are left as they are.
+    def record_uoeng_answer!(answer)
+      UoengProfile.record!(self, answer, source: uoeng_lookup_source)
+    end
+
+    # The faculty to show: the one uOEng states, when it maps to a faculty the app knows, otherwise
+    # the one on the profile.
+    def shown_faculty
+      uoeng_profile&.faculty.presence || faculty
     end
 
     def active_faculty_membership_count
@@ -88,6 +103,7 @@ module User::UoengConcern
         return :unknown
       end
 
+      record_uoeng_answer!(details)
       is_fulltime_eng = details["student_this_semester"] && details["faculty"] == "GENIE"
       enrolled_gng = details["courses_enrolled"]&.any? { |course| course.include?("GNG") }
       result = is_fulltime_eng || enrolled_gng
@@ -109,9 +125,14 @@ module User::UoengConcern
 
       return false unless uoeng_queryable?
 
-      url = student_id.present? ? "#{creds[:query_by_id]}#{student_id}" : "#{creds[:query_by_email]}#{email}"
+      url = uoeng_lookup_source == "student_number" ? "#{creds[:query_by_id]}#{student_id}" : "#{creds[:query_by_email]}#{email}"
 
       fetch_uoeng_details(url, creds[:student_information_key], card_number, space)
+    end
+
+    # How uOEng is asked about this user: by the student number when there is one, else by email.
+    def uoeng_lookup_source
+      student_id.present? ? "student_number" : "email"
     end
 
     def fetch_uoeng_details(url, key, card_number, space)
