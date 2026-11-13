@@ -794,7 +794,7 @@ class SubSpaceBookingController < SessionsController
     # Use the same timestamp as the main query to avoid timing issues
     all_recurring_bookings = SubSpaceBooking
       .pending
-      .includes(:user, sub_space: :space)
+      .includes(sub_space: :space)
       .where(recurring_booking_id: recurring_ids)
       .where('sub_space_bookings.end_time > ?', @current_time)
       .order(start_time: :asc)
@@ -846,7 +846,7 @@ class SubSpaceBookingController < SessionsController
     scope = SubSpaceBooking
               .where(booking_status_id: booking_status_id)
               .where("sub_space_bookings.end_time > ?", @current_time)
-              .includes(:user, sub_space: :space)
+              .includes(:display_user, sub_space: :space)
               .order(start_time: :asc)
 
     pagy(scope, page_key: page_key, limit: 15)
@@ -856,7 +856,7 @@ class SubSpaceBookingController < SessionsController
     scope = SubSpaceBooking
               .where(booking_status_id: booking_status_id)
               .where("sub_space_bookings.end_time < ?", @current_time)
-              .includes(:user, sub_space: :space)
+              .includes(:display_user, sub_space: :space)
               .order(start_time: :desc)
 
     pagy(scope, page_key: page_key, limit: 15)

@@ -68,8 +68,8 @@
                       <small class="text-body-secondary"><%= truncate(booking.description, length: 50) %></small>
                     </td>
                     <td>
-                      <%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none fw-bold text-primary') %><br>
-                      <small class="text-body-secondary"><%= booking.user.email %></small>
+                      <%= staff_user_link(booking.display_user, class: 'text-decoration-none fw-bold text-primary') %><br>
+                      <small class="text-body-secondary"><%= booking.display_user&.email %></small>
                     </td>
                     <td>
                       <% if bookings.length > 1 %>
@@ -146,7 +146,7 @@
                       <span class="badge text-bg-secondary"><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></span>
                     </td>
                     <td><strong class="text-body-emphasis"><%= booking.name %></strong></td>
-                    <td><%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none text-primary') %></td>
+                    <td><%= staff_user_link(booking.display_user, class: 'text-decoration-none text-primary') %></td>
                     <td>
                       <strong class="text-body-emphasis"><%= booking.start_time.strftime("%b %e, %Y") %></strong><br>
                       <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>
@@ -209,7 +209,7 @@
                       <strong class="text-body-emphasis"><%= booking.name %></strong><br>
                       <small class="text-body-secondary"><%= truncate(booking.description, length: 50) %></small>
                     </td>
-                    <td><%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none text-primary') %></td>
+                    <td><%= staff_user_link(booking.display_user, class: 'text-decoration-none text-primary') %></td>
                     <td>
                       <strong class="text-body-emphasis"><%= booking.start_time.strftime("%b %e, %Y") %></strong><br>
                       <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>
@@ -357,7 +357,7 @@
                       <strong class="text-body-emphasis"><%= booking.name %></strong><br>
                       <small class="text-body-secondary"><%= truncate(booking.description, length: 50) %></small>
                     </td>
-                    <td><%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none text-primary') %></td>
+                    <td><%= staff_user_link(booking.display_user, class: 'text-decoration-none text-primary') %></td>
                     <td>
                       <strong class="text-body-emphasis"><%= booking.start_time.strftime("%b %e, %Y") %></strong><br>
                       <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>
@@ -409,7 +409,7 @@
                       <strong class="text-body-emphasis"><%= booking.name %></strong><br>
                       <small class="text-body-secondary"><%= truncate(booking.description, length: 50) %></small>
                     </td>
-                    <td><%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none text-primary') %></td>
+                    <td><%= staff_user_link(booking.display_user, class: 'text-decoration-none text-primary') %></td>
                     <td>
                       <strong class="text-body-emphasis"><%= booking.start_time.strftime("%b %e, %Y") %></strong><br>
                       <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>
@@ -461,7 +461,7 @@
                       <strong class="text-body-emphasis"><%= booking.name %></strong><br>
                       <small class="text-body-secondary"><%= truncate(booking.description, length: 50) %></small>
                     </td>
-                    <td><%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none text-primary') %></td>
+                    <td><%= staff_user_link(booking.display_user, class: 'text-decoration-none text-primary') %></td>
                     <td>
                       <strong class="text-body-emphasis"><%= booking.start_time.strftime("%b %e, %Y") %></strong><br>
                       <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>

@@ -964,6 +964,28 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(page).to have_css("#declined-accordion", text: "DeclinedOne", visible: :all)
     end
 
+    it "the admin panel lists bookings that have no owner, such as imported calendar events" do
+      log_in!(create(:user, :admin, booking_approval: true))
+      owner = create(:user, :regular_user, booking_approval: true)
+      booking_by(owner, name: "OwnedOne")
+      past = { start_time: DateTime.parse("2020-04-03 10:00"), end_time: DateTime.parse("2020-04-03 11:00") }
+      { "pending" => @pending_status, "approved" => @approved_status, "declined" => @declined_status }.each do |label, status|
+        booking_by(nil, name: "Ownerless #{label}").change_status!(status)
+        booking_by(nil, name: "Old ownerless #{label}", **past).change_status!(status)
+      end
+
+      get sub_space_booking_index_path
+      expect(response).to have_http_status(:ok)
+      page = Capybara.string(response.body)
+
+      %w[pending approved declined].each do |label|
+        expect(page).to have_css("tr", text: "Ownerless #{label}", visible: :all)
+        expect(page).to have_css("tr", text: "Old ownerless #{label}", visible: :all)
+      end
+      expect(page.find("tr", text: "OwnedOne", visible: :all))
+        .to have_link(owner.name, href: user_path(owner.username), visible: :all)
+    end
+
     it "My Bookings shows each booking's own status" do
       owner = create(:user, :regular_user, booking_approval: true)
       log_in!(owner)
