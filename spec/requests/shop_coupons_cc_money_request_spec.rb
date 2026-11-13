@@ -79,6 +79,15 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(response.body).not_to include("$99 off")
       end
 
+      it "keeps each coupon's price and Redeem button outside its title heading" do
+        create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 50)
+        shop_log_in!(user)
+        get new_discount_code_path
+        card = Nokogiri::HTML5(response.body).at_css(".card-body")
+        expect(card.at_css("h5.card-title").text.strip).to eq("$5 off our MakerStore")
+        expect(card.css("h5.card-title p, h5.card-title form")).to be_empty
+      end
+
       it "shows the sold-out message when nothing is unclaimed" do
         shop_log_in!(user)
         get new_discount_code_path
