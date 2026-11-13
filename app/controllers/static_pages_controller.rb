@@ -2,6 +2,7 @@
 
 class StaticPagesController < SessionsController
   include TurnstileHelper
+  include CalendarWindowed
 
   before_action :current_user, except: [:reset_password]
   before_action :no_container, except: :about
@@ -12,6 +13,7 @@ class StaticPagesController < SessionsController
     @user_tracks = []
     @volunteer_program_shadowing_scheduled = []
     @volunteer_program_your_tasks = []
+    @hours_calendars = StaffNeededCalendar.open_hours
 
     # User-specific data (Only run when a user is signed in)
     user = current_user || @user
@@ -91,6 +93,7 @@ class StaticPagesController < SessionsController
 
   def hours
     @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
+    @hours_calendars = StaffNeededCalendar.open_hours
     respond_to do |format|
       format.html do
         @contact_info = @contact_info.includes(:opening_hours)
@@ -105,16 +108,12 @@ class StaticPagesController < SessionsController
     end
   end
 
+  # The opening hours of the spaces: the occurrences in the range the calendar shows (CalendarWindow), or in the
+  # current week when no range is given.
   def open_hours
-    calendars = StaffNeededCalendar.where(role: "open_hours").includes(:space)
-    all_calendars = calendars.flat_map do |calendar_record|
-      helpers.parse_ics_calendar(
-        calendar_record.calendar_url,
-        name: calendar_record.space&.name || calendar_record.name.presence || "Unnamed Calendar",
-        color: calendar_record.color,
-      )
-    end
-    render json: all_calendars
+    window = CalendarWindow.from_params(params)
+    window = CalendarWindow.week_of(Time.current) if window == CalendarWindow::ALL
+    render json: StaffNeededCalendar.open_hours.flat_map { |calendar| calendar.feed_sources(window, name: calendar.hours_name) }
   end
 
   def calendar; end

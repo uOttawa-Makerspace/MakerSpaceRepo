@@ -45,6 +45,12 @@ class CalendarWindow
     @to = to
   end
 
+  # The Toronto week (Sunday to Sunday) that holds `time`.
+  def self.week_of(time)
+    sunday = time.in_time_zone(RecurrenceRule::ZONE).beginning_of_week(:sunday)
+    new(sunday, sunday + 1.week)
+  end
+
   # The events or unavailabilities of `relation` the window keeps.
   def records(relation)
     table = relation.arel_table

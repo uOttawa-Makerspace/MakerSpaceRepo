@@ -111,4 +111,12 @@ RSpec.describe CalendarWindow do
       expect(CalendarWindow::ALL.entries([old])).to eq([old])
     end
   end
+
+  describe ".week_of" do
+    it "is the Toronto week, Sunday to Sunday, that holds the time, across a clock change" do
+      window = described_class.week_of(Time.utc(2027, 3, 16, 3))
+      expect([window.from, window.to].map(&:iso8601)).to eq(%w[2027-03-14T00:00:00-05:00 2027-03-21T00:00:00-04:00])
+      expect(described_class.week_of(Time.utc(2027, 11, 7, 4, 59)).from.iso8601).to eq("2027-11-07T00:00:00-04:00")
+    end
+  end
 end

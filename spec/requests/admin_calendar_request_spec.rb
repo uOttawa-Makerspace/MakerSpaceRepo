@@ -85,7 +85,7 @@ RSpec.describe "Admin calendar contract", type: :request do
     expect(response.status).to eq(200)
     expect(response.parsed_body).to eq([])
 
-    get imported_calendars_json_admin_calendar_index_path(id: 0)
+    get imported_calendars_json_admin_calendar_index_path(id: 0), params: { start: "2027-03-14", end: "2027-03-21" }
     expect(response.status).to eq(200)
     expect(response.parsed_body).to eq([])
   end
@@ -179,7 +179,7 @@ RSpec.describe "Admin calendar contract", type: :request do
   describe "GET imported_calendars_json" do
     it "renders parse results of the space's ICS calendars (empty = [] here)" do
       log_in!(admin)
-      get imported_calendars_json_admin_calendar_index_path(id: space.id)
+      get imported_calendars_json_admin_calendar_index_path(id: space.id), params: { start: "2027-03-14", end: "2027-03-21" }
       expect(response.status).to eq(200)
       expect(response.parsed_body).to eq([])
     end
@@ -414,15 +414,15 @@ RSpec.describe "Admin calendar contract", type: :request do
       StaffNeededCalendar.create!(space: space, calendar_url: "https://calendar.example/open.ics",
                                   name: "Open hours calendar", color: "#123456")
 
-      get imported_calendars_json_admin_calendar_index_path(id: space.id)
+      get imported_calendars_json_admin_calendar_index_path(id: space.id), params: { start: "2098-12-27", end: "2099-01-03" }
       group = response.parsed_body.first
       expect(group["id"]).to eq(Digest::MD5.hexdigest("https://calendar.example/open.ics"))
       expect(group["color"]).to eq("#123456")
       event = group["events"].first
       expect(event["title"]).to eq("Open hours")
-      expect(event["start"]).to eq("2099-01-01T10:00:00")
-      expect(event["end"]).to eq("2099-01-01T11:00:00")
-      expect(event["extendedProps"]).to eq("name" => "Open hours calendar", "description" => nil)
+      expect(event["start"]).to eq("2099-01-01T10:00:00-05:00")
+      expect(event["end"]).to eq("2099-01-01T11:00:00-05:00")
+      expect(event["extendedProps"]).to eq("name" => "Open hours calendar", "description" => nil, "occurrenceStart" => "2099-01-01T15:00:00Z")
     end
   end
 
@@ -479,13 +479,15 @@ RSpec.describe "Admin calendar contract", type: :request do
       expect(response.parsed_body).to eq("error" => I18n.t("errors.calendar.window_invalid"))
     end
 
-    it "sends the imported calendars' one-offs in the range and their series" do
+    it "sends the occurrences of the imported calendars in the range" do
       stub_request(:get, "https://calendar.example/open.ics").to_return(status: 200, body: ics_body("20270317", "20270324"))
       StaffNeededCalendar.create!(space: space, calendar_url: "https://calendar.example/open.ics", name: "Open hours")
 
       get imported_calendars_json_admin_calendar_index_path(id: space.id), params: week
 
-      expect(response.parsed_body.first["events"].map { |row| row["title"] }).to contain_exactly("One-off 20270317", "Weekly")
+      expect(response.parsed_body.first["events"].map { |row| row.values_at("title", "start") }).to contain_exactly(
+        ["One-off 20270317", "2027-03-17T11:00:00-04:00"], ["Weekly", "2027-03-15T11:00:00-04:00"]
+      )
     end
 
     it "answers 400 with the reason for a range it cannot read" do

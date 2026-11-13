@@ -3,8 +3,10 @@
 require "rails_helper"
 
 # The opening-hours calendar of the home page and the /hours page
-# (entrypoints/fullcalendar_setup_homepage.js). The hours come from the
-# open-hours calendar of a space (an ICS feed, stubbed here).
+# (controllers/hours_calendar_controller.js). The hours come from the
+# open-hours calendar of a space (an ICS feed, stubbed here), as the
+# occurrences the server sends for the days shown; the filters are rendered
+# by the server, one per open-hours calendar.
 
 RSpec.describe "Opening hours calendar", type: :system do
   let!(:space) { create(:space, name: "Makerspace Alpha") }
@@ -101,13 +103,26 @@ RSpec.describe "Opening hours calendar", type: :system do
     expect(page).to have_css("#filters input[type=checkbox]", count: 1, visible: :all)
   end
 
-  it "shows no calendar when the hours cannot be loaded", js: true, skip_bullet: true do
+  it "shows the calendar without hours, and the filter, when the hours cannot be loaded", js: true, skip_bullet: true do
+    stub_hours
     allow_any_instance_of(StaticPagesController).to receive(:open_hours) { |controller| controller.head :internal_server_error }
     visit root_path
 
-    expect(page).to have_css("#calendar", visible: :all)
-    expect(page).to have_no_css("#calendar .fc-view", visible: :all)
-    expect(page).to have_no_css("#filters input", visible: :all)
+    expect(page).to have_css("#calendar .fc-view")
+    expect(page).to have_css("#filters label", text: "Makerspace Alpha")
+    expect(page).to have_no_css("#calendar .fc-timegrid-event", visible: :all)
+  end
+
+  it "asks for the days shown when stepping to the next ones", js: true, skip_bullet: true do
+    stub_hours
+    visit root_path
+    expect(page).to have_css("#calendar .fc-timegrid-event", text: "Open", minimum: 1, visible: :all)
+    last_day = all("#calendar th.fc-col-header-cell[data-date]").last[:"data-date"]
+
+    find("#calendar .fc-next-button").click
+
+    expect(page).to have_no_css("#calendar th[data-date='#{last_day}']")
+    expect(page).to have_css("#calendar .fc-timegrid-event", text: "Open", count: 5, visible: :all)
   end
 
   it "leaves the home page and returns with one calendar and one set of filters", js: true, skip_bullet: true do

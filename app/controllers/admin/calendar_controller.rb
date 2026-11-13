@@ -28,12 +28,10 @@ class Admin::CalendarController < AdminAreaController
     }
   end
 
-  # The space's imported calendars, with their entries in the window (CalendarWindow).
+  # The space's imported calendars, with the occurrences of their entries in the window (CalendarWindow).
   def imported_calendars_json
-    window = CalendarWindow.from_params(params)
-    render json: StaffNeededCalendar.where(space_id: params[:id]).flat_map { |calendar|
-      helpers.parse_ics_calendar(calendar.calendar_url, name: calendar.display_name, color: calendar.color, window: window)
-    }
+    window = CalendarWindow.bounded(params)
+    render json: StaffNeededCalendar.where(space_id: params[:id]).linked.flat_map { |calendar| calendar.feed_sources(window) }
   end
 
   def update_color

@@ -1,0 +1,7 @@
+<%# One ticked checkbox per opening-hours calendar: clearing it hides that space's hours (hours-calendar controller). %>
+<% calendars.each do |calendar| %>
+    <div class="d-flex align-items-center gap-2">
+        <input type="checkbox" class="form-check-input" id="filter-<%= calendar.feed_id %>" value="<%= calendar.feed_id %>" data-color="<%= calendar.display_color %>" style="width: 20px; height: 20px" checked data-hours-calendar-target="filter" data-action="hours-calendar#redraw">
+        <label class="form-check-label mt-1" for="filter-<%= calendar.feed_id %>"><%= calendar.hours_name %></label>
+    </div>
+<% end %>

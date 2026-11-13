@@ -9,7 +9,8 @@ require "rails_helper"
 # same strings are drawn in spec/javascript/calendars/rrule_feed_dst.test.js.
 # The unavailabilities feeds asked for a range send the occurrences of the
 # server's own expansion (RecurringSeries, also used by the staff calendar and
-# the shifts API), so they draw what the server stores.
+# the shifts API), so they draw what the server stores. The imported calendar
+# feeds do the same.
 RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", type: :request do
   include SpacesSpecHelpers
 
@@ -212,15 +213,14 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
   end
 
   # The feeds that carry an imported calendar (ICS) next to the stored series: the admin unavailabilities feed (a
-  # staff member's linked calendar), the admin imported calendars feed, the staff unavailabilities feed and the
-  # public open hours feed. Each reads the file through CalendarHelper#ics_feed and sends the repeat rule as
-  # floating Toronto text with a length in milliseconds. The ICS files are in spec/fixtures/files/ics and the exact
-  # rows are pinned in spec/helpers/calendar_helper_ics_dst_spec.rb; here each feed is checked to send the same row.
+  # staff member's linked calendar) and the staff unavailabilities feed. Each reads the file and sends the occurrences
+  # in the range asked for, as the server expands them. The ICS files are in spec/fixtures/files/ics. (The admin
+  # imported calendars feed and the public open hours feed also send occurrences:
+  # spec/requests/imported_calendar_feeds_request_spec.rb.)
   describe "imported calendars" do
     include ActiveSupport::Testing::TimeHelpers
 
     let(:feed_url) { "https://calendar.example.test/feed.ics" }
-    let(:expected) { JSON.parse(Rails.root.join("spec/fixtures/files/ics/feed_events.json").read) }
 
     around { |example| travel_to(Time.utc(2027, 2, 1, 12)) { example.run } }
 
@@ -228,22 +228,6 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
       body = Rails.root.join("spec/fixtures/files/ics/#{fixture}.ics").binread
       allow(IcsFetcher).to receive(:get).and_return(nil)
       allow(IcsFetcher).to receive(:get).with(feed_url, any_args).and_return(body)
-    end
-
-    # The rows each feed sends for the calendar at feed_url.
-    def feed_rows(feed) = send("#{feed}_rows")
-
-    def admin_imported_calendars_rows
-      sign_in_as(:admin)
-      create(:staff_needed_calendar, space: space, calendar_url: feed_url, name: "Hours", color: "#123456")
-      get imported_calendars_json_admin_calendar_index_path(id: space.id)
-      response.parsed_body.flat_map { |group| group["events"] }
-    end
-
-    def open_hours_rows
-      create(:staff_needed_calendar, space: space, calendar_url: feed_url, name: "Hours", color: "#123456", role: "open_hours")
-      get open_hours_path
-      response.parsed_body.flat_map { |group| group["events"] }
     end
 
     def admin_unavailabilities_rows(range)
@@ -262,42 +246,6 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
       response.parsed_body
     end
 
-    def sent(feed, fixture)
-      serve(fixture)
-      feed_rows(feed).to_h { |row| [row["id"], row.slice("rrule", "duration", "allDay")] }
-    end
-
-    def fixture_rows(fixture)
-      expected.fetch(fixture).to_h { |row| [row["id"], row.slice("rrule", "duration", "allDay")] }
-    end
-
-    %i[admin_imported_calendars open_hours].each do |feed|
-      context "in the #{feed.to_s.tr('_', ' ')} feed" do
-        it "sends a Toronto-zone series over both clock changes as floating Toronto text" do
-          rows = sent(feed, "toronto_tzid")
-          expect(rows).to eq(fixture_rows("toronto_tzid"))
-          expect(rows.dig("spring-0230@ics.test", "rrule")).to eq("DTSTART:20270307T023000\nRRULE:FREQ=WEEKLY;BYDAY=SU")
-          expect(rows.dig("fall-0130@ics.test", "rrule")).to eq("DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU")
-          expect(rows.dig("spring-0230@ics.test", "duration")).to eq(3_600_000)
-        end
-
-        # Disagreement, named "calendar zone dropped": the file says Paris, the feed sends the Toronto wall time of
-        # the first occurrence and the browser repeats that wall time in Toronto. Paris changes its clocks two weeks
-        # after Toronto does, so for two weeks the real 09:00 in Paris is 04:00 in Toronto, not the 03:00 drawn.
-        it "sends a Paris-zone series as the Toronto wall time of its first occurrence" do
-          rows = sent(feed, "paris_tzid")
-          expect(rows).to eq(fixture_rows("paris_tzid"))
-          expect(rows.dig("paris-spring@ics.test", "rrule")).to eq("DTSTART:20270307T030000\nRRULE:FREQ=WEEKLY;BYDAY=SU")
-        end
-
-        # A cancelled instance is only an exclusion of its series and a cancelled series is left out.
-        it "sends the series with its cancelled instance excluded, and nothing for the cancelled instance or series" do
-          rows = sent(feed, "recurrence_id_cancelled")
-          expect(rows).to eq(fixture_rows("recurrence_id_cancelled"))
-          expect(rows.keys).to contain_exactly("cancelled@ics.test")
-        end
-      end
-    end
     # The unavailabilities feeds send the occurrences of the imported series in the range, in the zone of the file,
     # as the server expands them.
     %i[admin_unavailabilities staff_unavailabilities].each do |feed|
