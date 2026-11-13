@@ -3,14 +3,12 @@ import { RRule } from "rrule";
 import TomSelect from "tom-select";
 
 import { isHexColour } from "./calendar_background";
+import { timesShown } from "./calendar_helper";
 import { onPageLoad } from "./on_page";
 import {
-  entryIntervals,
   fieldValue,
   instantToWall,
-  occurrencesOverlapping,
   startOfDay,
-  startingAt,
   storedRule,
   wallFromString,
   wallOfField,
@@ -19,7 +17,6 @@ import {
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
-const FOUR_WEEKS_MS = 28 * DAY_MS;
 
 function showStaffLoadError() {
   document.getElementById("staff_load_error").classList.remove("d-none");
@@ -44,7 +41,7 @@ document.addEventListener("turbo:before-cache", () => {
   if (document.getElementById("eventModal")) resetReadyState();
 });
 
-onPageLoad("#eventModal", async () => {
+onPageLoad("#eventModal", () => {
   resetReadyState();
 
   const container = document.querySelector("#content");
@@ -68,47 +65,24 @@ onPageLoad("#eventModal", async () => {
   const saveButton = document.getElementById("save_button");
   const radios = document.querySelectorAll("#update_dropdown_items *");
 
-  // Staff select
+  // Staff select: the space's staff as the page lists them, then ranked by
+  // the server for the event in the form (rankStaff).
   const staffSelect = document.getElementById("staff_select");
+  const staffList = JSON.parse(staffSelect.dataset.staff || "[]");
+  let rankedStaff = staffList;
+  let rankings = 0;
   let tomSelect;
-
-  let fetchedStaffUnavailabilitiesRes = null;
-  try {
-    fetchedStaffUnavailabilitiesRes = await fetch(
-      "/admin/calendar/unavailabilities_json/" +
-        document.getElementById("space_id").value,
-    );
-  } catch (error) {
-    console.error(error);
-  }
-  // Without the staff data the modal must not be used: tell the admin and
-  // leave "Add Event" disabled.
-  if (!fetchedStaffUnavailabilitiesRes?.ok) {
-    showStaffLoadError();
-    return;
-  }
-  const fetchedStaffUnavailabilities =
-    await fetchedStaffUnavailabilitiesRes.json();
 
   // ---------------------------------------
   // Helper functions
   // ---------------------------------------
   // The form fields hold Toronto wall-clock times, like the calendar.
   function validateTimeRange() {
-    const startDate = wallOfField(startTimeField.value);
-    const endDate = wallOfField(endTimeField.value);
-
-    if (endDate <= startDate) {
-      timeError.classList.remove("d-none");
-      saveButton.disabled = true;
-      saveButton.classList.add("disabled");
-      return false;
-    } else {
-      timeError.classList.add("d-none");
-      saveButton.disabled = false;
-      saveButton.classList.remove("disabled");
-      return true;
-    }
+    const valid =
+      wallOfField(endTimeField.value) > wallOfField(startTimeField.value);
+    timeError.classList.toggle("d-none", valid);
+    saveButton.disabled = !valid;
+    saveButton.classList.toggle("disabled", !valid);
   }
 
   // The rule as it is stored: the start in Toronto time, the end a UTC stamp.
@@ -148,41 +122,56 @@ onPageLoad("#eventModal", async () => {
     }
   }
 
-  // The event's own occurrences over the next four weeks (just itself when
-  // it does not repeat), as wall times read from the form fields.
-  function eventOccurrences() {
-    const start = wallFromString(startTimeField.value);
-    const end = wallFromString(endTimeField.value);
-    if (!(end > start)) return [];
-    if (!ruleField.value) return [{ start, end }];
-    return occurrencesOverlapping(
-      startingAt(ruleField.value, start),
-      end - start,
-      start,
-      start + FOUR_WEEKS_MS,
-    );
+  const instantOfField = (field) =>
+    new Date(wallToInstant(wallFromString(field.value))).toISOString();
+
+  // Asks the server which staff are unavailable for the event in the form
+  // (its occurrences over four weeks) and redraws the list with the answer;
+  // only the latest answer is drawn. Without one the list stays as it was
+  // and the admin is told.
+  async function rankStaff() {
+    const ranking = ++rankings;
+    delete staffSelect.dataset.ranked;
+    const query = new URLSearchParams({
+      space_id: document.getElementById("space_id").value,
+      start: instantOfField(startTimeField),
+      end: instantOfField(endTimeField),
+      recurrence_rule: ruleField.value,
+    });
+    try {
+      const response = await fetch(`/admin/calendar/staff_conflicts?${query}`, {
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) throw new Error(`staff ranking ${response.status}`);
+      const ranked = await response.json();
+      if (ranking !== rankings) return;
+      rankedStaff = ranked;
+      document.getElementById("staff_load_error").classList.add("d-none");
+      redrawStaff();
+      staffSelect.dataset.ranked = "true"; // the list shows the latest answer
+    } catch (error) {
+      console.error(error);
+      if (ranking !== rankings) return;
+      // the list must not keep the labels of an earlier answer
+      rankedStaff = staffList;
+      redrawStaff();
+      showStaffLoadError();
+    }
   }
 
-  // Start times (instants) of the event occurrences that fall inside one of
-  // the given unavailabilities. Each unavailability is expanded once over the
-  // whole span of the event's occurrences.
-  function isUnavailableDuring(occurrences, unavailabilities) {
-    if (occurrences.length === 0) return [];
-    const from = occurrences[0].start;
-    const to = occurrences[occurrences.length - 1].end;
-    const busy = unavailabilities.flatMap((entry) =>
-      entryIntervals(entry, from, to),
-    );
-    return occurrences
-      .filter((occurrence) =>
-        busy.some(
-          (slot) => slot.start < occurrence.end && slot.end > occurrence.start,
-        ),
-      )
-      .map((occurrence) => new Date(wallToInstant(occurrence.start)));
+  // An event that ends before it starts has nothing to rank.
+  function rankWhenTimed() {
+    if (wallOfField(endTimeField.value) > wallOfField(startTimeField.value)) {
+      rankStaff();
+    }
   }
 
   function refreshTomSelect() {
+    redrawStaff();
+    rankWhenTimed();
+  }
+
+  function redrawStaff() {
     createTomSelectOptions();
 
     if (tomSelect) {
@@ -196,6 +185,8 @@ onPageLoad("#eventModal", async () => {
           unavailableDates: option.dataset.unavailableDates,
         })),
       );
+      // an answer can arrive while the list is open: draw it again
+      tomSelect.refreshOptions(false);
     } else {
       initTomSelect();
     }
@@ -209,38 +200,18 @@ onPageLoad("#eventModal", async () => {
     // Clear existing options
     staffSelect.innerHTML = "";
 
-    if (
-      !fetchedStaffUnavailabilities ||
-      fetchedStaffUnavailabilities.length === 0
-    ) {
+    if (rankedStaff.length === 0) {
       staffSelect.innerHTML = '<option value="">No staff yet</option>';
       return;
     }
 
-    const occurrences = eventOccurrences();
-    const staffWithAvailability = fetchedStaffUnavailabilities.map((staff) => {
-      const unavailableDates = isUnavailableDuring(
-        occurrences,
-        staff.unavailabilities,
-      );
-      return { ...staff, unavailableDates };
-    });
-
-    const sortedStaff = staffWithAvailability.sort((a, b) => {
-      const aUnavailable = a.unavailableDates.length > 0;
-      const bUnavailable = b.unavailableDates.length > 0;
-
-      if (aUnavailable !== bUnavailable) return aUnavailable - bUnavailable; // available first
-
-      return a.name.localeCompare(b.name); // then sort by name
-    });
-
-    sortedStaff.forEach((staff) => {
+    // available staff first, each part by name (the server's order)
+    rankedStaff.forEach((staff) => {
       const option = document.createElement("option");
       option.value = staff.id;
       option.textContent = staff.name;
       option.dataset.color = staff.color;
-      option.dataset.unavailableDates = staff.unavailableDates.toString();
+      option.dataset.unavailableDates = staff.unavailableStarts.toString();
       option.selected = previouslySelected.includes(staff.id.toString());
       staffSelect.add(option);
     });
@@ -283,14 +254,10 @@ onPageLoad("#eventModal", async () => {
       searchField: ["text"],
       create: false,
     });
-
-    tomSelect.on("focus", () => {
-      buildRule();
-    });
   }
 
   function isTitleAutogenerated(title, allStaffNames) {
-    if (!title || allStaffNames.length === 0) return false;
+    if (allStaffNames.length === 0) return false;
 
     // Escape and sort names to avoid partial matches
     const escapedNames = allStaffNames
@@ -351,16 +318,15 @@ onPageLoad("#eventModal", async () => {
       const dayIndex = new Date(wallOfField(startTimeField.value)).getUTCDay();
       if (dayCheckboxes[dayIndex]) dayCheckboxes[dayIndex].checked = true;
     }
+    buildRule(); // ranks the staff for the new repeat
   });
 
   // Manage when the until date or checkboxes change
   [untilInput, ...dayCheckboxes].forEach((el) => {
     el.addEventListener("change", () => {
-      if (dayCheckboxes.every((checkbox) => !checkbox.checked)) {
-        dayFreqError.classList.remove("d-none");
-      } else {
-        dayFreqError.classList.add("d-none");
-      }
+      const noDay = dayCheckboxes.every((checkbox) => !checkbox.checked);
+      dayFreqError.classList.toggle("d-none", !noDay);
+      buildRule(); // ranks the staff for the new repeat
     });
   });
 
@@ -431,11 +397,15 @@ onPageLoad("#eventModal", async () => {
     validateTimeRange();
     createTomSelectOptions();
     initTomSelect();
+    rankWhenTimed();
   });
 
   // Before form submission, send the instants of the Toronto times
   document.getElementById("eventForm").addEventListener("submit", (e) => {
     buildRule();
+    const keepTimes = document.getElementById("keep_series_times");
+    // sent ("1") only while the times are as the dialog filled them
+    keepTimes.disabled = keepTimes.dataset.filled !== timesShown();
 
     document.getElementById("utc_start_time").value = new Date(
       wallToInstant(wallOfField(startTimeField.value)),
@@ -448,10 +418,8 @@ onPageLoad("#eventModal", async () => {
 
     // Autogenerate title if not customized
     const title = document.getElementById("title");
-    if (title.value && title.value.trim() !== "") {
-      const allStaffNames = fetchedStaffUnavailabilities.map(
-        (staff) => staff.name,
-      );
+    if (title.value.trim()) {
+      const allStaffNames = staffList.map((staff) => staff.name);
       if (isTitleAutogenerated(title.value, allStaffNames)) title.value = "";
     }
   });

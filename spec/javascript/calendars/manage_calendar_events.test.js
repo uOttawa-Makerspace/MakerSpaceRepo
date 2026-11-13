@@ -37,6 +37,9 @@ vi.mock("tom-select", () => ({
     addOption(options) {
       this.added = options;
     }
+    refreshOptions() {
+      this.refreshed = (this.refreshed || 0) + 1;
+    }
     destroy() {
       this.destroyed = true;
     }
@@ -48,35 +51,43 @@ await import("../../../app/javascript/src/manage_calendar_events.js");
 
 const $ = (id) => document.getElementById(id);
 const fire = (el, type, init) => el.dispatchEvent(new Event(type, init));
-// the feed gives Toronto wall-clock times without a zone
-const wall = (local) => `${local}:00`;
-
-const staffFeed = [
+// The space's staff as the page lists them (data-staff on the picker), and the
+// server's ranking for an event in the form: Bob is free, Ada is not.
+const staffList = [
+  { id: 1, name: "Ada", color: "#ff0000", unavailableStarts: [] },
+  { id: 2, name: "Bob", color: "#00ff00", unavailableStarts: [] },
+];
+const ranking = [
+  { id: 2, name: "Bob", color: "#00ff00", unavailableStarts: [] },
   {
     id: 1,
     name: "Ada",
     color: "#ff0000",
-    unavailabilities: [
-      { start: wall("2027-03-17T13:00"), end: wall("2027-03-17T15:00") },
-    ],
+    unavailableStarts: ["2027-03-17T18:00:00Z"],
   },
-  { id: 2, name: "Bob", color: "#00ff00", unavailabilities: [] },
 ];
+const answer = (body, init = {}) => ({
+  ok: true,
+  json: async () => body,
+  ...init,
+});
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-async function load(feed = staffFeed, response = {}) {
+async function load(staff = staffList, response = answer(ranking)) {
+  $("staff_select").dataset.staff = JSON.stringify(staff);
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => ({ ok: true, json: async () => feed, ...response })),
+    vi.fn(async () => response),
   );
   document.dispatchEvent(new Event("turbo:load"));
-  await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await settle();
 }
 
-function setTimes(start, end) {
+async function setTimes(start, end) {
   $("start_time_field").value = start;
   $("end_time_field").value = end;
   fire($("end_time_field"), "change");
+  await settle();
 }
 
 const optionNames = () =>
@@ -84,6 +95,7 @@ const optionNames = () =>
 const unavailableDates = (name) =>
   [...$("staff_select").options].find((o) => o.textContent === name).dataset
     .unavailableDates;
+const askedFor = () => new URL(fetch.mock.lastCall[0], "http://x").searchParams;
 
 beforeEach(async () => {
   document.body.innerHTML = EVENT_MODAL_HTML;
@@ -94,69 +106,24 @@ beforeEach(async () => {
 
 describe("loading", () => {
   it("does nothing on a page without the calendar", async () => {
-    document.body.innerHTML = "<p>another page</p>";
+    document.body.innerHTML = "";
     vi.stubGlobal("fetch", vi.fn());
-    const failures = [];
-    const record = (e) => failures.push(e.reason ?? e.error);
-    process.on("unhandledRejection", record);
     document.dispatchEvent(new Event("turbo:load"));
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    process.off("unhandledRejection", record);
-
+    await settle();
     expect(fetch).not.toHaveBeenCalled();
-    expect(failures).toEqual([]);
   });
 
-  it("asks for the staff and their unavailabilities of the space", async () => {
+  it("is ready at once, with the staff the page lists and no request", async () => {
     await load();
-    expect(fetch).toHaveBeenCalledWith(
-      "/admin/calendar/unavailabilities_json/7",
-    );
-  });
-});
-
-describe("when the staff data cannot be loaded", () => {
-  it("shows the error and keeps the add button disabled for a failed response", async () => {
-    await load(staffFeed, { ok: false });
-
-    expect($("staff_load_error").classList.contains("d-none")).toBe(false);
-    expect($("addEventButton").disabled).toBe(true);
-    expect($("eventModal").dataset.ready).toBeUndefined();
-  });
-
-  it("shows the error for a network failure", async () => {
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => {
-        throw new Error("offline");
-      }),
-    );
-    document.dispatchEvent(new Event("turbo:load"));
-    await vi.waitFor(() =>
-      expect($("staff_load_error").classList.contains("d-none")).toBe(false),
-    );
-
-    expect($("addEventButton").disabled).toBe(true);
-    expect(consoleError).toHaveBeenCalled();
-    consoleError.mockRestore();
+    expect(fetch).not.toHaveBeenCalled();
+    expect($("addEventButton").disabled).toBe(false);
+    expect($("eventModal").dataset.ready).toBe("true");
+    fire($("eventModal"), "show.bs.modal");
+    expect(optionNames()).toEqual(["Ada", "Bob"]);
   });
 });
 
 describe("a page restored from the Turbo cache", () => {
-  it("is not ready when the load then fails", async () => {
-    $("eventModal").dataset.ready = "true";
-    $("addEventButton").disabled = false;
-
-    await load(staffFeed, { ok: false });
-
-    expect($("eventModal").dataset.ready).toBeUndefined();
-    expect($("addEventButton").disabled).toBe(true);
-    expect($("staff_load_error").classList.contains("d-none")).toBe(false);
-  });
-
   it("is reset before Turbo caches the page", () => {
     $("eventModal").dataset.ready = "true";
     $("addEventButton").disabled = false;
@@ -168,61 +135,155 @@ describe("a page restored from the Turbo cache", () => {
   });
 });
 
-describe("a successful load after a failed one", () => {
-  it("hides the error again and enables the add button", async () => {
-    await load(staffFeed, { ok: false });
-    expect($("staff_load_error").classList.contains("d-none")).toBe(false);
-
+describe("the staff ranking", () => {
+  it("asks the server for the instants of the Toronto times, the rule and the space", async () => {
     await load();
+    $("recurrence_frequency").value = "DAILY";
+    $("start_time_field").value = "2027-03-17T10:00";
+    $("end_time_field").value = "2027-03-17T11:00";
+    fire($("recurrence_frequency"), "change");
+    await settle();
+    expect(fetch.mock.lastCall[0]).toMatch(
+      /^\/admin\/calendar\/staff_conflicts\?/,
+    );
+    expect(Object.fromEntries(askedFor())).toEqual({
+      space_id: "7",
+      start: "2027-03-17T14:00:00.000Z",
+      end: "2027-03-17T15:00:00.000Z",
+      recurrence_rule:
+        "DTSTART;TZID=America/Toronto:20270317T100000\nRRULE:FREQ=DAILY",
+    });
+  });
 
-    expect($("staff_load_error").classList.contains("d-none")).toBe(true);
+  it("lists the staff in the server's order, available first, with their unavailable dates", async () => {
+    await load();
+    await setTimes("2027-03-17T14:00", "2027-03-17T14:30");
+
+    expect(optionNames()).toEqual(["Bob", "Ada"]);
+    expect(unavailableDates("Bob")).toBe("");
+    expect(unavailableDates("Ada")).toBe("2027-03-17T18:00:00Z");
+    expect($("staff_select").options[1].dataset.color).toBe("#ff0000");
+    // the open picker is drawn again with the answer
+    expect(tomInstances[0].added.map((o) => o.text)).toEqual(["Bob", "Ada"]);
+    expect(tomInstances[0].refreshed).toBeGreaterThan(0);
+  });
+
+  it("asks again when the repeat changes", async () => {
+    await load();
+    await setTimes("2027-03-17T14:00", "2027-03-17T14:30");
+    const asked = fetch.mock.calls.length;
+    $("recurrence_until").value = "2027-03-31";
+    fire($("recurrence_until"), "change");
+    await settle();
+    expect(fetch.mock.calls.length).toBe(asked + 1);
+  });
+
+  it("does not ask for an event that ends before it starts", async () => {
+    await load();
+    await setTimes("2027-03-17T11:00", "2027-03-17T10:00");
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("draws only the latest answer", async () => {
+    await load();
+    let answerFirst;
+    const first = new Promise((resolve) => (answerFirst = resolve));
+    fetch
+      .mockImplementationOnce(() => first)
+      .mockImplementationOnce(async () => answer(ranking));
+    $("start_time_field").value = "2027-03-17T14:00";
+    $("end_time_field").value = "2027-03-17T14:30";
+    fire($("end_time_field"), "change");
+    fire($("end_time_field"), "change");
+    await settle();
+    answerFirst(answer(staffList));
+    await settle();
+    expect(optionNames()).toEqual(["Bob", "Ada"]);
+  });
+
+  it("keeps the list, shows the error and stays usable when the server cannot answer", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    await load(staffList, answer([], { ok: false, status: 500 }));
+    await setTimes("2027-03-17T14:00", "2027-03-17T14:30");
+
+    expect($("staff_load_error").classList.contains("d-none")).toBe(false);
+    expect(optionNames()).toEqual(["Ada", "Bob"]);
     expect($("addEventButton").disabled).toBe(false);
-    expect($("eventModal").dataset.ready).toBe("true");
+    expect(consoleError).toHaveBeenCalled();
+
+    fetch.mockImplementation(async () => answer(ranking));
+    await setTimes("2027-03-17T14:00", "2027-03-17T15:00");
+    expect($("staff_load_error").classList.contains("d-none")).toBe(true);
+    consoleError.mockRestore();
+  });
+
+  it("drops the labels of an earlier answer when the latest request fails", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    await load();
+    await setTimes("2027-03-17T14:00", "2027-03-17T14:30");
+    expect(unavailableDates("Ada")).toBe("2027-03-17T18:00:00Z");
+
+    fetch.mockImplementation(async () =>
+      answer([], { ok: false, status: 500 }),
+    );
+    await setTimes("2027-03-18T14:00", "2027-03-18T14:30");
+
+    expect(optionNames()).toEqual(["Ada", "Bob"]);
+    expect(unavailableDates("Ada")).toBe("");
+    expect($("staff_load_error").classList.contains("d-none")).toBe(false);
+    consoleError.mockRestore();
+  });
+
+  it("shows the error for a network failure", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    await load();
+    fetch.mockImplementation(async () => {
+      throw new Error("offline");
+    });
+    await setTimes("2027-03-17T14:00", "2027-03-17T14:30");
+    expect($("staff_load_error").classList.contains("d-none")).toBe(false);
+    consoleError.mockRestore();
   });
 });
 
 describe("staff options", () => {
-  it("lists available staff first, then the unavailable ones, each by name", async () => {
-    await load();
-    setTimes("2027-03-17T14:00", "2027-03-17T14:30");
-
-    expect(optionNames()).toEqual(["Bob", "Ada"]);
-    expect(unavailableDates("Bob")).toBe("");
-    expect(unavailableDates("Ada")).not.toBe("");
-    expect($("staff_select").options[1].dataset.color).toBe("#ff0000");
-  });
-
   it("keeps the staff that were selected when the list is rebuilt", async () => {
     await load();
-    setTimes("2027-03-17T10:00", "2027-03-17T11:00");
+    await setTimes("2027-03-17T10:00", "2027-03-17T11:00");
     [...$("staff_select").options].find(
       (o) => o.textContent === "Ada",
     ).selected = true;
-    setTimes("2027-03-17T10:00", "2027-03-17T12:00");
+    await setTimes("2027-03-17T10:00", "2027-03-17T12:00");
     expect(
       [...$("staff_select").selectedOptions].map((o) => o.textContent),
     ).toEqual(["Ada"]);
   });
 
   it("shows 'No staff yet' when the space has no staff", async () => {
-    await load([]);
-    setTimes("2027-03-17T10:00", "2027-03-17T11:00");
+    await load([], answer([]));
+    await setTimes("2027-03-17T10:00", "2027-03-17T11:00");
     expect(optionNames()).toEqual(["No staff yet"]);
     expect($("staff_select").options[0].value).toBe("");
   });
 
   it("starts the picker on the first change and re-fills it afterwards", async () => {
     await load();
-    setTimes("2027-03-17T10:00", "2027-03-17T11:00");
+    await setTimes("2027-03-17T10:00", "2027-03-17T11:00");
     expect(tomInstances).toHaveLength(1);
-    setTimes("2027-03-17T10:00", "2027-03-17T12:00");
+    await setTimes("2027-03-17T10:00", "2027-03-17T12:00");
     expect(tomInstances).toHaveLength(1);
-    expect(tomInstances[0].added.map((o) => o.text)).toEqual(["Ada", "Bob"]);
+    expect(tomInstances[0].added.map((o) => o.text)).toEqual(["Bob", "Ada"]);
   });
 
   it("renders an option with the first unavailable date and a count of the rest", async () => {
     await load();
-    setTimes("2027-03-17T10:00", "2027-03-17T11:00");
+    await setTimes("2027-03-17T10:00", "2027-03-17T11:00");
     const render = tomInstances[0].config.render.option;
     const escape = (s) => String(s);
     const html = render(
@@ -246,7 +307,7 @@ describe("staff options", () => {
 
   it("renders an option that carries no unavailable dates", async () => {
     await load();
-    setTimes("2027-03-17T10:00", "2027-03-17T11:00");
+    await setTimes("2027-03-17T10:00", "2027-03-17T11:00");
     const render = tomInstances[0].config.render.option;
     const html = render({ text: "Ada", color: "#f00" }, (s) => String(s));
     expect(html).toContain("Ada");
@@ -255,7 +316,7 @@ describe("staff options", () => {
 
   it("uses a staff colour in the option style only when it is a hex colour", async () => {
     await load();
-    setTimes("2027-03-17T10:00", "2027-03-17T11:00");
+    await setTimes("2027-03-17T10:00", "2027-03-17T11:00");
     const render = tomInstances[0].config.render.option;
     const escape = (s) => String(s);
     const style = (color) =>
@@ -269,7 +330,7 @@ describe("staff options", () => {
 
   it("shows the first unavailable date as a Toronto date", async () => {
     await load();
-    setTimes("2027-03-17T10:00", "2027-03-17T11:00");
+    await setTimes("2027-03-17T10:00", "2027-03-17T11:00");
     const render = tomInstances[0].config.render.option;
     // 02:30 UTC on the 18th is 22:30 on the 17th in Toronto
     const html = render(
@@ -280,124 +341,26 @@ describe("staff options", () => {
     expect(html).toContain(`(Unavailable ${toronto}`);
   });
 
-  it("rebuilds the repeat rule when the picker takes focus", async () => {
+  it("marks the list ranked only once the latest answer is drawn", async () => {
     await load();
+    let answerLater;
+    fetch.mockImplementationOnce(
+      () => new Promise((resolve) => (answerLater = resolve)),
+    );
     $("start_time_field").value = "2027-03-17T10:00";
     $("end_time_field").value = "2027-03-17T11:00";
-    setTimes("2027-03-17T10:00", "2027-03-17T11:00");
-    $("recurrence_frequency").value = "DAILY";
-    tomInstances[0].handlers.focus();
-    expect($("recurrence_rule_field").value).toContain("FREQ=DAILY");
-  });
-});
-
-describe("unavailable dates", () => {
-  it("flags staff whose one-off unavailability overlaps a one-off event", async () => {
-    await load();
-    setTimes("2027-03-17T14:00", "2027-03-17T14:30");
-    expect(unavailableDates("Ada")).toContain("2027");
-  });
-
-  it("does not flag a one-off event that only touches the unavailability", async () => {
-    await load();
-    setTimes("2027-03-17T15:00", "2027-03-17T16:00");
-    expect(unavailableDates("Ada")).toBe("");
-  });
-
-  it("flags a repeating event that has an occurrence inside a one-off unavailability", async () => {
-    await load();
-    fire($("eventModal"), "show.bs.modal");
-    $("start_time_field").value = "2027-03-17T14:00";
-    $("end_time_field").value = "2027-03-17T14:30";
-    $("recurrence_frequency").value = "DAILY";
-    // the rule is built when the picker takes focus
-    tomInstances[0].handlers.focus();
-    expect(unavailableDates("Ada")).not.toBe("");
-    expect(unavailableDates("Bob")).toBe("");
-  });
-
-  it("flags a one-off event inside a repeating unavailability", async () => {
-    const feed = [
-      {
-        id: 1,
-        name: "Ada",
-        color: "#f00",
-        unavailabilities: [
-          {
-            start: wall("2027-03-15T13:00"),
-            end: wall("2027-03-15T15:00"),
-            duration: 2 * 3600 * 1000,
-            rrule: "DTSTART:20270315T130000\nRRULE:FREQ=DAILY;COUNT=30",
-          },
-        ],
-      },
-    ];
-    await load(feed);
-    setTimes("2027-03-17T14:00", "2027-03-17T14:30");
-    expect(unavailableDates("Ada")).not.toBe("");
-  });
-
-  it("flags a repeating event planned months ahead against a repeating unavailability", async () => {
-    vi.useFakeTimers({
-      toFake: ["Date"],
-      now: new Date("2026-01-05T12:00:00Z"),
-    });
-    try {
-      const feed = [
-        {
-          id: 1,
-          name: "Ada",
-          color: "#f00",
-          unavailabilities: [
-            {
-              start: wall("2027-03-15T13:00"),
-              end: wall("2027-03-15T15:00"),
-              duration: 2 * 3600 * 1000,
-              rrule: "DTSTART:20270315T130000\nRRULE:FREQ=DAILY;COUNT=30",
-            },
-          ],
-        },
-      ];
-      await load(feed);
-      fire($("eventModal"), "show.bs.modal");
-      $("start_time_field").value = "2027-03-17T14:00";
-      $("end_time_field").value = "2027-03-17T14:30";
-      $("recurrence_frequency").value = "DAILY";
-      tomInstances[0].handlers.focus();
-      expect(unavailableDates("Ada")).not.toBe("");
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("warns and carries on when a repeating unavailability has an unreadable rule", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const feed = [
-      {
-        id: 1,
-        name: "Ada",
-        color: "#f00",
-        unavailabilities: [
-          {
-            start: wall("2027-03-15T13:00"),
-            end: wall("2027-03-15T15:00"),
-            duration: 7200000,
-            rrule: "RRULE:FREQ=NEVER",
-          },
-        ],
-      },
-    ];
-    await load(feed);
-    setTimes("2027-03-17T14:00", "2027-03-17T14:30");
-    expect(warn).toHaveBeenCalledWith("Invalid RRULE:", expect.anything());
-    expect(unavailableDates("Ada")).toBe("");
+    fire($("end_time_field"), "change");
+    expect($("staff_select").dataset.ranked).toBeUndefined();
+    answerLater(answer(ranking));
+    await settle();
+    expect($("staff_select").dataset.ranked).toBe("true");
   });
 });
 
 describe("form behaviour", () => {
   it("disables saving for an end that is not after the start", async () => {
     await load();
-    setTimes("2027-03-17T11:00", "2027-03-17T10:00");
+    await setTimes("2027-03-17T11:00", "2027-03-17T10:00");
     expect($("save_button").disabled).toBe(true);
     expect($("time_error").classList.contains("d-none")).toBe(false);
   });
@@ -470,6 +433,18 @@ describe("submit", () => {
     expect($("utc_end_time").value).toBe("2027-03-17T15:00:00.000Z");
     expect($("recurrence_rule_field").value).toContain("FREQ=WEEKLY");
     expect(tomInstances[0].synced).toBeGreaterThan(0);
+  });
+
+  it("asks to keep the series' own times only when the times are as the dialog filled them", async () => {
+    await ready();
+    $("keep_series_times").dataset.filled =
+      "2027-03-17T10:00|2027-03-17T11:00|false";
+    submit();
+    expect($("keep_series_times").disabled).toBe(false);
+
+    $("end_time_field").value = "2027-03-17T12:00";
+    submit();
+    expect($("keep_series_times").disabled).toBe(true);
   });
 
   it("clears a title made of 'for' and staff names", async () => {

@@ -24,8 +24,11 @@ class CalendarWindow
   def self.from_params(params)
     return ALL if params[:start].blank? && params[:end].blank?
 
-    new(parse(params[:start]), parse(params[:end]))
+    bounded(params)
   end
+
+  # The window of a feed that needs one: both params are required.
+  def self.bounded(params) = new(parse(params[:start]), parse(params[:end]))
 
   # The time, or nil when the value is not one.
   def self.parse(value)
@@ -42,6 +45,12 @@ class CalendarWindow
     @to = to
   end
 
+  # The Toronto week (Sunday to Sunday) that holds `time`.
+  def self.week_of(time)
+    sunday = time.in_time_zone(RecurrenceRule::ZONE).beginning_of_week(:sunday)
+    new(sunday, sunday + 1.week)
+  end
+
   # The events or unavailabilities of `relation` the window keeps.
   def records(relation)
     table = relation.arel_table
@@ -53,10 +62,8 @@ class CalendarWindow
     list.select { |entry| entry.series || overlaps?(entry.starts_at, entry.ends_at) }
   end
 
-  private
-
-  # An entry with no end is a moment at its start.
+  # A moment (an end at its start) at the window's start is kept.
   def overlaps?(starts_at, ends_at)
-    starts_at < to && (ends_at || starts_at) >= from
+    starts_at < to && ends_at >= from
   end
 end

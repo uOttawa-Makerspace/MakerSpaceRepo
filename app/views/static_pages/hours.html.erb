@@ -2,13 +2,13 @@
 <section id="hours-of-operation">
     <h1 class="text-center"><%= t('hours.title') %></h1>
 
-    <div id="calendar" class="styled-calendar"></div>
+    <div data-controller="hours-calendar" data-hours-calendar-feed-url-value="<%= open_hours_path %>" data-hours-calendar-week-value="true">
+        <%= render 'static_pages/hours_calendar', calendars: @hours_calendars %>
 
-    <div id="filters" class='d-flex flex-wrap gap-3 mt-2'></div>
+        <div id="filters" class='d-flex flex-wrap gap-3 mt-2'><%= render 'static_pages/hours_filters', calendars: @hours_calendars %></div>
+    </div>
 
     <%= render 'static_pages/opening_hours', contacts: @contact_info %>
 
     <p><i class="fa fa-asterisk" aria-hidden="true"></i> <%= t('hours.disclaimer') %></p>
 </section>
-
-<%= vite_javascript_tag 'fullcalendar_setup_homepage' %>

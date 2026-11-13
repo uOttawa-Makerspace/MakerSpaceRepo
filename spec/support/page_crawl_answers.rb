@@ -60,6 +60,8 @@ module PageCrawl
           why: "public JSON for the Design Day app, which has no session" },
         { path: %r{\A/admin/certifications/open_modal\z}, roles: %i[guest], status: 401,
           why: "a script request without a session is refused, not redirected" },
+        { path: %r{\A/admin/calendar/imported_calendars_json/:id\z}, roles: %i[admin], status: 400,
+          why: "the feed needs the calendar's range (?start&end); the crawl sends none" },
 
         # Redirects to the home page that are the intended refusal
         { path: %r{\A/login\z}, roles: SIGNED_IN, status: :redirect, to: HOME,

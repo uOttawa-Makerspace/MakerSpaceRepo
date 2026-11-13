@@ -313,9 +313,9 @@ describe("eventClick", () => {
     expect($("day_WE").checked).toBe(true);
     expect($("day_TU").checked).toBe(false);
     expect($("recurrence_until").value).toBe("2027-03-31");
-    // the feed gives Toronto wall times; the field holds the rule as stored
+    // the field holds the rule as stored, from the clicked occurrence's start
     expect($("recurrence_rule_field").value).toBe(
-      "DTSTART;TZID=America/Toronto:20270315T140000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20270401T035959Z",
+      "DTSTART;TZID=America/Toronto:20270317T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20270401T035959Z",
     );
     expect($("delete_following_form").style.display).toBe("block");
     expect($("delete_all_form").style.display).toBe("block");
@@ -351,14 +351,6 @@ describe("eventClick", () => {
     expect($("recurrence_frequency").value).toBe("MONTHLY");
   });
 
-  it("restores a repeat rule from a rule string, with or without the prefix", () => {
-    eventClick(fcEvent({ props: { rrule: "RRULE:FREQ=DAILY" } }));
-    expect($("recurrence_frequency").value).toBe("DAILY");
-    eventClick(fcEvent({ props: { rrule: "FREQ=WEEKLY;BYDAY=FR" } }));
-    expect($("recurrence_frequency").value).toBe("WEEKLY");
-    expect($("day_FR").checked).toBe(true);
-  });
-
   it("fills the title from the stored title rather than the calendar label", () => {
     eventClick(
       fcEvent({
@@ -384,26 +376,13 @@ describe("eventClick", () => {
     expect($("title").value).toBe("Team sync");
   });
 
-  it("restores a repeat rule from a rule string that starts with a start date", () => {
-    const log = vi.spyOn(console, "log").mockImplementation(() => {});
-    eventClick(
-      fcEvent({
-        props: {
-          rrule: "DTSTART:20270315T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=FR",
-        },
-      }),
+  it("notes the times it filled, and forgets them when the dialog opens for a new event", () => {
+    eventClick(fcEvent());
+    expect($("keep_series_times").dataset.filled).toBe(
+      "2027-03-17T10:00|2027-03-17T11:30|false",
     );
-    expect(log).not.toHaveBeenCalled();
-    expect($("recurrence_frequency").value).toBe("WEEKLY");
-    expect($("day_FR").checked).toBe(true);
-  });
-
-  it("logs and carries on when the rule string cannot be read", () => {
-    const log = vi.spyOn(console, "log").mockImplementation(() => {});
-    eventClick(fcEvent({ props: { rrule: "RRULE:FREQ=NEVER" } }));
-    expect(log).toHaveBeenCalledWith("RRule parse error", expect.anything());
-    expect(shown).toEqual(["eventModal"]);
-    expect($("recurrence_frequency").value).toBe("");
+    addEventClick();
+    expect($("keep_series_times").dataset.filled).toBeUndefined();
   });
 
   it("sets the date every delete form sends", () => {
@@ -420,9 +399,12 @@ describe("eventClick", () => {
   it("opens an unavailability with the type locked, its own URLs and its owner", () => {
     eventClick(
       fcEvent({
-        id: "31",
+        id: "31@1805202000",
         props: {
           eventType: "unavailability",
+          recordId: 31,
+          series: null,
+          occurrenceStart: "2027-03-17T13:00:00Z",
           userId: 4,
           name: "Wanda Worker (Admin)",
           draft: true,
@@ -451,18 +433,60 @@ describe("eventClick", () => {
     expect($("delete_single_form").action).toContain(
       "/staff/unavailabilities/31/delete_with_scope",
     );
+    expect($("delete_following_form").style.display).toBe("none");
+    expect(
+      [...document.querySelectorAll(".delete_start_date")].map((i) => i.value),
+    ).toEqual(["2027-03-17T13:00:00Z", "2027-03-17T13:00:00Z"]);
+  });
+
+  it("restores the repeat of an unavailability series from what the feed sent", () => {
+    eventClick(
+      fcEvent({
+        id: "31@1805202000",
+        props: {
+          eventType: "unavailability",
+          recordId: 31,
+          occurrenceStart: "2027-03-17T14:00:00Z",
+          series: {
+            frequency: "WEEKLY",
+            weekdays: ["MO", "WE"],
+            until: "2027-03-31",
+          },
+          userId: 4,
+        },
+      }),
+    );
+    expect($("recurrence_frequency").value).toBe("WEEKLY");
+    expect($("weekly_options").style.display).toBe("block");
+    expect($("day_MO").checked).toBe(true);
+    expect($("day_WE").checked).toBe(true);
+    expect($("day_TU").checked).toBe(false);
+    expect($("recurrence_until").value).toBe("2027-03-31");
+    expect($("recurrence_rule_field").value).toBe(
+      "DTSTART;TZID=America/Toronto:20270317T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20270401T035959Z",
+    );
+    expect($("delete_following_form").style.display).toBe("block");
+    expect($("delete_all_form").action).toContain(
+      "/staff/unavailabilities/31/delete_with_scope",
+    );
   });
 
   it("falls back to 'User' when the unavailability has no owner name", () => {
     eventClick(
-      fcEvent({ id: "31", props: { eventType: "unavailability", userId: 4 } }),
+      fcEvent({
+        id: "31",
+        props: { eventType: "unavailability", recordId: 31, userId: 4 },
+      }),
     );
     expect($("staff_select").options[0].textContent).toBe("User");
   });
 
   it("removes the lock again when the next modal is opened for a new event", () => {
     eventClick(
-      fcEvent({ id: "31", props: { eventType: "unavailability", userId: 4 } }),
+      fcEvent({
+        id: "31",
+        props: { eventType: "unavailability", recordId: 31, userId: 4 },
+      }),
     );
     addEventClick();
     expect($("event_type_select").disabled).toBe(false);

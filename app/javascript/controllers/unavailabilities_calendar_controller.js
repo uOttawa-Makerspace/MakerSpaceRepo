@@ -1,15 +1,11 @@
 import { Controller } from "@hotwired/stimulus";
 import { Calendar } from "@fullcalendar/core";
-import rrulePlugin from "@fullcalendar/rrule";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
 import { makeCalendarAccessible } from "../src/calendar_accessibility.js";
-import {
-  editableUnavailability,
-  keepFeedRule,
-} from "../src/unavailability_event.js";
+import { editableUnavailability } from "../src/unavailability_event.js";
 
 // The hosts listed in the failed-calendars header: a JSON list of strings and
 // nulls, or nothing for a missing, malformed or differently shaped header.
@@ -119,7 +115,7 @@ export default class extends TypedController {
 
   calendarOptions() {
     return {
-      plugins: [timeGridPlugin, dayGridPlugin, rrulePlugin, interactionPlugin],
+      plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin],
       timeZone: "America/Toronto",
       initialView: "timeGridWeek",
       headerToolbar: {
@@ -137,7 +133,6 @@ export default class extends TypedController {
         success: (_events, response) => this.showFailures(response),
         failure: () => this.showFeedFailure(),
       },
-      eventDataTransform: keepFeedRule,
       eventClick: (info) => this.openEvent(info.event, info.el),
       select: (info) =>
         this.unavailabilityFormOutlet.openForRange({

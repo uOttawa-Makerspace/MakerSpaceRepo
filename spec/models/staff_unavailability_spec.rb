@@ -54,25 +54,51 @@ RSpec.describe StaffUnavailability, type: :model do
   end
 end
 
-RSpec.describe StaffUnavailability, "#calendar_row", type: :model do
+RSpec.describe StaffUnavailability, "#feed_rows", type: :model do
   let(:zone) { RecurrenceRule::ZONE }
+  let(:week) { CalendarWindow.new(zone.local(2027, 3, 14), zone.local(2027, 3, 21)) }
 
-  it "is the admin calendar row of a one-off, in Toronto wall time" do
+  let(:row) { { title: "Away", className: "unavailability", extendedProps: { name: "Ann" } } }
+
+  it "is the row of a one-off in the window, with its Toronto offset and record id" do
     unavailability = create(:staff_unavailability, title: "Doctor", description: "Away",
-                                                   start_time: zone.local(2027, 5, 5, 9), end_time: zone.local(2027, 5, 5, 11))
+                                                   start_time: zone.local(2027, 3, 15, 9), end_time: zone.local(2027, 3, 15, 11))
 
-    expect(unavailability.calendar_row("Ann")).to eq(
-      id: unavailability.id, title: "🚫 Ann - Doctor", start: "2027-05-05T09:00:00", end: "2027-05-05T11:00:00",
-      allDay: false, extendedProps: { name: "Ann", title: "Doctor", description: "Away" }, className: "unavailability"
-    )
+    expect(unavailability.feed_rows(week, row)).to eq([{
+      id: unavailability.id, title: "Away", start: "2027-03-15T09:00:00-04:00", end: "2027-03-15T11:00:00-04:00",
+      allDay: false, className: "unavailability",
+      extendedProps: { name: "Ann", eventType: "unavailability", userId: unavailability.user_id, recordId: unavailability.id,
+                       isAdminCreated: false, series: nil, occurrenceStart: "2027-03-15T13:00:00Z" }
+    }])
   end
 
-  it "carries the rule in Toronto wall time and the length in milliseconds for a series" do
+  it "is each occurrence of a series in the window, with what the dialogs show of its repeat" do
     unavailability = create(:staff_unavailability, start_time: zone.local(2027, 1, 4, 9), end_time: zone.local(2027, 1, 4, 10),
-                                                   recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=MO")
-    row = unavailability.calendar_row("Ann")
+                                                   recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=MO,WE")
+    rows = unavailability.feed_rows(week, row)
 
-    expect(row[:rrule]).to eq(RecurrenceRule.new(unavailability.recurrence_rule, unavailability.start_time).in_toronto_time)
-    expect(row[:duration]).to eq(3_600_000.0)
+    expect(rows.map { |row| row[:start] }).to eq(%w[2027-03-15T09:00:00-04:00 2027-03-17T09:00:00-04:00])
+    expect(rows.map { |row| row[:id] }).to eq(["#{unavailability.id}@#{Time.utc(2027, 3, 15, 13).to_i}", "#{unavailability.id}@#{Time.utc(2027, 3, 17, 13).to_i}"])
+    expect(rows.first[:extendedProps]).to include(recordId: unavailability.id, series: { frequency: "WEEKLY", weekdays: %w[MO WE], until: nil })
+  end
+end
+
+RSpec.describe StaffUnavailability, ".occurrences_for", type: :model do
+  include SpacesSpecHelpers
+
+  let(:zone) { RecurrenceRule::ZONE }
+  let(:week) { CalendarWindow.new(zone.local(2027, 3, 14), zone.local(2027, 3, 21)) }
+
+  it "is each staff member's stored and external-calendar occurrences in the window, by user id" do
+    ann = create(:user, :staff)
+    bob = create(:user, :staff)
+    create(:staff_unavailability, user: ann, start_time: zone.local(2027, 3, 15, 9), end_time: zone.local(2027, 3, 15, 10))
+    create(:staff_unavailability, user: ann, start_time: zone.local(2027, 4, 15, 9), end_time: zone.local(2027, 4, 15, 10))
+    url = "https://calendar.example/bob.ics"
+    StaffExternalUnavailability.create!(user: bob, ics_url: url)
+    stub_ics(url, body: ics_document(uid: "b1", summary: "Dentist", start: zone.local(2027, 3, 16, 9), end: zone.local(2027, 3, 16, 10)))
+
+    found = described_class.occurrences_for([ann.id, bob.id], week).transform_values { |list| list.map { |o| o.starts_at.in_time_zone(zone).iso8601 } }
+    expect(found).to eq(ann.id => ["2027-03-15T09:00:00-04:00"], bob.id => ["2027-03-16T09:00:00-04:00"])
   end
 end

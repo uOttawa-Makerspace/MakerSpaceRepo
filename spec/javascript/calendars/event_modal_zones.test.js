@@ -21,6 +21,7 @@ vi.mock("tom-select", () => ({
     sync() {}
     clearOptions() {}
     addOption() {}
+    refreshOptions() {}
     destroy() {}
     setTextboxValue() {}
   },

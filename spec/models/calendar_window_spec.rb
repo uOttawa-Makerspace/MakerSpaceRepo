@@ -49,6 +49,15 @@ RSpec.describe CalendarWindow do
     end
   end
 
+  describe ".bounded" do
+    it "needs both params" do
+      expect { described_class.bounded(ActionController::Parameters.new({})) }
+        .to raise_error(CalendarWindow::Invalid, I18n.t("errors.calendar.window_invalid"))
+      window = described_class.bounded(ActionController::Parameters.new(start: "2027-03-14", end: "2027-03-21"))
+      expect([window.from, window.to]).to eq([RecurrenceRule::ZONE.local(2027, 3, 14), RecurrenceRule::ZONE.local(2027, 3, 21)])
+    end
+  end
+
   describe "#records" do
     let(:user) { create(:user, :staff) }
     let(:week) { window("2027-03-14", "2027-03-21") }
@@ -85,13 +94,13 @@ RSpec.describe CalendarWindow do
                                   starts_at: starts, ends_at: ends, series: series)
     end
 
-    it "keeps one-offs that overlap the window, one with no end at its start, and every series" do
+    it "keeps one-offs that overlap the window, a moment (an end at its start) at its start, and every series" do
       inside = entry(toronto.local(2027, 3, 15, 9), toronto.local(2027, 3, 15, 10))
-      moment = entry(toronto.local(2027, 3, 14), nil)
+      moment = entry(toronto.local(2027, 3, 14), toronto.local(2027, 3, 14))
       repeating = entry(toronto.local(2026, 1, 1, 9), toronto.local(2026, 1, 1, 10), series)
       before = entry(toronto.local(2027, 3, 13, 9), toronto.local(2027, 3, 13, 10))
       after = entry(toronto.local(2027, 3, 21), toronto.local(2027, 3, 21, 1))
-      earlier_moment = entry(toronto.local(2027, 3, 13, 23), nil)
+      earlier_moment = entry(toronto.local(2027, 3, 13, 23), toronto.local(2027, 3, 13, 23))
 
       expect(week.entries([inside, moment, repeating, before, after, earlier_moment])).to eq([inside, moment, repeating])
     end
@@ -100,6 +109,14 @@ RSpec.describe CalendarWindow do
       old = entry(toronto.local(2020, 3, 13, 9), toronto.local(2020, 3, 13, 10))
 
       expect(CalendarWindow::ALL.entries([old])).to eq([old])
+    end
+  end
+
+  describe ".week_of" do
+    it "is the Toronto week, Sunday to Sunday, that holds the time, across a clock change" do
+      window = described_class.week_of(Time.utc(2027, 3, 16, 3))
+      expect([window.from, window.to].map(&:iso8601)).to eq(%w[2027-03-14T00:00:00-05:00 2027-03-21T00:00:00-04:00])
+      expect(described_class.week_of(Time.utc(2027, 11, 7, 4, 59)).from.iso8601).to eq("2027-11-07T00:00:00-04:00")
     end
   end
 end

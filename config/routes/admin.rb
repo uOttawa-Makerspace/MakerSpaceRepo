@@ -178,6 +178,9 @@ namespace :admin do
     post "import_programs"
   end
 
+  namespace :calendar do
+    resources :staff_conflicts, only: :index
+  end
   resources :calendar, only: :index do
     collection do
       get 'unavailabilities_json/:id', to: 'calendar#unavailabilities_json', as: :unavailabilities_json

@@ -45,6 +45,26 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
                    recurrence_rule: rule)
   end
 
+  describe "a staff member's unavailabilities" do
+    it "opens the edit dialog for a stored one and nothing for one from their external calendar", js: true, skip_bullet: true do
+      create(:staff_unavailability, user: worker, title: "Class", start_time: eastern.local(2027, 3, 17, 13), end_time: eastern.local(2027, 3, 17, 14))
+      ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//spec//EN", "BEGIN:VEVENT", "UID:dentist@ics.test", "DTSTAMP:20270101T000000Z",
+             "DTSTART:20270318T170000Z", "DTEND:20270318T180000Z", "SUMMARY:Dentist", "END:VEVENT", "END:VCALENDAR"].join("\r\n")
+      stub_request(:get, "https://calendar.example/wanda.ics").to_return(status: 200, body: ics)
+      StaffExternalUnavailability.create!(user: worker, ics_url: "https://calendar.example/wanda.ics")
+      open_admin_calendar
+
+      expect(page).to have_css(".fc-timegrid-event", text: "Wanda Worker - Dentist", visible: :all)
+      page.find(".fc-timegrid-event", text: "Wanda Worker - Dentist", visible: :all).click
+      # the click handler runs at once: the dialog was not set up for editing
+      expect(page).to have_css("#eventModalLabel", text: "Add Event", visible: :all)
+      expect(page).to have_no_css("#eventModal.show", visible: :all)
+
+      open_event("Wanda Worker - Class")
+      expect(page).to have_css("#eventModalLabel", text: "Edit Unavailability")
+    end
+  end
+
   describe "a single event" do
     it "fills the modal from the event and switches it to edit mode", js: true, skip_bullet: true do
       create(:event_assignment, event: single, user: worker)

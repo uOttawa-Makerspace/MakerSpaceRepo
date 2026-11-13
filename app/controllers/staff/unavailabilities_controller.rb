@@ -1,5 +1,6 @@
 # app/controllers/staff/unavailabilities_controller.rb
 class Staff::UnavailabilitiesController < StaffAreaController
+  include CalendarWindowed
   layout "staff_area"
 
   def index
@@ -91,11 +92,18 @@ class Staff::UnavailabilitiesController < StaffAreaController
     end
   end
 
+  # The occurrences in the window (CalendarWindow, required) of the staff member's own unavailabilities and of
+  # those of their linked calendars.
   def json
-    feeds = current_user.staff_external_unavailabilities.map { |external| [external, imported_feed(external)] }
-    report_failed_calendars(feeds)
+    window = CalendarWindow.bounded(params)
+    name = StaffExternalUnavailability.display_name_for(current_user.name)
+    calendars = current_user.staff_external_unavailabilities.map { |external| [external, external.fetch_calendar(name:)] }
+    report_failed_calendars(calendars)
 
-    render json: own_unavailability_events + feeds.flat_map { |external, feed| imported_events(external.source_host, feed) }
+    render json: own_unavailability_rows(window) + calendars.flat_map { |external, calendar|
+      # only the host is ever sent: a private link holds its secret in the path
+      calendar.feed_rows(window, prefix: "External - ", props: { sourceHost: external.source_host })
+    }
   end
 
   def update_external_unavailabilities
@@ -118,51 +126,18 @@ class Staff::UnavailabilitiesController < StaffAreaController
 
   private
 
-  def own_unavailability_events
-    @unavailabilities = StaffUnavailability.where(user_id: current_user.id)
-
-    @unavailabilities.map do |u|
-      duration = (u.end_time.to_time - u.start_time.to_time) * 1000
-
-      rrule_data = helpers.date_formatted_recurrence_rule(u)
-
-      {
-        id: u.id,
-        title: u.title || "Unavailable",
-        start: u.start_time.iso8601,
-        end: u.end_time.iso8601,
-        **(u.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
-        allDay: CalendarTime.all_day?(u.start_time, u.end_time),
-        extendedProps: {
-          description: u.description,
-          eventType: "unavailability",
-          userId: u.user_id,
-          isAdminCreated: u.title&.include?("(Admin)")
-        }
-      }
-    end.compact
+  def own_unavailability_rows(window)
+    window.records(StaffUnavailability.where(user_id: current_user.id)).flat_map do |unavailability|
+      unavailability.feed_rows(window, title: unavailability.title || "Unavailable", extendedProps: { description: unavailability.description })
+    end
   end
 
   # The hosts of the linked calendars that could not be loaded go in a header, a JSON list (null for a link whose
   # host cannot be read). The header is not part of the body's ETag, so a browser must not reuse an earlier answer.
-  def report_failed_calendars(feeds)
-    failed_hosts = feeds.select { |_external, feed| feed.failed? }.map { |external, _feed| external.source_host }
+  def report_failed_calendars(calendars)
+    failed_hosts = calendars.select { |_external, calendar| calendar.failed? }.map { |external, _calendar| external.source_host }
     response.set_header("Cache-Control", "no-store")
     response.set_header("X-Failed-Calendars", failed_hosts.to_json) unless failed_hosts.empty?
-  end
-
-  def imported_feed(external)
-    helpers.ics_feed(external.ics_url, name: "#{current_user.name} External Unavailability")
-  end
-
-  # The events of one linked calendar, marked with the host of the link they came from. Only the host is ever
-  # sent: a private link holds its secret in the path.
-  def imported_events(host, feed)
-    feed.calendars.flat_map do |calendar|
-      calendar[:events].map do |event|
-        event.merge(title: "External - #{event[:title]}", extendedProps: event.fetch(:extendedProps, {}).merge(sourceHost: host))
-      end
-    end
   end
 
   def staff_params
@@ -245,26 +220,30 @@ class Staff::UnavailabilitiesController < StaffAreaController
   def update_all_occurrences
     return alert_unreadable_times if unreadable_times?
 
-    old_date_new_time_start = helpers.combine_date_and_time(
-      @staff_unavailability.start_time,
-      parse_time(staff_params[:utc_start_time])
-    )
-    duration = (parse_time(staff_params[:utc_end_time]) - parse_time(staff_params[:utc_start_time])).to_i
-    old_date_new_time_end = old_date_new_time_start + duration
-
-    rule_to_use = series_rule(@staff_unavailability).with_time_from(staff_params[:recurrence_rule])
+    start, finish = series_times
+    rule_to_use = series_rule(@staff_unavailability).with_time_from(staff_params[:recurrence_rule], at: start)
 
     if @staff_unavailability.update(
         title: staff_params[:title].presence || "Unavailable",
         description: ActionController::Base.helpers.strip_tags(staff_params[:description].to_s),
-        start_time: old_date_new_time_start,
-        end_time: old_date_new_time_end,
+        start_time: start,
+        end_time: finish,
         recurrence_rule: rule_to_use
       )
       flash[:notice] = "All occurrences updated successfully."
     else
       flash[:alert] = validation_message(@staff_unavailability, "failed_saves.unavailability_update")
     end
+  end
+
+  # The series' start and end after "update all": its own when the dialog sends its times as it filled them
+  # (keep_series_times), else the series' Toronto start date at the posted Toronto clock time, for the posted length.
+  def series_times
+    return [@staff_unavailability.start_time, @staff_unavailability.end_time] if params[:keep_series_times] == "1"
+
+    posted_start = parse_time(staff_params[:utc_start_time])
+    start = helpers.combine_date_and_time(@staff_unavailability.start_time, posted_start)
+    [start, start + (parse_time(staff_params[:utc_end_time]) - posted_start).to_i]
   end
 
   def update_this_occurrence

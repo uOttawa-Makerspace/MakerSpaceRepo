@@ -65,7 +65,6 @@
 1	app/javascript/entrypoints/design_days.js	TS2554	Expected 0 arguments, but got 1.
 1	app/javascript/entrypoints/exams.js	TS2554	Expected 0 arguments, but got 1.
 1	app/javascript/entrypoints/faqs.js	TS2339	Property 'checked' does not exist on type 'EventTarget'.
-1	app/javascript/entrypoints/fullcalendar_setup_homepage.js	TS2339	Property 'checked' does not exist on type 'EventTarget'.
 2	app/javascript/entrypoints/generate_acquired_badge.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
 1	app/javascript/entrypoints/job_options.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 3	app/javascript/entrypoints/job_orders_wizard.js	TS2339	Property 'dataset' does not exist on type 'Element'.

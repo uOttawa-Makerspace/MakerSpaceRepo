@@ -57,20 +57,18 @@ function openNew(start, end = start) {
   $("end_time_field").value = end;
 }
 
-function entry(start, rrule = null) {
+function entry(start, { occurrenceStart = null, series = null } = {}) {
   return {
-    id: "31",
+    id: 31,
     allDay: false,
     startStr: start,
     endStr: start,
     title: "Lecture",
     description: "",
-    rrule,
+    occurrenceStart,
+    series,
   };
 }
-
-const dailyUntil = (stamp) =>
-  `DTSTART:20270310T100000\nRRULE:FREQ=DAILY;UNTIL=${stamp}`;
 
 describe.each(Object.entries(ZONES))(
   "with the browser clock in %s",
@@ -139,8 +137,8 @@ describe.each(Object.entries(ZONES))(
           expect($("start_time_field").value).toBe(c.field);
         });
 
-        it(`deletes ${c.label} by its own instant`, () => {
-          openForEdit(entry(c.start));
+        it(`deletes ${c.label} by the occurrence start the feed sent`, () => {
+          openForEdit(entry(c.start, { occurrenceStart: c.instant }));
           const sent = [...document.querySelectorAll(".delete_start_date")];
           expect(sent.map((input) => input.value)).toEqual([
             c.instant,
@@ -149,12 +147,16 @@ describe.each(Object.entries(ZONES))(
         });
       }
 
-      for (const c of cases.untilDates) {
-        it(`shows the repeat end date the feed sends for a series ending on ${c.label}`, () => {
-          openForEdit(entry("2027-03-10T10:00:00", dailyUntil(c.served)));
-          expect($("recurrence_until").value).toBe(c.date);
-        });
-      }
+      // The server sends the Toronto date a series repeats until (see
+      // RecurrenceRule#dialog_fields); the field shows it as it is.
+      it("shows the repeat end date the feed sends", () => {
+        openForEdit(
+          entry("2027-03-10T10:00:00", {
+            series: { frequency: "DAILY", weekdays: [], until: "2027-03-14" },
+          }),
+        );
+        expect($("recurrence_until").value).toBe("2027-03-14");
+      });
     });
 
     describe("selecting a range on the calendar", () => {

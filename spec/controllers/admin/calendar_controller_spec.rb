@@ -73,16 +73,13 @@ RSpec.describe Admin::CalendarController, type: :controller do
     end
 
     before do
-      allow(controller.helpers).to receive(:parse_ics_calendar).and_return([
-        {
-          name: "Test Calendar",
-          events: [{ title: "Event A", start: Time.now, end: Time.now + 1.hour }]
-        }
-      ])
+      ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//spec//EN", "BEGIN:VEVENT", "UID:a@ics.test", "DTSTAMP:20270101T000000Z",
+             "DTSTART:20990105T150000Z", "DTEND:20990105T160000Z", "SUMMARY:Event A", "END:VEVENT", "END:VCALENDAR"].join("\r\n")
+      allow(IcsFetcher).to receive(:get).with("http://example.com/fake.ics", any_args).and_return(ics)
     end
 
-    it "returns parsed calendar events" do
-      get :imported_calendars_json, params: { id: space.id }, format: :json
+    it "returns the calendar's events in the range" do
+      get :imported_calendars_json, params: { id: space.id, start: "2099-01-04", end: "2099-01-11" }, format: :json
       expect(response).to be_successful
       json = JSON.parse(response.body)
       expect(json.first["events"].first["title"]).to eq("Event A")

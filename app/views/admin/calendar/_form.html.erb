@@ -9,7 +9,7 @@
                 <%= form_with url: admin_events_path, scope: :event, local: false, html: { id: "eventForm", class: "useTurbo" } do |f| %>
                     <div id="staff_select_container" class="mb-3">
                         <label class="form-label" for="staff_select">Assigned Staff</label>
-                        <select name="staff_select[]" id="staff_select" class="form-select" multiple></select>
+                        <select name="staff_select[]" id="staff_select" class="form-select" multiple data-staff="<%= @modal_staff.to_json %>"></select>
                     </div>
 
                     <div class="form-check mb-3">
@@ -110,6 +110,7 @@
                     <%= f.hidden_field :utc_start_time, id: "utc_start_time" %>
                     <%= f.hidden_field :utc_end_time, id: "utc_end_time" %>
                     <%= f.hidden_field :recurrence_rule, id: "recurrence_rule_field" %>
+                    <%= hidden_field_tag :keep_series_times, "1", id: "keep_series_times", disabled: true %>
                     <%= f.hidden_field :space_id, value: @space_id %>
 
                     <div id="accordion" class="accordion mt-3">

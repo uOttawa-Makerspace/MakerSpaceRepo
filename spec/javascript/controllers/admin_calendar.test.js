@@ -158,10 +158,16 @@ const staff = [
     color: "#0f0",
     unavailabilities: [
       {
-        id: 11,
+        id: `11@${Date.UTC(2027, 2, 15, 14) / 1000}`,
         title: "🚫 Bob - Busy (Admin)",
-        rrule: "DTSTART:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO",
-        extendedProps: { name: "Bob" },
+        start: "2027-03-15T10:00:00-04:00",
+        end: "2027-03-15T11:00:00-04:00",
+        extendedProps: {
+          name: "Bob",
+          recordId: 11,
+          eventType: "unavailability",
+          isAdminCreated: true,
+        },
       },
     ],
   },
@@ -169,7 +175,10 @@ const staff = [
     id: 5,
     name: "Ann",
     color: "#f00",
-    unavailabilities: [{ id: 12, title: "🚫 Ann - Away", extendedProps: {} }],
+    // an occurrence of Ann's external calendar: no record, not editable
+    unavailabilities: [
+      { id: "ext@1", title: "🚫 Ann - Away", extendedProps: { name: "Ann" } },
+    ],
   },
 ];
 
@@ -335,24 +344,24 @@ describe("the rows drawn", () => {
     expect(console.error).toHaveBeenCalled();
   });
 
-  it("draws each unavailability in its staff member's colour, marked as one and as admin-made", async () => {
+  it("draws each unavailability occurrence as sent, in its staff member's colour, an external one not editable", async () => {
     const calendar = await boot();
     const [busy, away] = calendar.drawn.unavailabilities;
 
     expect(busy).toMatchObject({
       color: "#0f0",
-      rrule: "DTSTART:20270301T100000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO",
+      start: "2027-03-15T10:00:00-04:00",
+      end: "2027-03-15T11:00:00-04:00",
       extendedProps: {
         name: "Bob",
+        recordId: 11,
         eventType: "unavailability",
         userId: 6,
         isAdminCreated: true,
       },
     });
-    expect(away).toMatchObject({
-      color: "#f00",
-      extendedProps: { userId: 5, isAdminCreated: false },
-    });
+    expect(away).toMatchObject({ color: "#f00", extendedProps: { userId: 5 } });
+    expect(away.extendedProps).not.toHaveProperty("eventType");
   });
 
   it("draws each imported event in its calendar's colour", async () => {

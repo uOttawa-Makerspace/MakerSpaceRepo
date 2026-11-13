@@ -84,6 +84,15 @@ class RecurrenceRule
     (["DTSTART:#{wall_stamp(@series_start)}"] + lines.map { |l| in_wall_time(l) }).join("\n")
   end
 
+  # What the calendar dialogs show of the series: its frequency, its weekdays and the Toronto date it repeats
+  # until (nil when it does not end on a date).
+  def dialog_fields
+    body = self.class.rule_body(@text)
+    until_stamp = body[/UNTIL=([\dTZ]+)/, 1]
+    { frequency: body[/FREQ=(\w+)/, 1], weekdays: body[/BYDAY=([^;]+)/, 1].to_s.split(","),
+      until: until_stamp && ZONE.parse(until_stamp).to_date.iso8601 }
+  end
+
   # The series without the occurrence that starts at `start` ("delete this
   # event"), written again through the rrule gem.
   def without_occurrence(start)
@@ -104,14 +113,13 @@ class RecurrenceRule
     "#{@text}\nEXDATE:#{start.utc.strftime(STAMP)}"
   end
 
-  # The series with the Toronto clock time of the DTSTART in `new_text`
-  # ("update all events"). When the repeat itself is unchanged the series keeps its start
-  # date and its exclusions; otherwise `new_text` is the new rule.
-  def with_time_from(new_text)
+  # The series at the Toronto clock time of `at`, the series' new start ("update all events"). When the repeat in
+  # `new_text` is unchanged the series keeps its start date and its exclusions; otherwise `new_text` is the new rule.
+  def with_time_from(new_text, at:)
     new_rrule, new_dtstart, = parts(new_text)
     return new_text unless new_rrule == @rrule && @dtstart && new_dtstart
 
-    new_time = new_dtstart.in_time_zone(ZONE)
+    new_time = at.in_time_zone(ZONE)
     start = @dtstart.in_time_zone(ZONE).change(hour: new_time.hour, min: new_time.min, sec: new_time.sec)
     ([start_line(start), "RRULE:#{@rrule}"] + @other_lines).join("\n")
   end

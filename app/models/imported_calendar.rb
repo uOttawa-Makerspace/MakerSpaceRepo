@@ -34,13 +34,20 @@ class ImportedCalendar
                                        .map { |name| Rails.root.join("app/#{name}.rb").read }.join)
 
   # `recurrence_id` is the original instant of a modified instance (nil otherwise); `series` is nil for a one-off.
-  # `ends_at` is nil when the event has no end.
+  # An event with no end ends at its start (a moment), or after its one day when it is all-day.
   # What is reported (its message holds no text from the feed).
   Problem = Class.new(StandardError)
 
   Entry = Data.define(:uid, :recurrence_id, :summary, :description, :all_day, :starts_at, :ends_at, :series) do
     # The row key in the calendar: a modified instance is told apart from its series by its original instant.
     def key = recurrence_id ? "#{uid}_#{recurrence_id.to_i}" : uid
+
+    # Its occurrences that overlap the window (a CalendarWindow), each carrying this entry.
+    def occurrences_in(window)
+      return series.occurrences_in(window, entry: self) if series
+
+      window.overlaps?(starts_at, ends_at) ? [RecurringSeries::Occurrence.new(starts_at:, ends_at:, all_day:, entry: self)] : []
+    end
   end
 
   attr_reader :id, :color, :name, :entries
@@ -123,6 +130,20 @@ class ImportedCalendar
     @problem_uids = []
   end
 
+  # The occurrences of the calendar's entries in the window (a CalendarWindow), as the calendar pages draw them: each
+  # title after `prefix`, with the page's own `extra` properties and `props` in extendedProps.
+  def feed_rows(window, prefix: "", props: {}, **extra)
+    occurrences_in(window).map do |occurrence|
+      entry = occurrence.entry
+      row = { groupId: id, title: "#{prefix}#{entry.summary}", display: "auto", **extra,
+              extendedProps: { name: name, description: entry.description, **props } }
+      occurrence.feed_row(entry.key, row, repeating: entry.series)
+    end
+  end
+
+  # The occurrences of its entries in the window (a CalendarWindow), each carrying its entry.
+  def occurrences_in(window) = entries.flat_map { |entry| entry.occurrences_in(window) }
+
   # Whether the feed could not be read: no body, a fetch or parse error, or a body with no calendar in it.
   def failed? = @failed
 
@@ -200,13 +221,15 @@ class ImportedCalendar
   def cancelled?(event) = event.status.to_s.casecmp?("CANCELLED")
 
   # The entry for the event's own times, or nil (reported) when it has no usable start.
+  # An all-day event with no end lasts its one day; a timed one with no end ends at its start (a moment).
   def entry_for(event, recurrence_id)
     starts_at = zoned_time(event.dtstart)
     return report_later("ICS event has no usable start", event.uid) if starts_at.nil?
 
+    all_day = event.dtstart.is_a?(Icalendar::Values::Date)
     Entry.new(uid: event.uid.to_s, recurrence_id: recurrence_id, summary: event.summary&.to_s, description: event.description&.to_s,
-              all_day: event.dtstart.is_a?(Icalendar::Values::Date), starts_at: starts_at,
-              ends_at: zoned_time(event.dtend, starts_at.time_zone), series: nil)
+              all_day: all_day, starts_at: starts_at,
+              ends_at: zoned_time(event.dtend, starts_at.time_zone) || (all_day ? starts_at.advance(days: 1) : starts_at), series: nil)
   end
 
   # A time of the event; a zone name that cannot be resolved is noted, to be reported once for the feed.
@@ -216,7 +239,7 @@ class ImportedCalendar
 
   # A single event or modified instance, unless it ended more than two months ago.
   def kept(entry)
-    entry if (entry.ends_at || entry.starts_at) >= cutoff
+    entry if entry.ends_at >= cutoff
   end
 
   # A repeating event. A rule that fails the checks stored rules pass is reported and the event is shown once, at its
@@ -231,8 +254,7 @@ class ImportedCalendar
 
   # The series, unless it ended more than two months ago (by UNTIL or after its COUNT).
   def series_entry(entry, event, overrides)
-    ends_at = entry.ends_at || (entry.all_day ? entry.starts_at.advance(days: 1) : entry.starts_at)
-    series = RecurringSeries.from_ics(event, overrides, starts_at: entry.starts_at, ends_at: ends_at)
+    series = RecurringSeries.from_ics(event, overrides, starts_at: entry.starts_at, ends_at: entry.ends_at)
     entry.with(series: series) unless ended?(series)
   end
 

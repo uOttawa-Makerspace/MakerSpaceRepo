@@ -79,3 +79,51 @@ RSpec.describe StaffNeededCalendar, "on the admin calendar", type: :model do
     expect(described_class.linked).to eq([linked])
   end
 end
+
+RSpec.describe StaffNeededCalendar, "on the opening-hours calendar", type: :model do
+  let(:url) { "https://calendar.example/hours.ics" }
+  let(:week) { CalendarWindow.new(RecurrenceRule::ZONE.local(2099, 1, 4), RecurrenceRule::ZONE.local(2099, 1, 11)) }
+  let(:ics) do
+    ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//spec//EN", "BEGIN:VEVENT", "UID:open@ics.test", "DTSTAMP:20270101T000000Z",
+     "DTSTART:20990105T150000Z", "DTEND:20990105T160000Z", "SUMMARY:Open", "END:VEVENT", "END:VCALENDAR"].join("\r\n")
+  end
+
+  it "is named after its space, else after itself" do
+    expect(described_class.new(space: build(:space, name: "Makerspace"), name: "Hours").hours_name).to eq("Makerspace")
+    expect(described_class.new(name: "Hours").hours_name).to eq("Hours")
+  end
+
+  it "is drawn in its own colour, else in one made from its link" do
+    expect(described_class.new(calendar_url: url, color: "#123456").display_color).to eq("#123456")
+    expect(described_class.new(calendar_url: url).display_color).to eq(ApplicationController.helpers.generate_color_from_id(url))
+  end
+
+  it "lists the linked opening-hours calendars in the order they were added" do
+    described_class.create!(calendar_url: url, role: "open_hours", space: create(:space, name: "First"))
+    described_class.create!(calendar_url: "https://calendar.example/b.ics", role: "open_hours", space: create(:space, name: "Second"))
+    described_class.create!(calendar_url: "", role: "open_hours", space: create(:space))
+    described_class.create!(calendar_url: url)
+
+    expect(described_class.open_hours.map(&:hours_name)).to eq(%w[First Second])
+  end
+
+  it "sends its feed's occurrences in the window as one source under the feed's id and its colour" do
+    allow(IcsFetcher).to receive(:get).with(url, any_args).and_return(ics)
+    sources = described_class.new(calendar_url: url, color: "#123456", name: "Hours").feed_sources(week)
+
+    expect(sources.map { |source| source.slice(:id, :color) }).to eq([{ id: Digest::MD5.hexdigest(url), color: "#123456" }])
+    expect(sources.sole[:events].map { |row| row.values_at(:title, :start) }).to eq([["Open", "2099-01-05T10:00:00-05:00"]])
+    expect(sources.sole[:events].sole[:extendedProps]).to include(name: "Hours")
+  end
+
+  it "names the rows as asked" do
+    allow(IcsFetcher).to receive(:get).with(url, any_args).and_return(ics)
+    rows = described_class.new(calendar_url: url).feed_sources(week, name: "Makerspace").sole[:events]
+    expect(rows.sole[:extendedProps]).to include(name: "Makerspace")
+  end
+
+  it "sends no source when the server gives no body" do
+    allow(IcsFetcher).to receive(:get).with(url, any_args).and_return(nil)
+    expect(described_class.new(calendar_url: url).feed_sources(week)).to eq([])
+  end
+end

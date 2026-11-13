@@ -200,6 +200,27 @@ RSpec.describe "Staff unavailabilities", type: :request do
           expect(series.recurrence_rule).to eq("DTSTART;TZID=America/Toronto:20270301T143000\nRRULE:FREQ=WEEKLY;BYDAY=MO")
         end
 
+        # The dialog sends keep_series_times when its time fields are as it filled them from the clicked occurrence:
+        # the series then keeps its own start and length, even where that occurrence's times differ from the series'.
+        {
+          "the 03:30 occurrence of the day the clocks go forward (a 02:30 series)" =>
+            { first: [2027, 3, 7, 2, 30], posted: %w[2027-03-14T07:30:00Z 2027-03-14T08:30:00Z], start_line: "20270307T023000" },
+          "the 01:30 occurrence of the night the clocks go back (posted 01:30 to 02:30, two real hours)" =>
+            { first: [2027, 10, 31, 1, 30], posted: %w[2027-11-07T05:30:00Z 2027-11-07T07:30:00Z], start_line: "20271031T013000" }
+        }.each do |label, c|
+          it "scope 'all' with the times left as filled from #{label} keeps the series' start and length" do
+            first = Time.zone.local(*c[:first])
+            weekly = create(:staff_unavailability, user: staff, title: "Series", start_time: first, end_time: first + 1.hour,
+                                                   recurrence_rule: "DTSTART:#{first.utc.strftime('%Y%m%dT%H%M%SZ')}\nRRULE:FREQ=WEEKLY;BYDAY=SU")
+            posted_rule = "DTSTART;TZID=America/Toronto:#{Time.iso8601(c[:posted].first).in_time_zone(RecurrenceRule::ZONE).strftime('%Y%m%dT%H%M%S')}\nRRULE:FREQ=WEEKLY;BYDAY=SU"
+            patch staff_unavailability_path(weekly), params: payload(title: "Renamed", utc_start_time: c[:posted].first, utc_end_time: c[:posted].last,
+                                                                     recurrence_rule: posted_rule).merge(update_scope: "all", keep_series_times: "1")
+
+            expect(weekly.reload).to have_attributes(title: "Renamed", start_time: first, end_time: first + 1.hour,
+                                                     recurrence_rule: "DTSTART;TZID=America/Toronto:#{c[:start_line]}\nRRULE:FREQ=WEEKLY;BYDAY=SU")
+          end
+        end
+
         it "scope 'all' with a rule that does not validate flashes an alert and changes nothing" do
           patch staff_unavailability_path(series), params: payload(title: "Shifted", recurrence_rule: "DTSTART:20270322T183000Z\nRRULE:FREQ=MINUTELY").merge(update_scope: "all")
           expect(flash[:alert]).to start_with("Failed to update unavailability:")
@@ -312,42 +333,92 @@ RSpec.describe "Staff unavailabilities", type: :request do
     end
 
     describe "json feed" do
+      # The feed sends the occurrences in the range the calendar asks for (?start&end).
+      def get_feed(from: Time.current, to: from + 7.days)
+        get json_staff_unavailabilities_path, params: { start: from.iso8601, end: to.iso8601 }
+      end
+
       it "returns only the user's own records with the FullCalendar shape, in Toronto offsets" do
         create(:staff_unavailability, user: other, title: "Not mine")
         single = create(:staff_unavailability, user: staff, title: "Once", description: "d",
                                                start_time: Time.utc(2027, 3, 14, 6, 30), end_time: Time.utc(2027, 3, 14, 7, 30))
-        get json_staff_unavailabilities_path
+        get_feed(from: Time.utc(2027, 3, 13))
         expect(response).to have_http_status(:ok)
         expect(response.parsed_body).to eq([{
           "id" => single.id, "title" => "Once",
           "start" => "2027-03-14T01:30:00-05:00", "end" => "2027-03-14T03:30:00-04:00", # across the DST jump
           "allDay" => false,
-          "extendedProps" => { "description" => "d", "eventType" => "unavailability", "userId" => staff.id, "isAdminCreated" => false }
+          "extendedProps" => { "description" => "d", "eventType" => "unavailability", "userId" => staff.id, "isAdminCreated" => false,
+                               "recordId" => single.id, "series" => nil, "occurrenceStart" => "2027-03-14T06:30:00Z" }
         }])
       end
 
-      it "adds rrule + duration for recurring records, converting EXDATE to Toronto wall-clock" do
-        rule = "#{RULE}\nEXDATE:20270308T150000Z\nEXDATE:20270329T150000Z"
-        create(:staff_unavailability, user: staff, recurrence_rule: rule, start_time: Time.utc(2027, 3, 1, 15), end_time: Time.utc(2027, 3, 1, 16))
+      it "names an entry without a title Unavailable, not made by an admin" do
+        create(:staff_unavailability, user: staff, title: nil, start_time: Time.utc(2027, 3, 14, 14), end_time: Time.utc(2027, 3, 14, 15))
+        get_feed(from: Time.utc(2027, 3, 13))
+        row = response.parsed_body.sole
+        expect([row["title"], row.dig("extendedProps", "isAdminCreated")]).to eq(["Unavailable", nil])
+      end
+
+      it "leaves out the records outside the range" do
+        create(:staff_unavailability, user: staff, title: "Later", start_time: Time.utc(2027, 4, 14, 14), end_time: Time.utc(2027, 4, 14, 15))
+        get_feed(from: Time.utc(2027, 3, 13))
+        expect(response.parsed_body).to eq([])
+      end
+
+      it "answers 400 with the reason when the range is missing" do
         get json_staff_unavailabilities_path
-        row = response.parsed_body.first
-        expect(row["duration"]).to eq(3_600_000.0)
-        expect(row["rrule"]).to eq("DTSTART:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO\nEXDATE:20270308T100000\nEXDATE:20270329T110000")
+        expect(response).to have_http_status(:bad_request)
+        expect(response.parsed_body).to eq("error" => I18n.t("errors.calendar.window_invalid"))
+      end
+
+      it "sends each occurrence of a series in the range at its Toronto clock time, without the excluded ones" do
+        rule = "#{RULE}\nEXDATE:20270308T150000Z\nEXDATE:20270329T150000Z"
+        record = create(:staff_unavailability, user: staff, recurrence_rule: rule, start_time: Time.utc(2027, 3, 1, 15), end_time: Time.utc(2027, 3, 1, 16))
+        get_feed(from: Time.utc(2027, 3, 1), to: Time.utc(2027, 4, 1))
+        rows = response.parsed_body
+        # 2027-03-29 10:00 daylight time is 14:00Z, so the exclusion stamped 15:00Z does not remove it
+        expect(rows.map { |row| [row["id"], row["start"], row["end"]] }).to eq([
+          ["#{record.id}@#{Time.utc(2027, 3, 1, 15).to_i}", "2027-03-01T10:00:00-05:00", "2027-03-01T11:00:00-05:00"],
+          ["#{record.id}@#{Time.utc(2027, 3, 15, 14).to_i}", "2027-03-15T10:00:00-04:00", "2027-03-15T11:00:00-04:00"],
+          ["#{record.id}@#{Time.utc(2027, 3, 22, 14).to_i}", "2027-03-22T10:00:00-04:00", "2027-03-22T11:00:00-04:00"],
+          ["#{record.id}@#{Time.utc(2027, 3, 29, 14).to_i}", "2027-03-29T10:00:00-04:00", "2027-03-29T11:00:00-04:00"]
+        ])
+        expect(rows.second["extendedProps"]).to include(
+          "recordId" => record.id, "occurrenceStart" => "2027-03-15T14:00:00Z",
+          "series" => { "frequency" => "WEEKLY", "weekdays" => ["MO"], "until" => nil }
+        )
+        expect(rows).to all(satisfy { |row| !row.key?("rrule") && !row.key?("duration") })
+      end
+
+      it "sends the Toronto date a series repeats until" do
+        create(:staff_unavailability, user: staff, recurrence_rule: "#{RULE};UNTIL=20270316T035959Z",
+                                      start_time: Time.utc(2027, 3, 1, 15), end_time: Time.utc(2027, 3, 1, 16))
+        get_feed(from: Time.utc(2027, 3, 1), to: Time.utc(2027, 4, 1))
+        expect(response.parsed_body.map { |row| row["start"] }).to eq(%w[2027-03-01T10:00:00-05:00 2027-03-08T10:00:00-05:00 2027-03-15T10:00:00-04:00])
+        expect(response.parsed_body.first.dig("extendedProps", "series", "until")).to eq("2027-03-15")
+      end
+
+      it "sends an occurrence that began before the range and reaches into it" do
+        record = create(:staff_unavailability, user: staff, recurrence_rule: "RRULE:FREQ=DAILY",
+                                               start_time: Time.utc(2027, 3, 1, 3), end_time: Time.utc(2027, 3, 1, 7))
+        get_feed(from: Time.utc(2027, 3, 3, 5), to: Time.utc(2027, 3, 3, 6))
+        expect(response.parsed_body.map { |row| row["id"] }).to eq(["#{record.id}@#{Time.utc(2027, 3, 3, 3).to_i}"])
       end
 
       it "still lists a series whose stored start line cannot be read, from its own start" do
         record = create(:staff_unavailability, user: staff, start_time: Time.utc(2027, 3, 1, 15), end_time: Time.utc(2027, 3, 1, 16))
         record.update_column(:recurrence_rule, "DTSTART;TZID=Nowhere/Land:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO")
-        get json_staff_unavailabilities_path
+        get_feed(from: Time.utc(2027, 3, 1))
         expect(response).to have_http_status(:ok)
-        expect(response.parsed_body.first["rrule"]).to eq("DTSTART:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO")
+        expect(response.parsed_body.map { |row| row["start"] }).to eq(["2027-03-01T10:00:00-05:00"])
       end
 
-      it "flags all-day (exactly 24h) records and admin-created titles" do
+      it "flags all-day (exactly 24h) records, sent as dates, and admin-created titles" do
         create(:staff_unavailability, user: staff, title: "Away (Admin)", start_time: Time.utc(2027, 3, 1, 5), end_time: Time.utc(2027, 3, 2, 5))
-        get json_staff_unavailabilities_path
+        get_feed(from: Time.utc(2027, 3, 1))
         row = response.parsed_body.first
-        expect(row["allDay"]).to be(true)
+        expect(row.values_at("allDay", "start", "end")).to eq([true, "2027-03-01", "2027-03-02"])
         expect(row["extendedProps"]["isAdminCreated"]).to be(true)
       end
 
@@ -355,7 +426,7 @@ RSpec.describe "Staff unavailabilities", type: :request do
         url = "https://cal.test/ext.ics"
         StaffExternalUnavailability.create!(user: staff, ics_url: url)
         stub_ics(url, body: ics_document(uid: "e1", summary: "Dentist", start: 3.days.from_now, end: 3.days.from_now + 1.hour))
-        get json_staff_unavailabilities_path
+        get_feed
         titles = response.parsed_body.map { |r| r["title"] }
         expect(titles).to eq(["External - Dentist"])
         expect(response.parsed_body.first["extendedProps"]["name"]).to eq("#{staff.name} External Unavailability")
@@ -366,7 +437,7 @@ RSpec.describe "Staff unavailabilities", type: :request do
         url = "https://calendar.example.org/private/secret-token-123/basic.ics?key=abc"
         StaffExternalUnavailability.create!(user: staff, ics_url: url)
         stub_ics(url, body: ics_document(uid: "e2", summary: "Dentist", start: 3.days.from_now, end: 3.days.from_now + 1.hour))
-        get json_staff_unavailabilities_path
+        get_feed
         expect(response.parsed_body.first["extendedProps"]["sourceHost"]).to eq("calendar.example.org")
         expect(response.body).not_to include("secret-token-123")
         expect(response.body).not_to include("key=abc")
@@ -380,7 +451,7 @@ RSpec.describe "Staff unavailabilities", type: :request do
         stub_ics(down, status: 503)
         stub_request(:get, slow).to_timeout
         stub_ics(empty, body: ics_document)
-        get json_staff_unavailabilities_path
+        get_feed
 
         expect(JSON.parse(response.headers["X-Failed-Calendars"])).to contain_exactly("down.example.org", "slow.example.org")
         expect(response.parsed_body).to eq([])
@@ -393,20 +464,20 @@ RSpec.describe "Staff unavailabilities", type: :request do
         [page, valid].each { |url| StaffExternalUnavailability.create!(user: staff, ics_url: url) }
         stub_request(:get, page).to_return(status: 200, body: "<html><body>Please sign in</body></html>")
         stub_ics(valid, body: ics_document)
-        get json_staff_unavailabilities_path
+        get_feed
 
         expect(JSON.parse(response.headers["X-Failed-Calendars"])).to eq(["login.example.org"])
       end
 
       it "still reports a failed link whose host cannot be read, without a name" do
         StaffExternalUnavailability.new(user: staff, ics_url: "https://exa mple.org/a.ics").save!(validate: false)
-        get json_staff_unavailabilities_path
+        get_feed
 
         expect(JSON.parse(response.headers["X-Failed-Calendars"])).to eq([nil])
       end
 
       it "tells the browser not to reuse an earlier answer, since the failure header is not part of the body's ETag" do
-        get json_staff_unavailabilities_path
+        get_feed
         expect(response.headers["Cache-Control"]).to eq("no-store")
       end
 
@@ -414,7 +485,7 @@ RSpec.describe "Staff unavailabilities", type: :request do
         url = "https://cal.test/fine.ics"
         StaffExternalUnavailability.create!(user: staff, ics_url: url)
         stub_ics(url, body: ics_document)
-        get json_staff_unavailabilities_path
+        get_feed
         expect(response.headers).not_to have_key("X-Failed-Calendars")
       end
 
@@ -422,7 +493,7 @@ RSpec.describe "Staff unavailabilities", type: :request do
         url = "https://cal.test/down.ics"
         StaffExternalUnavailability.create!(user: staff, ics_url: url)
         stub_ics(url, status: 503)
-        get json_staff_unavailabilities_path
+        get_feed
         expect(response.parsed_body).to eq([])
       end
     end
@@ -492,7 +563,7 @@ RSpec.describe "Staff unavailabilities", type: :request do
 
     it "json only lists the admin's own unavailabilities" do
       create(:staff_unavailability, user: staffer)
-      get json_staff_unavailabilities_path
+      get json_staff_unavailabilities_path, params: { start: Time.current.iso8601, end: 7.days.from_now.iso8601 }
       expect(response.parsed_body).to eq([])
     end
   end

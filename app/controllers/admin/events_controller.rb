@@ -109,7 +109,7 @@ class Admin::EventsController < AdminAreaController
       duration = (@end_time - @start_time).to_i
       old_date_new_time_end = old_date_new_time_start + duration
 
-      rule_to_use = series_rule.with_time_from(event_params[:recurrence_rule])
+      rule_to_use = series_rule.with_time_from(event_params[:recurrence_rule], at: old_date_new_time_start)
 
       if @event.update(
           title: title,

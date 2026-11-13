@@ -4,10 +4,11 @@ require "rails_helper"
 
 # A weekly series on the admin calendar (events) and on the staff unavailabilities page, in the two weeks of 2027
 # that hold a clock change in Toronto: the week of Sunday 2027-03-14 (02:00 becomes 03:00) and the week of Sunday
-# 2027-11-07 (02:00 becomes 01:00). Both pages hand the series' repeat rule to the browser, which draws it with
-# @fullcalendar/rrule; the dialogs then post the instant of the occurrence that was clicked. These examples pin what
-# a person sees and what is saved today, including where the page and the server disagree. Each disagreement is
-# named in a comment, and the slices that move the expansion to the server change those examples and nothing else.
+# 2027-11-07 (02:00 becomes 01:00). The admin calendar hands an event series' repeat rule to the browser, which draws
+# it with @fullcalendar/rrule; the staff unavailabilities page draws the occurrences the server expands
+# (RecurringSeries). The dialogs then post the instant of the occurrence that was clicked. These examples pin what a
+# person sees and what is saved, including where the admin page and the server disagree. Each disagreement is named
+# in a comment, and the slice that moves the event expansion to the server changes those examples and nothing else.
 #
 # The admin calendar's week view starts at 07:00, so a 01:30 or 02:30 series is only drawn in its month view; the
 # examples use the month view there and the week view on the staff page.
@@ -135,37 +136,45 @@ RSpec.describe "Recurring events across the clock changes", type: :system do
       describe "in the week the clocks go forward (2027-03-14)" do
         let(:week) { :forward }
 
-        # Disagreement "skipped hour": the page repeats the wall time 02:30 and draws the change-day occurrence at
-        # 02:30, an hour that does not exist that night; the server's expansion (the staff calendar, the shifts
-        # API) puts it at 03:30.
-        it "draws the 02:30 series on the change day and fills the form with 02:30", js: true, skip_bullet: true do
+        # The change-day occurrence of a 02:30 series: the admin page repeats the wall time 02:30 and draws it at
+        # 02:30, an hour that does not exist that night (disagreement "skipped hour"); the staff page draws the
+        # server's occurrence at 03:30, as the staff calendar and the shifts API have it.
+        let(:change_day_time) { { admin: "02:30", staff: "03:30" }.fetch(page_kind) }
+
+        it "draws the 02:30 series on the change day and fills the form with that occurrence's time", js: true, skip_bullet: true do
           open_calendar(page_kind, week)
-          expect(change_day_event(page_kind, week).text).to include("2:30")
+          expect(change_day_event(page_kind, week).text).to include(change_day_time.delete_prefix("0"))
           open_change_day_event(page_kind, week)
 
-          expect(field_value("start_time_field")).to eq("2027-03-14T02:30")
+          expect(field_value("start_time_field")).to eq("2027-03-14T#{change_day_time}")
         end
 
-        # Disagreement "deleted occurrence stays visible": the dialog posts the instant of the clicked occurrence,
-        # 03:30 daylight time (07:30Z). The server stores that exclusion, but the page turns it into the wall time
-        # 03:30, which no occurrence has, so the 02:30 occurrence is still drawn after the page reloads.
-        it "keeps drawing the occurrence deleted with 'This event'", js: true, skip_bullet: true do
+        # The dialog posts the instant of the clicked occurrence, 03:30 daylight time (07:30Z), and the server stores
+        # that exclusion. The staff page draws the server's occurrences, so the deleted one is gone. Disagreement
+        # "deleted occurrence stays visible" on the admin page: it turns the exclusion into the wall time 03:30,
+        # which no occurrence of its 02:30 repeat has, so the occurrence is still drawn after the page reloads.
+        it "removes the occurrence deleted with 'This event' from the staff page only", js: true, skip_bullet: true do
           open_calendar(page_kind, week)
           open_change_day_event(page_kind, week)
           choose_delete("This event")
           eventually { series.reload.recurrence_rule.include?("EXDATE") }
           wait_for_reload(page_kind, week)
 
-          # "stored-DTSTART rewrite": every dialog delete or update-all rewrites the stored DTSTART:...Z line as
+          # Every dialog delete or update-all writes the start line in the one form edits use,
           # DTSTART;TZID=America/Toronto with the Toronto wall time, so the exact rules below start that way.
           expect(series.reload.recurrence_rule).to eq("DTSTART;TZID=America/Toronto:20270307T023000\nRRULE:FREQ=WEEKLY;BYDAY=SU\nEXDATE:20270314T073000Z")
-          expect(change_day_event(page_kind, week).text).to include("2:30")
+          if page_kind == :admin
+            expect(change_day_event(page_kind, week).text).to include("2:30")
+          else
+            expect(page).to have_no_css(occurrence_css(page_kind, week), text: title, visible: :all)
+          end
         end
 
-        # Disagreement "skipped hour form": the form is filled with 02:30 to 03:30 and the dialog turns both into
-        # instants, which are the same one (07:30Z, 03:30 daylight time), so the server refuses the zero-length
-        # series and nothing is saved: the series keeps its title, start and rule.
-        it "saves nothing with 'Update all events' from the 02:30 occurrence", js: true, skip_bullet: true do
+        # Only the title is edited. Admin page (events), disagreement "skipped hour form": the form is filled with
+        # 02:30 to 03:30, both of which are the instant 07:30Z, so the server refuses the zero-length series and
+        # nothing is saved. Staff page: the form holds the occurrence, 03:30 to 04:30, left as filled, so the series
+        # is renamed and keeps its own 02:30 start and length.
+        it "saves 'Update all events' with only the title changed from the change-day occurrence", js: true, skip_bullet: true do
           open_calendar(page_kind, week)
           open_change_day_event(page_kind, week)
           edit_title_for_all("Renamed series")
@@ -173,7 +182,10 @@ RSpec.describe "Recurring events across the clock changes", type: :system do
           series.reload
 
           expect([series.title, series.start_time, series.recurrence_rule]).to eq(
-            [title, eastern.local(2027, 3, 7, 2, 30), "DTSTART:20270307T073000Z\nRRULE:FREQ=WEEKLY;BYDAY=SU"]
+            {
+              admin: [title, eastern.local(2027, 3, 7, 2, 30), "DTSTART:20270307T073000Z\nRRULE:FREQ=WEEKLY;BYDAY=SU"],
+              staff: ["Renamed series", eastern.local(2027, 3, 7, 2, 30), "DTSTART;TZID=America/Toronto:20270307T023000\nRRULE:FREQ=WEEKLY;BYDAY=SU"]
+            }.fetch(page_kind)
           )
         end
 
@@ -218,6 +230,9 @@ RSpec.describe "Recurring events across the clock changes", type: :system do
           series.reload
 
           expect([series.title, series.start_time, series.recurrence_rule]).to eq(["Renamed series", eastern.local(2027, 10, 31, 1, 30), "DTSTART;TZID=America/Toronto:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU"])
+          # The staff dialog sends the series' own length (the form showed 01:30 to 02:30, two real hours that
+          # night); the admin dialog still sends the form's times for an event.
+          expect(series.end_time - series.start_time).to eq(page_kind == :staff ? 1.hour : 2.hours)
         end
 
         it "ends the series with 'This and following events'", js: true, skip_bullet: true do

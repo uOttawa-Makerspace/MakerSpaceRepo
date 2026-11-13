@@ -24,11 +24,6 @@
       "count": 1
     }
   },
-  "app/javascript/entrypoints/fullcalendar_setup_homepage.js": {
-    "complexity": {
-      "count": 2
-    }
-  },
   "app/javascript/entrypoints/job_orders_wizard.js": {
     "no-unused-vars": {
       "count": 1
@@ -90,7 +85,7 @@
       "count": 5
     },
     "no-unused-vars": {
-      "count": 2
+      "count": 1
     }
   },
   "app/javascript/src/effects.js": {

@@ -8,8 +8,8 @@ require "rails_helper"
 # HTTP boundary (spec/support/webmock.rb defaults, overridden below for the
 # populated case).
 #
-# JS console: the page boots FullCalendar (fullcalendar_setup_homepage) which
-# fetches /open_hours; the JS-error check is being added to system specs by a
+# JS console: the page boots FullCalendar (hours_calendar_controller) which
+# fetches /open_hours when a space has opening hours; the JS-error check is being added to system specs by a
 # parallel chunk, so no SEVERE console errors were observed or asserted here
 # (see c17-notes.md).
 RSpec.describe "Homepage", type: :system do

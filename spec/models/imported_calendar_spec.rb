@@ -171,7 +171,7 @@ RSpec.describe ImportedCalendar do
     it "gives an all-day event with no end a one-day length" do
       entries = entries_of(ics(vevent("day", "DTSTART;VALUE=DATE:20270315", "SUMMARY:Closed", "RRULE:FREQ=DAILY;COUNT=2")))
       series = entries.first.series
-      expect(entries.first.ends_at).to be_nil
+      expect(entries.first.ends_at).to eq(toronto.local(2027, 3, 16))
       expect(series.occurrences_starting_in(everything, limit: 1).occurrences.first.all_day).to be(true)
     end
   end
@@ -381,6 +381,57 @@ RSpec.describe ImportedCalendar do
       expect(entries.size).to eq(3)
       expect(reports.size).to eq(1)
       expect(reports.first.last[:kinds]).to eq({ "unknown time zone" => 2 })
+    end
+  end
+
+  describe "#feed_rows (the occurrences in a calendar window)" do
+    def calendar_of(body)
+      serve(body)
+      described_class.load(url, name: "Hours", color: "#123456")
+    end
+
+    it "sends each occurrence of a series, with an id per occurrence, and a moved instance once under its own key" do
+      rows = calendar_of(fixture("recurrence_id_moved")).feed_rows(CalendarWindow.new(toronto.local(2027, 3, 1), toronto.local(2027, 4, 1)))
+      epoch = ->(*parts) { toronto.local(*parts).to_i }
+      expect(rows.map { |row| row.values_at(:id, :start) }).to contain_exactly(
+        ["moved@ics.test@#{epoch.call(2027, 3, 7, 10)}", "2027-03-07T10:00:00-05:00"],
+        ["moved@ics.test@#{epoch.call(2027, 3, 21, 10)}", "2027-03-21T10:00:00-04:00"],
+        ["moved@ics.test@#{epoch.call(2027, 3, 28, 10)}", "2027-03-28T10:00:00-04:00"],
+        ["moved@ics.test_#{epoch.call(2027, 3, 14, 10)}", "2027-03-15T14:00:00-04:00"]
+      )
+      expect(rows).to all(include(groupId: Digest::MD5.hexdigest(url), display: "auto", extendedProps: hash_including(name: "Hours")))
+    end
+
+    it "gives each occurrence its entry" do
+      occurrences = calendar_of(fixture("recurrence_id_moved")).occurrences_in(CalendarWindow.new(toronto.local(2027, 3, 1), toronto.local(2027, 4, 1)))
+      expect(occurrences.map { |o| o.entry.key }.uniq).to contain_exactly("moved@ics.test", "moved@ics.test_#{toronto.local(2027, 3, 14, 10).to_i}")
+    end
+
+    it "leaves out a one-off outside the window" do
+      body = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//spec//EN", "BEGIN:VEVENT", "UID:one@ics.test", "DTSTAMP:20270101T000000Z",
+              "DTSTART:20270317T150000Z", "DTEND:20270317T160000Z", "SUMMARY:Once", "END:VEVENT", "END:VCALENDAR"].join("\r\n")
+      calendar = calendar_of(body)
+      expect(calendar.feed_rows(CalendarWindow.new(toronto.local(2027, 3, 14), toronto.local(2027, 3, 21))).map { |row| row[:start] })
+        .to eq(["2027-03-17T11:00:00-04:00"])
+      expect(calendar.feed_rows(CalendarWindow.new(toronto.local(2027, 3, 21), toronto.local(2027, 3, 28)))).to eq([])
+    end
+
+    it "ends a one-off with no end at its start" do
+      body = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//spec//EN", "BEGIN:VEVENT", "UID:moment@ics.test", "DTSTAMP:20270101T000000Z",
+              "DTSTART:20270317T150000Z", "SUMMARY:Moment", "END:VEVENT", "END:VCALENDAR"].join("\r\n")
+      rows = calendar_of(body).feed_rows(CalendarWindow.new(toronto.local(2027, 3, 14), toronto.local(2027, 3, 21)))
+      expect(rows.map { |row| row.values_at(:start, :end) }).to eq([%w[2027-03-17T11:00:00-04:00 2027-03-17T11:00:00-04:00]])
+    end
+
+    it "gives an all-day one-off with no end its one day, as an all-day series has" do
+      body = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//spec//EN", "BEGIN:VEVENT", "UID:day@ics.test", "DTSTAMP:20270101T000000Z",
+              "DTSTART;VALUE=DATE:20270317", "SUMMARY:Away", "END:VEVENT", "END:VCALENDAR"].join("\r\n")
+      calendar = calendar_of(body)
+      expect(calendar.feed_rows(CalendarWindow.new(toronto.local(2027, 3, 14), toronto.local(2027, 3, 21))).map { |row| row.values_at(:start, :end, :allDay) })
+        .to eq([["2027-03-17", "2027-03-18", true]])
+      noon = RecurringSeries::Occurrence.new(starts_at: toronto.local(2027, 3, 17, 12), ends_at: toronto.local(2027, 3, 17, 13), all_day: false, entry: nil)
+      expect(calendar.occurrences_in(CalendarWindow.new(toronto.local(2027, 3, 17), toronto.local(2027, 3, 18))).map { |o| o.overlaps?(noon) })
+        .to eq([true])
     end
   end
 

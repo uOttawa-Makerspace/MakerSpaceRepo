@@ -11,12 +11,34 @@ class StaffUnavailability < ApplicationRecord
       errors.add(:start_time, :before_end_time)
   end
 
-  # The row the admin calendar draws for this unavailability of `staff_name`, in Toronto wall time; a series also
-  # carries its rule and its length in milliseconds, for the page to repeat.
-  def calendar_row(staff_name)
-    { id: id, title: "🚫 #{staff_name} - #{title}", start: toronto_wall(start_time), end: toronto_wall(end_time),
-      **calendar_recurrence, allDay: CalendarTime.all_day?(start_time, end_time),
-      extendedProps: { name: staff_name, title: title, description: description }, className: "unavailability" }
+  # Its occurrences in the window (a CalendarWindow) as the calendar pages draw them: `row` (title, page properties) with
+  # each occurrence's times and id, plus what the dialogs edit it by: type, staff member, record id, whether an admin
+  # made it, and a series' repeat (nil for a single entry). An imported (ICS) entry carries none of these.
+  def feed_rows(window, row)
+    repeating = recurrence_rule.present?
+    series = RecurrenceRule.new(recurrence_rule, start_time).dialog_fields if repeating
+    row = row.merge(extendedProps: row[:extendedProps].merge(eventType: "unavailability", userId: user_id, recordId: id,
+                                                             isAdminCreated: title&.include?("(Admin)"), series: series))
+    occurrences_in(window).map { |occurrence| occurrence.feed_row(id, row, repeating: repeating) }
+  end
+
+  # Its occurrences that overlap the window (a CalendarWindow), expanded by RecurringSeries.
+  def occurrences_in(window) = RecurringSeries.for_record(self).occurrences_in(window)
+
+  # The `occurrences` of a planned event that overlap an unavailability of each of `user_ids` (ids or users), by user id.
+  def self.clashes(user_ids, occurrences)
+    return {} if occurrences.empty?
+
+    busy = occurrences_for(user_ids, CalendarWindow.new(occurrences.first.starts_at, occurrences.last.ends_at))
+    busy.transform_values do |slots|
+      occurrences.select { |occurrence| slots.any? { |slot| slot.overlaps?(occurrence) } }
+    end
+  end
+
+  # The occurrences in the window of each of `user_ids`' stored unavailabilities and external calendars, by user id.
+  def self.occurrences_for(user_ids, window)
+    sources = window.records(where(user_id: user_ids)).to_a + StaffExternalUnavailability.where(user_id: user_ids).to_a
+    sources.group_by(&:user_id).transform_values { |of_user| of_user.flat_map { |source| source.occurrences_in(window) } }
   end
 
   def weekly_frequency_must_contain_days
@@ -24,14 +46,4 @@ class StaffUnavailability < ApplicationRecord
       errors.add(:recurrence_rule, :weekly_needs_days)
     end
   end
-
-  private
-
-  def calendar_recurrence
-    return {} if recurrence_rule.blank?
-
-    { rrule: RecurrenceRule.new(recurrence_rule, start_time).in_toronto_time, duration: (end_time.to_time - start_time.to_time) * 1000 }
-  end
-
-  def toronto_wall(time) = time.in_time_zone(RecurrenceRule::ZONE).strftime("%Y-%m-%dT%H:%M:%S")
 end

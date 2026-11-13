@@ -37,6 +37,66 @@ RSpec.describe RecurringSeries do
     end
   end
 
+  describe "#occurrences_in (a calendar window)" do
+    def window(from, to) = CalendarWindow.new(from, to)
+
+    it "keeps an occurrence that started before the window and reaches into it" do
+      nightly = series("RRULE:FREQ=DAILY", at(2027, 3, 1, 22), at(2027, 3, 2, 2))
+      found = nightly.occurrences_in(window(at(2027, 3, 5, 1), at(2027, 3, 5, 23)))
+      expect(found.map { |o| o.starts_at.iso8601 }).to eq(%w[2027-03-04T22:00:00-05:00 2027-03-05T22:00:00-05:00])
+    end
+
+    it "moves the skipped 02:30 forward and leaves out an exclusion at the instant the dialog posts" do
+      weekly = series("RRULE:FREQ=WEEKLY;BYDAY=SU\nEXDATE:20270321T063000Z", at(2027, 3, 7, 2, 30), at(2027, 3, 7, 3, 30))
+      found = weekly.occurrences_in(window(at(2027, 3, 8), at(2027, 3, 29)))
+      expect(found.map { |o| o.starts_at.iso8601 }).to eq(%w[2027-03-14T03:30:00-04:00 2027-03-28T02:30:00-04:00])
+    end
+
+    it "keeps an all-day occurrence of the day before the window, which reaches into it" do
+      all_day = series("RRULE:FREQ=DAILY", at(2027, 3, 1), at(2027, 3, 2))
+      found = all_day.occurrences_in(window(at(2027, 3, 14, 12), at(2027, 3, 14, 13)))
+      expect(found.map { |o| o.starts_at.iso8601 }).to eq(%w[2027-03-14T00:00:00-05:00])
+    end
+
+    it "is the one occurrence of a series with no rule, when it overlaps the window" do
+      once = series(nil, at(2027, 3, 14, 9), at(2027, 3, 14, 10))
+      expect(once.occurrences_in(window(at(2027, 3, 14), at(2027, 3, 15))).map(&:starts_at)).to eq([at(2027, 3, 14, 9)])
+      expect(once.occurrences_in(window(at(2027, 3, 15), at(2027, 3, 16)))).to eq([])
+    end
+  end
+
+  describe "Occurrence#overlaps?" do
+    def occurrence(from, to) = described_class::Occurrence.new(starts_at: from, ends_at: to, all_day: false, entry: nil)
+
+    it "is true for occurrences that share some time, and not for ones that only touch" do
+      event = occurrence(at(2027, 3, 17, 10), at(2027, 3, 17, 11))
+      expect(occurrence(at(2027, 3, 17, 10, 30), at(2027, 3, 17, 12)).overlaps?(event)).to be(true)
+      expect(occurrence(at(2027, 3, 17, 11), at(2027, 3, 17, 12)).overlaps?(event)).to be(false)
+    end
+
+    it "is false for an occurrence of no length (a moment), even inside the other" do
+      moment = occurrence(at(2027, 3, 17, 10, 30), at(2027, 3, 17, 10, 30))
+      expect(moment.overlaps?(occurrence(at(2027, 3, 17, 10), at(2027, 3, 17, 11)))).to be(false)
+    end
+  end
+
+  describe "Occurrence#feed_row" do
+    it "sends the times with their Toronto offset, an id with the start for a series, and the start as an instant" do
+      occurrence = described_class::Occurrence.new(starts_at: at(2027, 11, 7, 1, 30) + 1.hour, ends_at: at(2027, 11, 7, 3), all_day: false, entry: nil)
+      expect(occurrence.feed_row(7, { title: "Class", extendedProps: { a: 1 } }, repeating: true)).to eq(
+        title: "Class", id: "7@#{Time.utc(2027, 11, 7, 6, 30).to_i}", start: "2027-11-07T01:30:00-05:00", end: "2027-11-07T03:00:00-05:00",
+        allDay: false, extendedProps: { a: 1, occurrenceStart: "2027-11-07T06:30:00Z" }
+      )
+    end
+
+    it "sends an all-day occurrence as Toronto dates and a single entry under its own key" do
+      occurrence = described_class::Occurrence.new(starts_at: at(2027, 3, 14), ends_at: at(2027, 3, 15), all_day: true, entry: nil)
+      expect(occurrence.feed_row("uid", { extendedProps: {} }, repeating: false))
+        .to include(id: "uid", start: "2027-03-14", end: "2027-03-15", allDay: true)
+    end
+
+  end
+
   describe "the fall-back Sunday (2027-11-07)" do
     it "lists a repeated 01:30 once, at its first instant, and keeps COUNT" do
       daily = series("RRULE:FREQ=DAILY;COUNT=3", at(2027, 11, 6, 1, 30), at(2027, 11, 6, 2, 30))

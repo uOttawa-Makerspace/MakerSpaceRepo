@@ -19,7 +19,6 @@ vi.mock("@fullcalendar/core", () => ({
     }
   },
 }));
-vi.mock("@fullcalendar/rrule", () => ({ default: {} }));
 vi.mock("@fullcalendar/daygrid", () => ({ default: {} }));
 vi.mock("@fullcalendar/timegrid", () => ({ default: {} }));
 vi.mock("@fullcalendar/interaction", () => ({ default: {} }));
@@ -140,18 +139,25 @@ describe("staff unavailabilities calendar", () => {
       allDay: false,
       startStr: "s",
       endStr: "t",
-      extendedProps: { eventType: "unavailability", description: "d" },
+      extendedProps: {
+        eventType: "unavailability",
+        description: "d",
+        recordId: 7,
+        occurrenceStart: "o",
+        series: null,
+      },
     };
     cal.options.eventClick({ event: own });
     cal.options.select({ startStr: "s", endStr: "t" });
     expect(form.openForEdit).toHaveBeenCalledWith({
-      id: "e",
+      id: 7,
       title: "Lecture",
       description: "d",
       allDay: false,
       startStr: "s",
       endStr: "t",
-      rrule: null,
+      occurrenceStart: "o",
+      series: null,
     });
     expect(form.openForRange).toHaveBeenCalledWith({ start: "s", end: "t" });
   });
