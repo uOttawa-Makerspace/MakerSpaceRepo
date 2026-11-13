@@ -209,9 +209,11 @@ RSpec.describe "Error messages", type: :request do
 
     it "names the missing printer and the missing user in English and French" do
       link(create(:user, :regular_user).id, printer_id: 0)
-      expect(JSON.parse(response.body)).to eq([["alert", "That printer no longer exists. Reload the page and choose a printer again."]])
+      expect(response).to have_http_status(:bad_request)
+      expect(JSON.parse(response.body)).to eq("alert" => "That printer no longer exists. Reload the page and choose a printer again.")
       link(0, **fr)
-      expect(JSON.parse(response.body)).to eq([["alert", "Cet utilisateur n'existe plus. Choisissez de nouveau un utilisateur."]])
+      expect(response).to have_http_status(:bad_request)
+      expect(JSON.parse(response.body)).to eq("alert" => "Cet utilisateur n'existe plus. Choisissez de nouveau un utilisateur.")
     end
 
     describe "issues" do
