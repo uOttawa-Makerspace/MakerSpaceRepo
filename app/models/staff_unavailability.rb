@@ -12,12 +12,14 @@ class StaffUnavailability < ApplicationRecord
   end
 
   # The occurrences of this unavailability in the window (a CalendarWindow), as the calendar pages draw them: `row`
-  # (the title and the page's own properties) with each occurrence's times and id, the record id the dialogs edit
-  # and delete by, and what they show of a series' repeat (nil for a single entry).
+  # (the title and the page's own properties) with each occurrence's times and id, and what the dialogs edit it by:
+  # the type that makes it editable, its staff member, the record id, whether an admin made it, and what they show
+  # of a series' repeat (nil for a single entry). An imported (ICS) entry carries none of these.
   def feed_rows(window, row)
     repeating = recurrence_rule.present?
     series = RecurrenceRule.new(recurrence_rule, start_time).dialog_fields if repeating
-    row = row.merge(extendedProps: row[:extendedProps].merge(recordId: id, series: series))
+    row = row.merge(extendedProps: row[:extendedProps].merge(eventType: "unavailability", userId: user_id, recordId: id,
+                                                             isAdminCreated: title&.include?("(Admin)"), series: series))
     occurrences_in(window).map { |occurrence| occurrence.feed_row(id, row, repeating: repeating) }
   end
 

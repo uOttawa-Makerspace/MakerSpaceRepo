@@ -131,8 +131,9 @@ RSpec.describe "Admin calendar contract", type: :request do
       expect(event).not_to include("rrule")
       expect(event["className"]).to eq("unavailability")
       expect(event["extendedProps"]).to eq(
-        "name" => staff.name, "title" => "Doctor", "description" => "Away at hospital",
-        "recordId" => record.id, "series" => nil, "occurrenceStart" => "2027-05-05T13:00:00Z"
+        "name" => staff.name, "title" => "Doctor", "description" => "Away at hospital", "eventType" => "unavailability",
+        "userId" => staff.id, "isAdminCreated" => false, "recordId" => record.id, "series" => nil,
+        "occurrenceStart" => "2027-05-05T13:00:00Z"
       )
     end
 

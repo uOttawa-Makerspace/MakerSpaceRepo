@@ -67,7 +67,8 @@ RSpec.describe StaffUnavailability, "#feed_rows", type: :model do
     expect(unavailability.feed_rows(week, row)).to eq([{
       id: unavailability.id, title: "Away", start: "2027-03-15T09:00:00-04:00", end: "2027-03-15T11:00:00-04:00",
       allDay: false, className: "unavailability",
-      extendedProps: { name: "Ann", recordId: unavailability.id, series: nil, occurrenceStart: "2027-03-15T13:00:00Z" }
+      extendedProps: { name: "Ann", eventType: "unavailability", userId: unavailability.user_id, recordId: unavailability.id,
+                       isAdminCreated: false, series: nil, occurrenceStart: "2027-03-15T13:00:00Z" }
     }])
   end
 

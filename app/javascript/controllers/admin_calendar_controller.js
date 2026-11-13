@@ -367,17 +367,13 @@ export default class extends TypedController {
   }
 }
 
-// An unavailability row (an occurrence the server expanded) as the calendar
-// and the event dialog read it.
+// An unavailability row (an occurrence the server expanded) in its staff
+// member's colour. Only a stored one carries the type that opens the event
+// dialog; one from an external calendar is not editable here.
 function unavailabilityRow(member, row) {
   return {
     ...row,
     color: member.color,
-    extendedProps: {
-      ...row.extendedProps,
-      eventType: "unavailability",
-      userId: member.id,
-      isAdminCreated: row.title?.includes("(Admin)"),
-    },
+    extendedProps: { ...row.extendedProps, userId: member.id },
   };
 }

@@ -127,10 +127,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
 
   def own_unavailability_rows(window)
     window.records(StaffUnavailability.where(user_id: current_user.id)).flat_map do |unavailability|
-      unavailability.feed_rows(window, title: unavailability.title || "Unavailable", extendedProps: {
-                                 description: unavailability.description, eventType: "unavailability", userId: unavailability.user_id,
-                                 isAdminCreated: unavailability.title&.include?("(Admin)")
-                               })
+      unavailability.feed_rows(window, title: unavailability.title || "Unavailable", extendedProps: { description: unavailability.description })
     end
   end
 
