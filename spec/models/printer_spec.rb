@@ -68,6 +68,14 @@ RSpec.describe Printer, type: :model do
       it "works for a printer with no sessions" do
         expect { @pt_1_2.assign_to!(user) }.to change { @pt_1_2.printer_sessions.count }.from(0).to(1)
       end
+
+      # A session has no validations and its user row is never removed (deleting an
+      # account only hides it), so linking a user found a moment earlier always saves.
+      it "still links a user whose account was deleted after it was looked up" do
+        user.update_columns(deleted: true)
+        expect { @pt_1_2.assign_to!(user) }.to change(PrinterSession, :count).by(1)
+        expect(@pt_1_2.printer_sessions.last).to have_attributes(user_id: user.id, in_use: true)
+      end
     end
 
     describe "#release!" do
@@ -79,6 +87,12 @@ RSpec.describe Printer, type: :model do
 
       it "does nothing for a printer with no sessions" do
         expect { @pt_1_2.release! }.not_to change(PrinterSession, :count)
+      end
+
+      it "leaves an already released session released" do
+        session = create(:printer_session, printer_id: @pt_1_2.id, in_use: false)
+        expect { @pt_1_2.release! }.not_to change(PrinterSession, :count)
+        expect(session.reload.in_use).to be(false)
       end
     end
   end
