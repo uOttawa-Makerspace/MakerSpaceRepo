@@ -186,7 +186,6 @@ class Admin::UsersController < AdminAreaController
     respond_to do |format|
       format.html { redirect_back(fallback_location: root_path) }
       format.json { head :ok }
-      format.js { render layout: false }
       format.all { redirect_back(fallback_location: root_path) }
     end
   end

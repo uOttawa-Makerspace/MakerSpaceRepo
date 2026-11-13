@@ -526,6 +526,14 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(many.size).to eq(few.size)
     end
 
+    it "answers a script request like a form submit: the role changes and it redirects back" do
+      patch set_role_admin_users_path(format: :js), params: { role: "staff", user_ids: [target.id] },
+                                                    headers: { "HTTP_REFERER" => "http://www.example.com/admin/users/manage_roles" }, xhr: true
+
+      expect(response).to redirect_to("http://www.example.com/admin/users/manage_roles")
+      expect(target.reload.role).to eq("staff")
+    end
+
     it "json: head 200" do
       patch set_role_admin_users_path, params: { role: "volunteer", user_ids: [target.id] }, as: :json
       expect(response).to have_http_status(:ok)
