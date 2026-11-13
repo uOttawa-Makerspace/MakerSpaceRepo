@@ -412,7 +412,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
     let(:no_purchaser_message) { I18n.t("errors.shop.cc_money.not_purchaser") }
     let(:invalid_message) { "This link is not valid. Open the link from your email again, or contact uottawa.makerepo@gmail.com." }
 
-    describe "GET /cc_moneys" do
+    describe "GET /rewards" do
       it "is public: guests see the explainer and a sign-in prompt, with no balance card" do
         get cc_moneys_path
         expect(response).to have_http_status(:ok)
@@ -456,7 +456,29 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       end
     end
 
-    describe "GET /cc_moneys/link_cc_to_user" do
+    describe "the old /cc_moneys address" do
+      it "sends bookmarks of the page to /rewards for good" do
+        get "/cc_moneys"
+        expect(response).to have_http_status(:moved_permanently)
+        expect(response).to redirect_to("/rewards")
+        get "/rewards"
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "keeps the query string, so a claim link from an old mail still reaches its confirm page" do
+        get "/cc_moneys?from=shopify_invoice"
+        expect(response).to redirect_to("/rewards?from=shopify_invoice")
+        get "/cc_moneys/link_cc_to_user", params: { token: token }
+        expect(response).to redirect_to("/rewards/link_cc_to_user?token=#{CGI.escape(token)}")
+      end
+
+      it "names the new path in every route helper" do
+        expect([cc_moneys_path, link_cc_to_user_cc_moneys_path, redeem_cc_moneys_path])
+          .to eq(["/rewards", "/rewards/link_cc_to_user", "/rewards/redeem"])
+      end
+    end
+
+    describe "GET /rewards/link_cc_to_user" do
       it "redirects guests to login with the token preserved in back_to" do
         get link_cc_to_user_cc_moneys_path, params: { token: token }
         expect(response).to have_http_status(:found)
@@ -535,10 +557,10 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       end
     end
 
-    describe "POST /cc_moneys/redeem" do
+    describe "POST /rewards/redeem" do
       it "does not link on a plain GET (the mailed link only opens the confirm page)" do
         shop_log_in!(user)
-        get "/cc_moneys/redeem", params: { token: token }
+        get "/rewards/redeem", params: { token: token }
         expect(unlinked.reload.linked).to be(false)
         expect(user.cc_moneys.sum(:cc)).to eq(0)
       end

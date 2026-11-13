@@ -67,12 +67,22 @@ Rails.application.routes.draw do
     collection { get :populate_kit_users }
   end
 
-  resources :cc_moneys, only: [:index] do
+  resources :cc_moneys, path: "rewards", only: [:index] do
     collection do
       post :redeem
       get :link_cc_to_user
     end
   end
+
+  # The page used to live under /cc_moneys: bookmarks and the claim links in mails already sent
+  # keep working and land on the same page under /rewards, query string included.
+  get "/cc_moneys(/*rest)",
+      format: false,
+      to:
+        redirect { |params, request|
+          path = ["/rewards", params[:rest]].compact.join("/")
+          request.query_string.empty? ? path : "#{path}?#{request.query_string}"
+        }
 
   resources :carts, only: [:index]
   resources :order_items, only: %i[create update destroy] do

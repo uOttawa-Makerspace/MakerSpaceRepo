@@ -63,7 +63,7 @@ RSpec.describe "Admin CC money claim email", type: :request do
       mail = mails.last
       expect(mail.to).to eq([buyer])
       expect(mail.subject).to eq("Your CC Money order")
-      expect(mail.body.decoded).to include("/cc_moneys/link_cc_to_user?token=")
+      expect(mail.body.decoded).to include("/rewards/link_cc_to_user?token=")
       expect(CcMoney.for_claim_token(mailed_token(mail))).to eq(unlinked)
       expect(mail.body.decoded).to include("30 CCs")
       expect(flash[:notice]).to include(buyer)
