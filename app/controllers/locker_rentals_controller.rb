@@ -115,7 +115,7 @@ class LockerRentalsController < SessionsController
     if @locker_rental.save
       @locker_rental.notify_after_commit
       redirect_back fallback_location: :new_locker_rental,
-                    notice: ('Locker assigned' if @locker_rental.active?)
+                    notice: (t('lockers.flash.assigned') if @locker_rental.active?)
     else
       new_instance_attributes
       render :new, status: :unprocessable_content
@@ -184,7 +184,7 @@ class LockerRentalsController < SessionsController
           if warning
             flash[:alert] = warning
           else
-            flash[:notice] = 'Locker rental updated'
+            flash[:notice] = t('lockers.flash.rental_updated')
           end
           redirect_back fallback_location: :locker_rentals
         end
@@ -235,7 +235,7 @@ class LockerRentalsController < SessionsController
       # Committed; only now the Shopify call: last term's draft is settled so it cannot be paid a second time
       @locker_rental.sync_shopify_draft_order_after_commit
       redirect_to @locker_rental,
-                  notice: 'Locker renewal started. Please complete checkout to renew your locker.'
+                  notice: t('lockers.flash.renewal_started')
     else
       flash[:alert] = validation_message(@locker_rental, 'errors.lockers.renewal_failed')
       render :show, status: :unprocessable_content
@@ -306,11 +306,10 @@ class LockerRentalsController < SessionsController
 
   # The request types the form offers this user, as [label, value] pairs.
   def available_request_types
-    # FIXME localize this later
     {
-      staff: ('CEED staff member' if current_user.staff?),
-      student: ('GNG student' if current_user.student?),
-      general: 'General request'
+      staff: (t('lockers.request_type_labels.staff') if current_user.staff?),
+      student: (t('lockers.request_type_labels.student') if current_user.student?),
+      general: t('lockers.request_type_labels.general')
     }.compact.invert
   end
 

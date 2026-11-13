@@ -7,10 +7,14 @@ module LiteralTextScan
   ALLOWED_LITERALS = ["@uOCEED", "@uoceed", "CEED", "makerepo.com/new", "MakerRepo", "email@uottawa.ca"].freeze
 
   LITERAL_ARGUMENT = /
-    (?:link_to|button_to|button_tag|label_tag|submit_tag|provide|tag\.\w+|content_tag|
+    (?<helper>link_to|button_to|button_tag|label_tag|submit_tag|provide|tag\.\w+|content_tag|
        (?:placeholder|prompt|title|alt|value|label|aria-label|default):)
-    \s*\(?\s*(?::\w+,\s*)?(['"])((?:\\.|(?!\1)[^\\])*[A-Za-z]{2}(?:\\.|(?!\1)[^\\])*)\1
+    \s*\(?\s*(?::\w+,\s*)?(?<quote>['"])(?<text>(?:\\.|(?!\k<quote>)[^\\])*[A-Za-z]{2}(?:\\.|(?!\k<quote>)[^\\])*)\k<quote>
   /x
+
+  # Helpers whose quoted argument can be a form token instead of wording: the submitted value of a
+  # button (value: 'active') or the field a label is for (label_tag 'assign_indefinite').
+  FIELD_TOKEN_HELPERS = ["value:", "label_tag"].freeze
 
   # Markup with ERB output, comments, scripts, tags and entities removed leaves only visible text.
   # A path shown as written (such as /learning_area/s/) is the same in every language.
@@ -27,7 +31,13 @@ module LiteralTextScan
   end
 
   def self.literal_arguments(source)
-    source.scan(LITERAL_ARGUMENT).map(&:last).reject { |text| ALLOWED_LITERALS.include?(text) || not_wording?(text) }
+    source.scan(LITERAL_ARGUMENT).reject { |helper, _, text| field_token?(helper, text) }.map(&:last)
+          .reject { |text| ALLOWED_LITERALS.include?(text) || not_wording?(text) }
+  end
+
+  # A lowercase identifier such as "await_payment" handed to a helper that takes form tokens.
+  def self.field_token?(helper, text)
+    FIELD_TOKEN_HELPERS.include?(helper) && text.match?(/\A[a-z]+(?:_[a-z]+)*\z/)
   end
 
   # Links, fragments, markup with no text outside its tags, and a string that is one interpolation (optionally after an id prefix).

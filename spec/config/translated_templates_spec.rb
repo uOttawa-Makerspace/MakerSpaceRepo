@@ -55,6 +55,22 @@ RSpec.describe "Translated templates" do
     app/views/learning_area/_scorm.html.erb
     app/views/learning_area/_scorm_problem.html.erb
     app/views/learning_module_track/index.html.erb
+    app/views/lockers/index.html.erb
+    app/views/lockers/show.html.erb
+    app/views/lockers/_locker_bulk_edit_modal.html.erb
+    app/views/lockers/_lockers_inventory_table.html.erb
+    app/views/lockers/_locker_size_control.html.erb
+    app/views/lockers/_new_locker_modal.html.erb
+    app/views/locker_rentals/admin.html.erb
+    app/views/locker_rentals/assign_locker.html.erb
+    app/views/locker_rentals/_assign_locker_form.html.erb
+    app/views/locker_rentals/expired.html.erb
+    app/views/locker_rentals/index.html.erb
+    app/views/locker_rentals/new.html.erb
+    app/views/locker_rentals/show.html.erb
+    app/views/locker_rentals/_rental_data_table.html.erb
+    app/views/locker_rentals/_staff_actions.html.erb
+    app/views/users/tabs/_lockers.html.erb
   ].freeze
 
   TRANSLATED_TEMPLATES.each do |path|
