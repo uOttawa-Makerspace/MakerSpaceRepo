@@ -188,6 +188,16 @@ RSpec.describe "Learning area", type: :request do
       expect(response.body).not_to include("SOLDER-MARKER")
     end
 
+    it "shows a module's cover photo titled with that module" do
+      create(:learning_module, training: training, title: "Welding one", subskill: "welding").photos.attach(
+        Rack::Test::UploadedFile.new(Rails.root.join("spec/support/assets", "avatar.png"), "image/png")
+      )
+      sign_in_as(:regular)
+      get subskill_learning_area_index_path("welding")
+      expect(response).to have_http_status(:ok)
+      expect(Nokogiri::HTML(response.body).css("img[alt='Welding one']").size).to eq(1)
+    end
+
     it "renders an empty page for an unknown subskill" do
       sign_in_as(:regular)
       get subskill_learning_area_index_path("nothing")
