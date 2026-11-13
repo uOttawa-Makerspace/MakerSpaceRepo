@@ -52,7 +52,7 @@
         </td>
         <% if space.makerspace? %>
             <td class="printers-cell align-middle">
-                <% user.printer_sessions.where(in_use: true).find_each do |printer_session| %>
+                <% user.printer_sessions_in_use.each do |printer_session| %>
                     <p class="m-0"><%= printer_session.printer.name %></p>
                 <% end %>
             </td>

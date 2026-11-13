@@ -121,6 +121,13 @@ class User < ApplicationRecord
   has_many :project_proposals
   has_many :project_joins, dependent: :destroy
   has_many :printer_sessions, dependent: :destroy
+
+  # The printer sessions this user has in use, oldest first, with their printer loaded (the staff dashboard's
+  # Assigned Printers column).
+  def printer_sessions_in_use
+    printer_sessions.where(in_use: true).includes(printer: :printer_type).order(:id)
+  end
+
   has_many :volunteer_hours
   has_many :volunteer_tasks
   has_many :volunteer_task_joins

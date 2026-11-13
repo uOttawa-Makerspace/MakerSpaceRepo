@@ -20,8 +20,6 @@ class StaffDashboardController < StaffAreaController
       format.html do
         @signed_out_users = @space.recently_signed_out_users_with_history
         load_table_context
-        @printers_in_use =
-          PrinterSession.order(created_at: :desc).where(in_use: true)
         @table_column_count = 0
       end
       format.json do
@@ -67,8 +65,6 @@ class StaffDashboardController < StaffAreaController
     return head :not_modified if params[:token] == signed_in_users.map(&:id).join(",")
 
     load_table_context
-    @printers_in_use =
-      PrinterSession.order(created_at: :desc).where(in_use: true)
     @all_user_memberships = Membership.where(user_id: signed_in_users.map(&:id)).active.pluck(:user_id)
     @all_sign_out_memberships = Membership.where(user_id: @space.recently_signed_out_users.pluck(:id)).active.pluck(:user_id)
     render json: latest_sign_in_details(signed_in_users).merge(
