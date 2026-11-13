@@ -44,6 +44,11 @@ module LearningAreaHelper
     end
   end
 
+  # The shortcut route's path in front of the shortcut itself, shown before the form's shortcut field.
+  def learning_area_shortcut_prefix
+    shortcut_learning_area_path('shortcut').delete_suffix('shortcut')
+  end
+
   def levels_ordered(training)
     order = LearningModule.levels.keys
     training.learning_modules.pluck(:level).uniq.sort_by { |level| order.index(level) }

@@ -26,7 +26,7 @@
         <%= t('learning_area.form.shortcut_hint') %>
     </div>
     <div class="input-group mb-3">
-        <span class="input-group-text"><code>/learning_modules/s/</code></span>
+        <span class="input-group-text"><code><%= learning_area_shortcut_prefix %></code></span>
         <%= f.text_field :shortcut_name, class: 'form-control', pattern: '[a-zA-Z0-9_]*', title: t('learning_area.form.shortcut_hint') %>
     </div>
 

@@ -232,6 +232,13 @@ RSpec.describe "Learning area", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Soldering basics")
     end
+
+    it "shows the shortcut link prefix of the real shortcut route" do
+      get new_learning_area_path
+      prefix = Capybara.string(response.body).find(".input-group-text code").text
+      expect(prefix).to eq("/learning_area/s/")
+      expect(shortcut_learning_area_path("x")).to eq("#{prefix}x")
+    end
   end
 
   describe "POST /learning_area (create, admin)" do
