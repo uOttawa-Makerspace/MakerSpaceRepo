@@ -12,6 +12,7 @@
 - `/app/views`: contains directories of HTML files which act as the user interface
 
 - `/db`: contains the database schema and migration files
+
   - **Note**: `/db/schema.rb` should only be modified from migrations and should not be directly modified
 
 - `/config/routes.rb`: contains all the HTTP routes within our app
@@ -57,6 +58,7 @@
   - `Navbar --> Profile Dropdown --> Admin Area --> Staff Management Dropdown --> Shifts`
   - URL: `/admin/shifts/shifts`
 - Staff can view their shifts (but can't edit them) at:
+
   - `Navbar --> Profile Dropdown --> Staff Area --> Shifts`
   - URL: `/staff/shifts_schedule`
 
@@ -72,6 +74,7 @@
   - `Navbar --> Profile Dropdown --> Admin Area --> Staff Management Dropdown --> Unavailabilities`
   - URL: `/admin/shifts`
 - Staff can view and enter their unavailabilities at:
+
   - `Navbar --> Profile Dropdown --> Profile --> Staff Dropdown --> Staff Unavailabilities`
   - URL: `/staff_availabilities`
 

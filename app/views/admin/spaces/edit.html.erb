@@ -162,7 +162,7 @@
       <%= f.text_field :pi_mac_address, class: 'form-control', placeholder: 'MAC address', required: true %>
       <%= f.text_field :pi_location, class: 'form-control', placeholder: 'Location (optional)' %>
       <%= f.hidden_field :space_id, value: @space.id %>
-      <%= f.submit "Register reader for #{@space.name}", class: 'btn btn-primary' %>
+      <%= f.submit 'Register reader for ' + @space.name, class: 'btn btn-primary' %>
     <% end %>
   </div>
 

@@ -86,18 +86,13 @@ document.addEventListener("turbo:load", () => {
 const confirmMessage = (turboPrompts, sources) => {
   for (const el of sources) {
     if (!el) continue;
-    if (el.dataset.turboConfirm)
-      return turboPrompts ? null : el.dataset.turboConfirm;
+    if (el.dataset.turboConfirm) return turboPrompts ? null : el.dataset.turboConfirm;
     if (el.dataset.confirm) return el.dataset.confirm;
   }
   return null;
 };
 
-const confirmOrCancel = (
-  event,
-  el,
-  { turboPrompts = false, sources = [el] } = {},
-) => {
+const confirmOrCancel = (event, el, { turboPrompts = false, sources = [el] } = {}) => {
   const off = turboOffAtEvent(el);
   if (off) el.dataset.turbo = "false";
   const msg = confirmMessage(!off && turboPrompts, sources);
@@ -111,10 +106,7 @@ document.addEventListener(
   (event) => {
     const form = event.target;
     if (!(form instanceof HTMLFormElement)) return;
-    confirmOrCancel(event, form, {
-      turboPrompts: true,
-      sources: [event.submitter, form],
-    });
+    confirmOrCancel(event, form, { turboPrompts: true, sources: [event.submitter, form] });
   },
   true,
 );
@@ -126,9 +118,7 @@ document.addEventListener(
       event.target instanceof Element &&
       event.target.closest("a[data-turbo-confirm], a[data-confirm]");
     if (!link) return;
-    confirmOrCancel(event, link, {
-      turboPrompts: Boolean(link.dataset.turboMethod),
-    });
+    confirmOrCancel(event, link, { turboPrompts: Boolean(link.dataset.turboMethod) });
   },
   true,
 );
