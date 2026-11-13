@@ -83,6 +83,13 @@ RSpec.describe "Admin spaces", type: :request do
       expect(rows).to include(["Laser", "3", "4", ""], ["Mill", "0", "0", ""])
     end
 
+    it "gives the new calendar row a colour the colour input accepts" do
+      get edit_admin_space_path(space)
+
+      colour = Nokogiri::HTML(response.body).at_css("#new-link-input input[type=color]")["value"]
+      expect(colour).to match(/\A#\h{6}\z/)
+    end
+
     it "edit 404s for an unknown space" do
       get edit_admin_space_path(0)
       expect(response).to have_http_status(:not_found)

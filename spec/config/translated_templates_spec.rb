@@ -39,6 +39,7 @@ RSpec.describe "Translated templates" do
     app/views/admin/users/manage_roles.erb
     app/views/admin/users/_user_table.html.erb
     app/views/admin/spaces/index.html.erb
+    app/views/admin/spaces/edit.html.erb
     app/views/admin/trainings/index.html.erb
     app/views/admin/trainings/new.html.erb
     app/views/admin/trainings/edit.html.erb
