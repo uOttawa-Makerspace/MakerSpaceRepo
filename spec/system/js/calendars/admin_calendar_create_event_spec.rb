@@ -177,7 +177,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     find("#title", visible: :all).execute_script("this.value = 'Planning chat'")
     click_button "Save Draft"
 
-    expect(page).to have_text("Event created successfully.")
+    expect_flash("Event created successfully.")
     event = Event.find_by!(title: "Planning chat")
     expect(event.event_type).to eq("meeting")
     expect(event.draft).to be(true)
@@ -196,7 +196,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     select "Other", from: "event_type_select"
     click_button "Save Draft"
 
-    expect(page).to have_text("Event created successfully.")
+    expect_flash("Event created successfully.")
     expect(Event.where(event_type: "other").pluck(:title)).to eq(["Other"])
   end
 
@@ -209,7 +209,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     find("#title", visible: :all).execute_script("this.value = 'Soldering for Wanda Worker, Ada Admin'")
     click_button "Save Draft"
 
-    expect(page).to have_text("Event created successfully.")
+    expect_flash("Event created successfully.")
     expect(Event.where(event_type: "other").pluck(:title)).to eq(["Other"])
   end
 
@@ -222,7 +222,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     find("#title", visible: :all).execute_script("this.value = 'Soldering for Wanda'")
     click_button "Save Draft"
 
-    expect(page).to have_text("Event created successfully.")
+    expect_flash("Event created successfully.")
     expect(Event.where(event_type: "other").pluck(:title)).to eq(["Soldering for Wanda"])
   end
 
@@ -266,7 +266,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     select "Other", from: "event_type_select"
     click_button "Save Draft"
 
-    expect(page).to have_text("Event created successfully.")
+    expect_flash("Event created successfully.")
     event = Event.find_by!(event_type: "other")
     expect(event.start_time).to eq(toronto_utc("2027-03-17T00:00"))
     expect(event.end_time).to eq(toronto_utc("2027-03-18T00:00"))
@@ -329,7 +329,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     check "day_FR"
     click_button "Save Draft"
 
-    expect(page).to have_text("Event created successfully.")
+    expect_flash("Event created successfully.")
     event = Event.find_by!(event_type: "shift")
     expect(event.recurrence_rule).to start_with("DTSTART;TZID=America/Toronto:20270317T100000\nRRULE:FREQ=WEEKLY")
     expect(event.recurrence_rule).to match(/BYDAY=(WE,FR|FR,WE)/)
@@ -346,7 +346,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     find("#recurrence_until").set(Date.new(2027, 3, 25))
     click_button "Save Draft"
 
-    expect(page).to have_text("Event created successfully.")
+    expect_flash("Event created successfully.")
     rule = Event.find_by!(event_type: "other").recurrence_rule
     expect(rule).to include("FREQ=DAILY")
     until_time = Time.strptime(rule[/UNTIL=(\d{8}T\d{6}Z)/, 1], "%Y%m%dT%H%M%SZ").utc
@@ -364,7 +364,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
       find("#recurrence_until").set(Date.new(2027, 3, 25))
       click_button "Save Draft"
 
-      expect(page).to have_text("Event created successfully.")
+      expect_flash("Event created successfully.")
       event = Event.find_by!(event_type: "other")
       expect(event.start_time).to eq(Time.zone.local(2027, 3, 17, 10))
       expect(event.end_time).to eq(Time.zone.local(2027, 3, 17, 11))
@@ -381,7 +381,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     select "Meeting", from: "event_type_select"
     click_button "Save Draft"
 
-    expect(page).to have_text("Event created successfully.")
+    expect_flash("Event created successfully.")
     expect(page).to have_css(".fc-timegrid-event", text: "✎ Meeting", visible: :all)
   end
 
