@@ -57,4 +57,15 @@ RSpec.describe "Profile page tab labels", type: :request do
     expect(response).to have_http_status(:ok)
     expect(dangling_labels).to be_empty
   end
+
+  it "keeps the profile tab list out of another tab list" do
+    admin = create(:user, :admin)
+    log_in_via_form!(admin)
+
+    get user_path(admin.username)
+
+    doc = Nokogiri::HTML(response.body)
+    expect(doc.css("#myTab [role=tablist]").size).to eq(1)
+    expect(doc.css("[role=tablist] [role=tablist]")).to be_empty
+  end
 end

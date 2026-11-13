@@ -2,7 +2,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title">Bulk edit lockers</h4>
+                <h4 class="modal-title"><%= t('lockers.bulk_edit.title') %></h4>
                 <button type="button" data-bs-dismiss="modal" class="btn-close" aria-label="<%= t('common.close') %>"></button>
             </div>
 
@@ -13,23 +13,23 @@
                         </ul>
                     </div>
 
-                    <%= f.label :locker_size_id, 'Change locker size', class: 'form-label' %>
+                    <%= f.label :locker_size_id, t('lockers.change_locker_size'), class: 'form-label' %>
                     <%# Added nil-safety to prevent crashes if API data is missing %>
                     <%= f.select :locker_size_id, @locker_sizes.map { |size|
                         [ size.size, size.id, { 'data-data' => @locker_product_info&.dig(:variants, size.shopify_gid)&.to_json || '{}' } ]},
-                     {include_blank: 'Select variant...'}, {class: 'form-select locker-variant-select', aria: { label: t('common.names.locker_size') }} %>
+                     {include_blank: t('lockers.select_variant')}, {class: 'form-select locker-variant-select', aria: { label: t('common.names.locker_size') }} %>
                     
                     <div class="d-flex justify-content-between mt-4">
                         <%# Delete button sends 'bulk_delete' param to controller %>
-                        <%= f.submit 'Delete Selected', class: 'btn btn-danger', name: 'bulk_delete', **confirmation_options(t('confirmations.lockers.delete_selected')) %>
-                        <%= f.submit 'Update Lockers', class: 'btn btn-success' %>
+                        <%= f.submit t('lockers.bulk_edit.delete_selected'), class: 'btn btn-danger', name: 'bulk_delete', **confirmation_options(t('confirmations.lockers.delete_selected')) %>
+                        <%= f.submit t('lockers.bulk_edit.update'), class: 'btn btn-success' %>
                     </div>
                 <% end %>
             </div>
 
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    Close
+                    <%= t('common.close') %>
                 </button>
             </div>
         </div>

@@ -133,6 +133,36 @@ RSpec.describe "Learning area", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
+    ["/learning_area/s/%20", "/learning_area/s/---"].each do |path|
+      it "answers 404 for #{path}, a shortcut that is blank once normalised, even with modules that have none" do
+        create(:learning_module, title: "No shortcut", shortcut_name: nil)
+        sign_in_as(:regular)
+        get path
+        expect(response).to have_http_status(:not_found)
+        expect(response.body).not_to include("No shortcut")
+      end
+    end
+
+    it "answers 404 for a shortcut that is blank once normalised while a module is stored with an empty shortcut" do
+      older = create(:learning_module, title: "Empty shortcut")
+      LearningModule.where(id: older.id).update_all("shortcut_name = ''") # as stored before blanks became nil
+      expect(LearningModule.connection.select_value("SELECT shortcut_name FROM learning_modules WHERE id = #{older.id}")).to eq('')
+      sign_in_as(:regular)
+      ["/learning_area/s/---", "/learning_area/s/%20"].each do |path|
+        get path
+        expect(response).to have_http_status(:not_found)
+        expect(response.body).not_to include("Empty shortcut")
+      end
+    end
+
+    it "still resolves a real shortcut when modules without one exist" do
+      create(:learning_module, title: "No shortcut", shortcut_name: nil)
+      sign_in_as(:regular)
+      get "/learning_area/s/#{learning_module.shortcut_name.upcase}"
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Soldering basics")
+    end
+
     it "renders a module that has no training, without a training name" do
       orphan = create(:learning_module, training: nil, title: "Orphan")
       sign_in_as(:regular)
@@ -232,6 +262,23 @@ RSpec.describe "Learning area", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Soldering basics")
     end
+
+    it "shows the shortcut link prefix of the real shortcut route" do
+      get new_learning_area_path
+      prefix = Capybara.string(response.body).find(".input-group-text code").text
+      expect(prefix).to eq("/learning_area/s/")
+      expect(shortcut_learning_area_path("x")).to eq("#{prefix}x")
+    end
+
+    it "keeps the level when the edit form is submitted unchanged" do
+      learning_module.update!(level: "advanced")
+      get edit_learning_area_path(learning_module)
+      select = Capybara.string(response.body).find("select[name='learning_module[level]']")
+      # A browser submits the selected option, or the first one when none is selected.
+      submitted = (select.first("option[selected]", minimum: 0) || select.first("option")).value
+      patch learning_area_path(learning_module), params: { learning_module: { level: submitted } }
+      expect(learning_module.reload.level).to eq("advanced")
+    end
   end
 
   describe "POST /learning_area (create, admin)" do
@@ -278,6 +325,13 @@ RSpec.describe "Learning area", type: :request do
       other = create(:training)
       expect { post learning_area_index_path, params: valid_params(title: "Soldering basics", training_id: other.id) }
         .to change(LearningModule, :count).by(1)
+    end
+
+    it "creates a second module without a shortcut" do
+      post learning_area_index_path, params: valid_params(title: "First blank", shortcut_name: "")
+      expect { post learning_area_index_path, params: valid_params(title: "Second blank", shortcut_name: "") }
+        .to change(LearningModule, :count).by(1)
+      expect(LearningModule.where(title: ["First blank", "Second blank"]).pluck(:shortcut_name)).to eq([nil, nil])
     end
 
     it "rejects a duplicate shortcut_name (case-insensitive)" do

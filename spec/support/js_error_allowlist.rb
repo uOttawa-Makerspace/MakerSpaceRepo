@@ -20,12 +20,13 @@ module JsErrorCheck
     # rental is logged by Chrome as a SEVERE resource error.
     { id: "js-error-03", path: %r{/locker_rentals(\z|\s)}, message: /locker_rentals - Failed to load resource: the server responded with a status of 500/ },
     # Pages load third-party scripts (Cloudflare Turnstile, UserWay widget)
-    # after the page has loaded, and ignore a failed load. The system browser
-    # resolves no external host (see --host-resolver-rules in system.rb), and
-    # Chrome still logs each blocked fetch as a resource error whatever the page
-    # does with it. Extend the host list only with the same kind of resource.
-    { id: "js-error-04", path: %r{\Ahttps://(challenges\.cloudflare\.com|cdn\.userway\.org|www\.youtube\.com)/}, message: /Failed to load resource: net::ERR_NAME_NOT_RESOLVED/ },
-    # Found by the browser crawl (spec/system/page_crawl_spec.rb).
+    # after the page has loaded, and ignore a failed load; repository and
+    # proposal pages embed YouTube videos and their thumbnails. The system
+    # browser resolves no external host (see --host-resolver-rules in
+    # system.rb), and Chrome still logs each blocked fetch as a resource error
+    # whatever the page does with it. Extend the host list only with the same
+    # kind of resource.
+    { id: "js-error-04", path: %r{\Ahttps://(challenges\.cloudflare\.com|cdn\.userway\.org|(www|img)\.youtube\.com)/}, message: /Failed to load resource: net::ERR_NAME_NOT_RESOLVED/ },
     # the home/changelog hours widget calls /open_hours, which
     # fetches external ICS feeds (unreachable in tests: 500).
     { id: "js-error-07", path: %r{/open_hours}, message: %r{/open_hours(\?\S*)? - Failed to load resource: .* 500} },

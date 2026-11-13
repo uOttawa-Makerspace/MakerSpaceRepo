@@ -1,13 +1,13 @@
-<%= provide(:title, 'Learning Area') %>
+<%= provide(:title, t('learning_area.title')) %>
 <div class="mb-3">
-    <h1 class="display-2">Learning Modules</h1>
-    <p class="lead">Track your progress across all training areas</p>
+    <h1 class="display-2"><%= t('learning_area.index.heading') %></h1>
+    <p class="lead"><%= t('learning_area.index.lead') %></p>
 </div>
 <div class="row">
     <%# List of skills at the left %>
     <div class="col-lg-2">
         <% if current_user.admin? %>
-            <%= link_to 'New learning module', new_learning_area_path, class: 'btn btn-success d-block mb-3' %>
+            <%= link_to t('learning_area.index.new_module'), new_learning_area_path, class: 'btn btn-success d-block mb-3' %>
         <% end %>
         <div class="list-group mb-5">
             <% @learning_modules.each do |training, learning_modules| %>
@@ -16,7 +16,7 @@
                     <%= group_name %>
                     <% if training %>
                         <br />
-                        <b><%= training.learning_modules_completed(current_user).count %> of <%= learning_modules.size %> completed</b>
+                        <b><%= t('learning_area.index.completed_count', done: training.learning_modules_completed(current_user).count, total: learning_modules.size) %></b>
                     <% end %>
                 <% end %>
             <% end %>
@@ -33,7 +33,7 @@
                 <div class="d-flex flex-wrap align-items-center justify-content-between border-bottom pb-2 mb-4">
                     <div>
                         <h2 class="fs-4 d-inline"><%= group_name %></h2>
-                        <%= link_to 'Top', '#', class: 'small' %>
+                        <%= link_to t('learning_area.index.top'), '#', class: 'small' %>
                     </div>
                     <div class="d-flex align-items-center gap-3">
                         <% (training ? levels_ordered(training) : []).each do |level| %>
@@ -42,7 +42,7 @@
                                 <%= training.learning_modules_completed(current_user, level).count %>
                                 /
                                 <%= modules_for_level.size %>
-                                <%= level %>
+                                <%= t("learning_area.levels.#{level}").downcase %>
                             </span>
                         <% end %>
                         <%= training_status(training.id, current_user.id) if training %>
@@ -52,7 +52,7 @@
                 <%# Subskills are shown separately %>
                 <div class="mb-4">
                     <div>
-                        <h2 class="fs-6">Subskills</h2>
+                        <h2 class="fs-6"><%= t('learning_area.index.subskills') %></h2>
                     </div>
                     <div class="row row-cols-md-2 row-cols-lg-4 g-1">
                         <% learning_modules.map(&:subskill).uniq.compact.each do |subskill| %>
@@ -77,13 +77,10 @@
                     <div class="mb-4">
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <div>
-                                <h2 class="d-inline fs-6 <%= return_text_color(level) %>"><%= level.humanize %></h2>
+                                <h2 class="d-inline fs-6 <%= return_text_color(level) %>"><%= t("learning_area.levels.#{level}") %></h2>
                                 <% if training %>
                                     <span class="text-muted">
-                                        <%= training.learning_modules_completed(current_user, level).count %>
-                                        of
-                                        <%= modules_by_level.size %>
-                                        completed
+                                        <%= t('learning_area.index.completed_count', done: training.learning_modules_completed(current_user, level).count, total: modules_by_level.size) %>
                                     </span>
                                 <% end %>
                             </div>
@@ -92,7 +89,7 @@
                                     <input class="form-check-input" type="checkbox" role="switch" id="toggle-<%= group_slug %>-<%= level %>"
                                            data-order="<%= group_slug %>-<%= level.parameterize %>">
                                     <label class="form-check-label small text-muted" for="toggle-<%= group_slug %>-<%= level %>">
-                                        <i class="fa fa-sort me-1"></i>Re-order
+                                        <i class="fa fa-sort me-1"></i><%= t('learning_area.index.reorder') %>
                                     </label>
                                 </div>
                             <% end %>

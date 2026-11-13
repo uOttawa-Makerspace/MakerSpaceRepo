@@ -101,6 +101,7 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       fill_datetime("end_time_field", "2027-03-17T12:00")
       click_button "Save"
 
+      expect_flash("Unavailability created.")
       expect_saved_in_place
       expect(page).to have_css(".fc-timegrid-event", text: "Unavailable", visible: :all)
       saved = StaffUnavailability.find_by!(user: staff)
@@ -278,7 +279,9 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       fill_datetime("end_time_field", "2027-03-18T17:00")
       click_button "Update"
 
-      eventually { lecture.reload.title == "Lab" }
+      expect_flash("Unavailability updated successfully.")
+      expect_saved_in_place
+      expect(page).to have_css(".fc-timegrid-event", text: "Lab", visible: :all)
       lecture.reload
       expect(lecture.title).to eq("Lab")
       expect(lecture.start_time).to eq(toronto_utc("2027-03-18T16:00"))
@@ -290,6 +293,7 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       click_button "Delete"
       click_button "This event"
 
+      expect_flash("Unavailability deleted.")
       expect_saved_in_place
       expect(page).to have_no_css(".fc-timegrid-event", text: "Lecture", visible: :all)
       expect(StaffUnavailability.exists?(lecture.id)).to be(false)

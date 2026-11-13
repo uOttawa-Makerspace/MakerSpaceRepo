@@ -61,6 +61,21 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "shows stored photos and image files on the edit form with an empty alt, beside their file names" do
+      create(:photo, repository: repo)
+      RepoFile.create!(repository: repo, file: Rack::Test::UploadedFile.new(
+        Rails.root.join("spec/support/assets/avatar.png"), "image/png"
+      ))
+      content_login!(owner)
+      get edit_repository_path(repo.user_username, repo.slug)
+      page = Nokogiri::HTML(response.body)
+      file_previews = page.css("[data-file-upload-file-preview] .file-upload-item-preview img")
+      photo_previews = page.css(".file-upload-item-preview img") - file_previews
+      expect([file_previews.size, photo_previews.size]).to eq([1, repo.photos.count])
+      expect((file_previews.to_a + photo_previews.to_a).map { |img| img["alt"] }).to all(eq(""))
+      expect(page.css(".file-upload-item-preview span[title]").map(&:text)).to all(be_present)
+    end
+
     it "writes the repo into the recently_viewed cookie" do
       get repo_path
       cookie = JSON.parse(CGI.unescape(response.cookies["recently_viewed"]))

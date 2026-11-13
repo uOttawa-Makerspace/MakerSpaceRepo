@@ -39,6 +39,7 @@ fr:
         expires_at: Expiration
       learning_module:
         title: Titre
+        shortcut_name: Lien abrégé
       proficient_project:
         title: Titre
       repository:

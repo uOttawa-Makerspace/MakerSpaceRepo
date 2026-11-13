@@ -12,11 +12,11 @@
         <ol class="breadcrumb mb-0 small">
           <li class="breadcrumb-item">
             <%= link_to volunteer_tasks_path, class: "text-decoration-none text-body-secondary" do %>
-              <i class="fa-solid fa-hand-holding-heart me-1"></i>Volunteer Tasks
+              <i class="fa-solid fa-hand-holding-heart me-1"></i><%= t('volunteer_area.shared.volunteer_tasks') %>
             <% end %>
           </li>
           <li class="breadcrumb-item active text-primary fw-medium" aria-current="page">
-            <%= truncate(@volunteer_task.title.presence || "Task ##{@volunteer_task.id}", length: 30) %>
+            <%= truncate(@volunteer_task.title.presence || t('volunteer_area.shared.task_number', id: @volunteer_task.id), length: 30) %>
           </li>
         </ol>
       </nav>
@@ -27,7 +27,7 @@
       <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
         <!-- Category Badge -->
         <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle text-uppercase small">
-          <%= @volunteer_task.category.to_s.capitalize %>
+          <%= task_category_name(@volunteer_task.category, @volunteer_task.category.to_s.capitalize) %>
         </span>
 
         <!-- Space Badge -->
@@ -39,7 +39,7 @@
         <% else %>
           <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle d-inline-flex align-items-center gap-1 py-1 px-2 small">
             <i class="fa-solid fa-industry"></i>
-            <span><%= @volunteer_task.space&.name&.capitalize || "General" %></span>
+            <span><%= @volunteer_task.space&.name&.capitalize || t('volunteer_area.shared.general') %></span>
           </span>
         <% end %>
 
@@ -47,17 +47,17 @@
         <% if @volunteer_task.status == 'completed' %>
           <span class="badge bg-secondary-subtle text-body-secondary border border-secondary-subtle px-2 py-1 small d-inline-flex align-items-center gap-1">
             <i class="fa-solid fa-circle-check text-secondary"></i>
-            <span>Completed</span>
+            <span><%= t('volunteer_area.shared.completed') %></span>
           </span>
         <% elsif volunteer_joins.exists? %>
           <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 small d-inline-flex align-items-center gap-1">
             <i class="fa-solid fa-hourglass-half text-warning"></i>
-            <span>In Progress (<%= volunteer_joins.count %> Assigned)</span>
+            <span><%= t('volunteer_area.tasks.show.in_progress_assigned', count: volunteer_joins.count) %></span>
           </span>
         <% else %>
           <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small d-inline-flex align-items-center gap-1">
             <i class="fa-solid fa-lock-open text-success"></i>
-            <span>Available for Assignment</span>
+            <span><%= t('volunteer_area.tasks.show.available_for_assignment') %></span>
           </span>
         <% end %>
       </div>
@@ -67,13 +67,13 @@
     <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
       <%= link_to volunteer_tasks_path, class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center" do %>
         <i class="fa-solid fa-arrow-left"></i>
-        <span>Back to Tasks</span>
+        <span><%= t('volunteer_area.shared.back_to_tasks') %></span>
       <% end %>
 
       <% if current_user.staff? %>
         <%= link_to edit_volunteer_task_path(@volunteer_task), class: "btn btn-primary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center shadow-sm" do %>
           <i class="fa-solid fa-pen-to-square"></i>
-          <span>Edit / Assign</span>
+          <span><%= t('volunteer_area.shared.edit_assign') %></span>
         <% end %>
       <% end %>
     </div>
@@ -87,8 +87,8 @@
           <i class="fa-solid fa-user-check"></i>
         </div>
         <div>
-          <h5 class="fw-bold mb-1">You are assigned to this volunteer task!</h5>
-          <p class="small mb-0 opacity-75">Work on the instructions below and submit your task for staff review when complete.</p>
+          <h5 class="fw-bold mb-1"><%= t('volunteer_area.tasks.show.assigned_title') %></h5>
+          <p class="small mb-0 opacity-75"><%= t('volunteer_area.tasks.show.assigned_body') %></p>
         </div>
       </div>
       <div>
@@ -97,12 +97,12 @@
                       class: "btn btn-success fw-semibold d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm text-white w-100 w-md-auto justify-content-center",
                       **confirmation_options(t('confirmations.volunteer_tasks.submit_for_approval')) do %>
             <i class="fa-solid fa-paper-plane"></i>
-            <span>Submit Task as Complete</span>
+            <span><%= t('volunteer_area.tasks.show.submit_complete') %></span>
           <% end %>
         <% else %>
           <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-semibold d-inline-flex align-items-center gap-2 fs-6">
             <i class="fa-solid fa-clock-rotate-left"></i>
-            <span>Completion Under Review</span>
+            <span><%= t('volunteer_area.tasks.show.completion_under_review') %></span>
           </span>
         <% end %>
       </div>
@@ -113,8 +113,8 @@
         <i class="fa-solid fa-flag-checkered"></i>
       </div>
       <div>
-        <h6 class="fw-bold text-body-emphasis mb-0">Task Completed</h6>
-        <p class="small mb-0 text-body-secondary">This volunteer task has been completed and verified by the staff team.</p>
+        <h6 class="fw-bold text-body-emphasis mb-0"><%= t('volunteer_area.tasks.show.completed_title') %></h6>
+        <p class="small mb-0 text-body-secondary"><%= t('volunteer_area.tasks.show.completed_body') %></p>
       </div>
     </div>
   <% else %>
@@ -124,8 +124,8 @@
           <i class="fa-solid fa-circle-info"></i>
         </div>
         <div>
-          <h6 class="fw-bold mb-1">Admin-Assigned Task</h6>
-          <p class="small mb-0 opacity-75">Space managers assign volunteers based on prerequisites, certifications, and availability. Contact the responsible staff lead if you would like to work on this task.</p>
+          <h6 class="fw-bold mb-1"><%= t('volunteer_area.tasks.show.admin_assigned_title') %></h6>
+          <p class="small mb-0 opacity-75"><%= t('volunteer_area.tasks.show.admin_assigned_body') %></p>
         </div>
       </div>
     <% end %>
@@ -136,29 +136,29 @@
     <div class="card-header bg-body-tertiary border-bottom py-3 px-3 px-md-4 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
       <h5 class="card-title fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
         <i class="fa-solid fa-circle-info text-primary"></i>
-        <span>Task Overview</span>
+        <span><%= t('volunteer_area.shared.task_overview') %></span>
       </h5>
       
       <!-- Metrics Badges -->
       <div class="d-flex flex-wrap align-items-center gap-2">
         <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-2 small d-inline-flex align-items-center gap-1">
           <i class="fa-solid fa-coins text-warning"></i>
-          <span class="fw-bold"><%= @volunteer_task.cc %> CC</span>
+          <span class="fw-bold"><%= t('volunteer_area.shared.cc_amount', cc: @volunteer_task.cc) %></span>
         </span>
         <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2 small d-inline-flex align-items-center gap-1">
           <i class="fa-regular fa-clock text-primary"></i>
-          <span class="fw-bold"><%= @volunteer_task.hours %> hours</span>
+          <span class="fw-bold"><%= t('volunteer_area.shared.hours_long', hours: @volunteer_task.hours) %></span>
         </span>
         <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle rounded-pill px-3 py-2 small d-inline-flex align-items-center gap-1">
           <i class="fa-solid fa-users text-secondary"></i>
-          <span><%= @volunteer_task.joins %> capacity</span>
+          <span><%= t('volunteer_area.tasks.show.capacity', count: @volunteer_task.joins) %></span>
         </span>
       </div>
     </div>
 
     <div class="card-body p-3 p-md-4">
       <!-- Task Description -->
-      <h6 class="text-body-secondary text-uppercase fw-semibold small mb-2">Description & Instructions</h6>
+      <h6 class="text-body-secondary text-uppercase fw-semibold small mb-2"><%= t('volunteer_area.tasks.show.description') %></h6>
       <div class="text-body lh-base mb-4" style="white-space: pre-line;">
         <%= @volunteer_task.description %>
       </div>
@@ -168,14 +168,14 @@
         <hr class="my-4 border-secondary-subtle">
         <h6 class="fw-bold text-body-secondary text-uppercase small mb-3 d-flex align-items-center gap-2">
           <i class="fa-solid fa-images text-info"></i>
-          <span>Reference Photos (<%= @photos.size %>)</span>
+          <span><%= t('volunteer_area.tasks.show.reference_photos', count: @photos.size) %></span>
         </h6>
         
         <!-- Main Featured Photo -->
         <div id="show-photo" class="mb-3">
           <div class="card border border-secondary-subtle overflow-hidden rounded-3 shadow-sm bg-body-secondary">
             <%= image_tag @photos.first.image,
-                          alt: @volunteer_task.title.presence || 'Volunteer Task Main image',
+                          alt: @volunteer_task.title.presence || t('volunteer_area.tasks.show.main_image'),
                           class: 'img-fluid w-100 object-fit-contain',
                           style: 'max-height: 480px;',
                           data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
@@ -206,13 +206,13 @@
         <div class="card-header bg-body-tertiary border-bottom py-3 px-3 px-md-4">
           <h5 class="card-title fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
             <i class="fa-solid fa-users-gear text-primary"></i>
-            <span>Team Assignment</span>
+            <span><%= t('volunteer_area.tasks.show.team_assignment') %></span>
           </h5>
         </div>
         <div class="card-body p-3 p-md-4 d-flex flex-column gap-3">
           <!-- Responsible Staff -->
           <div>
-            <span class="small text-body-secondary fw-semibold text-uppercase d-block mb-2">Responsible Staff Lead:</span>
+            <span class="small text-body-secondary fw-semibold text-uppercase d-block mb-2"><%= t('volunteer_area.tasks.show.responsible_staff') %></span>
             <div class="d-flex flex-wrap gap-2">
               <% if staff_joins.present? %>
                 <% staff_joins.each do |staff_join| %>
@@ -221,11 +221,11 @@
                       <%= staff_join.user.name.first&.upcase || "S" %>
                     </div>
                     <%= link_to staff_join.user.name.titleize, user_path(staff_join.user.username), class: "fw-semibold text-body-emphasis text-decoration-none small" %>
-                    <span class="badge bg-primary text-white rounded-pill small" style="font-size: 0.65rem;">Staff</span>
+                    <span class="badge bg-primary text-white rounded-pill small" style="font-size: 0.65rem;"><%= t('volunteer_area.shared.staff') %></span>
                   </div>
                 <% end %>
               <% else %>
-                <span class="text-body-secondary small fst-italic">No staff members assigned yet</span>
+                <span class="text-body-secondary small fst-italic"><%= t('volunteer_area.tasks.show.no_staff') %></span>
               <% end %>
             </div>
           </div>
@@ -234,7 +234,7 @@
 
           <!-- Assigned Volunteers -->
           <div>
-            <span class="small text-body-secondary fw-semibold text-uppercase d-block mb-2">Assigned Volunteers:</span>
+            <span class="small text-body-secondary fw-semibold text-uppercase d-block mb-2"><%= t('volunteer_area.tasks.show.assigned_volunteers') %></span>
             <div class="d-flex flex-wrap gap-2">
               <% if volunteer_joins.present? %>
                 <% volunteer_joins.each do |volunteer_join| %>
@@ -243,11 +243,11 @@
                       <%= volunteer_join.user.name.first&.upcase || "V" %>
                     </div>
                     <%= link_to volunteer_join.user.name.titleize, user_path(volunteer_join.user.username), class: "fw-semibold text-body-emphasis text-decoration-none small" %>
-                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small" style="font-size: 0.65rem;">Volunteer</span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small" style="font-size: 0.65rem;"><%= t('volunteer_area.shared.volunteer') %></span>
                   </div>
                 <% end %>
               <% else %>
-                <span class="text-body-secondary small fst-italic">No volunteers assigned yet (Open for admin assignment)</span>
+                <span class="text-body-secondary small fst-italic"><%= t('volunteer_area.tasks.show.no_volunteers') %></span>
               <% end %>
             </div>
           </div>
@@ -261,19 +261,19 @@
         <div class="card-header bg-body-tertiary border-bottom py-3 px-3 px-md-4">
           <h5 class="card-title fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
             <i class="fa-solid fa-award text-primary"></i>
-            <span>Prerequisites & Certifications</span>
+            <span><%= t('volunteer_area.tasks.show.prerequisites_title') %></span>
           </h5>
         </div>
         <div class="card-body p-3 p-md-4">
           <% if @required_trainings.present? %>
-            <p class="text-body-secondary small mb-3">The following qualifications or workshop certifications are required to perform this task:</p>
+            <p class="text-body-secondary small mb-3"><%= t('volunteer_area.tasks.show.prerequisites_intro') %></p>
             <div class="d-flex flex-wrap gap-2">
               <% @required_trainings.each do |rt| %>
                 <div class="d-inline-flex align-items-center gap-2 p-2 px-3 border rounded-3 bg-warning-subtle text-warning-emphasis border-warning-subtle">
                   <i class="fa-solid fa-certificate text-warning fs-5"></i>
                   <div>
                     <strong class="d-block lh-sm small"><%= rt.training.localized_name.capitalize %></strong>
-                    <span class="text-body-secondary" style="font-size: 0.72rem;">Prerequisite Certification</span>
+                    <span class="text-body-secondary" style="font-size: 0.72rem;"><%= t('volunteer_area.tasks.show.prerequisite_certification') %></span>
                   </div>
                 </div>
               <% end %>
@@ -282,8 +282,8 @@
             <div class="d-flex align-items-center gap-3 p-3 bg-success-subtle text-success-emphasis border border-success-subtle rounded-3">
               <i class="fa-solid fa-circle-check fs-3 text-success"></i>
               <div>
-                <strong class="d-block">No Prerequisites Required</strong>
-                <span class="small opacity-75">All enrolled volunteers in good standing are eligible for this task.</span>
+                <strong class="d-block"><%= t('volunteer_area.tasks.show.no_prerequisites') %></strong>
+                <span class="small opacity-75"><%= t('volunteer_area.tasks.show.no_prerequisites_body') %></span>
               </div>
             </div>
           <% end %>

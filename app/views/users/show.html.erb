@@ -140,9 +140,9 @@
                 </div>
             </div>
         </div>
-        <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <div class="nav nav-tabs" id="myTab">
             <%= render partial: 'users/tablist', locals: { user: @user, repo_user: @repo_user } %>
-        </ul>
+        </div>
         <!--      PROFILE CONTENT Section-->
         <div class="tab-content profile-tab p-3" id="myTabContent">
             <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">

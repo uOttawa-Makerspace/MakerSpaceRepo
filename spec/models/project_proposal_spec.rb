@@ -99,9 +99,17 @@ RSpec.describe ProjectProposal, type: :model do
       expect(proposal.active_semester_label).to be_nil
     end
 
-    it "sorts proposals without a semester last" do
-      none = create(:project_proposal)
-      expect(ProjectProposal.by_semester.to_a.last).to eq(none)
+    it "sorts proposals without a semester last, and proposals in the same semester by title then id" do
+      undated_b = create(:project_proposal, title: "Beta")
+      undated_a = create(:project_proposal, title: "Alpha")
+      same_title_first = create(:project_proposal, title: "Gamma", season: :fall, year: 2024)
+      same_title_second = create(:project_proposal, title: "Gamma", season: :fall, year: 2024)
+      dated_b = create(:project_proposal, title: "Beta", season: :fall, year: 2024)
+      ids = [undated_b, undated_a, same_title_first, same_title_second, dated_b].map(&:id)
+
+      expect(ProjectProposal.by_semester.where(id: ids).to_a).to eq(
+        [dated_b, same_title_first, same_title_second, undated_a, undated_b]
+      )
     end
   end
 

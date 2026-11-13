@@ -1,0 +1,10 @@
+# Known axe violations of the browser page crawl (spec/support/page_crawl_browser.rb):
+# view (or route, for a page no view renders) => axe rule => number of
+# violating nodes. This list may only shrink. A violation that is not listed
+# fails the crawl, and so does a listed one that no longer occurs: after a fix,
+# lower or remove its entry.
+"/learning_area/:id/scorm_assets/*path":
+  document-title: 1
+  html-has-lang: 1
+users/show.html.erb:
+  aria-required-children: 1

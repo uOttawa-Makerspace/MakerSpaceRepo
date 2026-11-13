@@ -40,7 +40,7 @@
                 <% if p.object.file.attached? && p.object.file.persisted? %>
                     <div class="file-upload-item-preview">
                         <% if p.object.file.image? %>
-                            <%= image_tag p.object.file %>
+                            <%= image_tag p.object.file, alt: '' %>
                         <% else %>
                             <div class="file-upload-preview-failed"></div>
                         <% end %>
@@ -89,7 +89,7 @@
                 <%= f.fields_for :photos do |p| %>
                     <% if p.object.image.attached? && p.object.image.persisted? %>
                         <div class="file-upload-item-preview">
-                            <%= image_tag p.object.image %>
+                            <%= image_tag p.object.image, alt: '' %>
                             <%= p.hidden_field :image, value: p.object.image.signed_id %>
                             <span title="<%= p.object.image.filename %>"><%= p.object.image.filename %></span>
                             <%= p.hidden_field :position, data: {file_upload_position: true} %>

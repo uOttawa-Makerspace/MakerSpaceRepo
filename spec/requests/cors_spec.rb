@@ -101,6 +101,13 @@ RSpec.describe "CORS for /api/*", type: :request do
     expect(response.headers).not_to have_key("Access-Control-Allow-Credentials")
   end
 
+  it "allows the Idempotency-Key header that training session creates send" do
+    preflight("https://app.makerepo.com", path: "/api/v1/training_sessions",
+                                          headers: "authorization,content-type,idempotency-key")
+    expect(response.headers["Access-Control-Allow-Origin"]).to eq("https://app.makerepo.com")
+    expect(response.headers["Access-Control-Allow-Headers"].downcase).to include("idempotency-key")
+  end
+
   it "refuses headers outside the list in the preflight" do
     preflight("https://app.makerepo.com", headers: "x-evil")
     expect(response.headers["Access-Control-Allow-Origin"]).to be_nil

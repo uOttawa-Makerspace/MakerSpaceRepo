@@ -25,14 +25,6 @@ RSpec.describe User, "last-admin guard under concurrency", type: :model do
     end
   end
 
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
-    end
-  end
-
   # Thread 1 demotes admin A and pauses before committing; thread 2 then tries to
   # lock/delete admin B. Without the shared admin-row lock, B's check would still see
   # A as an admin and leave zero usable admins.
@@ -93,14 +85,6 @@ RSpec.describe User, "last-admin guard locking", type: :model do
       raise "no backend became blocked" if Time.current > deadline
 
       Thread.pass
-    end
-  end
-
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
     end
   end
 
@@ -165,14 +149,6 @@ RSpec.describe User, "last-admin guard vs a role change between check and write"
   let!(:admin_a) { create(:user, :admin) } # the only admin
 
   after { User.unscoped.where(id: [target.id, admin_a.id]).delete_all }
-
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
-    end
-  end
 
   # Pauses the given thread just BEFORE it executes its first row-locking statement
   # (nothing is held yet in the fixed code; in the old code the "is an admin
@@ -253,14 +229,6 @@ RSpec.describe User, "last-admin guard vs refresh-token rotation", type: :model 
       raise "no backend became blocked" if Time.current > deadline
 
       Thread.pass
-    end
-  end
-
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
     end
   end
 

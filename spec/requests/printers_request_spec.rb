@@ -227,11 +227,11 @@ RSpec.describe "Printers", type: :request do
       patch link_printer_to_user_printers_path(format: format), params: { printer: { printer_id: um2p.id, user_id: user_id } }
     end
 
-    # link_printer_to_user renders the FlashHash as JSON, which serialises as an array of [key, message] pairs rather than an object
+    # JSON replies are an object keyed by notice or alert; an alert answers 400
     it "creates an in_use session and replies 200 JSON" do
       expect { link(user.id) }.to change(PrinterSession, :count).by(1)
       expect(response).to have_http_status(:ok)
-      expect(json).to eq([["notice", "Printer Session Created"]])
+      expect(json).to eq("notice" => "Printer Session Created")
       expect(PrinterSession.last).to have_attributes(printer_id: um2p.id, user_id: user.id, in_use: true)
     end
 
@@ -245,14 +245,15 @@ RSpec.describe "Printers", type: :request do
     it "clears the current user" do
       link(user.id)
       link("clear")
-      expect(json).to eq([["notice", "Cleared the user."]])
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq("notice" => "Cleared the user.")
       expect(PrinterSession.last.in_use).to be false
     end
 
     it "400s with an alert when the user is blank" do
       link("")
       expect(response).to have_http_status(:bad_request)
-      expect(json).to eq([["alert", "Please add both printer and user."]])
+      expect(json).to eq("alert" => "Please add both printer and user.")
     end
 
     it "refuses array values for printer and user ids without creating a session or running them as SQL" do
@@ -262,10 +263,10 @@ RSpec.describe "Printers", type: :request do
       expect do
         patch link_printer_to_user_printers_path(format: :json), params: { printer: { printer_id: um2p.id, user_id: ["1=1"] } }
         expect(response).to have_http_status(:bad_request)
-        expect(json).to eq([["alert", "Please add both printer and user."]])
+        expect(json).to eq("alert" => "Please add both printer and user.")
         patch link_printer_to_user_printers_path(format: :json), params: { printer: { printer_id: ["1=1"], user_id: user.id } }
         expect(response).to have_http_status(:bad_request)
-        expect(json).to eq([["alert", "Please add both printer and user."]])
+        expect(json).to eq("alert" => "Please add both printer and user.")
       end.not_to change(PrinterSession, :count)
       expect(statements.grep(/WHERE \(1=1\)/)).to be_empty
     ensure
@@ -277,19 +278,20 @@ RSpec.describe "Printers", type: :request do
         patch link_printer_to_user_printers_path(format: :json), params: { printer: { printer_id: um2p.id, user_id: { a: "1" } } }
       end.not_to change(PrinterSession, :count)
       expect(response).to have_http_status(:bad_request)
-      expect(json).to eq([["alert", "Please add both printer and user."]])
+      expect(json).to eq("alert" => "Please add both printer and user.")
     end
 
     it "refuses an unknown printer or user with its own alert and creates nothing" do
       expect do
         patch link_printer_to_user_printers_path(format: :json), params: { printer: { printer_id: 0, user_id: user.id } }
         expect(response).to have_http_status(:bad_request)
-        expect(json).to eq([["alert", I18n.t("errors.printers.printer_not_found")]])
+        expect(json).to eq("alert" => I18n.t("errors.printers.printer_not_found"))
         link(0)
         expect(response).to have_http_status(:bad_request)
-        expect(json).to eq([["alert", I18n.t("errors.printers.user_not_found")]])
+        expect(json).to eq("alert" => I18n.t("errors.printers.user_not_found"))
         patch link_printer_to_user_printers_path(format: :json), params: { printer: { printer_id: 0, user_id: "clear" } }
-        expect(json).to eq([["alert", I18n.t("errors.printers.printer_not_found")]])
+        expect(response).to have_http_status(:bad_request)
+        expect(json).to eq("alert" => I18n.t("errors.printers.printer_not_found"))
       end.not_to change(PrinterSession, :count)
     end
 
@@ -298,10 +300,30 @@ RSpec.describe "Printers", type: :request do
       expect(response).to redirect_to(staff_printers_printers_path)
     end
 
+    it "replies with only its own message when an earlier redirect left a message pending" do
+      link("", format: :html)
+      link(user.id)
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq("notice" => "Printer Session Created")
+    end
+
+    it "leaves no message for the next page after a JSON reply" do
+      link(user.id)
+      get root_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("Printer Session Created")
+    end
+
+    it "keeps the message of an HTML request for the next page that shows messages" do
+      link(user.id, format: :html)
+      get root_path
+      expect(response.body).to include("Printer Session Created")
+    end
+
     it "clearing a printer that has no session changes nothing and replies 200" do
       expect { link("clear") }.not_to change(PrinterSession, :count)
       expect(response).to have_http_status(:ok)
-      expect(json).to eq([["notice", "Cleared the user."]])
+      expect(json).to eq("notice" => "Cleared the user.")
     end
   end
 

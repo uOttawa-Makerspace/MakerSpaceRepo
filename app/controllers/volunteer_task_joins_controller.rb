@@ -21,13 +21,13 @@ class VolunteerTaskJoinsController < SessionsController
         end
       volunteer_join.user_type = volunteer_join.user.role.capitalize
       if volunteer_join.save
-        flash[:notice] = "An user was successfully joined to this volunteer task."
+        flash[:notice] = I18n.t("volunteer_area.flash.join_added")
         notify_joined(volunteer_task, volunteer_join)
       else
         flash[:alert] = volunteer_join.errors.full_messages.to_sentence
       end
     else
-      flash[:alert] = "This task is already full"
+      flash[:alert] = I18n.t("volunteer_area.flash.join_full")
     end
     redirect_back(fallback_location: root_path)
   end
@@ -39,12 +39,12 @@ class VolunteerTaskJoinsController < SessionsController
     user_id = join_params[:user_id]
     volunteer_task_id = join_params[:volunteer_task_id]
     unless current_user.staff? || user_id.to_s == current_user.id.to_s
-      flash[:alert] = "You are not authorized to remove this user from the task."
+      flash[:alert] = I18n.t("volunteer_area.flash.join_remove_refused")
       return redirect_back(fallback_location: root_path)
     end
     volunteer_task = VolunteerTask.find(volunteer_task_id)
     if volunteer_task.remove_user(user_id, by: current_user)
-      flash[:notice] = "User was removed from the Volunteer Task"
+      flash[:notice] = I18n.t("volunteer_area.flash.join_removed")
     else
       flash[:alert] = volunteer_task.errors.full_messages.to_sentence
     end

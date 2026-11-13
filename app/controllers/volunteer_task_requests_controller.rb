@@ -85,14 +85,14 @@ class VolunteerTaskRequestsController < SessionsController
   def create_request
     volunteer_task = VolunteerTask.find(params[:id])
     unless volunteer_task.volunteer_task_joins.joined.exists?(user_id: current_user.id)
-      flash[:alert] = "You must be assigned to this task to submit it."
+      flash[:alert] = I18n.t("volunteer_area.flash.request_not_assigned")
       return redirect_back(fallback_location: root_path)
     end
     if VolunteerTaskRequest
          .where(volunteer_task_id: volunteer_task.id, user_id: current_user.id)
          .where("approval IS NULL OR approval = ?", true)
          .exists?
-      flash[:alert] = "You have already sent a request for this task."
+      flash[:alert] = I18n.t("volunteer_area.flash.request_already_sent")
       return redirect_back(fallback_location: root_path)
     end
     volunteer_task_request = VolunteerTaskRequest.new(
@@ -105,7 +105,7 @@ class VolunteerTaskRequestsController < SessionsController
         volunteer_task.id,
         volunteer_task_request.user_id
       ).deliver
-      flash[:notice] = "You've sent a request. No further action is needed."
+      flash[:notice] = I18n.t("volunteer_area.flash.request_sent")
     else
       flash[:alert] = validation_message(volunteer_task_request, "errors.volunteer.task_requests.not_created")
     end
@@ -118,14 +118,14 @@ class VolunteerTaskRequestsController < SessionsController
 
     case result
     when :already_approved
-      flash[:notice] = "Task request was already approved"
+      flash[:notice] = I18n.t("volunteer_area.flash.request_already_approved")
     when :updated
       MsrMailer.send_notification_for_task_request_update(
         volunteer_task_request.id
       ).deliver
-      flash[:notice] = "Task request updated"
+      flash[:notice] = I18n.t("volunteer_area.flash.request_updated")
     when :unchanged
-      flash[:notice] = "Task request was not changed"
+      flash[:notice] = I18n.t("volunteer_area.flash.request_unchanged")
     else
       flash[:alert] = validation_message(volunteer_task_request, "errors.volunteer.task_requests.not_updated")
     end
@@ -170,7 +170,7 @@ class VolunteerTaskRequestsController < SessionsController
       return
     end
 
-    flash[:alert] = "You cannot access this area."
+    flash[:alert] = I18n.t("volunteer_area.flash.no_access")
     redirect_to root_path
   end
 end

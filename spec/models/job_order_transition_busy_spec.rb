@@ -26,16 +26,12 @@ RSpec.describe JobOrder, "transition! lock wait", type: :model do
     locked = Queue.new
     release = Queue.new
     result = nil
-    holder = Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection do
-        JobOrder.transaction do
-          JobOrder.lock.find(order.id)
-          locked << true
-          release.pop(timeout: ThreadPause::PARKED_TIMEOUT) # held until the transition has given up
-        end
+    holder = in_thread do
+      JobOrder.transaction do
+        JobOrder.lock.find(order.id)
+        locked << true
+        release.pop(timeout: ThreadPause::PARKED_TIMEOUT) # held until the transition has given up
       end
-    rescue StandardError => e
-      e
     end
     begin
       ThreadPause.await(locked)

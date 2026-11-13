@@ -33,7 +33,7 @@
       color: var(--primary-text);
     }
 
-    @media (prefers-color-scheme: dark) {
+    [data-bs-theme="dark"] & {
       background: rgba($ceed-maroon, 0.2);
       border-left-color: $ceed-maroon;
 

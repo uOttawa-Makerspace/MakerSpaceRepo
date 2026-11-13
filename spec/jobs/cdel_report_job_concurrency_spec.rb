@@ -17,14 +17,6 @@ RSpec.describe CdelReportJob, "overlapping runs", type: :job do
 
   after { Setting.where(key: "cdel_report_sent:2026-09").delete_all }
 
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
-    end
-  end
-
   it "mails the month once: a second run that starts while the first is still sending returns without sending" do
     paused = Queue.new
     resume = Queue.new

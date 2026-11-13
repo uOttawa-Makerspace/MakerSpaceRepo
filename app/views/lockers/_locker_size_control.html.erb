@@ -1,19 +1,19 @@
 <%= form_with controller: :lockers, url: {action: :price}, method: :put, class: 'mb-3' do |f| %>
-    <%= f.label 'shopifyProductLink', class: 'form-label' do %>
-        Enter the shopify product link from the admin page here. This will attempt to extract the product ID from the URL and place it below.<br />
+    <%= f.label :shopifyProductLink, class: 'form-label' do %>
+        <%= t('lockers.size_control.product_link_label') %><br />
     <% end %>
 
     <%= f.text_field 'shopifyProductLink', class: 'form-control mb-2',
-     placeholder: 'URL should look like https://admin.shopify.com/store/uottawa-makerspace/products/10478024917048' %>
+     placeholder: t('lockers.size_control.product_link_placeholder') %>
 
     <div class="input-group">
-        <span class="input-group-text">Extracted GID: gid://shopify/Product/</span>
-        <%= f.label :value, 'Extracted product ID', class: 'visually-hidden' %>
+        <span class="input-group-text"><%= t('lockers.size_control.extracted_gid') %></span>
+        <%= f.label :value, t('lockers.size_control.extracted_product_id'), class: 'visually-hidden' %>
         <%= f.text_field :value, class: 'w-auto flex-fill form-control-plaintext', readonly: true %>
         <%= f.submit class: 'btn btn-primary' %>
     </div>
     <div class="form-text">
-        <span>Currently linked with <%= @locker_product_link ? tag.b(@locker_product_link) : 'nothing' %></span>
+        <span><%= t('lockers.size_control.currently_linked_html', product: @locker_product_link ? tag.b(@locker_product_link) : t('lockers.size_control.nothing')) %></span>
     </div>
 <% end %>
 
@@ -22,38 +22,35 @@
         <div class="row g-0">
             <div class="col-md-4">
                 <% if @locker_product_info[:image].present? %>
-                    <%= image_tag @locker_product_info[:image], class: 'rounded-start object-fit-cover w-100 h-100', style: "max-height: 15em" %>
+                    <%= image_tag @locker_product_info[:image], alt: '', class: 'rounded-start object-fit-cover w-100 h-100', style: "max-height: 15em" %>
                 <% end %>
             </div>
             <div class="col-md-8">
                 <div class="card-body">
                     <h3 class="card-subtitle text-body-secondary"><%= @locker_product_info[:title] %></h3>
-                    <h4 class="card-subtitle text-body-secondary">Main product</h4>
-                    <p class="card-text">This is the product where product variants are chosen and assigned to a locker for checkout.</p>
+                    <h4 class="card-subtitle text-body-secondary"><%= t('lockers.size_control.main_product') %></h4>
+                    <p class="card-text"><%= t('lockers.size_control.main_product_intro') %></p>
                     <p class="card-text">
-                        <b>Status</b> <code><%= @locker_product_info[:status] %></code> <br />
-                        <b>Product ID</b> <code><%= @locker_product_info[:id] %></code> <br />
-                        <b>Received pricing</b> <code><%= @locker_product_info[:price] %> CAD</code> <br />
-                        <b>Variants attached</b> <code><%= @locker_product_info[:variants].count %></code>
+                        <b><%= t('lockers.size_control.status') %></b> <code><%= @locker_product_info[:status] %></code> <br />
+                        <b><%= t('lockers.size_control.product_id') %></b> <code><%= @locker_product_info[:id] %></code> <br />
+                        <b><%= t('lockers.size_control.received_pricing') %></b> <code><%= t('lockers.size_control.price_cad', price: @locker_product_info[:price]) %></code> <br />
+                        <b><%= t('lockers.size_control.variants_attached') %></b> <code><%= @locker_product_info[:variants].count %></code>
                     </p>
                 </div>
             </div>
         </div>
     </div>
 
-    <h3 id="productVariants"><%= link_to '#', '#productVariants' %> Product variants</h3>
+    <h3 id="productVariants"><%= link_to '#', '#productVariants' %> <%= t('lockers.size_control.product_variants') %></h3>
 
-    <p>Locker sizes are product variants defined at Makerstore to indicate the price of the locker and display name
-        Locker sizes defined on makerepo are used to track inventory and availability.
-        Each are linked by the product variant's GID.
-        <a href="#">Click here to go to the locker sync tool.</a></p>
+    <p><%= t('lockers.size_control.variants_intro_html') %></p>
 
     <% @locker_product_info[:variants].each do |gid, variant| %>
         <div class="card mb-3">
             <div class="row g-0">
                 <div class="col-md-3" style="max-height: 15em">
                     <% if variant[:image].present? %>
-                        <%= image_tag variant[:image], class: 'rounded-start object-fit-cover w-100 h-100' %>
+                        <%= image_tag variant[:image], alt: '', class: 'rounded-start object-fit-cover w-100 h-100' %>
                     <% else %>
                         <div class="bg-secondary-subtle w-100 h-100 rounded-start"></div>
                     <% end %>
@@ -61,11 +58,11 @@
                 <div class="col-md-9">
                     <div class="card-body">
                         <p class="card-text">
-                            <b>Makerstore product variant</b> <br />
-                            <b>Title</b> <%= variant[:title] %> <br />
-                            <b>SKU</b> <code><%= variant[:sku] %></code> <br />
-                            <b>Variant ID</b> <code><%= variant[:id] %></code> <br />
-                            <b>Received pricing</b> <code><%= variant[:price] %> CAD</code>
+                            <b><%= t('lockers.size_control.store_variant') %></b> <br />
+                            <b><%= t('lockers.size_control.title') %></b> <%= variant[:title] %> <br />
+                            <b><%= t('lockers.size_control.sku') %></b> <code><%= variant[:sku] %></code> <br />
+                            <b><%= t('lockers.size_control.variant_id') %></b> <code><%= variant[:id] %></code> <br />
+                            <b><%= t('lockers.size_control.received_pricing') %></b> <code><%= t('lockers.size_control.price_cad', price: variant[:price]) %></code>
                         </p>
 
                         <hr />
@@ -74,14 +71,14 @@
                         <% if local %>
                             <div class="d-flex align-items-center gap-2 flex-wrap">
                                 <span>
-                                    <b>Linked to:</b> <%= local.size %>
+                                    <b><%= t('lockers.size_control.linked_to') %></b> <%= local.size %>
                                 </span>
-                                <%= button_to 'Delete variant', locker_size_path(local), method: :delete, class: 'btn btn-sm btn-outline-danger',
+                                <%= button_to t('lockers.size_control.delete_variant'), locker_size_path(local), method: :delete, class: 'btn btn-sm btn-outline-danger',
                                               **confirmation_options(t('confirmations.lockers.delete_size', size: local.size)) %>
-                                <%= link_to 'Edit', locker_size_path(local), class: 'btn btn-sm btn-outline-secondary' %>
+                                <%= link_to t('lockers.edit'), locker_size_path(local), class: 'btn btn-sm btn-outline-secondary' %>
                             </div>
                         <% else %>
-                            <%= button_to 'Create local size', locker_sizes_path,
+                            <%= button_to t('lockers.size_control.create_local_size'), locker_sizes_path,
                             params: { locker_size: { size: variant[:title], shopify_gid: gid } },
                                           class: 'btn btn-sm btn-outline-primary' %>
                         <% end %>
@@ -93,21 +90,21 @@
 
     <% unlinked = @locker_sizes.reject { |s| @makerstore_lookup&.key?(s.shopify_gid) } %>
     <% if unlinked.any? %>
-        <h4 class="mt-4">Unlinked Local Sizes</h4>
+        <h4 class="mt-4"><%= t('lockers.size_control.unlinked_sizes') %></h4>
         <div class="list-group">
             <% unlinked.each do |size| %>
                 <div class="list-group-item">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span><b><%= size.size %></b></span>
-                        <button class="btn btn-sm btn-outline-secondary">Edit</button>
+                        <button class="btn btn-sm btn-outline-secondary"><%= t('lockers.edit') %></button>
                     </div>
                     <%= form_with model: size, method: :patch do |f| %>
                         <div class="input-group">
                             <%= f.select :shopify_gid,
                                 @locker_product_info[:variants].map { |_gid, v| [v[:displayName], v[:id], { 'data-data' => v.to_json }] },
-                             { include_blank: 'Select variant...' },
+                             { include_blank: t('lockers.select_variant') },
                              { class: 'form-select form-select-sm' } %>
-                            <%= f.submit 'Link', class: 'btn btn-sm btn-outline-primary' %>
+                            <%= f.submit t('lockers.size_control.link'), class: 'btn btn-sm btn-outline-primary' %>
                         </div>
                     <% end %>
                 </div>
@@ -115,17 +112,16 @@
         </div>
     <% end %>
 
-    <h3 id="lockerSizesSection"><%= link_to '#', '#lockerSizesSection' %> Locker Sizes</h3>
-    <p>List of locker sizes available on Makerepo. This is what users request when filling out a locker rental request.
-        Each locker size has a Makerstore product variant associated with it.</p>
+    <h3 id="lockerSizesSection"><%= link_to '#', '#lockerSizesSection' %> <%= t('lockers.size_control.locker_sizes') %></h3>
+    <p><%= t('lockers.size_control.sizes_intro') %></p>
 
     <table class="table table-hover">
         <thead class="table-primary">
             <tr>
-                <th>Locker size</th>
-                <th>Lockers associated</th>
-                <th>SKU</th>
-                <th>Shopify GID</th>
+                <th><%= t('lockers.size_control.locker_size') %></th>
+                <th><%= t('lockers.size_control.lockers_associated') %></th>
+                <th><%= t('lockers.size_control.sku') %></th>
+                <th><%= t('lockers.size_control.shopify_gid') %></th>
                 <th></th>
             </tr>
         </thead>
@@ -144,15 +140,15 @@
     </table>
 
     <%= form_with model: LockerSize.new do |f| %>
-        <h4>Create a new locker size</h4>
-        <p>Create a new locker size and link it to a store product variant.</p>
+        <h4><%= t('lockers.size_control.new_size') %></h4>
+        <p><%= t('lockers.size_control.new_size_intro') %></p>
         <div class="input-group mb-3">
-            <%= f.label :size, 'Locker dimensions', class: 'input-group-text' %>
-            <%= f.text_field :size, placeholder: 'For example, 16x16', class: 'form-control' %>
+            <%= f.label :size, t('lockers.size_control.dimensions'), class: 'input-group-text' %>
+            <%= f.text_field :size, placeholder: t('lockers.size_control.dimensions_placeholder'), class: 'form-control' %>
 
-            <%= f.label :shopify_gid, 'Select a product variant to use for checkout', class: 'input-group-text' %>
+            <%= f.label :shopify_gid, t('lockers.size_control.checkout_variant'), class: 'input-group-text' %>
             <%= f.select :shopify_gid, @locker_product_info[:variants].map {|_gid, v| [ v[:displayName], v[:id], { 'data-data' => v.to_json} ] },
-             {include_blank: 'Select variant...'},
+             {include_blank: t('lockers.select_variant')},
              {class: 'form-select locker-variant-select', aria: { label: t('common.names.product_variant') }} %>
             <%= f.submit class: 'btn btn-success' %>
         </div>
@@ -160,8 +156,8 @@
 
 <% elsif @locker_product_link %>
     <p class="text-center text-danger fw-bold">
-        Failed to load product information.
+        <%= t('lockers.size_control.load_failed') %>
     </p>
 <% else %>
-    <p class="text-center">No valid link assigned...</p>
+    <p class="text-center"><%= t('lockers.size_control.no_link') %></p>
 <% end %>

@@ -91,6 +91,21 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(response.body).to include("A-100")
     end
 
+    it "GET index shows the store product and variant images with an empty alt, beside their visible titles" do
+      variant = { title: "Small", sku: "S1", id: "gid://shopify/ProductVariant/1", price: "10.00",
+                  displayName: "Lockers - Small", image: "https://img.example.test/variant.png" }
+      allow(LockerOption).to receive(:locker_product_info).and_return(
+        { title: "Lockers", status: "ACTIVE", id: "gid://shopify/Product/1", price: "10.00",
+          image: "https://img.example.test/product.png", variants: { variant[:id] => variant } }
+      )
+      get lockers_path
+      page = Nokogiri::HTML(response.body)
+      product = page.at_css("img[src='https://img.example.test/product.png']")
+      variant_img = page.at_css("img[src='https://img.example.test/variant.png']")
+      expect([product&.[]("alt"), variant_img&.[]("alt")]).to eq(["", ""])
+      expect(page.text).to include("Lockers", "Small")
+    end
+
     it "GET show renders a locker" do
       locker = create(:locker, specifier: "B-200")
       get locker_path(locker)

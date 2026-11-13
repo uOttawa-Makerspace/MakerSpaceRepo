@@ -5,45 +5,45 @@
   <div class="row g-3">
     <!-- User Dropdown (Searchable by Name and Username) -->
     <div class="col-12 col-md-6">
-      <%= f.label :rented_by_id, 'Assign to User', class: 'form-label fw-bold text-body' %>
+      <%= f.label :rented_by_id, t('lockers.assign_form.user'), class: 'form-label fw-bold text-body' %>
       <%= f.select :rented_by_id,
             User.not_deactivated.order(:name, :username).map { |u|
               label = u.name.present? ? "#{u.name} (#{u.username})" : u.username
               [label, u.id, { data: { role: (u.role.humanize if u.staff?) } }]
             },
-            { include_blank: 'Search for a user by name or username...' },
+            { include_blank: t('lockers.assign_form.user_prompt') },
             { class: 'form-select', id: 'locker_rental_rented_by_id', required: true, data: { locker_picker_target: 'user' }, aria: { label: t('common.names.user') } } %>
     </div>
 
     <!-- Locker Dropdown -->
     <div class="col-12 col-md-6">
-      <%= f.label :locker_id, 'Locker', class: 'form-label fw-bold text-body' %>
+      <%= f.label :locker_id, t('lockers.locker'), class: 'form-label fw-bold text-body' %>
       <%= f.select :locker_id, Locker.available.includes(:locker_size).order_by_specifier.map { |locker|
             size_label = locker.locker_size&.size ? " (#{locker.locker_size.size})" : ""
             ["##{locker.specifier}#{size_label}", locker.id, { data: { size: locker.locker_size&.size, staff_only: !locker.available } }]
           },
-          { include_blank: 'Search for a locker...' },
+          { include_blank: t('lockers.assign_form.locker_prompt') },
           { class: 'form-select', id: 'locker_rental_locker_id', required: true, data: { locker_picker_target: 'locker' }, aria: { label: t('common.names.locker') } } %>
     </div>
 
     <!-- Dates and Indefinite -->
     <div class="col-12 col-md-6">
-      <%= f.label :owned_until, 'End Date', class: 'form-label fw-bold text-body', for: 'assign_owned_until' %>
+      <%= f.label :owned_until, t('lockers.assign_form.end_date'), class: 'form-label fw-bold text-body', for: 'assign_owned_until' %>
       <%= f.date_field :owned_until, value: end_of_this_semester, class: 'form-control', id: 'assign_owned_until' %>
       <div class="form-check mt-2">
         <%= check_box_tag 'locker_rental[indefinite]', '1', false, class: 'form-check-input', id: 'assign_indefinite', data: { indefinite_target: 'assign_owned_until' } %>
-        <%= label_tag 'assign_indefinite', 'Indefinite (No expiry)', class: 'form-check-label small' %>
+        <%= label_tag 'assign_indefinite', t('lockers.assign_form.indefinite'), class: 'form-check-label small' %>
       </div>
     </div>
 
     <!-- Staff Rental Notes -->
     <div class="col-12 col-md-6">
-      <%= f.label :staff_notes, 'Staff Notes (Internal)', class: 'form-label fw-bold text-body' %>
-      <%= f.text_area :staff_notes, class: 'form-control', rows: 2, placeholder: 'Internal staff notes for this rental assignment...' %>
+      <%= f.label :staff_notes, t('lockers.assign_form.staff_notes'), class: 'form-label fw-bold text-body' %>
+      <%= f.text_area :staff_notes, class: 'form-control', rows: 2, placeholder: t('lockers.assign_form.staff_notes_placeholder') %>
     </div>
 
     <div class="col-12 d-grid d-md-flex justify-content-md-end mt-2">
-      <%= f.submit 'Assign Locker', class: 'btn btn-primary px-4' %>
+      <%= f.submit t('lockers.assign_form.submit'), class: 'btn btn-primary px-4' %>
     </div>
   </div>
 <% end %>

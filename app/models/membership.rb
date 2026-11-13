@@ -6,8 +6,6 @@ class Membership < ApplicationRecord
   belongs_to :user
   belongs_to :membership_tier
 
-  attribute :status, :string, default: 'paid'
-
   enum :status, {
          pending: 'pending',
          paid: 'paid',

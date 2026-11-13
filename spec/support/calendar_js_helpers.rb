@@ -30,6 +30,14 @@ module CalendarJsHelpers
     expect(page.evaluate_script("window.sameDocument")).to be(true)
   end
 
+  # The flash message shown after a form on a calendar page is saved, read from
+  # the flash element alone. The visible text of a whole calendar page takes the
+  # browser a second or more to work out under load, and while it does, the
+  # page cannot draw the response being waited for.
+  def expect_flash(message)
+    expect(page).to have_css("#flash", text: message)
+  end
+
   # Types into a datetime-local field the way a person would (Capybara fires
   # input and change for it).
   def fill_datetime(field, local_value)

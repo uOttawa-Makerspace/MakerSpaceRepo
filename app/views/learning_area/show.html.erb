@@ -1,11 +1,11 @@
-<% provide(:title, 'Learning Area') %>
+<% provide(:title, t('learning_area.title')) %>
 
 <section class="card mb-3">
     <div class="card-body">
         <h1 class="mb-1"><%= @learning_module.title %></h1>
         <p class="mb-3">
             <span class="badge rounded-pill border <%= return_text_color(@learning_module.level) %>">
-                <%= @learning_module.level.humanize %>
+                <%= t("learning_area.levels.#{@learning_module.level}") %>
             </span>
             <% if @learning_module.training %>
                 <span class="ms-2"><%= @learning_module.training.localized_name %></span>

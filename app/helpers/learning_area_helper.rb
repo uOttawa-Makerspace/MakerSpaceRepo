@@ -10,13 +10,13 @@ module LearningAreaHelper
         )
         .where(training_id: training_id)
     if lm.where(level: "Beginner").present?
-      "<span style='color: green'>Beg</span>"
+      "<span style='color: green'>#{t('learning_module_track.level_short.beginner')}</span>"
     elsif lm.where(level: "Intermediate").present?
-      "<span style='color: #969600'>Int</span>"
+      "<span style='color: #969600'>#{t('learning_module_track.level_short.intermediate')}</span>"
     elsif lm.where(level: "Advanced").present?
-      "<span style='color: red'>Adv</span>"
+      "<span style='color: red'>#{t('learning_module_track.level_short.advanced')}</span>"
     else
-      "<span style='color: blue'>Master</span>"
+      "<span style='color: blue'>#{t('learning_module_track.level_short.master')}</span>"
     end
   end
 
@@ -42,6 +42,11 @@ module LearningAreaHelper
     when 'advanced'
       'text-danger'
     end
+  end
+
+  # The shortcut route's path in front of the shortcut itself, shown before the form's shortcut field.
+  def learning_area_shortcut_prefix
+    shortcut_learning_area_path('shortcut').delete_suffix('shortcut')
   end
 
   def levels_ordered(training)
