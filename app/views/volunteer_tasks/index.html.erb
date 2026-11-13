@@ -101,7 +101,8 @@
 
         <!-- Space Filter -->
         <div class="col-6 col-md-3 col-lg-2">
-          <select id="spaceFilter" class="form-select tom-select-filter" placeholder="Filter Space">
+          <label for="spaceFilter" id="spaceFilterLabel" class="visually-hidden"><%= t('common.names.filter_space') %></label>
+          <select id="spaceFilter" aria-labelledby="spaceFilterLabel" class="form-select tom-select-filter" placeholder="Filter Space">
             <option value="">All Spaces</option>
             <% Space.all.order(name: :asc).each do |s| %>
               <option value="<%= s.name.downcase %>"><%= s.name.capitalize %></option>
@@ -111,7 +112,8 @@
 
         <!-- Category Filter -->
         <div class="col-6 col-md-3 col-lg-2">
-          <select id="categoryFilter" class="form-select tom-select-filter" placeholder="Filter Category">
+          <label for="categoryFilter" id="categoryFilterLabel" class="visually-hidden"><%= t('common.names.filter_category') %></label>
+          <select id="categoryFilter" aria-labelledby="categoryFilterLabel" class="form-select tom-select-filter" placeholder="Filter Category">
             <option value="">All Categories</option>
             <option value="events">Events</option>
             <option value="projects">Projects</option>
@@ -123,7 +125,8 @@
 
         <!-- Certifications Filter -->
         <div class="col-12 col-lg-4">
-          <select id="certFilter" class="form-select tom-select-filter" multiple placeholder="Filter by Certifications...">
+          <label for="certFilter" id="certFilterLabel" class="visually-hidden"><%= t('common.names.filter_certifications') %></label>
+          <select id="certFilter" aria-labelledby="certFilterLabel" class="form-select tom-select-filter" multiple placeholder="Filter by Certifications...">
             <% Training.all.order(name: :asc).each do |t| %>
               <option value="<%= t.localized_name.downcase %>"><%= t.localized_name.capitalize %></option>
             <% end %>

@@ -107,12 +107,12 @@
               <div class="row g-3">
                 <!-- Certifications -->
                 <div class="col-12">
-                  <%= label_tag :task_certifications, class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
+                  <%= label_tag :task_certifications, id: 'task_certifications_label', class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
                     <i class="fa-solid fa-award text-warning"></i>
                     <span>Required Certifications</span>
                   <% end %>
                   <p class="text-body-secondary small mb-2">Select all required qualifications (hold <kbd class="bg-body-secondary text-body">Ctrl</kbd>/<kbd class="bg-body-secondary text-body">Cmd</kbd> on desktop or tap to select):</p>
-                  <%= select_tag :certifications_id, options_from_collection_for_select(@certifications, 'id', 'name'), multiple: true, id: 'task_certifications', class: 'form-select', size: 4 %>
+                  <%= select_tag :certifications_id, options_from_collection_for_select(@certifications, 'id', 'name'), multiple: true, id: 'task_certifications', class: 'form-select', size: 4, aria: { labelledby: 'task_certifications_label' } %>
                 </div>
 
                 <!-- Photos -->
@@ -221,21 +221,21 @@
               <div class="row g-3">
                 <!-- Staff Responsible -->
                 <div class="col-12">
-                  <%= label_tag :staff_id, class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
+                  <%= label_tag :staff_id, id: 'staff_id_label', class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
                     <i class="fa-solid fa-user-tie text-body-secondary"></i>
                     <span>Staff Lead</span>
                   <% end %>
-                  <%= select_tag :staff_id, options_from_collection_for_select(User.all.staff, 'id', 'name'), prompt: 'Choose staff lead...', class: 'form-select' %>
+                  <%= select_tag :staff_id, options_from_collection_for_select(User.all.staff, 'id', 'name'), prompt: 'Choose staff lead...', class: 'form-select', aria: { labelledby: 'staff_id_label' } %>
                   <div class="form-text text-body-secondary small">Responsible for task oversight.</div>
                 </div>
 
                 <!-- Volunteer Assignee -->
                 <div class="col-12">
-                  <%= label_tag :volunteer_id, class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
+                  <%= label_tag :volunteer_id, id: 'volunteer_id_label', class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
                     <i class="fa-solid fa-hand-holding-heart text-body-secondary"></i>
                     <span>Assign Volunteer</span>
                   <% end %>
-                  <%= select_tag :volunteer_id, options_from_collection_for_select(User.all.volunteers, 'id', 'name'), prompt: 'Choose volunteer (optional)...', class: 'form-select' %>
+                  <%= select_tag :volunteer_id, options_from_collection_for_select(User.all.volunteers, 'id', 'name'), prompt: 'Choose volunteer (optional)...', class: 'form-select', aria: { labelledby: 'volunteer_id_label' } %>
                   <div class="form-text text-body-secondary small">Pre-assign an active volunteer directly.</div>
                 </div>
               </div>

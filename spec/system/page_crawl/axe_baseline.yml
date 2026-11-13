@@ -17,13 +17,3 @@ repositories/edit.html.erb:
   image-alt: 1
 users/show.html.erb:
   aria-required-children: 2
-volunteer_tasks/edit.html.erb:
-  label: 1
-  select-name: 3
-volunteer_tasks/index.html.erb:
-  aria-input-field-name: 2
-  select-name: 3
-volunteer_tasks/new.html.erb:
-  select-name: 3
-volunteers/new_event.html.erb:
-  select-name: 1
