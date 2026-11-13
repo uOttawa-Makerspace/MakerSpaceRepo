@@ -408,11 +408,19 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       it "is public: guests see the explainer and a sign-in prompt, with no balance card" do
         get cc_moneys_path
         expect(response).to have_http_status(:ok)
-        expect(response.body).to include("What Are CC Points?")
+        expect(response.body).to include("What Are CEED Credits?")
         expect(response.body).not_to include("Your CC Balance")
-        expect(response.body).not_to include("Redeem Points")
+        expect(response.body).not_to include(%(href="#{new_discount_code_path}" class="btn btn-primary mt-2"))
         expect(response.body).to include("Ready to Start Earning?")
         expect(response.body).to include(%(href="#{login_path}"))
+      end
+
+      it "is written in French when the locale is fr, with no points wording in either language" do
+        get cc_moneys_path(locale: "fr")
+        expect(response.body).to include("Que sont les Crédits du CGEC?", "Prêt à commencer à gagner?")
+        expect(response.body).not_to include("What Are CEED Credits?")
+        get cc_moneys_path
+        expect(response.body).not_to match(/points/i)
       end
 
       it "shows signed-in users their ledger balance (not the stale cache) and last 10 activities, without locking or writing" do
@@ -425,7 +433,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         ActiveSupport::Notifications.unsubscribe(sub)
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("Your CC Balance")
-        expect(response.body).to match(/30\s*<small/)
+        expect(Nokogiri::HTML5(response.body).at_css(".card h2.text-primary").text.strip).to eq("30")
         expect(sqls.grep(/FOR (NO KEY )?UPDATE/)).to be_empty
         expect(sqls.grep(/\AUPDATE "users"/).grep(/wallet/)).to be_empty
         expect(user.reload.wallet).to eq(0) # the cache is not written by a page view
