@@ -1260,6 +1260,16 @@ class User < ApplicationRecord
     )
   end
 
+  # Ids of the proficient projects the user has been awarded, read once per user.
+  def awarded_proficient_project_ids
+    @awarded_proficient_project_ids ||= order_items.awarded.pluck(:proficient_project_id)
+  end
+
+  # Ids of the learning modules the user has completed, read once per user.
+  def completed_learning_module_ids
+    @completed_learning_module_ids ||= learning_module_tracks.completed.pluck(:learning_module_id)
+  end
+
   def highest_badge(training)
     badges = certifications.joins(:training_session)
                .where(training_sessions: { training_id: training.id })

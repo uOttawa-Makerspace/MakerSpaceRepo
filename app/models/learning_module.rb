@@ -31,6 +31,11 @@ class LearningModule < ApplicationRecord
        },
        validate: true
 
+  # The stored level text ("Beginner"), as the training levels are written; `level` itself reads the key.
+  def level_name
+    self.class.levels[level]
+  end
+
   # SCORM packages are a zip file
   has_one_attached :scorm_package
 

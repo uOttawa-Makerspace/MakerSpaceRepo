@@ -45,6 +45,26 @@ class Training < ApplicationRecord
     scope
   end
 
+  # The training's proficient projects that the user has been awarded. Reads the loaded
+  # proficient_projects, so a page listing many trainings preloads them once.
+  def awarded_proficient_projects(user)
+    awarded_ids = user.awarded_proficient_project_ids
+    proficient_projects.select { |project| awarded_ids.include?(project.id) }
+  end
+
+  # The training's learning modules that the user has completed, from the loaded learning_modules.
+  def completed_learning_modules(user)
+    completed_ids = user.completed_learning_module_ids
+    learning_modules.select { |learning_module| completed_ids.include?(learning_module.id) }
+  end
+
+  # The number of learning modules and proficient projects at the given levels.
+  def recommended_hours(levels)
+    wanted = [levels].flatten
+    learning_modules.select { |m| wanted.include?(m.level_name) }.size +
+      proficient_projects.select { |p| wanted.include?(p.level) }.size
+  end
+
   def self.all_training_names
     order(name: :asc).pluck(:name)
   end
