@@ -16,9 +16,9 @@ class UoengProfile < ApplicationRecord
   validates :level, inclusion: { in: LEVELS.values }, allow_nil: true
   validates :source, inclusion: { in: SOURCES }
 
-  # Writes the user's row from one answer, or replaces it when there is one already. A single
-  # upsert on the unique user_id, so two checks at once leave one row, and running it again with
-  # the same answer changes nothing but checked_at.
+  # Writes the user's row from one answer, or replaces it when there is one already: only the
+  # latest answer is kept. A single upsert on the unique user_id, so two checks at once leave one
+  # row; running it again with the same answer changes nothing but checked_at and updated_at.
   def self.record!(user, answer, source:)
     upsert(
       { user_id: user.id, source: source, checked_at: Time.current, **fields_from(answer) },

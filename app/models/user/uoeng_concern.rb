@@ -24,14 +24,21 @@ module User::UoengConcern
     # membership, nil when the user is not engineering (any active faculty
     # membership is revoked), or :unknown / :unavailable / :mismatch when the
     # upstream gave no answer about this user (see NO_ANSWER): then the stored memberships are left
-    # exactly as they are.
+    # exactly as they are. After the grant or revoke, the answer is kept in the
+    # user's uOEng record (see #record_uoeng_answer!).
     def validate_uoeng_membership(card_number: nil, space: nil)
       faculty_tier = MembershipTier.find_by!(title_en: "Faculty membership")
 
-      answer = engineering?(card_number: card_number, space: space)
-      return answer if NO_ANSWER.include?(answer)
+      details = uoeng_answer(card_number: card_number, space: space)
+      return details if NO_ANSWER.include?(details)
 
-      answer ? grant_faculty_membership(faculty_tier) : revoke_faculty_memberships(faculty_tier, card_number: card_number, space: space)
+      outcome = if engineering?(details, card_number, space)
+                  grant_faculty_membership(faculty_tier)
+                else
+                  revoke_faculty_memberships(faculty_tier, card_number: card_number, space: space)
+                end
+      record_uoeng_answer!(details) if details
+      outcome
     end
 
     # Only staff may run the faculty membership check for a user from the profile.
@@ -91,19 +98,24 @@ module User::UoengConcern
       nil
     end
 
-    # true, false, or :unknown / :unavailable / :mismatch when there is no usable answer about this user.
-    def engineering?(card_number: nil, space: nil)
-      return faculty == "Engineering" if Rails.env.test?
+    # The checked answer about this user (a Hash), or :unknown / :unavailable /
+    # :mismatch when there is no usable answer (a user who cannot be looked up is
+    # logged and :unknown). nil in the test environment, where nothing is asked.
+    def uoeng_answer(card_number:, space:)
+      return if Rails.env.test?
 
       details = uoeng_details(card_number: card_number, space: space)
-      return details if NO_ANSWER.include?(details)
+      return details if details
 
-      unless details
-        TapBoxLog.log_no_queryable_identifier(user: self, card_number: card_number, space: space)
-        return :unknown
-      end
+      TapBoxLog.log_no_queryable_identifier(user: self, card_number: card_number, space: space)
+      :unknown
+    end
 
-      record_uoeng_answer!(details)
+    # Whether the answer says the user is an engineering student. In the test
+    # environment (no answer) the faculty column is compared instead.
+    def engineering?(details, card_number, space)
+      return faculty == "Engineering" if details.nil?
+
       is_fulltime_eng = details["student_this_semester"] && details["faculty"] == "GENIE"
       enrolled_gng = details["courses_enrolled"]&.any? { |course| course.include?("GNG") }
       result = is_fulltime_eng || enrolled_gng

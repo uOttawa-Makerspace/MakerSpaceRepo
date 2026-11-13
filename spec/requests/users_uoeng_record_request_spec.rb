@@ -42,6 +42,17 @@ RSpec.describe "uOEng record on the profile", type: :request do
       expect(student.reload.faculty).to eq("Arts")
     end
 
+    it "is not shown to a viewer who is not staff" do
+      reset!
+      log_in_via_form!(create(:user, :regular_user))
+
+      get user_path(student.username)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include('data-test="uoeng-record"', "CEG", "uOttawa record")
+      expect(Nokogiri::HTML(response.body).at_xpath("//span[normalize-space()='Faculty']")).to be_nil
+    end
+
     it "falls back to the user's faculty when the uOEng faculty is not one the app knows" do
       student.uoeng_profile.update!(faculty_code: "ARTS", faculty: nil)
 

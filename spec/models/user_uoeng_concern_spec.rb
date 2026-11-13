@@ -325,6 +325,25 @@ RSpec.describe User::UoengConcern, type: :model do
         expect { outsider.validate_uoeng_membership }.not_to change(UoengProfile, :count)
       end
 
+      context "when writing the record fails" do
+        before { allow(UoengProfile).to receive(:upsert).and_raise(ActiveRecord::StatementInvalid, "write failed") }
+
+        it "raises after the faculty membership is granted" do
+          stub_api(body: record)
+
+          expect { eng.validate_uoeng_membership }.to raise_error(ActiveRecord::StatementInvalid)
+          expect(eng.memberships.active.where(membership_tier: tier).count).to eq(1)
+        end
+
+        it "raises after an ineligible user's faculty membership is revoked" do
+          membership = paid_faculty_membership(art)
+          stub_api(body: not_engineering)
+
+          expect { art.validate_uoeng_membership }.to raise_error(ActiveRecord::StatementInvalid)
+          expect(membership.reload.status).to eq("revoked")
+        end
+      end
+
       it "records nothing about sex or legal status" do
         stub_api(body: record)
         eng.validate_uoeng_membership
