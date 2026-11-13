@@ -83,6 +83,21 @@ RSpec.describe "Admin spaces", type: :request do
       expect(rows).to include(["Laser", "3", "4", ""], ["Mill", "0", "0", ""])
     end
 
+    it "gives every calendar colour input its own id and an accessible name, keeping each saved colour" do
+      StaffNeededCalendar.create!(space: space, calendar_url: "https://x.test/a.ics", color: "#112233")
+      StaffNeededCalendar.create!(space: space, calendar_url: "https://x.test/b.ics", color: "#445566")
+
+      get edit_admin_space_path(space)
+
+      page = Nokogiri::HTML(response.body)
+      inputs = page.css("#link-container input[type=color]")
+      expect(inputs.map { |input| input["value"] }).to match_array(%w[#112233 #445566])
+      expect(inputs.map { |input| input["id"] }.uniq.size).to eq(2)
+      expect(page.css("input[type=color][id]").map { |input| input["id"] }).to all(start_with("staff_needed_calendar_color_"))
+      expect(page.css("#colorpicker")).to be_empty
+      expect(page.css("input[type=color]").map { |input| input["aria-label"] }).to all(be_present)
+    end
+
     it "gives the new calendar row a colour the colour input accepts" do
       get edit_admin_space_path(space)
 
