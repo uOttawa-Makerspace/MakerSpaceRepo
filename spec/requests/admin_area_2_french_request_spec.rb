@@ -43,7 +43,7 @@ RSpec.describe "Admin area pages in French", type: :request do
       key = create(:key, :keycard_key_type, :inventory_status, number: 7, custom_keycode: "KC7", additional_info: "")
 
       get admin_keys_path
-      expect(page_text).to include("Gestion des clés", "Toutes les clés", "Carte d'accès", "En inventaire", "0/1 (formulaire)")
+      expect(page_text).to include("Gestion des clés", "Toutes les clés", "Carte d'accès", "En inventaire", "(personnel)", "(superviseur)")
 
       get new_admin_key_path
       doc = Nokogiri::HTML(response.body)
