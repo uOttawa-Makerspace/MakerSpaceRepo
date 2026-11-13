@@ -151,7 +151,11 @@ onPageLoad("#eventModal", () => {
       staffSelect.dataset.ranked = "true"; // the list shows the latest answer
     } catch (error) {
       console.error(error);
-      if (ranking === rankings) showStaffLoadError();
+      if (ranking !== rankings) return;
+      // the list must not keep the labels of an earlier answer
+      rankedStaff = staffList;
+      redrawStaff();
+      showStaffLoadError();
     }
   }
 

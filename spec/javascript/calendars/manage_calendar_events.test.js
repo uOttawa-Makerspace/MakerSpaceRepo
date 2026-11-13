@@ -219,6 +219,25 @@ describe("the staff ranking", () => {
     consoleError.mockRestore();
   });
 
+  it("drops the labels of an earlier answer when the latest request fails", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    await load();
+    await setTimes("2027-03-17T14:00", "2027-03-17T14:30");
+    expect(unavailableDates("Ada")).toBe("2027-03-17T18:00:00Z");
+
+    fetch.mockImplementation(async () =>
+      answer([], { ok: false, status: 500 }),
+    );
+    await setTimes("2027-03-18T14:00", "2027-03-18T14:30");
+
+    expect(optionNames()).toEqual(["Ada", "Bob"]);
+    expect(unavailableDates("Ada")).toBe("");
+    expect($("staff_load_error").classList.contains("d-none")).toBe(false);
+    consoleError.mockRestore();
+  });
+
   it("shows the error for a network failure", async () => {
     const consoleError = vi
       .spyOn(console, "error")
