@@ -6,24 +6,5 @@
 "/learning_area/:id/scorm_assets/*path":
   document-title: 1
   html-has-lang: 1
-questions/edit.html.erb:
-  label: 2
-  select-name: 1
-questions/new.html.erb:
-  aria-input-field-name: 4
-  label: 2
-  select-name: 1
-repositories/edit.html.erb:
-  image-alt: 1
 users/show.html.erb:
-  aria-required-children: 2
-volunteer_tasks/edit.html.erb:
-  label: 1
-  select-name: 3
-volunteer_tasks/index.html.erb:
-  aria-input-field-name: 2
-  select-name: 3
-volunteer_tasks/new.html.erb:
-  select-name: 3
-volunteers/new_event.html.erb:
-  select-name: 1
+  aria-required-children: 1

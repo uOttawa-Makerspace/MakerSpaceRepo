@@ -122,6 +122,10 @@ en:
       completed_email_message: "Email message to the customer"
       owned_until: "Owned until"
       closed_all_day: "%{day} closed all day?"
+      filter_space: "Filter by space"
+      filter_category: "Filter by category"
+      filter_certifications: "Filter by certifications"
+      answer_number: "Answer %{number}"
   semester:
     fall: "Fall"
     winter: "Winter"
@@ -250,6 +254,10 @@ fr:
       completed_email_message: "Message du courriel au client"
       owned_until: "Attribué jusqu'au"
       closed_all_day: "%{day} fermé toute la journée?"
+      filter_space: "Filtrer par espace"
+      filter_category: "Filtrer par catégorie"
+      filter_certifications: "Filtrer par certifications"
+      answer_number: "Réponse %{number}"
   semester:
     fall: "Automne"
     winter: "Hiver"
