@@ -117,6 +117,27 @@ RSpec.describe "Imported calendar feeds", type: :request do
         ])
       end
 
+      # Paris changes its clocks on 2027-03-28 and 2027-10-31, Toronto on 2027-03-14 and 2027-11-07, so for two weeks
+      # each time the Paris 09:00 is a different Toronto time. The instant is the Paris 09:00 of each Sunday.
+      it "sends a Paris series at its Paris 09:00 instants across both Paris and Toronto clock changes" do
+        spring = starts("paris_tzid", start: "2027-03-14T00:00:00", end: "2027-03-29T00:00:00")
+        expect(spring.map { |id, start, _| [id, start] }).to eq([
+          ["paris-spring@ics.test@#{Time.utc(2027, 3, 14, 8).to_i}", "2027-03-14T04:00:00-04:00"],
+          ["paris-spring@ics.test@#{Time.utc(2027, 3, 21, 8).to_i}", "2027-03-21T04:00:00-04:00"],
+          ["paris-spring@ics.test@#{Time.utc(2027, 3, 28, 7).to_i}", "2027-03-28T03:00:00-04:00"]
+        ])
+        expect(spring.map { |_, start, finish| Time.iso8601(finish) - Time.iso8601(start) }).to all(eq(1.hour))
+
+        fall = rows_for("paris_tzid", start: "2027-10-24T00:00:00", end: "2027-11-15T00:00:00")
+               .select { |row| row["id"].start_with?("paris-fall") }
+        expect(fall.map { |row| [row["id"], row["start"]] }).to eq([
+          ["paris-fall@ics.test@#{Time.utc(2027, 10, 24, 7).to_i}", "2027-10-24T03:00:00-04:00"],
+          ["paris-fall@ics.test@#{Time.utc(2027, 10, 31, 8).to_i}", "2027-10-31T04:00:00-04:00"],
+          ["paris-fall@ics.test@#{Time.utc(2027, 11, 7, 8).to_i}", "2027-11-07T03:00:00-05:00"],
+          ["paris-fall@ics.test@#{Time.utc(2027, 11, 14, 8).to_i}", "2027-11-14T03:00:00-05:00"]
+        ])
+      end
+
       it "sends a moved instance once, at its new time, and leaves its original Sunday out" do
         expect(starts("recurrence_id_moved", spring_week)).to eq([
           ["moved@ics.test_#{epoch(2027, 3, 14, 10)}", "2027-03-15T14:00:00-04:00", "2027-03-15T15:00:00-04:00"]
