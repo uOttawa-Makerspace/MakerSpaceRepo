@@ -47,11 +47,13 @@ class ProjectProposal < ApplicationRecord
   scope :for_year, ->(year) { where(year:) }
   scope :for_season, ->(season) { where(season:) }
 
-  # Sort project proposals by semester
+  # Sort project proposals by semester, newest year first, proposals without a semester last. Within
+  # one semester they are listed by title, as the other proposal pickers are, and then by id so that
+  # proposals with the same title always come back in the same order.
   scope :by_semester,
         -> do
           t = ProjectProposal.arel_table
-          order(t[:year].desc.nulls_last, t[:season].asc.nulls_last)
+          order(t[:year].desc.nulls_last, t[:season].asc.nulls_last, t[:title].asc, t[:id].asc)
         end
 
   scope :search,
