@@ -52,7 +52,9 @@
 
 
             <td>
-              <span data-bs-toggle="tooltip" title="<%= User.where(id: AnnouncementDismiss.includes(:user).where(announcement_id: a.id).map(&:user_id)).pluck(:username).size > 5 ? "#{User.where(id: AnnouncementDismiss.includes(:user).where(announcement_id: a.id).map(&:user_id)).pluck(:username).take(5).join(', ')} And more" : User.where(id: AnnouncementDismiss.includes(:user).where(announcement_id: a.id).map(&:user_id)).pluck(:username).join(', ') %>">Dismissed by: <%= AnnouncementDismiss.where(announcement_id: a.id).count > 0 ? "#{AnnouncementDismiss.where(announcement_id: a.id).count} User#{'s'.pluralize(AnnouncementDismiss.where(announcement_id: a.id).count)}" : 'No one' %>
+              <% dismissers = a.dismissed_usernames %>
+              <% dismissals = a.announcement_dismisses.size %>
+              <span data-bs-toggle="tooltip" title="<%= dismissers.size > 5 ? "#{dismissers.take(5).join(', ')} And more" : dismissers.join(', ') %>">Dismissed by: <%= dismissals > 0 ? "#{dismissals} User#{'s'.pluralize(dismissals)}" : 'No one' %>
               </span>
             </td>
             <td class="action-cell">
