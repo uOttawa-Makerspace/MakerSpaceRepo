@@ -27,8 +27,12 @@ require "zlib"
 # documents inside frames (outside sites, stored PDFs, SCORM packages): the
 # frame elements themselves are checked. Fragments (markup a page fetches and
 # inserts) skip the rules about the document's title and language, which the
-# host page provides. The server clock and Faker are fixed, so the world and
-# the pages are the same on every run. The browser resolves no outside host
+# host page provides. Faker is seeded, and the world is built and probed on a
+# fixed server clock, so the records and the crawled views are the same on
+# every run. The browser then signs in and browses on the real clock: the
+# session cookie the server sends expires a week after the server's now, and a
+# browser on a later real date would drop a cookie dated from a frozen clock.
+# The browser resolves no outside host
 # (see --host-resolver-rules in spec/support/system.rb), so embedded videos,
 # their thumbnails and wiki frames stay offline.
 module PageCrawl
@@ -47,17 +51,28 @@ module PageCrawl
     def templates_file = Rails.root.join(DIR, "templates.yml")
     def baseline_file = Rails.root.join(DIR, "axe_baseline.yml")
 
-    # The key of a rendered view: its path under app/views, under the app root,
-    # or "gem-name:path" inside a gem. Anything else is an error, so a key is
-    # never a machine-specific absolute path.
+    # The key of a rendered view: "gem-name:path" inside a loaded gem,
+    # "bundle:path" elsewhere under the bundle path, otherwise its path under
+    # app/views or under the app root. Gems come first because a bundle can sit
+    # inside the app (vendor/bundle on CI). Anything else is an error, so a key
+    # is never a machine-specific absolute path.
     def view_key(identifier)
-      [Rails.root.join("app/views").to_s, Rails.root.to_s].each do |root|
-        return identifier.delete_prefix("#{root}/") if identifier.start_with?("#{root}/")
-      end
-      gem = Gem.loaded_specs.values.find { |spec| identifier.start_with?("#{spec.full_gem_path}/") }
-      raise ArgumentError, "view outside the app and its gems: #{identifier}" unless gem
+      gem_key(identifier) || app_key(identifier) ||
+        raise(ArgumentError, "view outside the app and its gems: #{identifier}")
+    end
 
-      "#{gem.name}:#{identifier.delete_prefix("#{gem.full_gem_path}/")}"
+    def gem_key(identifier)
+      gem = Gem.loaded_specs.values.find { |spec| identifier.start_with?("#{spec.full_gem_path}/") }
+      return "#{gem.name}:#{identifier.delete_prefix("#{gem.full_gem_path}/")}" if gem
+
+      bundle = "#{Bundler.bundle_path}/"
+      "bundle:#{identifier.delete_prefix(bundle)}" if identifier.start_with?(bundle)
+    end
+
+    def app_key(identifier)
+      roots = [Rails.root.join("app/views").to_s, Rails.root.to_s]
+      root = roots.find { |dir| identifier.start_with?("#{dir}/") }
+      identifier.delete_prefix("#{root}/") if root
     end
 
     # Lines for each key and rule whose node count differs from the baseline.
@@ -130,6 +145,15 @@ module PageCrawl
       end
     end
 
+    # Builds the world (with the admin) and probes it; returns the admin pages
+    # and the pages only a guest reaches.
+    def probe_world
+      admin # signs the probe in; created first, as part of the world
+      world = PageCrawl::World.new(self)
+      admin_pages = crawl_pages(world, sign_in: true)
+      [admin_pages, crawl_pages(world, sign_in: false).except(*admin_pages.keys)]
+    end
+
     def owned(list, shard) = list.select { |key| Browser.shard_of(key) == shard }
 
     def new_violation_details(actual, baseline)
@@ -150,11 +174,11 @@ RSpec.shared_examples "a browser page crawl shard" do |shard|
   include PageCrawl::BrowserCrawl
   include ActiveSupport::Testing::TimeHelpers
 
-  let!(:admin) { create(:user, :admin) }
+  let(:admin) { create(:user, :admin) }
 
   around do |example|
     Faker::Config.random = Random.new(PageCrawl::Browser::FAKER_SEED)
-    travel_to(PageCrawl::Browser::CLOCK) { example.run }
+    example.run
   ensure
     Faker::Config.random = nil
   end
@@ -168,9 +192,7 @@ RSpec.shared_examples "a browser page crawl shard" do |shard|
     shard_files = Rails.root.glob("#{PageCrawl::Browser::DIR}/shard_*_spec.rb")
     expect(shard_files.size).to eq(PageCrawl::Browser::SHARDS)
 
-    world = PageCrawl::World.new(self)
-    admin_pages = crawl_pages(world, sign_in: true)
-    guest_pages = crawl_pages(world, sign_in: false).except(*admin_pages.keys)
+    admin_pages, guest_pages = travel_to(PageCrawl::Browser::CLOCK) { probe_world }
     admin_pages.select! { |key, _| PageCrawl::Browser.shard_of(key) == shard }
     guest_pages.select! { |key, _| PageCrawl::Browser.shard_of(key) == shard }
 
@@ -178,6 +200,8 @@ RSpec.shared_examples "a browser page crawl shard" do |shard|
     crawl(guest_pages, found)
     log_in_as(admin)
     crawl(admin_pages, found)
+    visit root_path
+    expect_signed_in # the session lasted the whole crawl
 
     crawled = admin_pages.keys + guest_pages.keys
     expected = owned(YAML.safe_load_file(PageCrawl::Browser.templates_file), shard)
