@@ -89,39 +89,31 @@ class PopularHour < ApplicationRecord
   # Average visits per matching weekday for each (weekday, hour) of each space over the period. created_at is
   # stored in UTC, so weekday and hour are read in the app time zone, the same zone the hourly counter uses.
   def self.popular_hours_per_period(start_date, end_date)
-    lab_sessions_in_space =
-      LabSession.between_dates_picked(
-        start_date.beginning_of_day,
-        end_date.end_of_day
-      )
-    zone = Time.zone.tzinfo.identifier
-    data = {}
-    Space.all.each do |space|
-      data[space.id] = {}
-      (0..6).each do |weekday|
-        s =
-          lab_sessions_in_space.where(
-            "extract(dow from (created_at AT TIME ZONE 'UTC' AT TIME ZONE ?)) = ?",
-            zone,
-            weekday
-          ).where(space: space)
-        data[space.id][weekday] = {}
-        (0..23).each do |hour|
-          if (start_date..end_date).count { |date| weekday == date.wday } == 0
-            data[space.id][weekday][hour] = 0
-          else
-            data[space.id][weekday][hour] = (
-              s.where(
-                "extract('hour' from (created_at AT TIME ZONE 'UTC' AT TIME ZONE ?)) = ?",
-                zone,
-                hour
-              ).count.to_f /
-                (start_date..end_date).count { |date| weekday == date.wday }
-            ).round(2)
-          end
+    days_in_period = (start_date..end_date).group_by(&:wday).transform_values(&:size)
+    counts = visit_counts_by_weekday_and_hour(start_date, end_date)
+    Space.pluck(:id).index_with do |space_id|
+      (0..6).index_with do |weekday|
+        (0..23).index_with do |hour|
+          days = days_in_period.fetch(weekday, 0)
+          days.zero? ? 0 : (counts.fetch([space_id, weekday, hour], 0).to_f / days).round(2)
         end
       end
     end
-    data
   end
+
+  # Visits in the period by [space id, weekday, hour], in one grouped query.
+  def self.visit_counts_by_weekday_and_hour(start_date, end_date)
+    local_time = "created_at AT TIME ZONE 'UTC' AT TIME ZONE ?"
+    zone = Time.zone.tzinfo.identifier
+    LabSession
+      .between_dates_picked(start_date.beginning_of_day, end_date.end_of_day)
+      .where.not(space_id: nil)
+      .group(
+        :space_id,
+        Arel.sql(sanitize_sql_array(["extract(dow from (#{local_time}))::int", zone])),
+        Arel.sql(sanitize_sql_array(["extract(hour from (#{local_time}))::int", zone]))
+      )
+      .count
+  end
+  private_class_method :visit_counts_by_weekday_and_hour
 end
