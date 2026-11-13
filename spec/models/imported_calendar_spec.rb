@@ -384,6 +384,41 @@ RSpec.describe ImportedCalendar do
     end
   end
 
+  describe "#feed_rows (the occurrences in a calendar window)" do
+    def calendar_of(body)
+      serve(body)
+      described_class.load(url, name: "Hours", color: "#123456")
+    end
+
+    it "sends each occurrence of a series, with an id per occurrence, and a moved instance once under its own key" do
+      rows = calendar_of(fixture("recurrence_id_moved")).feed_rows(CalendarWindow.new(toronto.local(2027, 3, 1), toronto.local(2027, 4, 1)))
+      epoch = ->(*parts) { toronto.local(*parts).to_i }
+      expect(rows.map { |row| row.values_at(:id, :start) }).to contain_exactly(
+        ["moved@ics.test@#{epoch.call(2027, 3, 7, 10)}", "2027-03-07T10:00:00-05:00"],
+        ["moved@ics.test@#{epoch.call(2027, 3, 21, 10)}", "2027-03-21T10:00:00-04:00"],
+        ["moved@ics.test@#{epoch.call(2027, 3, 28, 10)}", "2027-03-28T10:00:00-04:00"],
+        ["moved@ics.test_#{epoch.call(2027, 3, 14, 10)}", "2027-03-15T14:00:00-04:00"]
+      )
+      expect(rows).to all(include(groupId: Digest::MD5.hexdigest(url), display: "auto", extendedProps: hash_including(name: "Hours")))
+    end
+
+    it "leaves out a one-off outside the window" do
+      body = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//spec//EN", "BEGIN:VEVENT", "UID:one@ics.test", "DTSTAMP:20270101T000000Z",
+              "DTSTART:20270317T150000Z", "DTEND:20270317T160000Z", "SUMMARY:Once", "END:VEVENT", "END:VCALENDAR"].join("\r\n")
+      calendar = calendar_of(body)
+      expect(calendar.feed_rows(CalendarWindow.new(toronto.local(2027, 3, 14), toronto.local(2027, 3, 21))).map { |row| row[:start] })
+        .to eq(["2027-03-17T11:00:00-04:00"])
+      expect(calendar.feed_rows(CalendarWindow.new(toronto.local(2027, 3, 21), toronto.local(2027, 3, 28)))).to eq([])
+    end
+
+    it "ends a one-off with no end at its start" do
+      body = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//spec//EN", "BEGIN:VEVENT", "UID:moment@ics.test", "DTSTAMP:20270101T000000Z",
+              "DTSTART:20270317T150000Z", "SUMMARY:Moment", "END:VEVENT", "END:VCALENDAR"].join("\r\n")
+      rows = calendar_of(body).feed_rows(CalendarWindow.new(toronto.local(2027, 3, 14), toronto.local(2027, 3, 21)))
+      expect(rows.map { |row| row.values_at(:start, :end) }).to eq([%w[2027-03-17T11:00:00-04:00 2027-03-17T11:00:00-04:00]])
+    end
+  end
+
   describe ".time_of" do
     def value(line) = Icalendar::Calendar.parse(ics(vevent("a", line))).first.events.first.dtstart
 

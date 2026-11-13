@@ -86,7 +86,7 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
             unavailability = StaffUnavailability.last
             expect(unavailability.start_time).to eq(Time.iso8601(c["instant"]))
 
-            get json_staff_unavailabilities_path
+            get json_staff_unavailabilities_path, params: { start: (unavailability.start_time - 1.day).iso8601, end: (unavailability.start_time + 1.day).iso8601 }
             row = response.parsed_body.find { |r| r["id"] == unavailability.id }
             expect(field_of(row["start"])).to eq(c["field"])
           end
@@ -200,12 +200,12 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
                 expect(row["rrule"]).to eq(c["served"])
               end
 
-              it "is sent to the staff unavailabilities calendar in Toronto time" do
+              it "is sent to the staff unavailabilities calendar as the occurrences of the table" do
                 staff = sign_in_as(:staff)
-                unavailability = create(:staff_unavailability, user: staff, start_time: start, end_time: start + 1.hour,
-                                                               recurrence_rule: text)
-                get json_staff_unavailabilities_path
-                expect(response.parsed_body.find { |r| r["id"] == unavailability.id }["rrule"]).to eq(c["served"])
+                create(:staff_unavailability, user: staff, start_time: start, end_time: start + 1.hour, recurrence_rule: text)
+                get json_staff_unavailabilities_path, params: { start: start.iso8601, end: (start + 60.days).iso8601 }
+                sent = response.parsed_body.map { |r| Time.iso8601(r.dig("extendedProps", "occurrenceStart")) }
+                expect(sent).to eq(c["occurrences"].map { |stamp| Time.iso8601(stamp) })
               end
 
               it "is sent to Google as its RRULE line only" do

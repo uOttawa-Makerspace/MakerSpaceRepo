@@ -24,8 +24,11 @@ class CalendarWindow
   def self.from_params(params)
     return ALL if params[:start].blank? && params[:end].blank?
 
-    new(parse(params[:start]), parse(params[:end]))
+    bounded(params)
   end
+
+  # The window of a feed that needs one: both params are required.
+  def self.bounded(params) = new(parse(params[:start]), parse(params[:end]))
 
   # The time, or nil when the value is not one.
   def self.parse(value)
@@ -52,8 +55,6 @@ class CalendarWindow
   def entries(list)
     list.select { |entry| entry.series || overlaps?(entry.starts_at, entry.ends_at) }
   end
-
-  private
 
   # An entry with no end is a moment at its start.
   def overlaps?(starts_at, ends_at)

@@ -2,15 +2,15 @@
 
 require "rails_helper"
 
-# The repeat rule strings the admin events feed, the admin unavailabilities
-# feed and the staff unavailabilities feed send to the browser, for weekly
-# series across the America/Toronto clock changes of 2027 (forward Sunday
-# 2027-03-14 at 02:00, back Sunday 2027-11-07 at 02:00). The browser expands
-# them with @fullcalendar/rrule in the Toronto zone; the same strings are drawn
-# in spec/javascript/calendars/rrule_feed_dst.test.js. Each example also lists
-# what the server's own expansion (RecurringSeries, used by the staff
-# calendar and the shifts API) gives for the same series, so the two can be
-# compared.
+# What the calendar feeds send for weekly series across the America/Toronto
+# clock changes of 2027 (forward Sunday 2027-03-14 at 02:00, back Sunday
+# 2027-11-07 at 02:00). The admin events feed (and the admin unavailabilities
+# feed asked without a range, for the event dialog) send a repeat rule string
+# that the browser expands with @fullcalendar/rrule in the Toronto zone; the
+# same strings are drawn in spec/javascript/calendars/rrule_feed_dst.test.js.
+# The unavailabilities feeds asked for a range send the occurrences of the
+# server's own expansion (RecurringSeries, also used by the staff calendar and
+# the shifts API), so they draw what the server stores.
 RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", type: :request do
   include SpacesSpecHelpers
 
@@ -21,6 +21,16 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
 
   def server_occurrences(rule, start)
     series_starts(rule, start, start, start + 27.days, 10).map(&:iso8601)
+  end
+
+  # The four weeks from the series start, as the calendar pages ask for them.
+  def four_weeks(start) = { start: start.iso8601, end: (start + 27.days + 2.hours).iso8601 }
+
+  def staff_feed_starts(start, stored)
+    staff = sign_in_as(:staff)
+    create(:staff_unavailability, user: staff, start_time: start, end_time: start + 1.hour, recurrence_rule: stored)
+    get json_staff_unavailabilities_path, params: four_weeks(start)
+    response.parsed_body.map { |row| row["start"] }
   end
 
   # Each scenario: the first occurrence, the rule as stored, the rule the feeds send and the occurrences the
@@ -76,12 +86,19 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
         expect(row["rrule"]).to eq(scenario[:sent])
       end
 
-      it "is sent as Toronto wall-clock text by the staff unavailabilities feed" do
-        staff = sign_in_as(:staff)
-        unavailability = create(:staff_unavailability, user: staff, start_time: start, end_time: start + 1.hour, recurrence_rule: stored)
-        get json_staff_unavailabilities_path
-        row = response.parsed_body.find { |r| r["id"] == unavailability.id }
-        expect(row["rrule"]).to eq(scenario[:sent])
+      it "is sent by the admin unavailabilities feed for a range as the server's occurrences" do
+        sign_in_as(:admin)
+        staff = create(:user, :staff)
+        create(:staff_space, user: staff, space: space)
+        create(:staff_unavailability, user: staff, start_time: start, end_time: start + 1.hour, recurrence_rule: stored)
+        get unavailabilities_json_admin_calendar_index_path(id: space.id), params: four_weeks(start)
+        rows = response.parsed_body.flat_map { |group| group["unavailabilities"] }
+        expect(rows.map { |row| row["start"] }).to eq(scenario[:server])
+        expect(rows.map { |row| Time.iso8601(row.dig("extendedProps", "occurrenceStart")) }).to eq(scenario[:server].map { |t| Time.iso8601(t) })
+      end
+
+      it "is sent by the staff unavailabilities feed as the server's occurrences" do
+        expect(staff_feed_starts(start, stored)).to eq(scenario[:server])
       end
 
       it "is expanded by the server at the occurrences the staff calendar and the shifts API use" do
@@ -109,6 +126,10 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
         %w[2027-10-31T01:30:00-04:00 2027-11-07T01:30:00-04:00 2027-11-14T01:30:00-05:00 2027-11-21T01:30:00-05:00]
       )
     end
+
+    it "leaves the change-day occurrence in the staff unavailabilities feed" do
+      expect(staff_feed_starts(start, stored)).to eq(server_occurrences(stored, start))
+    end
   end
 
   # An occurrence the modal excludes on the change day at 02:30 is stamped at
@@ -127,11 +148,14 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
         %w[2027-03-07T02:30:00-05:00 2027-03-21T02:30:00-04:00 2027-03-28T02:30:00-04:00]
       )
     end
+
+    it "is left out of the staff unavailabilities feed" do
+      expect(staff_feed_starts(start, stored)).to eq(server_occurrences(stored, start))
+    end
   end
-  # What each internal feed sends as the start and end of a stored series. The admin events feed and the staff
-  # unavailabilities feed send instants with the Toronto offset; the admin unavailabilities feed sends Toronto wall
-  # time without an offset. (Disagreement: the same series is described two ways. The window the page asks for is
-  # ignored by all of them: every feed sends the whole series.)
+  # What each internal feed sends as the start and end of a stored series asked for the week of the change. The
+  # admin events feed sends the series' own first start (the page repeats it); the unavailabilities feeds send the
+  # change-day occurrence, at the time the server moves the skipped 02:30 to, with the Toronto offset.
   context "for the start and end each feed sends for a stored series" do
     let(:start) { zone.local(2027, 3, 7, 2, 30) }
     let(:stored) { "DTSTART:#{stamp(start)}\nRRULE:FREQ=WEEKLY;BYDAY=SU" }
@@ -144,22 +168,24 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
       expect([row["start"], row["end"]]).to eq(%w[2027-03-07T02:30:00-05:00 2027-03-07T03:30:00-05:00])
     end
 
-    it "sends Toronto wall time without an offset from the admin unavailabilities feed" do
+    it "sends the change-day occurrence with the offset from the admin unavailabilities feed" do
       sign_in_as(:admin)
       staff = create(:user, :staff)
       create(:staff_space, user: staff, space: space)
       unavailability = create(:staff_unavailability, user: staff, start_time: start, end_time: start + 1.hour, recurrence_rule: stored)
-      get unavailabilities_json_admin_calendar_index_path(id: space.id), params: { start: "2027-03-14T00:00:00-04:00", end: "2027-03-15T00:00:00-04:00" }
-      row = response.parsed_body.flat_map { |group| group["unavailabilities"] }.find { |r| r["id"] == unavailability.id }
-      expect([row["start"], row["end"]]).to eq(%w[2027-03-07T02:30:00 2027-03-07T03:30:00])
+      get unavailabilities_json_admin_calendar_index_path(id: space.id), params: { start: "2027-03-14T00:00:00-05:00", end: "2027-03-15T00:00:00-04:00" }
+      row = response.parsed_body.flat_map { |group| group["unavailabilities"] }.sole
+      expect(row.values_at("id", "start", "end")).to eq(["#{unavailability.id}@#{Time.utc(2027, 3, 14, 7, 30).to_i}",
+                                                         "2027-03-14T03:30:00-04:00", "2027-03-14T04:30:00-04:00"])
     end
 
-    it "sends an instant with the offset from the staff unavailabilities feed" do
+    it "sends the change-day occurrence with the offset from the staff unavailabilities feed" do
       staff = sign_in_as(:staff)
       unavailability = create(:staff_unavailability, user: staff, start_time: start, end_time: start + 1.hour, recurrence_rule: stored)
-      get json_staff_unavailabilities_path, params: { start: "2027-03-14T00:00:00-04:00", end: "2027-03-15T00:00:00-04:00" }
-      row = response.parsed_body.find { |r| r["id"] == unavailability.id }
-      expect([row["start"], row["end"]]).to eq(%w[2027-03-07T02:30:00-05:00 2027-03-07T03:30:00-05:00])
+      get json_staff_unavailabilities_path, params: { start: "2027-03-14T00:00:00-05:00", end: "2027-03-15T00:00:00-04:00" }
+      row = response.parsed_body.sole
+      expect(row.values_at("id", "start", "end")).to eq(["#{unavailability.id}@#{Time.utc(2027, 3, 14, 7, 30).to_i}",
+                                                         "2027-03-14T03:30:00-04:00", "2027-03-14T04:30:00-04:00"])
     end
   end
 
@@ -178,6 +204,13 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
       get json_admin_events_path(id: space.id)
       row = response.parsed_body.flat_map { |group| group["events"] }.find { |r| r["id"] == "event-#{event.id}" }
       expect(row["duration"]).to eq(7_200_000)
+    end
+
+    it "is sent by the staff unavailabilities feed ending two real hours later, at 04:00 daylight time" do
+      staff = sign_in_as(:staff)
+      create(:staff_unavailability, user: staff, start_time: start, end_time: start + 2.hours, recurrence_rule: stored)
+      get json_staff_unavailabilities_path, params: { start: "2027-03-14T00:00:00-05:00", end: "2027-03-15T00:00:00-04:00" }
+      expect(response.parsed_body.sole.values_at("start", "end")).to eq(%w[2027-03-14T01:00:00-05:00 2027-03-14T04:00:00-04:00])
     end
 
     it "is expanded by the server with the clock-change occurrence at 01:00 standard time, ending at 04:00 in real time" do
@@ -233,10 +266,10 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
       response.parsed_body.flat_map { |group| group["unavailabilities"] }
     end
 
-    def staff_unavailabilities_rows
+    def staff_unavailabilities_rows(range)
       staff = sign_in_as(:staff)
       create(:staff_external_unavailability, user: staff, ics_url: feed_url)
-      get json_staff_unavailabilities_path
+      get json_staff_unavailabilities_path, params: range
       response.parsed_body
     end
 
@@ -249,7 +282,7 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
       expected.fetch(fixture).to_h { |row| [row["id"], row.slice("rrule", "duration", "allDay")] }
     end
 
-    %i[admin_imported_calendars open_hours admin_unavailabilities staff_unavailabilities].each do |feed|
+    %i[admin_imported_calendars open_hours admin_unavailabilities].each do |feed|
       context "in the #{feed.to_s.tr('_', ' ')} feed" do
         it "sends a Toronto-zone series over both clock changes as floating Toronto text" do
           rows = sent(feed, "toronto_tzid")
@@ -274,6 +307,31 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
           expect(rows).to eq(fixture_rows("recurrence_id_cancelled"))
           expect(rows.keys).to contain_exactly("cancelled@ics.test")
         end
+      end
+    end
+    # The staff unavailabilities feed sends the occurrences of the imported series in the range, in the zone of the
+    # file, as the server expands them.
+    context "in the staff unavailabilities feed" do
+      def starts(fixture, range)
+        serve(fixture)
+        staff_unavailabilities_rows(range).map { |row| [row["id"], row["start"]] }
+      end
+
+      it "sends a Toronto-zone series at its occurrences, the skipped 02:30 at 03:30" do
+        expect(starts("toronto_tzid", start: "2027-03-07T00:00:00-05:00", end: "2027-03-15T00:00:00-04:00")).to eq([
+          ["spring-0230@ics.test@#{Time.utc(2027, 3, 7, 7, 30).to_i}", "2027-03-07T02:30:00-05:00"],
+          ["spring-0230@ics.test@#{Time.utc(2027, 3, 14, 7, 30).to_i}", "2027-03-14T03:30:00-04:00"]
+        ])
+      end
+
+      it "sends a Paris-zone series at 09:00 Paris time, 04:00 in Toronto while only Toronto has changed its clocks" do
+        expect(starts("paris_tzid", start: "2027-03-14T00:00:00-05:00", end: "2027-03-29T00:00:00-04:00").map(&:last))
+          .to eq(%w[2027-03-14T04:00:00-04:00 2027-03-21T04:00:00-04:00 2027-03-28T03:00:00-04:00])
+      end
+
+      it "leaves out the cancelled instance and the cancelled series" do
+        expect(starts("recurrence_id_cancelled", start: "2027-03-07T00:00:00-05:00", end: "2027-03-22T00:00:00-04:00").map(&:last))
+          .to eq(%w[2027-03-07T10:00:00-05:00 2027-03-21T10:00:00-04:00])
       end
     end
   end

@@ -84,6 +84,15 @@ class RecurrenceRule
     (["DTSTART:#{wall_stamp(@series_start)}"] + lines.map { |l| in_wall_time(l) }).join("\n")
   end
 
+  # What the calendar dialogs show of the series: its frequency, its weekdays and the Toronto date it repeats
+  # until (nil when it does not end on a date).
+  def dialog_fields
+    body = self.class.rule_body(@text)
+    until_stamp = body[/UNTIL=([\dTZ]+)/, 1]
+    { frequency: body[/FREQ=(\w+)/, 1], weekdays: body[/BYDAY=([^;]+)/, 1].to_s.split(","),
+      until: until_stamp && ZONE.parse(until_stamp).to_date.iso8601 }
+  end
+
   # The series without the occurrence that starts at `start` ("delete this
   # event"), written again through the rrule gem.
   def without_occurrence(start)

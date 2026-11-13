@@ -49,6 +49,15 @@ RSpec.describe CalendarWindow do
     end
   end
 
+  describe ".bounded" do
+    it "needs both params" do
+      expect { described_class.bounded(ActionController::Parameters.new({})) }
+        .to raise_error(CalendarWindow::Invalid, I18n.t("errors.calendar.window_invalid"))
+      window = described_class.bounded(ActionController::Parameters.new(start: "2027-03-14", end: "2027-03-21"))
+      expect([window.from, window.to]).to eq([RecurrenceRule::ZONE.local(2027, 3, 14), RecurrenceRule::ZONE.local(2027, 3, 21)])
+    end
+  end
+
   describe "#records" do
     let(:user) { create(:user, :staff) }
     let(:week) { window("2027-03-14", "2027-03-21") }

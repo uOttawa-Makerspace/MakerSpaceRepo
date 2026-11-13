@@ -76,3 +76,30 @@ RSpec.describe StaffUnavailability, "#calendar_row", type: :model do
     expect(row[:duration]).to eq(3_600_000.0)
   end
 end
+
+RSpec.describe StaffUnavailability, "#calendar_rows", type: :model do
+  let(:zone) { RecurrenceRule::ZONE }
+  let(:week) { CalendarWindow.new(zone.local(2027, 3, 14), zone.local(2027, 3, 21)) }
+
+  it "is the admin calendar row of a one-off in the window, with its Toronto offset and record id" do
+    unavailability = create(:staff_unavailability, title: "Doctor", description: "Away",
+                                                   start_time: zone.local(2027, 3, 15, 9), end_time: zone.local(2027, 3, 15, 11))
+
+    expect(unavailability.calendar_rows("Ann", week)).to eq([{
+      id: unavailability.id, title: "🚫 Ann - Doctor", start: "2027-03-15T09:00:00-04:00", end: "2027-03-15T11:00:00-04:00",
+      allDay: false, className: "unavailability",
+      extendedProps: { name: "Ann", title: "Doctor", description: "Away", recordId: unavailability.id, series: nil,
+                       occurrenceStart: "2027-03-15T13:00:00Z" }
+    }])
+  end
+
+  it "is each occurrence of a series in the window, with what the dialogs show of its repeat" do
+    unavailability = create(:staff_unavailability, start_time: zone.local(2027, 1, 4, 9), end_time: zone.local(2027, 1, 4, 10),
+                                                   recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=MO,WE")
+    rows = unavailability.calendar_rows("Ann", week)
+
+    expect(rows.map { |row| row[:start] }).to eq(%w[2027-03-15T09:00:00-04:00 2027-03-17T09:00:00-04:00])
+    expect(rows.map { |row| row[:id] }).to eq(["#{unavailability.id}@#{Time.utc(2027, 3, 15, 13).to_i}", "#{unavailability.id}@#{Time.utc(2027, 3, 17, 13).to_i}"])
+    expect(rows.first[:extendedProps]).to include(recordId: unavailability.id, series: { frequency: "WEEKLY", weekdays: %w[MO WE], until: nil })
+  end
+end

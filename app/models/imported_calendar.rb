@@ -41,6 +41,13 @@ class ImportedCalendar
   Entry = Data.define(:uid, :recurrence_id, :summary, :description, :all_day, :starts_at, :ends_at, :series) do
     # The row key in the calendar: a modified instance is told apart from its series by its original instant.
     def key = recurrence_id ? "#{uid}_#{recurrence_id.to_i}" : uid
+
+    # Its occurrences that overlap the window (a CalendarWindow); a one-off with no end ends at its start.
+    def occurrences_in(window)
+      return series.occurrences_in(window) if series
+
+      window.overlaps?(starts_at, ends_at) ? [RecurringSeries::Occurrence.new(starts_at:, ends_at: ends_at || starts_at, all_day:)] : []
+    end
   end
 
   attr_reader :id, :color, :name, :entries
@@ -121,6 +128,14 @@ class ImportedCalendar
     @unknown_zones = Set.new
     @problems = Hash.new(0)
     @problem_uids = []
+  end
+
+  # The occurrences of the calendar's entries in the window (a CalendarWindow), as the calendar pages draw them.
+  def feed_rows(window)
+    entries.flat_map do |entry|
+      row = { groupId: id, title: entry.summary, display: "auto", extendedProps: { name: name, description: entry.description } }
+      entry.occurrences_in(window).map { |occurrence| occurrence.feed_row(entry.key, row, repeating: entry.series) }
+    end
   end
 
   # Whether the feed could not be read: no body, a fetch or parse error, or a body with no calendar in it.

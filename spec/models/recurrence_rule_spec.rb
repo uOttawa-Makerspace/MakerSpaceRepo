@@ -67,6 +67,25 @@ RSpec.describe RecurrenceRule do
     end
   end
 
+  describe "#dialog_fields" do
+    it "is the frequency, the weekdays and the Toronto date of the last day" do
+      expect(rule("DTSTART:20270301T150000Z\nRRULE:FREQ=WEEKLY;UNTIL=20270316T035959Z;BYDAY=MO,WE").dialog_fields)
+        .to eq(frequency: "WEEKLY", weekdays: %w[MO WE], until: "2027-03-15")
+    end
+
+    JSON.parse(Rails.root.join("spec/fixtures/calendar_dst_cases.json").read)["untilDates"].each do |c|
+      it "is the Toronto date of a series written to end on #{c['label']}" do
+        expect(rule("RRULE:FREQ=DAILY;UNTIL=#{c['until']}").dialog_fields[:until]).to eq(c["date"])
+      end
+    end
+
+    it "reads a bare rule body, a date-only or wall-clock UNTIL, and none" do
+      expect(rule("FREQ=DAILY;UNTIL=20270320").dialog_fields).to eq(frequency: "DAILY", weekdays: [], until: "2027-03-20")
+      expect(rule("RRULE:FREQ=MONTHLY;UNTIL=20270320T235959").dialog_fields).to eq(frequency: "MONTHLY", weekdays: [], until: "2027-03-20")
+      expect(rule.dialog_fields).to eq(frequency: "WEEKLY", weekdays: ["MO"], until: nil)
+    end
+  end
+
   describe "#without_occurrence" do
     it "excludes the instant and keeps the earlier exclusions" do
       expect(rule.without_occurrence(Time.utc(2027, 3, 15, 15))).to eq(

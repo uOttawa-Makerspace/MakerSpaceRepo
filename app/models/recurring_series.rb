@@ -28,7 +28,23 @@ class RecurringSeries
 
   class UnsupportedRule < ArgumentError; end
 
-  Occurrence = Data.define(:starts_at, :ends_at, :all_day)
+  Occurrence = Data.define(:starts_at, :ends_at, :all_day) do
+    # The occurrence as a calendar page draws it: `row` with this occurrence's start, end and all-day flag (Toronto
+    # times with their offset, which keeps the second 01:30 of a fall-back night apart; dates for an all-day one), an
+    # id (`key`, and for an occurrence of a series its start) and its start as an instant, which the dialogs post
+    # back to delete or replace it.
+    def feed_row(key, row, repeating:)
+      row.merge(id: repeating ? "#{key}@#{starts_at.to_i}" : key, start: feed_time(starts_at), end: feed_time(ends_at),
+                allDay: all_day, extendedProps: row[:extendedProps].merge(occurrenceStart: starts_at.utc.iso8601))
+    end
+
+    private
+
+    def feed_time(time)
+      zoned = time.in_time_zone(ZONE)
+      all_day ? zoned.to_date.iso8601 : zoned.iso8601
+    end
+  end
   Result = Data.define(:occurrences, :truncated)
 
   # `record` is an Event or StaffUnavailability.
@@ -71,6 +87,13 @@ class RecurringSeries
     collect(starts_between(window.begin, window.end), limit)
   end
 
+  # Occurrences that overlap the window (a CalendarWindow); a series with no rule is its one occurrence. The walk
+  # starts one occurrence length before the window, so an occurrence that began before it is kept.
+  def occurrences_in(window)
+    starts = @rule.blank? ? [@starts_at] : starts_between(window.from - reach, window.to)
+    starts.map { |start| occurrence_at(start) }.select { |occurrence| window.overlaps?(occurrence.starts_at, occurrence.ends_at) }.to_a
+  end
+
   private
 
   # What a start needs to become an occurrence: all-day or not, and how far it reaches.
@@ -80,11 +103,14 @@ class RecurringSeries
   end
 
   def collect(starts, limit)
-    found = starts.first(limit + 1).map { |start| Occurrence.new(starts_at: start, ends_at: ends_at(start), all_day: @all_day) }
+    found = starts.first(limit + 1).map { |start| occurrence_at(start) }
     Result.new(occurrences: found.first(limit), truncated: found.size > limit)
   end
 
-  def ends_at(start) = start.advance(@span)
+  def occurrence_at(start) = Occurrence.new(starts_at: start, ends_at: start.advance(@span), all_day: @all_day)
+
+  # How long before a window an occurrence that reaches into it can start (an all-day one is at most 25 hours long).
+  def reach = @all_day ? 25.hours : @span[:seconds]
 
   # The only method that reaches the repeat library. Lazy: the caller's
   # first(limit + 1) stops the walk. The gem takes COUNT from its start, so the
