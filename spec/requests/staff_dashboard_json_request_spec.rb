@@ -54,7 +54,7 @@ RSpec.describe "Staff dashboard JSON", type: :request do
     create(:walk_in_safety_sheet, :is_adult, user: visitor, space: space)
     create(:membership, user: visitor, end_date: 10.days.from_now)
     staff = sign_in_as(:staff, space: space)
-    [space, other_space].each { |s| StaffSpace.create!(user: staff, space: s) }
+    [space, other_space].each { |s| StaffSpace.find_or_create_by!(user: staff, space: s) }
 
     get staff_dashboard_index_path, as: :json
 

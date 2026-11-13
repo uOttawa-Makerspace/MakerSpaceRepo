@@ -112,6 +112,7 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request do
   # separates ids, so a client holding the first set's token still gets the full payload for the second.
   it "answers the full payload for a different signed-in set whose ids concatenate to the same digits" do
     third_space = create(:space)
+    StaffSpace.create!(user: staff, space: third_space)
     staff.update!(space: third_space)
     # explicit ids far above any users_id_seq value (the sequence is not rolled back between examples)
     a = create(:user, :regular_user, id: 9_000_001)
@@ -144,6 +145,7 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request do
   end
 
   it "follows the staff member's space" do
+    StaffSpace.create!(user: staff, space: other_space)
     staff.update!(space: other_space)
 
     refresh

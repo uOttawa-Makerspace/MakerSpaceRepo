@@ -2,6 +2,8 @@
 
 class Staff::TrainingSessionsController < StaffDashboardController
   layout "staff_area"
+  skip_before_action :require_space
+  before_action :require_space, only: :new
   before_action :current_training_session, except: %i[new create index]
   before_action :changed_params, only: [:update]
   before_action :verify_ownership, except: %i[new create index]

@@ -6,7 +6,8 @@ RSpec.describe Staff::MyCalendarController, type: :controller do
   before(:each) do
     @space = create(:space)
     @user = create(:user, :staff, space_id: @space.id)
-    @staff_space = create(:staff_space, user: @user, space: @space, color: '#FF5733')
+    @staff_space = @user.staff_spaces.find_by!(space: @space)
+    @staff_space.update!(color: '#FF5733')
     
     @base_event = create(:event,
       space: @space,

@@ -4,7 +4,11 @@ class StaffDashboardController < StaffAreaController
   # The only user fields the search JSON sends (what the staff app reads, plus id).
   SEARCH_JSON_FIELDS = %i[id name username email].freeze
 
-  # NOTE: @space is set by StaffAreaController
+  # NOTE: @space is set by StaffAreaController, and is always a space the user may work in.
+  before_action :require_space, only: %i[
+    index refresh_capacity refresh_tables import_excel sign_out_users add_signed_in_users_to_teams
+    sign_out_all_users sign_in_users search present_users_report
+  ]
   
   def index
     # Strict loading because this is used in table views

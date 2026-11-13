@@ -21,6 +21,17 @@ RSpec.describe "Staff training sessions", type: :request do
       training_session: { space_id: space.id }, training_session_users: [student.id] }.merge(overrides)
   end
 
+  describe "new form with no space to work in" do
+    it "says the staff member has no assigned spaces, even with a stale saved space" do
+      loner = create(:user, :staff)
+      loner.update_columns(space_id: space.id)
+      log_in!(loner)
+      get new_staff_training_session_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(I18n.t("common.no_assigned_spaces"))
+    end
+  end
+
   describe "role matrix" do
     let(:calls) do
       {
