@@ -179,6 +179,51 @@ RSpec.describe "Printers", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    describe "staff_printers_updates rows" do
+      let(:type) { um2p.printer_type }
+      let(:printers) { [um2p, create(:printer, number: "02", printer_type: type), create(:printer, number: "10", printer_type: type)] }
+      let(:alice) { create(:user, :regular_user) }
+      let(:bob) { create(:user, :regular_user) }
+
+      before do
+        printers
+        create(:printer_session, printer: printers[0], user: bob, in_use: false, created_at: 2.days.ago)
+        create(:printer_session, printer: printers[0], user: alice, in_use: true, created_at: 1.hour.ago)
+        create(:printer_session, printer: printers[2], user: bob, in_use: false)
+        create(:printer_issue, :nozzle_clogged, printer: printers[0])
+        create(:printer_issue, :nozzle_clogged, printer: printers[0])
+        create(:printer_issue, :bed_issue, :inactive, printer: printers[0])
+        create(:printer_issue, printer: printers[2], summary: "Something else")
+      end
+
+      def rows
+        Nokogiri::HTML(response.body).css("table.table-0 tbody tr").map { |tr| tr.css("td").map { |td| td.text.squish } }
+      end
+
+      it "lists each printer with its last user, in-use state and active issues" do
+        get staff_printers_updates_printers_path
+        expect(rows.map(&:first)).to eq(printers.map(&:name))
+        expect(rows[0][1]).to eq(alice.username)
+        expect(rows[0][3]).to eq("Yes")
+        expect(rows[0][4]).to include("(2) Nozzle clogged")
+        expect(rows[0][4]).not_to include("Bed issue")
+        expect(rows[1][1..3]).to eq(%w[------- ------- No])
+        expect(rows[2][1..3]).to eq(%w[------- ------- No])
+        expect(rows[2][4]).to include("(1) Other")
+      end
+
+      it "reads printers, sessions and issues in a number of queries that does not grow with the printers" do
+        few = selects_on("printers", "printer_sessions", "printer_issues") { get staff_printers_updates_printers_path }.size
+        (20..23).map { |n| create(:printer, number: n.to_s, printer_type: type) }.each do |printer|
+          create(:printer_session, printer: printer, user: alice, in_use: true)
+          create(:printer_issue, printer: printer)
+        end
+        many = selects_on("printers", "printer_sessions", "printer_issues") { get staff_printers_updates_printers_path }.size
+        expect(many).to eq(few)
+        expect(many).to be <= 4
+      end
+    end
+
     it "printer_data refuses a plain page request and returns nested JSON" do
       create(:printer_issue, printer: um2p)
       get printer_data_printers_path

@@ -22,16 +22,18 @@ RSpec.describe Printer, type: :model do
       end
     end
 
-    context "get printer id" do
-      it "should return matching ids" do
-        expect(Printer.get_printer_ids(@pt_1.name)).to eq(
-          [@pt_1_1.id, @pt_1_2.id]
-        )
-        expect(Printer.get_printer_ids(@pt_2.name)).to eq([@pt_2_1.id])
-        expect(Printer.get_printer_ids(@pt_3.name)).to eq(
-          [@pt_3_1.id, @pt_3_2.id]
-        )
-        expect(Printer.get_printer_ids(@pt_4.name)).to eq([@pt_4_1.id])
+    context "last sessions" do
+      it "gives the latest session of each printer with its user, and none for a printer without sessions" do
+        user = create(:user, :regular_user)
+        create(:printer_session, printer: @pt_1_1, in_use: false, created_at: 2.days.ago)
+        latest = create(:printer_session, printer: @pt_1_1, user: user, created_at: 1.day.ago)
+        other = create(:printer_session, printer: @pt_2_1)
+
+        found = nil
+        queries = count_queries { found = Printer.last_sessions([@pt_1_1, @pt_1_2, @pt_2_1]).transform_values { |s| [s.id, s.user.id] } }
+
+        expect(found).to eq(@pt_1_1.id => [latest.id, user.id], @pt_2_1.id => [other.id, other.user.id])
+        expect(queries).to eq(2)
       end
     end
 

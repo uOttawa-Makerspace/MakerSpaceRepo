@@ -218,6 +218,28 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "names who dismissed each announcement without querying per announcement" do
+      sign_in_as(:admin)
+      users = create_list(:user, 7, :regular_user)
+      few = create(:announcement, :volunteer, user: admin, description: "Few")
+      users.first(2).each { |u| AnnouncementDismiss.create!(announcement: few, user: u) }
+      many = create(:announcement, :volunteer, user: admin, description: "Many")
+      users.each { |u| AnnouncementDismiss.create!(announcement: many, user: u) }
+      none = create(:announcement, :volunteer, user: admin, description: "None")
+      gone = create(:user, :regular_user)
+      AnnouncementDismiss.create!(announcement: none, user: gone)
+      gone.update_column(:deleted, true)
+
+      queries = selects_on("announcement_dismisses", "users") { get admin_announcements_path }
+
+      page = Nokogiri::HTML(response.body)
+      cells = page.css("span[data-bs-toggle=tooltip]").map { |span| [span["title"], span.text.squish] }
+      expect(cells.map(&:last)).to include("Dismissed by: 2 Users", "Dismissed by: 7 Users", "Dismissed by: 1 User")
+      expect(cells.map(&:first)).to include(users.first(2).map(&:username).join(", "), "")
+      expect(cells.map(&:first).find { |t| t.end_with?("And more") }.split(", ").size).to eq(5)
+      expect(queries.grep(/FROM "announcement_dismisses" WHERE "announcement_dismisses"."announcement_id"/).size).to eq(1)
+    end
+
     it "creates an announcement for any audience string" do
       admin = sign_in_as(:admin)
       post admin_announcements_path, params: { announcement: { description: "Hello", public_goal: "all", active: true, end_date: "2030-01-01" } }

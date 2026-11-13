@@ -19,4 +19,9 @@ class Announcement < ApplicationRecord
   scope :admins, -> { where(public_goal: "admin") }
   scope :staff, -> { where(public_goal: "staff") }
   scope :regular_user, -> { where(public_goal: "regular_user") }
+
+  # Usernames of the users who dismissed it (an account that was deleted is not named).
+  def dismissed_usernames
+    announcement_dismisses.filter_map { |dismissal| dismissal.user&.username }
+  end
 end
