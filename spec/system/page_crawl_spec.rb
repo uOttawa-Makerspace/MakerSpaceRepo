@@ -16,8 +16,10 @@ require "rails_helper"
 # list fails the example, and so does an entry that no longer occurs, so the
 # list is pruned as pages are fixed. The colour rules are left out (colour is a
 # design decision), and so are the documents inside frames (outside sites,
-# stored PDFs, SCORM packages): the frame elements themselves are checked. The
-# browser resolves no outside host (see --host-resolver-rules in
+# stored PDFs, SCORM packages): the frame elements themselves are checked.
+# Fragments (markup a page fetches and inserts) skip the rules about the
+# document's title and language, which the host page provides. The browser
+# resolves no outside host (see --host-resolver-rules in
 # spec/support/system.rb), so embedded videos, their thumbnails and wiki frames
 # stay offline.
 RSpec.describe "Page crawl (browser, one page per view template)", type: :system do
@@ -30,15 +32,17 @@ RSpec.describe "Page crawl (browser, one page per view template)", type: :system
 
   def baseline_file = Rails.root.join("spec/system/page_crawl_axe_baseline.yml")
 
-  # template => path of the first crawlable route that answers 200 with HTML
-  # rendered by it, for a fresh probe session (signed in as the admin when asked).
+  # template => [path, fragment] for the first crawlable route that answers
+  # 200 with HTML rendered by it, for a fresh probe session (signed in as the
+  # admin when asked). A fragment is markup without an <html> element, which a
+  # page fetches and inserts into itself.
   def template_pages(world, sign_in:)
     probe = ActionDispatch::Integration::Session.new(Rails.application)
     sign_in_probe(probe) if sign_in
     PageCrawl.routes.each_with_object({}) do |route, pages|
       path = crawlable_path(route, world) or next
       template = rendered_template(probe, path)
-      pages[template || route.path_spec] ||= path if html_page?(probe.response)
+      pages[template || route.path_spec] ||= [path, fragment?(probe.response)] if html_page?(probe.response)
     end
   end
 
@@ -47,6 +51,8 @@ RSpec.describe "Page crawl (browser, one page per view template)", type: :system
   end
 
   def html_page?(response) = response.status == 200 && response.media_type == "text/html"
+
+  def fragment?(response) = !response.body.match?(/<html[\s>]/i)
 
   # Signs in through the login form, with its CSRF token (forgery protection is on).
   def sign_in_probe(probe)
@@ -68,13 +74,16 @@ RSpec.describe "Page crawl (browser, one page per view template)", type: :system
     view&.payload&.dig(:identifier)&.delete_prefix("#{views}/")
   end
 
-  # Opens each page; returns the axe rule counts and the console errors by template.
+  # Opens each page; collects the axe rule counts by template and the console
+  # errors by path. A fragment is audited without the rules about the document
+  # (its title and language), which the page it is inserted into provides.
   def crawl(pages, found)
-    pages.each do |template, path|
+    pages.each do |template, (path, fragment)|
       visit path
       expect(page).to have_css("body")
       wait_for_page_settled
-      violations = AxeAudit.record(AxeAudit.run(page, skip: AxeAudit::COLOUR_RULES, frames: false), path, template)
+      skip = AxeAudit::COLOUR_RULES + (fragment ? AxeAudit::DOCUMENT_RULES : [])
+      violations = AxeAudit.record(AxeAudit.run(page, skip:, frames: false), path, template)
       found[:axe][template] = violations.map(&:rule).tally.sort.to_h if violations.any?
       messages = JsErrorCheck.collect(page).map { |e| e[:message] }
       found[:errors][path] = messages if messages.any?
