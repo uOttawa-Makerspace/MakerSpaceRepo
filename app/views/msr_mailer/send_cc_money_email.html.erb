@@ -1,5 +1,6 @@
+<% claim_url = link_cc_to_user_cc_moneys_url(token: @hash) %>
 <% content_for :preheader do %>
-  Makerepo - CC Points Purchase Successful
+  <%= t('msr_mailer.send_cc_money_email.preheader') %>
 <% end %>
 
 <% content_for :team_name do %>
@@ -7,15 +8,15 @@
 <% end %>
 
 <% content_for :why_received do %>
-  You have received this email because you bought CC Points for your <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a> account.
+  <%= t('msr_mailer.send_cc_money_email.why_received_html', site_link: link_to('makerepo.com', 'https://makerepo.com', style: 'text-decoration: underline; color: #999999; font-size: 12px; text-align: center;')) %>
 <% end %>
 
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t('msr_mailer.send_cc_money_email.hello') %></p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  You have successfully bought CC Money for <a href="https://makerepo.com">MakerRepo.com</a>!<br>
-  The amount of CCs is: <b><%= @cc %> CCs</b>.<br>
-  You can link them to your makerepo account by going on this <%= link_to 'link', link_cc_to_user_cc_moneys_url(token: @hash) %>. <br>
-  If the link doesn't work, you can copy the following link : <%= link_cc_to_user_cc_moneys_url(token: @hash) %>
+  <%= t('msr_mailer.send_cc_money_email.bought_html', site_link: link_to('MakerRepo.com', 'https://makerepo.com')) %><br>
+  <%= t('msr_mailer.send_cc_money_email.amount_html', cc: @cc) %><br>
+  <%= t('msr_mailer.send_cc_money_email.link_html', link: link_to(t('msr_mailer.send_cc_money_email.link_text'), claim_url)) %><br>
+  <%= t('msr_mailer.send_cc_money_email.copy_link', url: claim_url) %>
 </p>
 <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
   <tbody>
@@ -25,7 +26,7 @@
           <tbody>
             <tr>
               <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; border-radius: 5px; text-align: center; background-color: #e55426ff;" valign="top" align="center" bgcolor="#e55426ff">
-                <a href="<%= link_cc_to_user_cc_moneys_url(token: @hash) %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;">Redeem CC Points</a>
+                <a href="<%= claim_url %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;"><%= t('msr_mailer.send_cc_money_email.button') %></a>
               </td>
             </tr>
           </tbody>

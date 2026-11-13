@@ -39,7 +39,7 @@ class OrdersController < DevelopmentProgramsController
     flash[:notice] = "Your Order was successfully processed."
     redirect_to orders_path
   rescue CcMoney::InsufficientBalance
-    refuse_checkout(t_shop(:not_enough_points))
+    refuse_checkout(t_shop(:not_enough_ccs))
   rescue ActiveRecord::LockWaitTimeout, ActiveRecord::Deadlocked
     # checkout!'s transaction has rolled back: nothing was completed or debited
     Rails.logger.warn("[orders#create] checkout not completed: the cart or wallet was busy")
@@ -59,9 +59,7 @@ class OrdersController < DevelopmentProgramsController
     owner = @order.user
     @order.destroy
     owner&.update_wallet
-    flash[
-      :notice
-    ] = "The order was deleted and the CC points returned to the user."
+    flash[:notice] = t("orders.deleted")
     redirect_to orders_path
   end
 
@@ -109,7 +107,7 @@ class OrdersController < DevelopmentProgramsController
     return refuse_checkout(t_shop(:cart_item_unavailable)) if total.nil?
     return if current_user.get_total_cc >= total
 
-    refuse_checkout(t_shop(:not_enough_points))
+    refuse_checkout(t_shop(:not_enough_ccs))
   end
 
   def check_permission

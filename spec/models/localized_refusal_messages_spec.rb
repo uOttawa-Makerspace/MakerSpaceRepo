@@ -12,8 +12,8 @@ RSpec.describe "Localized refusal messages" do
       coupon = create(:coupon_code, :claimed, user: create(:user))
       en = in_locale(:en) { coupon.destroy && nil; coupon.errors[:base] }
       fr = in_locale(:fr) { coupon.errors.clear; coupon.destroy; coupon.errors[:base] }
-      expect(en).to eq(["A user has already claimed this coupon with CC points, so it cannot be deleted"])
-      expect(fr).to eq(["Un utilisateur a déjà réclamé ce coupon avec des points CC, il ne peut donc pas être supprimé"])
+      expect(en).to eq(["A user has already claimed this coupon with CCs, so it cannot be deleted"])
+      expect(fr).to eq(["Un utilisateur a déjà réclamé ce coupon avec des CC, il ne peut donc pas être supprimé"])
     end
   end
 
@@ -24,7 +24,7 @@ RSpec.describe "Localized refusal messages" do
     it "explains a refused deletion of an awarded task" do
       create(:volunteer_hour, :approved1, volunteer_task: task)
       fr = in_locale(:fr) { task.destroy; task.errors[:base] }
-      expect(fr).to eq(["Cette tâche a des heures approuvées ou des points CC attribués et ne peut pas être supprimée."])
+      expect(fr).to eq(["Cette tâche a des heures approuvées ou des CC attribués et ne peut pas être supprimée."])
     end
 
     it "explains a refused edit of the people and trainings on the task" do

@@ -755,7 +755,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       add_to_cart(pp_with_cc(10))
       expect { post orders_path }.not_to change(CcMoney, :count)
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to eq("Not enough Cc Points.")
+      expect(flash[:alert]).to eq("Not enough CCs.")
       expect(user.orders.last.order_status.name).to eq("In progress")
     end
 
@@ -1129,7 +1129,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
         .and change(OrderItem, :count).by(-1)
         .and change(CcMoney, :count).by(-1)
       expect(response).to redirect_to(orders_path)
-      expect(flash[:notice]).to eq("The order was deleted and the CC points returned to the user.")
+      expect(flash[:notice]).to eq("The order was deleted and its CCs were given back to the user.")
       expect(other.cc_moneys.sum(:cc)).to eq(0)
       expect(other.reload.wallet).to eq(0)
     end

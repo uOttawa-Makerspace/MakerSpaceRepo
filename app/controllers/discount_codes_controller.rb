@@ -28,7 +28,7 @@ class DiscountCodesController < DevelopmentProgramsController
       flash[:alert] = "This coupon is already claimed"
       redirect_to new_discount_code_path
     else
-      flash[:alert] = "Not enough CC points"
+      flash[:alert] = t("errors.shop.not_enough_ccs")
       redirect_back(fallback_location: root_path)
     end
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved, ActiveRecord::RecordNotFound,
@@ -59,7 +59,7 @@ class DiscountCodesController < DevelopmentProgramsController
   # write.
   def check_user_wallet
     unless current_user.get_total_cc >= @price_rule.cc_cost.to_i
-      flash[:alert] = "Not enough CC points"
+      flash[:alert] = t("errors.shop.not_enough_ccs")
       redirect_back(fallback_location: root_path)
     end
   end

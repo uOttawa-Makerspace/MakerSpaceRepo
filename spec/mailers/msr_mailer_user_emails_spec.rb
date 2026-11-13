@@ -39,6 +39,28 @@ RSpec.describe MsrMailer, type: :mailer do
     end
   end
 
+  describe "send_cc_money_email" do
+    it "tells a buyer without an account, in English, how many CCs they bought and links to the claim page" do
+      mail = MsrMailer.send_cc_money_email("buyer@example.com", 20, "TOKEN123")
+      expect(mail.to).to eq(["buyer@example.com"])
+      expect(mail.subject).to eq("Your CEED Credits (CC) order")
+      text = CGI.unescapeHTML(body_text(mail))
+      expect(text).to include("You have successfully bought CEED Credits (CCs)", "<b>20 CCs</b>", "Redeem my CCs")
+      expect(text).to include("/rewards/link_cc_to_user?token=TOKEN123")
+      expect(text).not_to match(/points|CC Money/i)
+    end
+
+    it "is written in French for a buyer whose account is set to French" do
+      buyer = create(:user, :regular_user, locale: "fr")
+      mail = MsrMailer.send_cc_money_email(buyer.email, 20, "TOKEN123")
+      expect(mail.subject).to eq("Votre commande de Crédits du CGEC (CC)")
+      text = CGI.unescapeHTML(body_text(mail))
+      expect(text).to include("Vous avez acheté des Crédits du CGEC (CC)", "<b>20 CC</b>", "Échanger mes CC")
+      expect(text).to include("/rewards/link_cc_to_user?token=TOKEN123")
+      expect(text).not_to match(/points|CC Money|You have/i)
+    end
+  end
+
   it "welcome_email points at the login page" do
     mail = MsrMailer.welcome_email(user)
     expect(mail.to).to eq([user.email])

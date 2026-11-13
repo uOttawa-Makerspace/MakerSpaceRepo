@@ -1,5 +1,11 @@
 en:
   rewards:
+    link_cc_to_user:
+      title: "Add CCs to your account"
+      # %{email} = the signed-in user's email address
+      body: "You can only add these CCs once. They will be added to your account (%{email}), which must be the account the purchase was made with."
+      submit: "Add the CCs"
+      cancel: "Cancel"
     index:
       store_name: "MakerStore"
       title: "CEED Credits"

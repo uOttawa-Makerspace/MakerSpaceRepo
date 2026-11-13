@@ -127,7 +127,7 @@ RSpec.describe "Coupon claim race", type: :request do
     expect(user_a.reload.wallet).to eq(10)
 
     expect(session_one.flash[:notice]).to eq("Discount Code created")
-    expect(session_two.flash[:alert]).to eq("Not enough CC points")
+    expect(session_two.flash[:alert]).to eq("Not enough CCs.")
   end
 
   it "two users, two coupons: the second waits for the first's coupon, then takes the next one" do

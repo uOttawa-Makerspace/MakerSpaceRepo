@@ -1,7 +1,7 @@
 en:
   confirmations:
     repositories:
-      delete: "Delete the repository \"%{title}\"?"
+      delete: 'Delete the repository "%{title}"?'
       restore: "Restore this repository?"
     comments:
       delete: "Delete this comment?"
@@ -14,7 +14,7 @@ en:
       cancel: "Cancel this shadowing shift?"
       cancel_for: "Cancel the shadowing shift of %{name}?"
     drop_off_locations:
-      delete: "Delete the drop-off location \"%{name}\"?"
+      delete: 'Delete the drop-off location "%{name}"?'
     bookings:
       delete: "Delete this booking?"
       delete_remaining: "Delete this and all remaining occurrences?"
@@ -66,7 +66,7 @@ en:
       delete_sub_space: "Delete this sub space?"
       delete: "Delete this space and all of its related information? Select OK to confirm."
     lockers:
-      delete_size: "Delete the locker size \"%{size}\"? This cannot be undone."
+      delete_size: 'Delete the locker size "%{size}"? This cannot be undone.'
       delete: "Delete this locker?"
       delete_selected: "Delete the selected lockers?"
     locker_rentals:
@@ -76,10 +76,10 @@ en:
     time_periods:
       delete: "Delete this time period?"
     orders:
-      delete: "Delete this order? The CC points used to purchase it are given back."
+      delete: "Delete this order? The CCs used to purchase it are given back."
       confirm: "Place this order?"
     proficient_projects:
-      delete: "Delete this project? All purchases are deleted and the CC points spent on it are given back to the users."
+      delete: "Delete this project? All purchases are deleted and the CCs spent on it are given back to the users."
       submit: "Submit this project? Make sure you have dropped it off at the specified location first."
       remove_requirement: "Remove this project requirement? The project itself is not deleted."
       delete_learning_module: "Delete this learning module?"
@@ -93,9 +93,9 @@ en:
       approve: "Approve this project proposal?"
       decline: "Decline this project proposal?"
       delete: "Delete this project proposal?"
-      approve_titled: "Approve the project proposal \"%{title}\"?"
-      disapprove_titled: "Disapprove the project proposal \"%{title}\"?"
-      delete_titled: "Delete the project proposal \"%{title}\"?"
+      approve_titled: 'Approve the project proposal "%{title}"?'
+      disapprove_titled: 'Disapprove the project proposal "%{title}"?'
+      delete_titled: 'Delete the project proposal "%{title}"?'
     skills:
       delete: "Delete this skill type?"
     job_orders:
@@ -108,8 +108,8 @@ en:
       start_processing: "Start processing this part?"
       mark_paid: "Mark this job order as paid?"
       mark_picked_up: "Mark this job order as picked up?"
-      delete_service: "Delete the service \"%{name}\"?"
-      delete_service_group: "Delete the service group \"%{name}\"?"
+      delete_service: 'Delete the service "%{name}"?'
+      delete_service_group: 'Delete the service group "%{name}"?'
       delete_option: "Delete this option?"
     discount_codes:
       redeem: "Buy the coupon for %{cc} CC? This cannot be undone."
@@ -119,9 +119,9 @@ en:
     memberships:
       revoke: "Revoke this membership?"
     coupon_codes:
-      delete: "Delete the coupon code \"%{code}\"?"
+      delete: 'Delete the coupon code "%{code}"?'
     videos:
-      delete_titled: "Delete this video from \"%{title}\"?"
+      delete_titled: 'Delete this video from "%{title}"?'
     key_requests:
       deny: "Deny this key request?"
     users:
@@ -205,10 +205,10 @@ fr:
     time_periods:
       delete: "Supprimer cette période?"
     orders:
-      delete: "Supprimer cette commande? Les points CC utilisés pour l'achat seront remboursés."
+      delete: "Supprimer cette commande? Les CC utilisés pour l'achat seront remboursés."
       confirm: "Passer cette commande?"
     proficient_projects:
-      delete: "Supprimer ce projet? Tous les achats seront supprimés et les points CC dépensés seront remboursés aux utilisateurs."
+      delete: "Supprimer ce projet? Tous les achats seront supprimés et les CC dépensés seront remboursés aux utilisateurs."
       submit: "Soumettre ce projet? Assurez-vous d'abord de l'avoir déposé à l'endroit indiqué."
       remove_requirement: "Retirer cette exigence du projet? Le projet lui-même n'est pas supprimé."
       delete_learning_module: "Supprimer ce module d'apprentissage?"

@@ -137,8 +137,15 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         coupon = create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
         expect { post discount_codes_path, params: { dollar_cost: 5, cc_cost: 40 } }.not_to change(CcMoney, :count)
         expect(response).to redirect_to(root_path)
-        expect(flash[:alert]).to eq("Not enough CC points")
+        expect(flash[:alert]).to eq("Not enough CCs.")
         expect(coupon.reload.user_id).to be_nil
+      end
+
+      it "says so in French when the locale is fr" do
+        credit_cc!(user, 39)
+        create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
+        post discount_codes_path, params: { dollar_cost: 5, cc_cost: 40, locale: "fr" }
+        expect(flash[:alert]).to eq("Pas assez de CC.")
       end
 
       it "a refusal is decided on the ledger balance, not the stale cache, and writes nothing" do
@@ -146,7 +153,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         user.update_column(:wallet, 1000)
         create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
         post discount_codes_path, params: { dollar_cost: 5, cc_cost: 40 }
-        expect(flash[:alert]).to eq("Not enough CC points")
+        expect(flash[:alert]).to eq("Not enough CCs.")
         expect(user.reload.wallet).to eq(1000)
       end
 
@@ -312,7 +319,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
           post coupon_codes_path, params: { coupon_code: { code: "NEG", cc_cost: -5, dollar_cost: 3 } }
         end.not_to change(CouponCode, :count)
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
+        expect(response.body).to include("Cc cost must be a number of CCs (0 or more)")
 
         patch coupon_code_path(coupon), params: { coupon_code: { cc_cost: -1 } }
         expect(response).to have_http_status(:unprocessable_content)
@@ -327,7 +334,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       it "refuses a coupon without a price" do
         expect { post coupon_codes_path, params: { coupon_code: { code: "" } } }.not_to change(CouponCode, :count)
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
+        expect(response.body).to include("Cc cost must be a number of CCs (0 or more)")
       end
 
       it "refuses a code that is already in use (422, nothing saved)" do
@@ -347,14 +354,14 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect { post coupon_codes_path, params: { coupon_code: { code: "X", cc_cost: "abc", dollar_cost: 3 } } }
           .not_to change(CouponCode, :count)
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
+        expect(response.body).to include("Cc cost must be a number of CCs (0 or more)")
       end
 
       it "refuses a fractional price on create with the same message (not truncated to 2)" do
         expect { post coupon_codes_path, params: { coupon_code: { code: "FRAC", cc_cost: "2.9", dollar_cost: 3 } } }
           .not_to change(CouponCode, :count)
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
+        expect(response.body).to include("Cc cost must be a number of CCs (0 or more)")
       end
 
       it "renders the admin form again with the error and still creates a priced coupon afterwards" do
@@ -389,7 +396,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         claimed = create(:coupon_code, :claimed, user: other)
         expect { delete coupon_code_path(claimed) }.not_to change(CouponCode, :count)
         expect(response).to redirect_to(coupon_codes_path)
-        expect(flash[:alert]).to eq("A user has already claimed this coupon with CC points, so it cannot be deleted")
+        expect(flash[:alert]).to eq("A user has already claimed this coupon with CCs, so it cannot be deleted")
         expect(claimed.reload.user).to eq(other)
       end
 
@@ -502,10 +509,17 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         shop_log_in!(user)
         get link_cc_to_user_cc_moneys_path, params: { token: token }
         expect(response).to have_http_status(:ok)
-        expect(response.body).to include("Link CC to an user")
+        expect(response.body).to include("Add CCs to your account", "You can only add these CCs once", user.email)
         expect(response.body).to match(%r{<form[^>]*action="#{redeem_cc_moneys_path}"[^>]*method="post"})
         expect(response.body).to include(token)
         expect(response.body).not_to include('type="email"')
+      end
+
+      it "renders the confirmation form in French when the locale is fr, with no points wording" do
+        shop_log_in!(user)
+        get link_cc_to_user_cc_moneys_path, params: { token: token, locale: "fr" }
+        expect(response.body).to include("Ajouter des CC à votre compte", 'value="Ajouter les CC"', "Annuler")
+        expect(response.body).not_to match(/points/i)
       end
 
       it "refuses a signed-in user who is not the purchaser" do

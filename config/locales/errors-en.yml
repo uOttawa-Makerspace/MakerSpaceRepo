@@ -190,7 +190,7 @@ en:
     shop:
       cart_empty: "Your cart is empty."
       cart_item_unavailable: "An item in your cart can no longer be bought; remove it and try again."
-      not_enough_points: "Not enough Cc Points."
+      not_enough_ccs: "Not enough CCs."
       checkout_busy: "The shop is busy right now. Nothing was charged. Please try again in a moment."
       checkout_item_removed: "An item in your cart was removed while you were checking out. Nothing was charged. Review your cart and try again."
       checkout_not_saved: "Your order could not be saved, so nothing was charged."

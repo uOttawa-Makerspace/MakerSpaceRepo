@@ -72,8 +72,8 @@ RSpec.describe "Localized model error messages" do
   end
 
   it "localizes the coupon price message" do
-    expect_messages(CouponCode.new(cc_cost: -1), :cc_cost, "must be a number of CC points (0 or more)",
-                    "doit être un nombre de points CC (0 ou plus)")
+    expect_messages(CouponCode.new(cc_cost: -1), :cc_cost, "must be a number of CCs (0 or more)",
+                    "doit être un nombre de CC (0 ou plus)")
   end
 
   describe Program do

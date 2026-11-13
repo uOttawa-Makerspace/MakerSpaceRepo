@@ -146,7 +146,7 @@ fr:
         training_id: Formation
         recurrence_rule: Règle de récurrence
       coupon_code:
-        cc_cost: Coût en points CC
+        cc_cost: Coût en CC
         code: Code
         dollar_cost: Valeur en dollars
       question:

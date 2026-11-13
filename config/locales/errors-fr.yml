@@ -190,7 +190,7 @@ fr:
     shop:
       cart_empty: "Votre panier est vide."
       cart_item_unavailable: "Un article de votre panier ne peut plus être acheté; retirez-le et réessayez."
-      not_enough_points: "Points Cc insuffisants."
+      not_enough_ccs: "Pas assez de CC."
       checkout_busy: "La boutique est occupée en ce moment. Rien n'a été débité. Veuillez réessayer dans un instant."
       checkout_item_removed: "Un article de votre panier a été retiré pendant le paiement. Rien n'a été débité. Vérifiez votre panier et réessayez."
       checkout_not_saved: "Votre commande n'a pas pu être enregistrée; rien n'a été débité."

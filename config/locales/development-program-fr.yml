@@ -46,7 +46,7 @@ fr:
       title: "Vous en voulez encore : Quelle est la suite?"
       subtext: "Augmentez vos opportunités d'emploi en obtenant des certificats avec <span class='text-primary'>CGEC</span>"
       learning_area: "Vous pouvez apprendre de ces projets gratuitement. Certains d'entre eux sont des prérequis pour d'autres projets dans la zone des Projets de Compétence."
-      proficient_projects: "Ces projets sont plus avancés et ne sont pas gratuits. Vous pouvez les acheter avec une carte de crédit ou utiliser vos points CC."
+      proficient_projects: "Ces projets sont plus avancés et ne sont pas gratuits. Vous pouvez les acheter avec une carte de crédit ou utiliser vos CC."
       skills_badges: "Améliorez vos compétences techniques avec notre programme de développement. Débloquez de nouveaux défis au fur et à mesure de votre progression, et obtenez des badges numériques en complétant des projets de compétence et des sessions de formation."
       footer: "Notre Programme de Développement modulaire est conçu pour planifier, suivre et accréditer le développement de vos compétences sans effort. Le Programme de Développement utilise des certificats normalisés par l'industrie qui sont pratiques à partager et vérifiables électroniquement pour vos futurs employeurs."
       sequence:
