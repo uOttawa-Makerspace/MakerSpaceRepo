@@ -69,6 +69,16 @@ module User::TrainingProgress
     highest_badges[training.id]
   end
 
+  # Every active certification with its training loaded, whether it came from a training session
+  # or from a proficient project session, in a fixed number of queries.
+  def certifications_with_training
+    certs = certifications.to_a
+    from_session, from_project = certs.partition(&:training_session_id)
+    preload(from_session, training_session: :training)
+    preload(from_project, proficient_project_session: { proficient_project: :training })
+    certs
+  end
+
   def highest_badges
     @highest_badges ||= begin
       by_training = certifications.joins(:training_session).includes(:training_session).order(:id).group_by { |cert| cert.training_session.training_id }
@@ -79,6 +89,10 @@ module User::TrainingProgress
   end
 
   private
+
+  def preload(records, associations)
+    ActiveRecord::Associations::Preloader.new(records: records, associations: associations).call
+  end
 
   # The first certification from a session of the highest level.
   def highest_session_level_certification(certs)
