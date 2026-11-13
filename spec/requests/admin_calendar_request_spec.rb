@@ -426,6 +426,81 @@ RSpec.describe "Admin calendar contract", type: :request do
     end
   end
 
+  describe "the feeds for the range the calendar shows (?start&end)" do
+    include ActiveSupport::Testing::TimeHelpers
+
+    let(:zone) { RecurrenceRule::ZONE }
+    let(:week) { { start: "2027-03-14T00:00:00", end: "2027-03-21T00:00:00" } }
+
+    around { |example| travel_to(Time.utc(2027, 3, 16, 16)) { example.run } }
+
+    before do
+      log_in!(admin)
+      StaffSpace.create!(user: staff, space: space, color: "#000000")
+    end
+
+    # A feed with a one-off event on each given day (at 15:00 UTC) and a weekly series that began in January.
+    def ics_body(*days)
+      events = days.map do |day|
+        ["BEGIN:VEVENT", "UID:one-#{day}", "DTSTAMP:20270101T000000Z", "DTSTART:#{day}T150000Z", "DTEND:#{day}T160000Z",
+         "SUMMARY:One-off #{day}", "END:VEVENT"]
+      end
+      series = ["BEGIN:VEVENT", "UID:weekly", "DTSTAMP:20270101T000000Z", "DTSTART:20270104T150000Z", "DTEND:20270104T160000Z",
+                "RRULE:FREQ=WEEKLY;BYDAY=MO", "SUMMARY:Weekly", "END:VEVENT"]
+      (["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//spec//EN"] + events.flatten + series + ["END:VCALENDAR"]).join("\r\n")
+    end
+
+    def unavailability!(title, starts, ends, rule = nil)
+      StaffUnavailability.create!(user: staff, title: title, start_time: starts, end_time: ends, recurrence_rule: rule)
+    end
+
+    def unavailability_titles
+      response.parsed_body.flat_map { |member| member["unavailabilities"] }.map { |row| row["title"].delete_prefix("🚫 #{staff.name} - ") }
+    end
+
+    it "sends each staff member's stored one-offs in the range, their series, and their external one-offs in the range" do
+      unavailability!("Inside", zone.local(2027, 3, 16, 9), zone.local(2027, 3, 16, 10))
+      unavailability!("Before", zone.local(2027, 3, 1, 9), zone.local(2027, 3, 1, 10))
+      unavailability!("Lectures", zone.local(2027, 1, 5, 9), zone.local(2027, 1, 5, 10), "RRULE:FREQ=WEEKLY;BYDAY=TU")
+      stub_request(:get, "https://calendar.example/staff.ics").to_return(status: 200, body: ics_body("20270317", "20270324"))
+      StaffExternalUnavailability.create!(user: staff, ics_url: "https://calendar.example/staff.ics")
+
+      get unavailabilities_json_admin_calendar_index_path(id: space.id), params: week
+
+      expect(response.status).to eq(200)
+      expect(response.parsed_body.map { |member| member["id"] }).to eq([staff.id])
+      expect(unavailability_titles).to contain_exactly("Inside", "Lectures", "One-off 20270317", "Weekly")
+    end
+
+    it "sends every unavailability without a range, for the event dialog" do
+      unavailability!("Inside", zone.local(2027, 3, 16, 9), zone.local(2027, 3, 16, 10))
+      unavailability!("Before", zone.local(2027, 3, 1, 9), zone.local(2027, 3, 1, 10))
+
+      get unavailabilities_json_admin_calendar_index_path(id: space.id)
+
+      expect(unavailability_titles).to contain_exactly("Inside", "Before")
+    end
+
+    it "sends the imported calendars' one-offs in the range and their series" do
+      stub_request(:get, "https://calendar.example/open.ics").to_return(status: 200, body: ics_body("20270317", "20270324"))
+      StaffNeededCalendar.create!(space: space, calendar_url: "https://calendar.example/open.ics", name: "Open hours")
+
+      get imported_calendars_json_admin_calendar_index_path(id: space.id), params: week
+
+      expect(response.parsed_body.first["events"].map { |row| row["title"] }).to contain_exactly("One-off 20270317", "Weekly")
+    end
+
+    it "answers 400 with the reason for a range it cannot read" do
+      get unavailabilities_json_admin_calendar_index_path(id: space.id), params: { start: "2027-03-14" }
+      expect(response.status).to eq(400)
+      expect(response.parsed_body).to eq("error" => I18n.t("errors.calendar.window_invalid"))
+
+      get imported_calendars_json_admin_calendar_index_path(id: space.id), params: { start: "2027-03-21", end: "2027-03-14" }
+      expect(response.status).to eq(400)
+      expect(response.parsed_body).to eq("error" => I18n.t("errors.calendar.window_invalid"))
+    end
+  end
+
   describe "update_color failure variants (all answer 422 and change nothing)" do
     before do
       log_in!(admin)

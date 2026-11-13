@@ -8,6 +8,8 @@ fr:
       color_not_saved: "La couleur du personnel n'a pas pu être enregistrée."
       rule_one_line: "contient plus d'une ligne RRULE. Utilisez une seule règle de répétition."
       rule_never_repeats: "ne se répète jamais : aucune date ne correspond à cette règle (par exemple le 30 février). Modifiez les jours ou les mois."
+      window_invalid: "Les dates demandées pour le calendrier ne sont pas valides : indiquez un début et une fin, la fin après le début."
+      window_too_long: "Le calendrier peut afficher au plus %{days} jours à la fois."
     generic:
       unexpected: "Une erreur inattendue s'est produite de notre côté. Veuillez réessayer. Si le problème persiste, communiquez avec le personnel du makerspace en indiquant la référence %{reference}."
       not_found: "Cette page ou cet élément est introuvable. Il a peut-être été supprimé, ou le lien est erroné."

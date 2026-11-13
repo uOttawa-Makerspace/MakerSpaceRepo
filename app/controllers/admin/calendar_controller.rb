@@ -1,6 +1,8 @@
 class Admin::CalendarController < AdminAreaController
   layout "admin_area"
 
+  rescue_from CalendarWindow::Invalid, with: ->(error) { render json: { error: error.message }, status: :bad_request }
+
   def index
     @spaces =
       Space.all.where(
@@ -23,75 +25,29 @@ class Admin::CalendarController < AdminAreaController
     flash[:alert] = "You are not assigned to any spaces." if @spaces.empty?
   end
 
+  # Per staff member of the space: their unavailabilities in the window (CalendarWindow), stored ones and those of
+  # their external calendars. With no window, all of them (the event dialog reads them that way).
   def unavailabilities_json
     return render json: { error: "Space ID is required" }, status: :bad_request if params[:id].blank?
 
-    staff_user_ids = StaffSpace.where(space_id: params[:id]).pluck(:user_id)
-    
-    result = User
-               .where(id: staff_user_ids, role: ['admin', 'staff'])
-               .includes(:staff_external_unavailabilities)
-               .order(name: :desc).map do |staff|
-      local_unavails = StaffUnavailability.where(user_id: staff.id).map do |u| 
-
-        duration = (u.end_time.to_time - u.start_time.to_time) * 1000
-
-        rrule_data = helpers.date_formatted_recurrence_rule(u)
-
-        {
-          id: u.id,
-          title: "🚫 #{staff.name} - #{u.title}",
-          start: u.start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
-          end: u.end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
-          **(u.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
-          allDay: CalendarTime.all_day?(u.start_time, u.end_time),
-          extendedProps: {
-            name: staff.name,
-            title: u.title,
-            description: u.description
-          },
-          className: "unavailability"
-        }
-      end
-
-      ics_unavails = staff.staff_external_unavailabilities.flat_map do |external|
-        parsed = helpers.parse_ics_calendar(
-          external.ics_url,
-          name: "#{staff.name} External Unavailability",
-        )
-
-        parsed.flat_map do |calendar|
-          calendar[:events].map do |event|
-            event.merge(title: "🚫 #{staff.name} - #{event[:title]}", className: "unavailability")
-          end
-        end
-      end
-
-      {
-        id: staff.id,
-        # for users with no unavails, we pull the name from here
-        name: staff.name,
-        color: StaffSpace.find_by(user_id: staff.id, space_id: params[:id])&.color,
-        unavailabilities: local_unavails + ics_unavails
+    window = CalendarWindow.from_params(params)
+    colors = StaffSpace.where(space_id: params[:id]).pluck(:user_id, :color).to_h
+    staff = calendar_staff(params[:id]).includes(:staff_external_unavailabilities).order(name: :desc)
+    stored = window.records(StaffUnavailability.where(user_id: staff.map(&:id))).group_by(&:user_id)
+    render json: staff.map { |member|
+      rows = stored.fetch(member.id, []).map { |unavailability| stored_unavailability_row(unavailability, member) }
+      { id: member.id, name: member.name, color: colors[member.id], unavailabilities: rows + external_unavailability_rows(member, window) }
     }
-    end
-
-    render json: result
   end
 
+  # The space's imported calendars, with their entries in the window (CalendarWindow).
   def imported_calendars_json
     return render json: { error: "Space ID is required" }, status: :bad_request if params[:id].blank?
 
-    calendars = StaffNeededCalendar.where(space_id: params[:id])
-    all_calendars = calendars.flat_map do |calendar_record|
-      helpers.parse_ics_calendar(
-        calendar_record.calendar_url,
-        name: calendar_record.name.presence || "Unnamed Calendar",
-        color: calendar_record.color
-      )
-    end
-
-    render json: all_calendars
+    window = CalendarWindow.from_params(params)
+    render json: StaffNeededCalendar.where(space_id: params[:id]).flat_map { |calendar|
+      helpers.parse_ics_calendar(calendar.calendar_url, name: imported_name(calendar), color: calendar.color, window: window)
+    }
   end
 
   def update_color
@@ -109,6 +65,43 @@ class Admin::CalendarController < AdminAreaController
   end
 
   private
+
+  # The staff whose unavailabilities the calendar shows: the space's staff and admins.
+  def calendar_staff(space_id)
+    User.where(id: StaffSpace.where(space_id: space_id).select(:user_id), role: %w[admin staff])
+  end
+
+  def stored_unavailability_row(unavailability, staff)
+    {
+      id: unavailability.id,
+      title: "🚫 #{staff.name} - #{unavailability.title}",
+      start: unavailability.start_time.in_time_zone(RecurrenceRule::ZONE).strftime("%Y-%m-%dT%H:%M:%S"),
+      end: unavailability.end_time.in_time_zone(RecurrenceRule::ZONE).strftime("%Y-%m-%dT%H:%M:%S"),
+      **stored_recurrence(unavailability),
+      allDay: CalendarTime.all_day?(unavailability.start_time, unavailability.end_time),
+      extendedProps: { name: staff.name, title: unavailability.title, description: unavailability.description },
+      className: "unavailability"
+    }
+  end
+
+  # The rule the page repeats a stored series by, and its length in milliseconds.
+  def stored_recurrence(unavailability)
+    return {} if unavailability.recurrence_rule.blank?
+
+    { rrule: helpers.date_formatted_recurrence_rule(unavailability),
+      duration: (unavailability.end_time.to_time - unavailability.start_time.to_time) * 1000 }
+  end
+
+  def external_unavailability_rows(staff, window)
+    staff.staff_external_unavailabilities.flat_map do |external|
+      calendars = helpers.parse_ics_calendar(external.ics_url, name: "#{staff.name} External Unavailability", window: window)
+      calendars.flat_map do |calendar|
+        calendar[:events].map { |event| event.merge(title: "🚫 #{staff.name} - #{event[:title]}", className: "unavailability") }
+      end
+    end
+  end
+
+  def imported_name(calendar) = calendar.name.presence || "Unnamed Calendar"
 
   def render_color_error(key)
     render json: { status: "error", error: I18n.t(key) }, status: :unprocessable_entity
