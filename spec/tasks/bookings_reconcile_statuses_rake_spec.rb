@@ -8,6 +8,13 @@ RSpec.describe "bookings:reconcile_statuses", :booking_clock do
   let!(:approved) { create(:booking_status, :approved) }
   let!(:declined) { create(:booking_status, :rejected) }
 
+  let(:deployed_at) { 1.day.from_now }
+
+  before do
+    allow(ENV).to receive(:[]).and_call_original
+    allow(ENV).to receive(:[]).with("DEPLOYED_AT").and_return(deployed_at.utc.iso8601)
+  end
+
   before do
     Rails.application.load_tasks unless Rake::Task.task_defined?("bookings:reconcile_statuses")
     Rake::Task["bookings:reconcile_statuses"].reenable
@@ -71,30 +78,67 @@ RSpec.describe "bookings:reconcile_statuses", :booking_clock do
     expect(stale.reload.booking_status).to eq(approved)
   end
 
-  it "skips a booking the app changed after its old row was written, and lists it" do
-    changed_later = create(:sub_space_booking, :with_old_status_row)
-    stale = create(:sub_space_booking, :with_old_status_row)
-    write_old_row(changed_later, approved)
-    changed_later.update_columns(booking_status_id: declined.id, updated_at: changed_later.updated_at + 5.minutes)
-    write_old_row(stale, approved)
-
-    output = run_task
-
-    expect(changed_later.reload.booking_status).to eq(declined)
-    expect(stale.reload.booking_status).to eq(approved)
-    expect(output).to include("1 booking(s) changed")
-    expect(output).to include("1 booking(s) skipped").and include("ids: #{changed_later.id}")
-    expect(SubSpaceBooking.connection.select_value("SELECT count(*) FROM booking_status_reconciliations WHERE sub_space_booking_id = #{changed_later.id}")).to eq(0)
-  end
-
-  it "does not undo a booking approved by the app after its old row was written" do
+  it "copies an old row onto a booking with no status even when the booking is newer than the row" do
     booking = create(:sub_space_booking, :with_old_status_row)
-    travel_to(booking.updated_at + 5.minutes) { booking.approve_if_pending!(by: booking.user) }
+    old_row(booking).update_columns(booking_status_id: approved.id, updated_at: booking.updated_at - 1.hour)
+    booking.update_column(:booking_status_id, nil)
 
     run_task
 
-    expect(booking.reload).to be_approved
-    expect(old_row(booking).booking_status).to eq(pending)
+    expect(booking.reload.booking_status).to eq(approved)
+  end
+
+  it "copies an old row over a booking edited after the old approve, both before the deploy" do
+    booking = create(:sub_space_booking, :with_old_status_row)
+    old_row(booking).update_columns(booking_status_id: approved.id, updated_at: booking.updated_at + 1.minute)
+    booking.update_column(:updated_at, booking.updated_at + 2.minutes)
+
+    run_task
+
+    expect(booking.reload.booking_status).to eq(approved)
+  end
+
+  context "when the new release changed a status after the deploy" do
+    let(:deployed_at) { Time.current }
+
+    it "skips the booking and lists it, and still copies the others" do
+      changed = create(:sub_space_booking, :with_old_status_row)
+      stale = create(:sub_space_booking, :with_old_status_row)
+      changed.update_columns(booking_status_id: declined.id, updated_at: deployed_at + 1.minute)
+      write_old_row(stale, approved)
+      stale.update_column(:updated_at, deployed_at - 1.minute)
+
+      output = run_task
+
+      expect(changed.reload.booking_status).to eq(declined)
+      expect(stale.reload.booking_status).to eq(approved)
+      expect(output).to include("1 booking(s) changed")
+      expect(output).to include("1 booking(s) skipped").and include("ids: #{changed.id}")
+      expect(SubSpaceBooking.connection.select_value("SELECT count(*) FROM booking_status_reconciliations WHERE sub_space_booking_id = #{changed.id}")).to eq(0)
+    end
+
+    it "does not undo a booking approved by the new release" do
+      booking = create(:sub_space_booking, :with_old_status_row)
+      travel_to(deployed_at + 5.minutes) { booking.approve_if_pending!(by: booking.user) }
+
+      run_task
+
+      expect(booking.reload).to be_approved
+      expect(old_row(booking).booking_status).to eq(pending)
+    end
+  end
+
+  it "refuses to run without a usable DEPLOYED_AT, and changes nothing" do
+    booking = create(:sub_space_booking, :with_old_status_row)
+    write_old_row(booking, approved)
+    [nil, "", "yesterday"].each do |value|
+      allow(ENV).to receive(:[]).with("DEPLOYED_AT").and_return(value)
+      Rake::Task["bookings:reconcile_statuses"].reenable
+
+      expect { expect { run_task }.to output(/DEPLOYED_AT/).to_stderr }.to raise_error(SystemExit)
+    end
+
+    expect(booking.reload.booking_status).to eq(pending)
   end
 
   it "leaves a booking with no matching status row alone and lists it" do
@@ -122,6 +166,8 @@ RSpec.describe "bookings:restore_reconciled_statuses", :booking_clock do
 
   before do
     Rails.application.load_tasks unless Rake::Task.task_defined?("bookings:reconcile_statuses")
+    allow(ENV).to receive(:[]).and_call_original
+    allow(ENV).to receive(:[]).with("DEPLOYED_AT").and_return(1.day.from_now.utc.iso8601)
   end
 
   def run(name)
