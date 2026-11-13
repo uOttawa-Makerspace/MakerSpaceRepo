@@ -52,7 +52,8 @@
 
 
             <td>
-              <span data-bs-toggle="tooltip" title="<%= User.where(id: AnnouncementDismiss.includes(:user).where(announcement_id: a.id).map(&:user_id)).pluck(:username).size > 5 ? t('admin_pages.announcements.and_more', names: User.where(id: AnnouncementDismiss.includes(:user).where(announcement_id: a.id).map(&:user_id)).pluck(:username).take(5).join(', ')) : User.where(id: AnnouncementDismiss.includes(:user).where(announcement_id: a.id).map(&:user_id)).pluck(:username).join(', ') %>"><%= t('admin_pages.announcements.dismissed_by_count', who: AnnouncementDismiss.where(announcement_id: a.id).count > 0 ? t('admin_pages.announcements.dismissed_users', count: AnnouncementDismiss.where(announcement_id: a.id).count) : t('admin_pages.announcements.dismissed_no_one')) %>
+              <% dismissers = a.announcement_dismisses.map { |dismiss| dismiss.user.username } %>
+              <span data-bs-toggle="tooltip" title="<%= dismissers.size > 5 ? t('admin_pages.announcements.and_more', names: dismissers.take(5).join(', ')) : dismissers.join(', ') %>"><%= t('admin_pages.announcements.dismissed_by_count', who: dismissers.any? ? t('admin_pages.announcements.dismissed_users', count: dismissers.size) : t('admin_pages.announcements.dismissed_no_one')) %>
               </span>
             </td>
             <td class="action-cell">

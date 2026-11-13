@@ -30,6 +30,31 @@ RSpec.describe Admin::AnnouncementsController, type: :controller do
     end
   end
 
+  describe "GET /index dismissal count" do
+    render_views
+
+    before { session[:user_id] = admin.id }
+
+    it "reads 1 User when one user dismissed the announcement" do
+      AnnouncementDismiss.create!(user: create(:user, :regular_user), announcement: announcement_all)
+      get :index
+      expect(response.body).to match(/Dismissed by: 1 User\s*</)
+      expect(response.body).not_to include("1 Users")
+    end
+
+    it "reads 2 Users when two users dismissed the announcement" do
+      2.times { AnnouncementDismiss.create!(user: create(:user, :regular_user), announcement: announcement_all) }
+      get :index
+      expect(response.body).to include("Dismissed by: 2 Users")
+    end
+
+    it "reads 1 utilisateur in French" do
+      AnnouncementDismiss.create!(user: create(:user, :regular_user), announcement: announcement_all)
+      get :index, params: { locale: "fr" }
+      expect(response.body).to match(/Masquée par : 1 utilisateur\s*</)
+    end
+  end
+
   describe "GET /new" do
     context "logged as admin" do
       it "should return a 200" do

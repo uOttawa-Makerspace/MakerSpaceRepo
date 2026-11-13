@@ -40,7 +40,9 @@ en:
       created_by: "Created By"
       dismissed_by: "Dismissed By"
       dismissed_by_count: "Dismissed by: %{who}"
-      dismissed_users: "%{count} Users"
+      dismissed_users:
+        one: "%{count} User"
+        other: "%{count} Users"
       dismissed_no_one: "No one"
       and_more: "%{names} And more"
       empty: "No Announcements were created yet."
@@ -499,7 +501,9 @@ fr:
       created_by: "Créée par"
       dismissed_by: "Masquée par"
       dismissed_by_count: "Masquée par : %{who}"
-      dismissed_users: "%{count} utilisateur(s)"
+      dismissed_users:
+        one: "%{count} utilisateur"
+        other: "%{count} utilisateurs"
       dismissed_no_one: "Personne"
       and_more: "%{names} et d'autres"
       empty: "Aucune annonce n'a encore été créée."

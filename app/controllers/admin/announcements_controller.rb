@@ -4,7 +4,7 @@ class Admin::AnnouncementsController < AdminAreaController
   layout "admin_area"
 
   def index
-    @announcements = Announcement.includes(:user).order(created_at: :asc)
+    @announcements = Announcement.includes(:user, announcement_dismisses: :user).order(created_at: :asc)
   end
 
   def new
