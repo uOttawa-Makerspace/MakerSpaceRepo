@@ -29,7 +29,7 @@ RSpec.describe PiReader, type: :model do
       expect(PiReader.tap_identifier("a" * 64)).to eq("a" * 64)
     end
 
-    it "is nil for a missing, non-string, over-long or control-character identifier" do
+    it "is nil for a missing, non-string or over-long identifier, or one with a space, control or invisible character" do
       [nil, "  ", { a: 1 }, ["aa"], "a" * 65, "aa:bb\tcc", "aa\u0000bb", "ab\u001b12",
        "aa\u202Ebb", "aa\u200Bbb", "aa\u00A0bb", "aa bb", "aa\u2028bb"].each do |bad|
         expect(PiReader.tap_identifier(bad)).to be_nil
@@ -44,6 +44,15 @@ RSpec.describe PiReader, type: :model do
       %W[aa\u202Ebb aa\u200Bbb aa\u00A0bb].push("aa bb").each { |bad| expect(PiReader.new(pi_mac_address: bad)).not_to be_valid }
       expect(PiReader.new(pi_mac_address: "ab12")).to be_valid
       expect(PiReader.new(pi_mac_address: "a" * 64)).to be_valid
+    end
+
+    it "accepts an identifier padded with spaces, tabs or newlines and stores it without the padding" do
+      expect(PiReader.tap_identifier("\tAB12 \n")).to eq("ab12")
+
+      reader = PiReader.new(pi_mac_address: " \tAB-12\r\n")
+      expect(reader).to be_valid
+      reader.save!
+      expect(reader.reload.pi_mac_address).to eq("ab:12")
     end
 
     it "rejects writing a bad identifier to an existing row but never re-judges a stored one on another edit" do
