@@ -108,8 +108,9 @@ class Rfid < ApplicationRecord
     end
   end
 
+  # The reader a freed card goes back to: the lowest-id reader of the space the actor works in (User#current_space).
   def self.rehome_reader(actor)
-    actor&.space&.pi_readers&.first
+    actor&.current_space&.pi_readers&.order(:id)&.first
   end
   private_class_method :rehome_reader
 

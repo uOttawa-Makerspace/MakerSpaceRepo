@@ -152,8 +152,8 @@ RSpec.describe Rfid, type: :model do
       expect(Rfid.recent_unset.where(mac_address: macs)).to include(card)
     end
 
-    it "keeps the card's mac_address when the actor has no assigned space" do
-      actor.update_columns(space_id: nil)
+    it "keeps the card's mac_address when the actor has no assigned space, even with a saved space" do
+      actor.staff_spaces.destroy_all
       Rfid.unlink_from_user!(owner, actor: actor.reload)
       card.reload
       expect(card.user_id).to be_nil
@@ -161,7 +161,10 @@ RSpec.describe Rfid, type: :model do
     end
 
     it "keeps the card's mac_address when the assigned space has no reader" do
-      actor.update!(space: create(:space))
+      empty = create(:space)
+      actor.staff_spaces.destroy_all
+      StaffSpace.create!(user: actor, space: empty)
+      actor.update!(space: empty)
       Rfid.unlink_from_user!(owner, actor: actor)
       expect(card.reload.mac_address).to eq("aa:aa:aa:aa:aa:aa")
     end
@@ -209,7 +212,7 @@ RSpec.describe Rfid, type: :model do
     end
 
     it "keeps mac_address for an actor without an assigned space" do
-      actor.update_columns(space_id: nil)
+      actor.staff_spaces.destroy_all
       expect(Rfid.unlink_card!(card.card_number, actor: actor.reload)).to eq(:unlinked)
       expect(card.reload.mac_address).to eq("aa:aa:aa:aa:aa:aa")
     end

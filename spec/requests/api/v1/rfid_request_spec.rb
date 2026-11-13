@@ -247,7 +247,35 @@ RSpec.describe "/api/v1 RFID", type: :request do
       expect(card.reload.mac_address).to eq("aa:aa:aa:aa:aa:aa")
     end
 
+    it "keeps the card's mac when the staff member has only a saved space they are not assigned to" do
+      staff.update_columns(space_id: space_a.id)
+      api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff
+      expect(card.reload.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+    end
+
+    it "re-homes to the assigned space's reader, not a stale saved space's" do
+      StaffSpace.create!(user: staff, space: space_b)
+      staff.update_columns(space_id: space_a.id)
+      api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff
+      expect(card.reload.mac_address).to eq(reader_b.pi_mac_address)
+    end
+
+    it "re-homes to the lowest-id reader of the space" do
+      StaffSpace.create!(user: staff, space: space_a)
+      later = create(:pi_reader, space: space_a)
+      api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff
+      expect(card.reload.mac_address).to eq(reader_a.pi_mac_address)
+      expect(later.id).to be > reader_a.id
+    end
+
+    it "re-homes for an admin to the first space's reader, as before" do
+      admin.update_columns(space_id: space_b.id)
+      api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: admin
+      expect(card.reload.mac_address).to eq(reader_b.pi_mac_address)
+    end
+
     it "re-homes the card to the first reader of the staff member's assigned space, whatever space they last signed in to" do
+      StaffSpace.create!(user: staff, space: space_a)
       staff.update_columns(space_id: space_a.id)
       create(:lab_session, user: staff, space: space_b, sign_in_time: 1.hour.ago, sign_out_time: 1.hour.from_now)
       api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff

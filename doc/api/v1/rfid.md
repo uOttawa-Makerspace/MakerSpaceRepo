@@ -39,7 +39,7 @@ Refused with 422 and nothing changed (legacy did both silently):
 
 ## DELETE /api/v1/users/:id/rfid
 
-Unlinks the user's card. The card is re-homed so it shows up in the caller's unlinked list (`GET /rfid_cards?linked=false`): its `mac_address` becomes the first reader of the caller's assigned space, the space that list filters on (kept unchanged when the caller has no assigned space, or that space has no reader). `PUT /staff_dashboard/unlink_rfid` uses the same rule (`Rfid.unlink_from_user!`).
+Unlinks the user's card. The card is re-homed so it shows up in the caller's unlinked list (`GET /rfid_cards?linked=false`): its `mac_address` becomes the lowest-id reader of the caller's current space (`GET /me/space`: their saved space when they are assigned to it, else the first space they are assigned to; any space for an admin), a space that list covers. It is kept unchanged when the caller has no such space, or that space has no reader. `PUT /staff_dashboard/unlink_rfid` uses the same rule (`Rfid.unlink_from_user!`).
 
 204, empty body. A user with no card is a no-op 204 (legacy: 500 for an unknown card number).
 
