@@ -92,11 +92,8 @@ class Admin::SpacesController < AdminAreaController
     admins = User.where(role: "admin").order("LOWER(name) ASC")
     @admin_options = admins.map { |admin| [admin.name, admin.id] }
     @admin_options.unshift([t("admin_area.spaces.edit.select_admin"), -1])
-
-    return if @space = Space.find(params[:id])
-      flash[:alert] = t("admin_area.spaces.flash.not_found")
-      redirect_back(fallback_location: root_path)
-    
+    @space = Space.find(params[:id])
+    count_training_records
   end
 
   def update_name
@@ -275,6 +272,15 @@ class Admin::SpacesController < AdminAreaController
   end
 
   private
+
+  # Sessions and active certifications of each training offered in the space, over every space,
+  # counted in two queries for the trainings table.
+  def count_training_records
+    training_ids = @space.trainings.select(:id)
+    @session_counts = TrainingSession.reorder(nil).where(training_id: training_ids).group(:training_id).count
+    @certification_counts = Certification.joins(:training_session).where(training_sessions: { training_id: training_ids })
+                                         .group("training_sessions.training_id").count
+  end
 
   # Sets one hours limit of a sub space from the submitted text: a whole number of hours, or -1 to remove the limit.
   def update_sub_space_limit(attribute, text, notice)

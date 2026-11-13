@@ -192,8 +192,8 @@
       <% @space.trainings.each do |training| %>
         <tr>
           <td><%= training.localized_name %></td>
-          <td><%= training.training_sessions.length %></td>
-          <td><%= training.certifications.length %></td>
+          <td><%= @session_counts.fetch(training.id, 0) %></td>
+          <td><%= @certification_counts.fetch(training.id, 0) %></td>
           <td><%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, admin_training_url(id: training.id), method: :delete, action: :destroy, class: 'btn btn-default',
                                                                                    **confirmation_options(t('confirm_delete.training')) %></td>
         </tr>
