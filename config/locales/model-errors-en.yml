@@ -151,6 +151,7 @@ en:
           attributes:
             base:
               one_correct_answer: "A question must have exactly one correct answer"
+              answer_text_required: "Every answer needs a description"
         staff_unavailability:
           attributes:
             start_time:

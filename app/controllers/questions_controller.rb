@@ -72,7 +72,7 @@ class QuestionsController < AdminAreaController
   end
 
   def update
-    write_flash(@question, "errors.training.question_not_updated", I18n.t("questions.flash.updated")) { @question.update(question_params) }
+    write_flash(@question, "errors.training.question_not_updated", I18n.t("questions.flash.updated")) { @question.update_from_form(question_params) }
     redirect_to questions_path
   end
 

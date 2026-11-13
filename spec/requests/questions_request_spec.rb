@@ -170,6 +170,27 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(response.body).to include("A question must have exactly one correct answer")
     end
 
+    it "refuses a question with no description, level or answer text, creating nothing" do
+      params = { question: { description: "", level: "", answers_attributes: { "0" => { description: "" }, "1" => { description: "" } } } }
+      expect { post questions_path, params: params }.not_to change(Question, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(CGI.unescapeHTML(response.body)).to include("Description This field is required", "Level Selection is not valid",
+                                                         "Every answer needs a description")
+    end
+
+    it "refuses a level that is not one of the question levels" do
+      expect { post questions_path, params: valid_params(level: "Expert") }.not_to change(Question, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "refuses an answer without text" do
+      params = valid_params
+      params[:question][:answers_attributes]["0"][:description] = ""
+      expect { post questions_path, params: params }.not_to change(Answer, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Every answer needs a description")
+    end
+
     it "stores uploaded PNG images" do
       img = fixture_file_upload(Rails.root.join("spec/support/assets/test.png"), "image/png")
       post questions_path, params: valid_params(images: [img])
@@ -288,10 +309,48 @@ RSpec.describe "Questions (admin question bank)", type: :request do
     it "updates nested answers by id" do
       answer = question.answers.order(:id).last
       patch question_path(question),
-            params: { question: { answers_attributes: { "0" => { id: answer.id, description: "A hammer", correct: "true" } } } }
+            params: { question: { answers_attributes: { "0" => { id: answer.id, description: "A hammer" } } } }
+      expect(flash[:notice]).to eq("Question updated")
       expect(answer.reload.description.to_plain_text).to eq("A hammer")
-      expect(answer.correct).to be(true)
-      expect(question.answers.where(correct: true).count).to eq(2)
+      expect(answer.correct).to be(false)
+    end
+
+    it "saves the whole edit form, every answer included" do
+      answers = question.answers.order(:id).to_a
+      patch question_path(question), params: { question: { description: "Kerf?", level: "Intermediate", answers_attributes: {
+        "0" => { id: answers[0].id, description: "Cut width" }, "1" => { id: answers[1].id, description: "Saw" }, "2" => { description: "Drill" }
+      } } }
+      expect(flash[:notice]).to eq("Question updated")
+      expect(question.reload.answers.order(:id).map { |a| [a.description.to_plain_text, a.correct] })
+        .to eq([["Cut width", true], ["Saw", false], ["Drill", false]])
+    end
+
+    it "refuses an update that would leave two correct answers, changing nothing" do
+      answer = question.answers.find_by!(correct: false)
+      patch question_path(question),
+            params: { question: { answers_attributes: { "0" => { id: answer.id, description: "A hammer", correct: "true" } } } }
+      expect(flash[:alert]).to eq("The question was not updated. A question must have exactly one correct answer")
+      expect(answer.reload.correct).to be(false)
+      expect(answer.description.to_plain_text).to eq("A tool")
+    end
+
+    it "refuses a blank description or answer text, changing nothing" do
+      other = create(:training, spaces: [space])
+      answer = question.answers.find_by!(correct: false)
+      patch question_path(question), params: { question: { description: "", training_ids: [other.id.to_s],
+                                                           answers_attributes: { "0" => { id: answer.id, description: "" } } } }
+      expect(response).to redirect_to(questions_path)
+      expect(flash[:alert]).to eq("The question was not updated. Description This field is required. and Every answer needs a description")
+      question.reload
+      expect(question.description).to eq("What is a kerf?")
+      expect(question.trainings).to eq([training])
+      expect(answer.reload.description.to_plain_text).to eq("A tool")
+    end
+
+    it "refuses a level that is not one of the question levels" do
+      patch question_path(question), params: { question: { level: "Expert" } }
+      expect(flash[:alert]).to eq("The question was not updated. Level Selection is not valid.")
+      expect(question.reload.level).to eq("Beginner")
     end
 
     it "alerts and redirects when the update is invalid" do
