@@ -18,9 +18,9 @@ class Staff::UnavailabilitiesController < StaffAreaController
     )
 
     if @staff_unavailability.save
-      flash[:notice] = "Unavailability created#{" for #{target_user.name}" if admin_managing_other_user?}."
+      dialog_flash[:notice] = "Unavailability created#{" for #{target_user.name}" if admin_managing_other_user?}."
     else
-      flash[:alert] = validation_message(@staff_unavailability, "failed_saves.unavailability_create")
+      dialog_flash[:alert] = validation_message(@staff_unavailability, "failed_saves.unavailability_create")
     end
 
     dialog_done
@@ -33,7 +33,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
     # Check if trying to change event type (not allowed for unavailabilities)
     if params[:staff_unavailability][:event_type].present? && 
        params[:staff_unavailability][:event_type] != "unavailability"
-      flash[:alert] = "Cannot change an unavailability to another event type."
+      dialog_flash[:alert] = "Cannot change an unavailability to another event type."
       return dialog_done
     end
 
@@ -47,7 +47,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
     when "this"
       update_this_occurrence
     else
-      flash[:alert] = "Invalid update scope."
+      dialog_flash[:alert] = "Invalid update scope."
     end
 
     dialog_done
@@ -66,9 +66,13 @@ class Staff::UnavailabilitiesController < StaffAreaController
 
     case params[:scope]
     when "single"
-      shorten_series("This occurrence deleted.", "Start date is required for deleting a single occurrence.") { |start| series_rule(@staff_unavailability).without_occurrence(start) }
+      shorten_series(@staff_unavailability, "This occurrence deleted.", "Start date is required for deleting a single occurrence.") do |start|
+        series_rule(@staff_unavailability).without_occurrence(start)
+      end
     when "following"
-      shorten_series("This and following deleted.", "Start date is required for deleting following occurrences.") { |start| series_rule(@staff_unavailability).ending_before(start) }
+      shorten_series(@staff_unavailability, "This and following deleted.", "Start date is required for deleting following occurrences.") do |start|
+        series_rule(@staff_unavailability).ending_before(start)
+      end
     when "all" then remove_unavailability("All occurrences deleted.")
     else
       Rails.logger.error "Invalid scope received: #{params[:scope]}"
@@ -203,9 +207,9 @@ class Staff::UnavailabilitiesController < StaffAreaController
         end_time: finish,
         recurrence_rule: staff_params[:recurrence_rule].presence
       )
-      flash[:notice] = "Unavailability updated successfully."
+      dialog_flash[:notice] = "Unavailability updated successfully."
     else
-      flash[:alert] = validation_message(@staff_unavailability, "failed_saves.unavailability_update")
+      dialog_flash[:alert] = validation_message(@staff_unavailability, "failed_saves.unavailability_update")
     end
   end
 
@@ -222,9 +226,9 @@ class Staff::UnavailabilitiesController < StaffAreaController
         end_time: finish,
         recurrence_rule: rule_to_use
       )
-      flash[:notice] = "All occurrences updated successfully."
+      dialog_flash[:notice] = "All occurrences updated successfully."
     else
-      flash[:alert] = validation_message(@staff_unavailability, "failed_saves.unavailability_update")
+      dialog_flash[:alert] = validation_message(@staff_unavailability, "failed_saves.unavailability_update")
     end
   end
 
@@ -242,7 +246,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
     updated_rule = series_rule(@staff_unavailability).appending_exdate(excluded)
 
     unless @staff_unavailability.update(recurrence_rule: updated_rule)
-      flash[:alert] = validation_message(@staff_unavailability, "failed_saves.unavailability_update")
+      dialog_flash[:alert] = validation_message(@staff_unavailability, "failed_saves.unavailability_update")
       return
     end
 
@@ -254,7 +258,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
       user_id: @staff_unavailability.user_id
     )
 
-    flash[:notice] = "This occurrence updated successfully."
+    dialog_flash[:notice] = "This occurrence updated successfully."
   end
 
   def remove_unavailability(notice)
@@ -262,25 +266,8 @@ class Staff::UnavailabilitiesController < StaffAreaController
     dialog_done(notice: notice)
   end
 
-  # Gives the series a new rule from the occurrence the dialog was opened on (the block gets its start).
-  def shorten_series(notice, start_missing)
-    start = parse_time(params[:start_date])
-    return dialog_done(alert: start_missing) unless start
-
-    @staff_unavailability.update!(recurrence_rule: yield(start))
-    dialog_done(notice: notice)
-  end
-
   def series_rule(unavailability)
     RecurrenceRule.new(unavailability.recurrence_rule, unavailability.start_time)
-  end
-
-  # The time as UTC, or nil when the text is missing or not a time.
-  def parse_time(time_string)
-    return nil if time_string.blank?
-    Time.parse(time_string).utc
-  rescue ArgumentError
-    nil
   end
 
   def unreadable_times?
@@ -292,6 +279,6 @@ class Staff::UnavailabilitiesController < StaffAreaController
     record = StaffUnavailability.new
     record.errors.add(:start_time, :blank) if parse_time(staff_params[:utc_start_time]).nil?
     record.errors.add(:end_time, :blank) if parse_time(staff_params[:utc_end_time]).nil?
-    flash[:alert] = validation_message(record, "failed_saves.unavailability_update")
+    dialog_flash[:alert] = validation_message(record, "failed_saves.unavailability_update")
   end
 end

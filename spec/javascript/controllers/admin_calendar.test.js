@@ -90,6 +90,8 @@ vi.mock("../../../app/javascript/src/calendar_helper.js", () => ({
   eventCreate,
 }));
 
+const { default: CalendarSaved } =
+  await import("../../../app/javascript/controllers/calendar_saved_controller.js");
 const { default: AdminCalendar } =
   await import("../../../app/javascript/controllers/admin_calendar_controller.js");
 
@@ -99,7 +101,7 @@ const box = (target, id, value, action, { checked = true, color } = {}) =>
 function page({ hidden = {} } = {}) {
   const shown = (param, value) => !(hidden[param] || []).includes(value);
   return `
-<div data-controller="admin-calendar" data-action="calendar:saved@document->admin-calendar#saved" data-admin-calendar-events-url-value="/admin/events/json/7" data-admin-calendar-unavailabilities-url-value="/admin/calendar/unavailabilities_json/7" data-admin-calendar-imported-url-value="/admin/calendar/imported_calendars_json/7">
+<div data-controller="admin-calendar" data-admin-calendar-events-url-value="/admin/events/json/7" data-admin-calendar-unavailabilities-url-value="/admin/calendar/unavailabilities_json/7" data-admin-calendar-imported-url-value="/admin/calendar/imported_calendars_json/7">
   <section id="calendar_container" data-admin-calendar-target="container" style="display:none">
     ${box("allStaffEvents", "checkbox-all-events", "all-events", "toggleAllStaffEvents", { color: "#919191" })}
     ${box("allStaff", "checkbox-all", "all", "toggleAllStaff", { color: "#919191" })}
@@ -243,6 +245,7 @@ async function boot({ url = "http://localhost/admin/calendar", hidden } = {}) {
   created.length = 0;
   application = Application.start();
   application.register("admin-calendar", AdminCalendar);
+  application.register("calendar-saved", CalendarSaved);
   await settle();
   const calendar = created[0];
   calendar.askAll(WEEK);
@@ -279,7 +282,10 @@ describe("a saved dialog", () => {
     events[0].events[0].title = "Opening (renamed)";
     onTestFinished(() => (events[0].events[0].title = "Opening"));
 
-    document.dispatchEvent(new CustomEvent("calendar:saved"));
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      `<span data-controller="calendar-saved" data-calendar-saved-admin-calendar-outlet="[data-controller~=admin-calendar]"></span>`,
+    );
     await settle();
 
     expect(closeSaved).toHaveBeenCalledWith($("eventModal"));

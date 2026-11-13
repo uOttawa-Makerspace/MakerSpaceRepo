@@ -14,7 +14,11 @@ class Admin::EventsController < AdminAreaController
     saved = @event.save && assignments.all?(&:save)
     @event.push_to_google_later if @event.persisted?
 
-    saved ? dialog_done(notice: "Event created successfully.") : dialog_done(alert: validation_message(@event, "failed_saves.event_create"))
+    if saved
+      dialog_done(notice: "Event created successfully.")
+    else
+      dialog_done(alert: validation_message(@event, "failed_saves.event_create"))
+    end
   end
 
   def update
@@ -34,7 +38,7 @@ class Admin::EventsController < AdminAreaController
     when "this"
       update_this_occurrence(participants)
     else
-      flash[:alert] = "Invalid update scope."
+      dialog_flash[:alert] = "Invalid update scope."
     end
 
     dialog_done
@@ -45,8 +49,8 @@ class Admin::EventsController < AdminAreaController
     return remove_event("Event deleted.") if @event.recurrence_rule.blank?
 
     case params[:scope]
-    when "single" then shorten_series("This occurrence deleted.") { |start| series_rule.without_occurrence(start) }
-    when "following" then shorten_series("This and following deleted.") { |start| series_rule.ending_before(start) }
+    when "single" then shorten_event_series("This occurrence deleted.") { |start| series_rule.without_occurrence(start) }
+    when "following" then shorten_event_series("This and following deleted.") { |start| series_rule.ending_before(start) }
     when "all" then remove_event("Event series deleted.")
     else dialog_done(alert: "Invalid delete scope: #{params[:scope]}")
     end
@@ -140,9 +144,9 @@ class Admin::EventsController < AdminAreaController
       @event = Event.find(params[:id])
       if @event.update(draft: false, updated_by: current_user)
         @event.push_to_google_later
-        flash[:notice] = "Event published successfully."
+        dialog_flash[:notice] = "Event published successfully."
       else
-        flash[:alert] = validation_message(@event, "failed_saves.event_publish")
+        dialog_flash[:alert] = validation_message(@event, "failed_saves.event_publish")
       end
     end
 
@@ -245,12 +249,6 @@ class Admin::EventsController < AdminAreaController
   end
 
   # The time in UTC, or nil when the value is blank or not a time.
-  def parse_time(value)
-    Time.parse(value.to_s).utc
-  rescue ArgumentError
-    nil
-  end
-
   # Excludes the occurrence from the series and creates it as its own event. Both happen in one
   # transaction, so a failure leaves the series as it was.
   def update_this_occurrence(participants)
@@ -274,9 +272,9 @@ class Admin::EventsController < AdminAreaController
     if series_updated
       @event.push_to_google_later
       @new_event.push_to_google_later
-      flash[:notice] = "This event occurrence updated successfully."
+      dialog_flash[:notice] = "This event occurrence updated successfully."
     else
-      flash[:alert] = validation_message(@event, "failed_saves.event_update")
+      dialog_flash[:alert] = validation_message(@event, "failed_saves.event_update")
     end
   end
 
@@ -305,22 +303,16 @@ class Admin::EventsController < AdminAreaController
     end
   end
 
-  # Destroys the event, then queues the removal of its Google copy (read before the row is gone).
+  def shorten_event_series(notice, &rule)
+    shorten_series(@event, notice, t("admin_events.start_date_required"), updated_by: current_user, &rule)
+  end
+
   def remove_event(notice)
     destroy_event(@event)
     dialog_done(notice: notice)
   end
 
-  # Gives the series a new rule from the occurrence the dialog was opened on (the block gets its start).
-  def shorten_series(notice)
-    start = parse_time(params[:start_date])
-    return dialog_done(alert: t("admin_events.start_date_required")) unless start
-
-    @event.update!(recurrence_rule: yield(start), updated_by: current_user)
-    @event.push_to_google_later
-    dialog_done(notice: notice)
-  end
-
+  # Destroys the event, then queues the removal of its Google copy (read before the row is gone).
   def destroy_event(event)
     google_event_id = event.google_event_id
     calendar_id = event.google_calendar
@@ -345,9 +337,9 @@ class Admin::EventsController < AdminAreaController
       @event.event_assignments.destroy_all
       attach_participants(@event, participants)
       @event.push_to_google_later
-      flash[:notice] = "Event updated successfully."
+      dialog_flash[:notice] = "Event updated successfully."
     else
-      flash[:alert] = validation_message(@event, "failed_saves.event_update")
+      dialog_flash[:alert] = validation_message(@event, "failed_saves.event_update")
     end
   end
 

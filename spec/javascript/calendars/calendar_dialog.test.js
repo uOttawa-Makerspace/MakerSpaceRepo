@@ -5,28 +5,12 @@ const hide = vi.fn();
 const getInstance = vi.fn();
 vi.mock("bootstrap", () => ({ Modal: { getInstance } }));
 
-const actions = {};
-vi.mock("@hotwired/turbo-rails", () => ({
-  Turbo: { StreamActions: actions },
-}));
-
-await import("../../../app/javascript/src/calendar_saved.js");
 const { closeSaved } =
   await import("../../../app/javascript/src/calendar_dialog.js");
 const { rangeSource } =
   await import("../../../app/javascript/src/range_source.js");
 
 afterEach(() => vi.restoreAllMocks());
-
-describe("the calendar_saved stream action", () => {
-  it("tells the page that a calendar dialog saved", () => {
-    const heard = vi.fn();
-    document.addEventListener("calendar:saved", heard);
-    actions.calendar_saved.call({});
-    document.removeEventListener("calendar:saved", heard);
-    expect(heard).toHaveBeenCalledTimes(1);
-  });
-});
 
 describe("closeSaved", () => {
   it("is marked saved while the dialog hides, and not afterwards", () => {

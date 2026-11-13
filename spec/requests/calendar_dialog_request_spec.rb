@@ -29,7 +29,7 @@ RSpec.describe "Calendar dialog answers", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.media_type).to eq("text/vnd.turbo-stream.html")
     expect(response.body).to include('<turbo-stream action="update" target="flash">').and include(text)
-    expect(response.body).to include('<turbo-stream action="calendar_saved">')
+    expect(response.body).to include('data-controller="calendar-saved"')
   end
 
   describe "admin event dialog" do
@@ -109,6 +109,20 @@ RSpec.describe "Calendar dialog answers", type: :request do
       expect(flash[:notice]).to eq("Event series deleted.")
     end
 
+    it "refuses a delete of a series whose stored rule no longer validates, and keeps the rule" do
+      hourly = "DTSTART:20270405T140000Z\nRRULE:FREQ=HOURLY;COUNT=3"
+      series.update_column(:recurrence_rule, hourly)
+      delete delete_with_scope_admin_event_path(series), params: { scope: "single", start_date: "2027-04-05T14:00:00Z" }, headers: turbo
+      expect_stream("Failed to update event")
+      expect(series.reload.recurrence_rule).to eq(hourly)
+    end
+
+    it "redirects an invalid delete scope with the alert" do
+      delete delete_with_scope_admin_event_path(series), params: { scope: "other" }, headers: from_calendar.except("Accept")
+      expect(response).to redirect_to(admin_calendar_index_url)
+      expect(flash[:alert]).to eq("Invalid delete scope: other")
+    end
+
     it "keeps the bulk publish as a redirect" do
       patch publish_admin_events_path, params: { space_id: space.id, view_start_date: "2027-04-01", view_end_date: "2027-04-30" },
                                        headers: from_calendar
@@ -134,6 +148,34 @@ RSpec.describe "Calendar dialog answers", type: :request do
     it "answers a scoped delete with the stream" do
       delete delete_with_scope_staff_unavailability_path(record), params: { scope: "all" }, headers: turbo
       expect_stream("Unavailability deleted.")
+    end
+
+    context "with a repeating entry" do
+      let(:repeating) do
+        create(:staff_unavailability, user: admin, start_time: Time.utc(2027, 4, 5, 14), end_time: Time.utc(2027, 4, 5, 15),
+                                      recurrence_rule: "DTSTART:20270405T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4")
+      end
+
+      it "answers an invalid delete scope with the alert" do
+        delete delete_with_scope_staff_unavailability_path(repeating), params: { scope: "other" }, headers: turbo
+        expect_stream("Invalid delete scope: other")
+      end
+
+      it "refuses a delete of a series whose stored rule no longer validates, and keeps the rule" do
+        hourly = "DTSTART:20270405T140000Z\nRRULE:FREQ=HOURLY;COUNT=3"
+        repeating.update_column(:recurrence_rule, hourly)
+        delete delete_with_scope_staff_unavailability_path(repeating), params: { scope: "single", start_date: "2027-04-05T14:00:00Z" }, headers: turbo
+        expect_stream("Failed to update")
+        expect(repeating.reload.recurrence_rule).to eq(hourly)
+      end
+
+      it "returns an admin who came from the admin calendar to it, and any other page to the staff page" do
+        delete delete_with_scope_staff_unavailability_path(repeating), params: { scope: "all" }, headers: { "HTTP_REFERER" => admin_calendar_index_url }
+        expect(response).to redirect_to(admin_calendar_index_path)
+        other = create(:staff_unavailability, user: admin)
+        delete staff_unavailability_path(other), headers: { "HTTP_REFERER" => staff_unavailabilities_url }
+        expect(response).to redirect_to(staff_unavailabilities_path)
+      end
     end
 
     it "keeps the redirect for a request that does not ask for a stream" do

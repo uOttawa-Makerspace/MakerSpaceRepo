@@ -17,7 +17,6 @@ import "../src/tabledata";
 import "../src/accordion-load";
 import "../src/clipboard";
 import "../src/theme";
-import "../src/calendar_saved";
 
 // Stimulus controllers
 import "../controllers";

@@ -42,11 +42,13 @@ const form = {
   openForRange: vi.fn(),
 };
 
+const { default: CalendarSaved } =
+  await import("../../../app/javascript/controllers/calendar_saved_controller.js");
 const { default: UnavailabilitiesCalendar } =
   await import("../../../app/javascript/controllers/unavailabilities_calendar_controller.js");
 
 const PAGE = `
-<div data-controller="unavailabilities-calendar" data-action="calendar:saved@document->unavailabilities-calendar#saved" data-unavailabilities-calendar-feed-url-value="/staff/unavailabilities/json" data-unavailabilities-calendar-failure-template-value="{host} could not be loaded" data-unavailabilities-calendar-unknown-host-value="a linked calendar" data-unavailabilities-calendar-feed-failure-value="Your calendar could not be loaded" data-unavailabilities-calendar-unavailability-form-outlet="#modal" data-unavailabilities-calendar-imported-event-details-outlet="#details">
+<div data-controller="unavailabilities-calendar" data-unavailabilities-calendar-feed-url-value="/staff/unavailabilities/json" data-unavailabilities-calendar-failure-template-value="{host} could not be loaded" data-unavailabilities-calendar-unknown-host-value="a linked calendar" data-unavailabilities-calendar-feed-failure-value="Your calendar could not be loaded" data-unavailabilities-calendar-unavailability-form-outlet="#modal" data-unavailabilities-calendar-imported-event-details-outlet="#details">
   <div id="calendar_container" data-unavailabilities-calendar-target="container" style="display:none">
     <button id="addUnavailabilityButton" data-action="click->unavailabilities-calendar#addUnavailability"></button>
     <div id="calendar" data-unavailabilities-calendar-target="calendar"><p id="stale">old</p></div>
@@ -85,6 +87,7 @@ async function boot(html = PAGE) {
   application.register("unavailability-form", FakeForm);
   application.register("imported-event-details", FakeDetails);
   application.register("unavailabilities-calendar", UnavailabilitiesCalendar);
+  application.register("calendar-saved", CalendarSaved);
   await settle();
   return created[0];
 }
@@ -124,7 +127,11 @@ describe("staff unavailabilities calendar", () => {
 
   it("closes the dialog and fetches the entries again when it saved", async () => {
     const cal = await boot();
-    document.dispatchEvent(new CustomEvent("calendar:saved"));
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      `<span data-controller="calendar-saved" data-calendar-saved-unavailabilities-calendar-outlet="[data-controller~=unavailabilities-calendar]"></span>`,
+    );
+    await settle();
     expect(closeSaved).toHaveBeenCalledWith(document.getElementById("modal"));
     expect(cal.refetched).toBe(true);
   });
