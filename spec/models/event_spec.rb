@@ -224,6 +224,77 @@ RSpec.describe Event, type: :model do
     end
   end
 
+  describe "#feed_row" do
+    let(:alex) { create(:user, :staff, name: "Alex One") }
+    let(:blair) { create(:user, :staff, name: "Blair Two") }
+
+    it "draws a one-off event with no assignee as unassigned on grey" do
+      event = create(:event, space: space, created_by: creator, event_type: "shift", title: "Desk", description: "Front",
+                             start_time: Time.utc(2027, 4, 1, 14), end_time: Time.utc(2027, 4, 1, 15))
+      expect(event.feed_row({})).to eq(
+        id: "event-#{event.id}", title: "Desk", start: "2027-04-01T10:00:00-04:00", end: "2027-04-01T11:00:00-04:00",
+        allDay: false,
+        extendedProps: { name: "Shift", draft: false, description: "Front", eventType: "shift", trainingId: nil,
+                         language: nil, course_name: nil, assignedUsers: [{ id: 0, name: "Unassigned" }],
+                         background: "linear-gradient(to right, #bbb 0.0%, #bbb 100.0%);" }
+      )
+    end
+
+    it "stripes each assignee's colour, grey for one without, and fades a draft" do
+      event = create(:event, :draft, space: space, created_by: creator, start_time: Time.utc(2027, 4, 1, 14),
+                                     end_time: Time.utc(2027, 4, 1, 15))
+      create(:event_assignment, event: event, user: alex)
+      create(:event_assignment, event: event, user: blair)
+      row = event.reload.feed_row(alex.id => "#ff0000")
+      expect(row[:extendedProps][:assignedUsers]).to eq([{ id: alex.id, name: "Alex One" }, { id: blair.id, name: "Blair Two" }])
+      expect(row[:extendedProps][:background])
+        .to eq("linear-gradient(to right, #ff0000 0.0%, #ff0000 50.0%, #bbb 50.0%, #bbb 100.0%); opacity: 0.8;")
+    end
+
+    it "gives a series its rule in Toronto time and its length in milliseconds" do
+      event = create(:event, space: space, created_by: creator, start_time: Time.utc(2027, 5, 5, 13),
+                             end_time: Time.utc(2027, 5, 5, 14, 30),
+                             recurrence_rule: "DTSTART:20270505T130000Z\nRRULE:FREQ=WEEKLY;BYDAY=WE\nEXDATE:20270512T130000Z")
+      expect(event.feed_row({})).to include(
+        rrule: "DTSTART:20270505T090000\nRRULE:FREQ=WEEKLY;BYDAY=WE\nEXDATE:20270512T090000", duration: 5_400_000.0
+      )
+    end
+
+    it "leaves the rule and length out of a one-off event" do
+      event = build_event(recurrence_rule: "")
+      expect(event.feed_row({}).keys).not_to include(:rrule, :duration)
+    end
+  end
+
+  describe ".publish_range" do
+    let(:editor) { create(:user, :admin) }
+    let(:range) { Time.utc(2027, 4, 1)..Time.utc(2027, 4, 3) }
+
+    def draft(**attrs)
+      create(:event, :draft, space: space, created_by: creator, start_time: Time.utc(2027, 4, 2, 14),
+                             end_time: Time.utc(2027, 4, 2, 15), **attrs)
+    end
+
+    it "publishes the space's drafts in the range as the editor, yielding each saved one, and returns the failures" do
+      first = draft
+      broken = draft(title: "Broken")
+      broken.update_column(:recurrence_rule, "DTSTART:20270402T140000Z\nRRULE:FREQ=MINUTELY")
+      outside = draft(start_time: Time.utc(2027, 4, 5, 14), end_time: Time.utc(2027, 4, 5, 15))
+      elsewhere = create(:event, :draft, space: create(:space), created_by: creator, start_time: Time.utc(2027, 4, 2, 14),
+                                         end_time: Time.utc(2027, 4, 2, 15))
+      yielded = []
+
+      published, failed = described_class.publish_range(space.id, range, by: editor) { |event| yielded << event }
+
+      expect(published).to eq([first])
+      expect(yielded).to eq([first])
+      expect(failed).to eq([broken])
+      expect(failed.first.errors[:recurrence_rule]).to be_present
+      expect(first.reload).to have_attributes(draft: false, updated_by: editor)
+      expect([broken, outside, elsewhere].map { |event| event.reload.draft }).to eq([true, true, true])
+    end
+  end
+
   describe "a stored repeat rule with an unreadable start" do
     let(:bad_rule) { "DTSTART;TZID=Nowhere/Land:20270401T100000\nRRULE:FREQ=DAILY" }
 
