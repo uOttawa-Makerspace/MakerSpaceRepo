@@ -154,6 +154,16 @@ RSpec.describe "Member mails in the recipient's language", type: :mailer do
                                     "No more actions are needed.")
     end
 
+    it "greets the staff member it goes to and names the trainee in the result, in each language" do
+      english_mail = text(deliver { MsrMailer.exam_results_staff(english, exam(english, "passed")) })
+      expect(english_mail).to include("Hello Grace Hopper,", "Ada Lovelace finished the exam")
+      expect(english_mail).not_to include("Hello ada lovelace,")
+      staff.update!(locale: "fr")
+      french_mail = text(deliver { MsrMailer.exam_results_staff(english, exam(english, "passed")) })
+      expect(french_mail).to include("Bonjour Grace Hopper,", "Ada Lovelace a terminé l'examen")
+      expect(french_mail).not_to include("Bonjour ada lovelace,")
+    end
+
     it "is written in French to a staff member who saved French" do
       staff.update!(locale: "fr")
       mail = deliver { MsrMailer.exam_results_staff(english, exam(english, "passed")) }
@@ -161,6 +171,24 @@ RSpec.describe "Member mails in the recipient's language", type: :mailer do
       expect(mail.subject).to eq("Ada a terminé un examen")
       expect(text(mail)).to include("(4 mars 2026)", "Cette personne a donc réussi l'examen.", "Vous n'avez rien d'autre à faire.")
       expect(text(mail)).not_to include("S'il s'agit de sa première tentative")
+    end
+  end
+
+  describe "volunteer task request mails" do
+    def request_update(user) = MsrMailer.send_notification_for_task_request_update(
+      create(:volunteer_task_request, user: user, volunteer_task: task).id
+    )
+
+    it "name the volunteer team's address to write to, in English" do
+      expect(text(deliver { MsrMailer.send_notification_for_task_request(task.id, english.id) }))
+        .to include("you can send an email to volunteer@makerepo.com.")
+      expect(text(deliver { request_update(english) })).to include("you can send an email to volunteer@makerepo.com.")
+    end
+
+    it "name the volunteer team's address to write to, in French" do
+      expect(text(deliver { MsrMailer.send_notification_for_task_request(task.id, french.id) }))
+        .to include("vous pouvez écrire à volunteer@makerepo.com.")
+      expect(text(deliver { request_update(french) })).to include("vous pouvez écrire à volunteer@makerepo.com.")
     end
   end
 
@@ -185,7 +213,10 @@ RSpec.describe "Member mails in the recipient's language", type: :mailer do
 
   it "keeps the recipients of the help and print mails in each language" do
     issue = deliver { MsrMailer.issue_email("Ada", french.email, "Help", "Text", nil) }
-    expect([issue.to, issue.bcc]).to eq([[french.email], ["uottawa.makerepo@gmail.com"]])
+    expect([issue.to, issue.bcc]).to eq([[french.email], nil])
+    team = deliver { MsrMailer.issue_email_copy_to_team("Ada", french.email, "Help", "Text", nil) }
+    expect([team.to, team.bcc, team.subject]).to eq([["uottawa.makerepo@gmail.com"], nil, "Issue Report | Help"])
+    expect(text(team)).to include("We have received the following help request from you:", "Thank you,")
     printed = deliver { MsrMailer.print_failed(create(:printer, :UM2P_01), french, "nozzle") }
     expect([printed.to, printed.bcc, printed.reply_to]).to eq([[french.email], ["uottawa.makerepo@gmail.com"], ["makerspace@uottawa.ca"]])
   end

@@ -82,13 +82,36 @@ RSpec.describe "POST /api/v1/support_requests", type: :request do
   it "uses the account name and email when signed in, never the posted ones" do
     expect do
       perform_enqueued_jobs { post_request(payload.merge(email: "victim@example.com", name: "Someone Else"), as: user) }
-    end.to change { deliveries.size }.by(1)
+    end.to change { deliveries.size }.by(2)
     expect(response).to have_http_status(:accepted)
-    mail = deliveries.last
-    expect(mail.to).to eq(["owner@example.com"])
-    expect(mail.body.encoded).to include("Account Owner")
-    expect(mail.body.encoded).not_to include("Someone Else")
+    expect(deliveries.map { |m| [m.to, m.bcc] })
+      .to contain_exactly([["owner@example.com"], nil], [["uottawa.makerepo@gmail.com"], nil])
+    deliveries.each do |mail|
+      expect(mail.body.encoded).to include("Account Owner")
+      expect(mail.body.encoded).not_to include("Someone Else", "victim@example.com")
+    end
     expect(user.reload).to have_attributes(name: "Account Owner", email: "owner@example.com")
+  end
+
+  it "writes a signed-in caller's copy in their language and the team's copy in English" do
+    user.update!(locale: "fr")
+    perform_enqueued_jobs { post_request(payload, as: user) }
+    expect(deliveries.size).to eq(2)
+    reporter = deliveries.find { |m| m.to == ["owner@example.com"] }
+    team = deliveries.find { |m| m.to == ["uottawa.makerepo@gmail.com"] }
+
+    expect(reporter.subject).to eq("Signalement de problème | Printer will not start")
+    expect(CGI.unescapeHTML(reporter.body.decoded)).to include("Version de l'application : 2.4.1")
+    expect(team.subject).to eq("Issue Report | Printer will not start")
+    expect(CGI.unescapeHTML(team.body.decoded)).to include("App Version: 2.4.1", "Thank you,")
+    expect(CGI.unescapeHTML(team.body.decoded)).not_to include("Bonjour", "Merci,")
+  end
+
+  it "still sends the team its copy when a signed-in caller's copy cannot be queued" do
+    allow(MsrMailer).to receive(:issue_email).and_raise(ActiveJob::EnqueueError, "queue down")
+    perform_enqueued_jobs { post_request(payload, as: user) }
+    expect(response).to have_http_status(:internal_server_error)
+    expect(deliveries.map(&:to)).to eq([["uottawa.makerepo@gmail.com"]])
   end
 
   it "needs no name or email from a signed-in caller" do

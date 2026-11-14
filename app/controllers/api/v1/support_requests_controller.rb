@@ -4,8 +4,9 @@ module Api
   module V1
     # Help form for the React app (replaces the old PUT /send_email). Public or signed in.
     # Same persistence and mail path as HelpController: a Help record (which opens the GitHub
-    # issue, text defanged) and MsrMailer.issue_email (signed in: to the account, bcc the MakerRepo
-    # team) or MsrMailer.issue_email_to_team (anonymous: team only, reporter in Reply-To).
+    # issue, text defanged) and MsrMailer.issue_email plus issue_email_copy_to_team (signed in: one
+    # mail to the account, one to the MakerRepo team) or MsrMailer.issue_email_to_team (anonymous:
+    # team only, reporter in Reply-To).
     # No Turnstile (the React app cannot render it): the rate limits below are the
     # protection. A signed-in caller's name and email always come from the account.
     # Contract: doc/api/v1/support_requests.md.
@@ -51,6 +52,7 @@ module Api
       def deliver_request(help, version)
         text = help.comments.to_plain_text
         if current_user
+          MsrMailer.issue_email_copy_to_team(help.name, help.email, help.subject, text, nil, version).deliver_later
           MsrMailer.issue_email(help.name, help.email, help.subject, text, nil, version).deliver_later
         else
           # Anonymous: never mail the caller-supplied address (mail relay). Team only, reporter in Reply-To.

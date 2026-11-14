@@ -236,24 +236,22 @@ class MsrMailer < ApplicationMailer
     )
   end
 
+  # A signed-in user's copy of their help request, in their language. The team gets its own copy
+  # from issue_email_copy_to_team, called with the same arguments.
   # contact_email: the address the reporter typed, shown to the team when they chose to share it
   # (the mail itself always goes to +email+). account: the signed-in user, always shown to the
   # team because the typed name and contact details are not verified.
   def issue_email(name, email, subject, comments, share_email, app_version = nil, contact_email: nil, account: nil)
-    @account = account
-    @name = name
-    @email = email
-    @contact_email = contact_email.presence || email
-    @subject = subject
-    @comments = comments
-    @share_email = share_email
-    @app_version = app_version
+    assign_issue(name, email, subject, comments, share_email, app_version, contact_email:, account:)
+    mail(to: @email, subject: subject_for(@email, subject: @subject))
+  end
 
-    mail(
-      to: @email,
-      bcc: "uottawa.makerepo@gmail.com",
-      subject: subject_for(@email, subject: @subject)
-    )
+  # The team's copy of a signed-in user's help request: the same mail as issue_email, in English.
+  def issue_email_copy_to_team(name, email, subject, comments, share_email, app_version = nil, contact_email: nil,
+                               account: nil)
+    assign_issue(name, email, subject, comments, share_email, app_version, contact_email:, account:)
+    mail(to: "uottawa.makerepo@gmail.com", locale: :en, template_name: "issue_email",
+         subject: I18n.t("msr_mailer.issue_email.subject", locale: :en, subject: @subject))
   end
 
   # Anonymous /api/v1 support requests: goes to the team only. The reporter's (unverified)
@@ -353,6 +351,7 @@ class MsrMailer < ApplicationMailer
   end
 
   def send_notification_for_task_request_update(volunteer_task_request_id)
+    @email_staff = "volunteer@makerepo.com"
     volunteer_task_request =
       VolunteerTaskRequest.find(volunteer_task_request_id)
     @volunteer_task = volunteer_task_request.volunteer_task
@@ -377,6 +376,17 @@ class MsrMailer < ApplicationMailer
   end
 
   private
+
+  def assign_issue(name, email, subject, comments, share_email, app_version, contact_email:, account:)
+    @account = account
+    @name = name
+    @email = email
+    @contact_email = contact_email.presence || email
+    @subject = subject
+    @comments = comments
+    @share_email = share_email
+    @app_version = app_version
+  end
 
   # Building no mail makes Action Mailer deliver nothing. The token itself is never logged.
   def skip_expired_link(mail_name, user_id)

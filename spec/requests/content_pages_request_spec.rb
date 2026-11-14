@@ -547,6 +547,8 @@ RSpec.describe "Content pages (part 2)", type: :request do
       { help: { name: "Pat Visitor", email: "pat@example.test", subject: "Booking does not work", comments: comments } }
     end
 
+    def team_copy = deliveries.find { |m| m.to == ["uottawa.makerepo@gmail.com"] }
+
     it "renders the form for guests and users" do
       get help_path
       expect(response).to have_http_status(:ok)
@@ -585,17 +587,30 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(mail.body.encoded).to include("See the attached notes")
     end
 
-    it "sends a signed-in user a copy at the account address, never the typed one" do
+    it "sends a signed-in user a copy at the account address, never the typed one, and the team its own copy" do
       user = sign_in_as(:regular)
       deliveries.clear
       typed = { help: params[:help].merge(email: "typed@example.test") }
       perform_enqueued_jobs { post help_path, params: typed }
-      expect(deliveries.size).to eq(1)
-      mail = deliveries.last
-      expect(mail.to).to eq([user.email])
-      expect(mail.bcc).to eq(["uottawa.makerepo@gmail.com"])
-      expect(mail.cc).to be_blank
+      expect(deliveries.map { |m| [m.to, m.cc, m.bcc] })
+        .to contain_exactly([[user.email], nil, nil], [["uottawa.makerepo@gmail.com"], nil, nil])
       expect(deliveries.flat_map { |m| Array(m.to) + Array(m.cc) + Array(m.bcc) }).not_to include("typed@example.test")
+    end
+
+    it "writes the signed-in user's copy in their language and the team's copy in English" do
+      user = sign_in_as(:regular, locale: "fr")
+      deliveries.clear
+      perform_enqueued_jobs { post help_path, params: params }
+      expect(deliveries.size).to eq(2)
+      reporter = deliveries.find { |m| m.to == [user.email] }
+      team = deliveries.find { |m| m.to == ["uottawa.makerepo@gmail.com"] }
+
+      expect(reporter.subject).to eq("Signalement de problème | Booking does not work")
+      expect(CGI.unescapeHTML(reporter.body.decoded)).to include("Nous avons reçu la demande d'aide suivante", comments)
+      expect(team.subject).to eq("Issue Report | Booking does not work")
+      expect(CGI.unescapeHTML(team.body.decoded))
+        .to include("We have received the following help request", user.email, comments, "Thank you,")
+      expect(CGI.unescapeHTML(team.body.decoded)).not_to include("Bonjour", "Merci,", "Vous avez reçu")
     end
 
     it "sends a guest no copy" do
@@ -609,11 +624,11 @@ RSpec.describe "Content pages (part 2)", type: :request do
       typed = { help: params[:help].merge(name: "Typed Name", email: "typed@example.test"), share_email: "1" }
       deliveries.clear
       perform_enqueued_jobs { post help_path, params: typed }
-      expect(deliveries.last.to).to eq([user.email])
-      expect(deliveries.last.body.encoded).to include("typed@example.test", "Typed Name")
+      expect(team_copy.body.encoded).to include("typed@example.test", "Typed Name")
+      expect(deliveries.find { |m| m.to == [user.email] }.body.encoded).to include("typed@example.test", "Typed Name")
       deliveries.clear
       perform_enqueued_jobs { post help_path, params: typed.except(:share_email) }
-      expect(deliveries.last.body.encoded).not_to include("typed@example.test")
+      expect(deliveries.map { |m| m.body.encoded }.join).not_to include("typed@example.test")
     end
 
     it "words the team mail for a web-form guest as coming from the help page" do
@@ -664,7 +679,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
       perform_enqueued_jobs do
         post help_path, params: { help: params[:help].merge(name: "Somebody Else", email: "typed@example.test"), share_email: "1" }
       end
-      body = deliveries.last.body.encoded
+      body = team_copy.body.encoded
       expect(body).to include("Somebody Else", "typed@example.test", user.name, user.username, user.email)
     end
 

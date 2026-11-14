@@ -188,6 +188,16 @@ RSpec.describe "Error messages", type: :request do
       expect(flash[:alert]).to eq(I18n.t("errors.help.copy_not_sent"))
     end
 
+    it "still sends the team its copy of a signed-in report when the reporter's copy cannot be queued" do
+      user = create(:user, :regular_user)
+      log_in!(user)
+      allow(MsrMailer).to receive(:issue_email).and_raise(ActiveJob::EnqueueError, "queue down")
+      ActionMailer::Base.deliveries.clear
+      perform_enqueued_jobs { post help_path, params: form }
+      expect(flash[:alert]).to eq(I18n.t("errors.help.copy_not_sent"))
+      expect(ActionMailer::Base.deliveries.map(&:to)).to eq([["uottawa.makerepo@gmail.com"]])
+    end
+
     it "reports an unexpected error and shows the form again with the reference" do
       allow_any_instance_of(Help).to receive(:save).and_raise(RuntimeError, "boom")
       expect(Rails.error).to receive(:report).with(an_instance_of(RuntimeError), hash_including(handled: true))
