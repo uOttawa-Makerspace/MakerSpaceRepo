@@ -177,7 +177,7 @@ class SubSpaceBookingController < SessionsController
     # presence check answers it.
     @sub_space_booking.assign_attributes(sub_space_booking_update_params)
     refusal = update_refusal(@sub_space_booking)
-    return render_update_limit_error(*refusal) if refusal
+    return render_update_limit_error(refusal) if refusal
 
     if @sub_space_booking.update(sub_space_booking_update_params)
       render_updated
@@ -438,11 +438,9 @@ class SubSpaceBookingController < SessionsController
     failure = occurrence_refusal(booking)
     return failure if failure
 
-    status = booking.initial_status(booked_by_admin: current_user.admin?)
-    booking.public = booking.sub_space.default_public
+    booking.apply_initial_state(by: current_user)
     booking.recurring_booking = recurring_booking # Attach the RecurringBooking handle, is saved with the booking itself
-    stamp_admin_approval(booking, status)
-    booking.save_with_status!(status)
+    booking.save!
 
     send_booking_created_mail(booking) if send_email
     nil
@@ -450,24 +448,28 @@ class SubSpaceBookingController < SessionsController
     invalid_booking_failure(e.record)
   end
 
-  SLOT_TAKEN = ["TimeSlot", "This time slot is already booked."].freeze
-
   # A new booking may not overlap a block unless it is a block itself, and only
   # admins may break the room's limits.
   def occurrence_refusal(booking)
-    return limit_failure(*SLOT_TAKEN) if !booking.blocking && booking.overlaps_block?
-    return if current_user.admin?
+    return slot_taken_failure if !booking.blocking && booking.overlaps_block?
 
-    breach = booking.room_limit_breach
-    limit_failure(*breach) if breach
+    room_limit_failure(booking) unless current_user.admin?
   end
 
-  # Set approved_at and approved_by for admin bookings
-  def stamp_admin_approval(booking, status)
-    return unless current_user.admin? && status == BookingStatus.approved
+  def slot_taken_failure
+    limit_failure("TimeSlot", "This time slot is already booked.")
+  end
 
-    booking.approved_at = DateTime.now
-    booking.approved_by_id = current_user.id
+  # The first of its room's limits the booking breaks, or nil: the maximum
+  # duration, then the owner's maximum hours in the room that week.
+  def room_limit_failure(booking)
+    room = booking.sub_space
+    if booking.exceeds_maximum_duration?
+      limit_failure("DurationHour", "You cannot book #{room.name} for more than #{room.maximum_booking_duration} hours.")
+    elsif booking.exceeds_weekly_hours?
+      limit_failure("DurationWeek",
+                    "You cannot book #{room.name} for more than #{room.maximum_booking_hours_per_week} hours per week.")
+    end
   end
 
   def invalid_booking_failure(record)
@@ -549,14 +551,14 @@ class SubSpaceBookingController < SessionsController
     end
   end
 
-  def render_update_limit_error(code, message)
+  def render_update_limit_error(failure)
     respond_to do |format|
       format.json do
-        render json: { errors: ["#{code} #{message}"] },
+        render json: { errors: failure[:errors] },
                status: :unprocessable_content
       end
       format.html do
-        redirect_to sub_space_booking_edit_path, alert: message
+        redirect_to sub_space_booking_edit_path, alert: failure[:alert]
       end
     end
   end
@@ -566,12 +568,12 @@ class SubSpaceBookingController < SessionsController
   # refused because an admin blocked the slot afterwards. The limits only
   # matter when the booking's times move; renaming a booking must not be
   # blocked because a room's limits were lowered since. Minute precision, the
-  # same test as the model's past-date rule. Returns [code, message] or nil.
+  # same test as the model's past-date rule. A missing time is no refusal: the
+  # model's presence check answers it. Returns a failure ({ errors:, alert: }) or nil.
   def update_refusal(booking)
-    return unless booking.start_time.present? && booking.end_time.present?
-    return SLOT_TAKEN if booking.moving? && booking.overlaps_block?
+    return slot_taken_failure if booking.moving? && booking.overlaps_block?
 
-    booking.room_limit_breach if !@user.admin? && booking.times_changing?
+    room_limit_failure(booking) if !@user.admin? && booking.times_changing?
   end
 
   def refuse_approved_edit
