@@ -355,6 +355,15 @@ class JobOrder < ApplicationRecord
     JobTask.where(job_order_id: id).each(&:prefix_file_names)
   end
 
+  # Every stored file of this order: its own files, its tasks' client and staff files, and its task options' files.
+  def file_attachments
+    task_ids = job_tasks.select(:id)
+    ActiveStorage::Attachment.where(record: self)
+                             .or(ActiveStorage::Attachment.where(record_type: "JobTask", record_id: task_ids))
+                             .or(ActiveStorage::Attachment.where(record_type: "JobTaskOption",
+                                                                 record_id: JobTaskOption.where(job_task_id: task_ids).select(:id)))
+  end
+
   # The statuses in which the owner may still change (and delete) the order: before it is quoted.
   def self.editable_status?(status)
     return false if status.nil? # see .money_taken_status?

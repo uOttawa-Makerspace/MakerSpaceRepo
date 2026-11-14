@@ -57,7 +57,7 @@
           </div>
           <div class="card-body">
             <% @job_tasks.each_with_index do |task, index| %>
-              <% all_user_files = task.user_files + task.job_task_options.map(&:option_file).select(&:attached?) %>
+              <% all_user_files = task.user_files + task.job_task_options.filter_map(&:option_file_attachment) %>
               <div class="task-card mb-2 p-3 border rounded">
                 <div class="d-flex justify-content-between">
                   <h6 class="d-flex align-items-center">
@@ -120,7 +120,7 @@
                                   <i class="fa fa-file me-2 flex-shrink-0"></i>
                                   <span class="text-truncate d-block overflow-hidden"><%= file.filename %></span>
                                 </div>
-                                <%= link_to rails_storage_proxy_path(file, disposition: "attachment"), 
+                                <%= link_to job_order_file_path(@job_order, file), 
                                             class: "btn btn-sm btn-outline-primary flex-shrink-0 ms-2", 
                                             target: "_blank", 
                                             rel: "noopener",
@@ -162,7 +162,7 @@
                                   <i class="fa fa-file me-2 flex-shrink-0"></i>
                                   <span class="text-truncate d-block overflow-hidden"><%= file.filename %></span>
                                 </div>
-                                <%= link_to rails_storage_proxy_path(file, disposition: "attachment"), 
+                                <%= link_to job_order_file_path(@job_order, file), 
                                             class: "btn btn-sm btn-outline-success flex-shrink-0 ms-2", 
                                             target: "_blank", 
                                             rel: "noopener",
@@ -186,6 +186,8 @@
           </div>
         </div>
       <% end %>
+
+      <%= render 'order_files', job_order: @job_order %>
 
       <!-- Staff stuff -->
       <% if current_user.staff? %>

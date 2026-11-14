@@ -160,7 +160,7 @@ RSpec.describe "Job order access rules", type: :request do
       expect(response.body).to include(attachment.filename.to_s)
       expect(response.body).to include(%(value="#{attachment.signed_id}"))
       expect(response.body).to include(%(name="job_task[user_files][]"))
-      expect(response.body).to include("/rails/active_storage/blobs/proxy/#{attachment.blob.signed_id}/")
+      expect(response.body).to include(%(href="#{job_order_file_path(order, attachment)}"))
     end
 
     it "shows staff the filename and download link but no signed-id checkbox" do
@@ -171,7 +171,7 @@ RSpec.describe "Job order access rules", type: :request do
       attachment = task.reload.user_files.first
       expect(response.body).to include(attachment.filename.to_s)
       expect(response.body).not_to include(%(value="#{attachment.signed_id}"))
-      expect(response.body).to include("/rails/active_storage/blobs/proxy/")
+      expect(response.body).to include(%(href="#{job_order_file_path(order, attachment)}"))
     end
   end
 

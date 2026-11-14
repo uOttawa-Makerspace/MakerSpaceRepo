@@ -25,6 +25,7 @@ resources :job_orders, only: %i[index show create new destroy] do
   resources :job_tasks, path: "task", only: [:create, :destroy, :edit, :update] do
     post :update, on: :member
   end
+  resources :files, only: :show, module: :job_orders
 end
 
 resources :chat_messages, only: [:index, :create]

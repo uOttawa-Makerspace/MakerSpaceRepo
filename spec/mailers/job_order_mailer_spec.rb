@@ -291,4 +291,34 @@ RSpec.describe JobOrderMailer, type: :mailer do
       expect(delivered).to be_empty
     end
   end
+
+  describe "an order with files" do
+    before do
+      task = order.job_tasks.first
+      task.user_files.attach(FilesTestHelper.stl)
+      task.staff_files.attach(FilesTestHelper.stl)
+    end
+
+    # The mails link to the order pages only; the files are downloaded from those pages through the order's file
+    # route, which checks who is signed in.
+    it "sends every job order mail without a file link or attachment" do
+      described_class.send_job_submitted(order.id).deliver_now
+      described_class.send_job_requote_needed(order.id, "owner_change").deliver_now
+      described_class.send_job_quote(order.id).deliver_now
+      described_class.send_job_declined(order.id).deliver_now
+      described_class.send_job_user_approval(order.id).deliver_now
+      described_class.send_job_user_declined(order.id).deliver_now
+      described_class.send_job_decision_confirmation(order.id, true).deliver_now
+      described_class.send_job_completed(order.id, "Done").deliver_now
+      described_class.payment_succeeded(order.id).deliver_now
+      described_class.staff_assigned(order.id, staff.id).deliver_now
+
+      expect(delivered.size).to eq(10)
+      delivered.each do |mail|
+        expect(mail.body.encoded).not_to include("active_storage"), mail.subject
+        expect(mail.body.encoded).not_to include(FilesTestHelper.stl_name), mail.subject
+        expect(mail.attachments).to be_empty, mail.subject
+      end
+    end
+  end
 end
