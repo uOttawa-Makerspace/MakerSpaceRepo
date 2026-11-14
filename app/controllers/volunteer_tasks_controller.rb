@@ -204,10 +204,12 @@ class VolunteerTasksController < SessionsController
     ticked.each(&:destroy)
   end
 
+  # The photos whose file names the edit form sent: a comma-separated list, matched name for name.
   def ticked_photos
-    return [] if params[:deleteimages].blank?
+    names = Array(params[:deleteimages]).flat_map { |value| value.to_s.split(",") }
+    return [] if names.empty?
 
-    @volunteer_task.photos.select { |img| params[:deleteimages].include?(img.image.filename.to_s) }
+    @volunteer_task.photos.select { |img| names.include?(img.image.filename.to_s) }
   end
 
   def volunteer_task_params
