@@ -470,6 +470,20 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(order.user_comments).to eq("mine")
     end
 
+    # The database refuses every new status row (a check constraint, undone with the test transaction): the order and
+    # its Draft status are saved together, so the refused status leaves no order behind.
+    it "leaves no order behind when its Draft status row cannot be saved" do
+      ActiveRecord::Base.connection.execute(
+        "ALTER TABLE job_order_statuses ADD CONSTRAINT refuse_new_rows_in_spec CHECK (false) NOT VALID"
+      )
+
+      post job_orders_path, params: { job_order: { user_comments: "first order" }, redirect_step: "1" }
+
+      expect(response).to have_http_status(:internal_server_error)
+      expect(JobOrder.where(user: owner).count).to eq(0)
+      expect(JobTask.count).to eq(0)
+    end
+
     it "falls back to a nil job type when the Design Services row is missing" do
       JobType.where(name: "Design Services").destroy_all
       post job_orders_path, params: { job_order: { job_type_id: nil }, redirect_step: "2" }

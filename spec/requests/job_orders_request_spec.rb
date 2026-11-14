@@ -1577,6 +1577,7 @@ RSpec.describe "GET /job_orders/new design help card", type: :request do
 
   it "still offers the card when create fails and the page is rendered again" do
     JobType.find_by(name: "Design Services") || JobType.create!(name: "Design Services", description: "d")
+    seed_job_statuses! # create builds the Draft status row before it saves
     allow_any_instance_of(JobOrder).to receive(:save).and_return(false)
     expect { post job_orders_path, params: { job_order: { job_type_id: "" }, redirect_step: 1 } }
       .not_to change(JobOrder, :count)

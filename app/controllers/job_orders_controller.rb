@@ -86,28 +86,18 @@ class JobOrdersController < SessionsController
   def create
     @job_order = JobOrder.new(job_order_create_params)
     @job_order.user = @user
+    # Saved with the order, in its transaction: an order is never stored without its first status.
+    @job_order.job_order_statuses.build(job_status: JobStatus.draft, user: @user)
 
     if @job_order.save
       @job_order.prefix_file_names
-      @job_order.job_order_statuses << JobOrderStatus.create(
-        job_order: @job_order,
-        job_status: JobStatus.draft,
-        user: @user
+      @job_task = @job_order.job_tasks.create!(
+        title: "Task #1",
+        # Force job_type_id = 3 if it's the "Need Design Help" flow
+        job_type: params[:redirect_step].to_i == 2 ? JobType.design_services : nil
       )
 
-      if @job_order.save
-        @job_task = @job_order.job_tasks.create!(
-          title: "Task #1",
-          # Force job_type_id = 3 if it's the "Need Design Help" flow
-          job_type: params[:redirect_step].to_i == 2 ? JobType.design_services : nil
-        )
-        
-        redirect_to edit_job_order_job_task_path(@job_order, @job_task, step: 1)
-      else
-        @job_order.update(is_deleted: true)
-        flash[:alert] = validation_message(@job_order, "errors.job_orders.create_failed")
-        redirect_to new_job_orders_path
-      end
+      redirect_to edit_job_order_job_task_path(@job_order, @job_task, step: 1)
     else
       flash[:alert] = validation_message(@job_order, "errors.job_orders.create_failed")
       render "new"
