@@ -7,6 +7,11 @@ class ReportGenerator
   UNKNOWN_SPACE = "Unknown"
   # What a cell says for a session whose training or instructor is missing.
   UNKNOWN = "Unknown"
+  # The header of the student number column, which follows every column the
+  # user tables have always had. Those columns keep their order and headers
+  # for the readers that load them by position: the cell under "Student ID"
+  # holds the join date (new users) or the attendee name (attendees).
+  STUDENT_NUMBER = "Student number"
   # region Date Range Reports
 
   # @param [DateTime] start_date
@@ -601,7 +606,7 @@ class ReportGenerator
         title(sheet, "Overview")
 
         users
-          .group_by { |user| User.identity_label(user.identity) }
+          .group_by(&:identity)
           .each { |identity, values| sheet.add_row [identity, values.length] }
 
         sheet.add_row # spacing
@@ -615,7 +620,8 @@ class ReportGenerator
           "Faculty",
           "Year of Study",
           "Student ID",
-          "Joined on"
+          "Joined on",
+          STUDENT_NUMBER
         ]
         table_header(sheet, columns)
 
@@ -626,11 +632,12 @@ class ReportGenerator
                           user.username,
                           user.email,
                           user.gender,
-                          User.identity_label(user.identity),
+                          user.identity,
                           user.shown_faculty,
                           user.year_of_study,
-                          user.student_id,
-                          user.created_at.in_time_zone.strftime("%Y-%m-%d %H:%M")
+                          user.created_at.in_time_zone.strftime("%Y-%m-%d %H:%M"),
+                          nil,
+                          user.student_id
                         ],
                         types: types
         end
@@ -639,15 +646,24 @@ class ReportGenerator
     spreadsheet
   end
 
-  # One attendee line. A missing attendee name, training or instructor
-  # shows Unknown in that cell.
+  # One attendee line, starting under the first header (see STUDENT_NUMBER),
+  # with the student number in the last column. A missing attendee name,
+  # training or instructor shows Unknown in that cell.
   def self.attendee_row(certification)
-    session = certification.training_session
     user = certification.user
     [
-      user&.student_id,
       user&.name || UNKNOWN,
       user&.email,
+      *attendee_session_cells(certification.training_session),
+      nil,
+      user&.student_id
+    ]
+  end
+
+  # The training, date, instructor, course and facility cells of an attendee
+  # line.
+  def self.attendee_session_cells(session)
+    [
       session.training&.name_en || UNKNOWN,
       session.created_at.strftime("%Y-%m-%d %H:%M"),
       session.user&.name || UNKNOWN,
@@ -655,6 +671,7 @@ class ReportGenerator
       session.space&.name
     ]
   end
+  private_class_method :attendee_session_cells
   private_class_method :attendee_row
 
   def self.generate_training_attendees_report(start_date, end_date)
@@ -694,7 +711,8 @@ class ReportGenerator
             "Certification Date",
             "Instructor",
             "Course",
-            "Facility"
+            "Facility",
+            STUDENT_NUMBER
           ]
           table_header(sheet, columns)
 
@@ -710,7 +728,7 @@ class ReportGenerator
           month_header = ["Month"]
           month_average = ["Month average of attendees per sessions"]
           calendar_periods(start_date, end_date, :month).each do |month|
-            month_header << month.first.strftime("%B %Y")
+            month_header << month.first.strftime("%B")
             month_average << average_attendees_per_session(
               space_certifications,
               month
@@ -1141,10 +1159,10 @@ class ReportGenerator
     hash.each { |key, value| sheet.add_row [key, value] }
   end
 
-  # The cell types for a row under these headers: the Student ID column is
-  # text, so leading zeros are kept; the others are inferred from the values.
+  # The cell types for a row under these headers: the student number column
+  # is text, so leading zeros are kept; the others are inferred from the values.
   def self.student_id_as_text(columns)
-    columns.map { |column| :string if column == "Student ID" }
+    columns.map { |column| :string if column == STUDENT_NUMBER }
   end
 
   # The calendar months or weeks (unit :month or :week) that overlap the

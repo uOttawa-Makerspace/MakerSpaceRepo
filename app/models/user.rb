@@ -391,18 +391,19 @@ class User < ApplicationRecord
     probe.errors.full_messages_for(:email).to_sentence.presence
   end
 
-  # The faculty as reports show it: the English name of a French one (Génie is
-  # Engineering), None when blank.
-  def self.faculty_label(faculty)
-    return 'None' if faculty.blank?
+  REPORT_FACULTY_LABELS = { '' => 'None', 'Génie' => 'Engineering' }.freeze
 
-    FACULTY_TRANSLATIONS.fetch(faculty, faculty)
+  # The faculty as the report spreadsheets have always shown it: Génie counts as
+  # Engineering, a blank one is None, and any other value (a missing one
+  # included) is shown as stored.
+  def self.faculty_label(faculty)
+    REPORT_FACULTY_LABELS.fetch(faculty, faculty)
   end
 
-  # The identity as reports show it (community_member is "Community member"),
-  # None when missing.
+  # The identity as the report spreadsheets have always shown it
+  # (community_member is "Community member"), None when missing.
   def self.identity_label(identity)
-    identity.blank? ? 'None' : identity.humanize
+    identity.nil? ? 'None' : identity.humanize
   end
 
   # Every user row, soft-deleted ones included. For admin views and reports, which see everything;
