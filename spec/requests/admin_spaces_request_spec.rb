@@ -436,14 +436,14 @@ RSpec.describe "Admin spaces", type: :request do
         expect(reader.reload.space_id).to eq(space.id)
       end
 
-      it "records no request and shows no message when the space no longer saves (a name another space shares)" do
+      it "records no request and says why when the space no longer saves (a name another space shares)" do
         create(:space).update_columns(name: "Alpha")
 
         destroy_space("ALPHA")
 
         expect(response).to redirect_to(admin_spaces_path)
         expect(flash[:notice]).to be_nil
-        expect(flash[:alert]).to be_nil
+        expect(flash[:alert]).to eq("The deletion request was not recorded. Name Space already exists")
         expect(space.reload.destroy_admin_id).to be_nil
       end
 

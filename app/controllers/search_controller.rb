@@ -84,7 +84,7 @@ class SearchController < SessionsController
   def category_repos(slug)
     name = SLUG_TO_CATEGORY_MODEL[slug]
     (legacy_category_repos(SLUG_TO_OLD_CATEGORY[slug]) + named_category_repos(name) +
-      category_option_repos(CategoryOption.find_by(name: name))).compact.uniq
+      category_option_repos(name)).compact.uniq
   end
 
   def legacy_category_repos(category)
@@ -101,7 +101,8 @@ class SearchController < SessionsController
     ).to_a
   end
 
-  def category_option_repos(category_option)
+  def category_option_repos(name)
+    category_option = name && CategoryOption.find_by(name: name)
     return [] unless category_option
 
     Repository.public_repos.with_card_data.where(

@@ -230,4 +230,21 @@ RSpec.describe Repository, type: :model do
       expect(photos).to all(satisfy { |photo| photo.association(:image_attachment).loaded? && photo.image_attachment.association(:blob).loaded? })
     end
   end
+
+  describe "photos with the same position" do
+    # The lower id is rewritten last, so the table stores it after the higher one: only the id order puts it first.
+    let(:repository) { create(:repository) }
+    let!(:photos) do
+      first = repository.photos.first
+      second = create(:photo, repository: repository, position: first.position)
+      first.update_columns(position: first.position, created_at: second.created_at)
+      [first, second]
+    end
+
+    it "lists them in id order, read alone, preloaded and through the ordered scope" do
+      expect(Repository.find(repository.id).photos.to_a).to eq(photos)
+      expect(Repository.includes(:photos).find(repository.id).photos.to_a).to eq(photos)
+      expect(Photo.where(repository: repository).ordered.to_a).to eq(photos)
+    end
+  end
 end

@@ -26,13 +26,13 @@ RSpec.describe "Learning module track index queries", type: :request do
   def summary(training)
     node = accordion(training)
     {
-      level: node.at_css(".accordion-header p span").text,
+      level: node.at_css(".accordion-header p span").then { |span| [span.text, span["class"]] },
       finished: node.at_css(".accordion-body p:nth-of-type(2)").text.squish,
       next: node.css(".accordion-body li a").map(&:text)
     }
   end
 
-  it "shows each training's lowest open level, finished count and next modules for the signed-in user" do
+  it "shows each training's lowest open level in its colour, finished count and next modules for the signed-in user" do
     beginner = add_training("Laser", %w[Beginner Intermediate Advanced])
     intermediate = add_training("Print", %w[Beginner Intermediate General])
     advanced = add_training("Weld", %w[Advanced General])
@@ -45,11 +45,11 @@ RSpec.describe "Learning module track index queries", type: :request do
     get learning_module_track_index_path
 
     expect(response).to have_http_status(:ok)
-    expect(summary(beginner)).to eq(level: "Beg", finished: "Modules finished : 0 / 3", next: ["Laser m0", "Laser m1", "Laser m2"])
-    expect(summary(intermediate)).to eq(level: "Int", finished: "Modules finished : 1 / 3", next: ["Print m1", "Print m2"])
-    expect(summary(advanced)).to eq(level: "Adv", finished: "Modules finished : 0 / 2", next: ["Weld m0", "Weld m1"])
-    expect(summary(master)).to eq(level: "Master", finished: "Modules finished : 2 / 2", next: [])
-    expect(summary(empty)).to eq(level: "Master", finished: "Modules finished : 0 / 0", next: [])
+    expect(summary(beginner)).to eq(level: ["Beg", "text-success"], finished: "Modules finished : 0 / 3", next: ["Laser m0", "Laser m1", "Laser m2"])
+    expect(summary(intermediate)).to eq(level: ["Int", "text-warning-emphasis"], finished: "Modules finished : 1 / 3", next: ["Print m1", "Print m2"])
+    expect(summary(advanced)).to eq(level: ["Adv", "text-danger"], finished: "Modules finished : 0 / 2", next: ["Weld m0", "Weld m1"])
+    expect(summary(master)).to eq(level: ["Master", "text-info-emphasis"], finished: "Modules finished : 2 / 2", next: [])
+    expect(summary(empty)).to eq(level: ["Master", "text-info-emphasis"], finished: "Modules finished : 0 / 0", next: [])
   end
 
   it "lists the next modules in their set order" do

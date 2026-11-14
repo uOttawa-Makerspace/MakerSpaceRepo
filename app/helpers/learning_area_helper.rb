@@ -1,14 +1,17 @@
 module LearningAreaHelper
-  # The colour of each level in the skills overview, lowest level first.
-  LOWEST_OPEN_LEVEL_COLORS = { "beginner" => "green", "intermediate" => "#969600", "advanced" => "red" }.freeze
+  # The text colour class of each level in the skills overview, lowest level first. Each one reads well on the light
+  # and the dark theme.
+  LOWEST_OPEN_LEVEL_CLASSES = {
+    "beginner" => "text-success", "intermediate" => "text-warning-emphasis", "advanced" => "text-danger"
+  }.freeze
 
   # The lowest level of the training at which the signed-in user still has a module to do ("Master" once none is left).
   # Reads the training's loaded learning_modules.
   def get_lower_level_lm(training)
     open_levels = get_next_lm(training).map(&:level)
-    level = LOWEST_OPEN_LEVEL_COLORS.keys.find { |key| open_levels.include?(key) }
-    color = LOWEST_OPEN_LEVEL_COLORS.fetch(level, "blue")
-    "<span style='color: #{color}'>#{t("learning_module_track.level_short.#{level || 'master'}")}</span>"
+    level = LOWEST_OPEN_LEVEL_CLASSES.keys.find { |key| open_levels.include?(key) }
+    tag.span(t("learning_module_track.level_short.#{level || 'master'}"),
+             class: LOWEST_OPEN_LEVEL_CLASSES.fetch(level, "text-info-emphasis"))
   end
 
   # The training's modules the signed-in user has not completed yet, in their set order.
