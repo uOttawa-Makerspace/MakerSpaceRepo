@@ -31,17 +31,23 @@ vi.mock("@fullcalendar/core", () => ({
     getOption(name) {
       return this.options[name];
     }
+    // FullCalendar draws each custom button with its label as its name too.
     setOption(name, value) {
       this.options[name] = value;
+      if (name === "customButtons") this.labelButtons();
     }
     render() {
       this.rendered = true;
-      this.el.innerHTML = Object.entries(this.options.customButtons)
-        .map(
-          ([name, { text }]) =>
-            `<button class="fc-${name}-button">${text}</button>`,
-        )
+      this.el.innerHTML = Object.keys(this.options.customButtons)
+        .map((name) => `<button class="fc-${name}-button"></button>`)
         .join("");
+      this.labelButtons();
+    }
+    labelButtons() {
+      Object.entries(this.options.customButtons).forEach(([name, { text }]) => {
+        const button = this.el.querySelector(`.fc-${name}-button`);
+        button.textContent = button.title = text;
+      });
     }
     destroy() {
       this.destroyed = true;
@@ -251,6 +257,7 @@ async function boot({
   lang,
 } = {}) {
   window.happyDOM.setURL(url);
+  document.documentElement.lang = lang ?? "en";
   document.body.innerHTML = page({ hidden, lang });
   created.length = 0;
   application = Application.start();
@@ -574,6 +581,7 @@ describe("calendar options", () => {
     press(calendar, "toggleWeekends");
     expect(calendar.options.weekends).toBe(false);
     expect(weekends.textContent).toBe("Show Weekends");
+    expect(weekends.title).toBe("Show Weekends");
   });
 
   it("toggles event overlap, remembers it and relabels the button", async () => {
@@ -585,13 +593,17 @@ describe("calendar options", () => {
     expect(calendar.options.slotEventOverlap).toBe(true);
     expect(localStorage.fullCalendarEventOverlap).toBe("true");
     expect(overlap.textContent).toBe("Disable Event Overlap");
+    expect(overlap.title).toBe("Disable Event Overlap");
   });
 
   it("names its buttons, drafts and hours in French on a French page", async () => {
     localStorage.fullCalendarEventOverlap = "true";
     const calendar = await boot({ lang: "fr" });
-    const label = (name) =>
-      calendar.el.querySelector(`.fc-${name}-button`).textContent;
+    const label = (name) => {
+      const button = calendar.el.querySelector(`.fc-${name}-button`);
+      expect(button.title).toBe(button.textContent);
+      return button.textContent;
+    };
     expect(label("toggleWeekends")).toBe("Masquer les fins de semaine");
     expect(label("toggleEventOverlap")).toBe(
       "Désactiver le chevauchement des événements",
@@ -723,5 +735,49 @@ describe("calendar options", () => {
       (badge) => badge.textContent,
     );
     expect(hours).toEqual(["4.5 hrs", "3 hrs"]);
+  });
+
+  it("rounds each staff member's hours to a tenth, in the page's language", async () => {
+    for (const [lang, shown] of [
+      ["en", ["2.5 hrs", "1.3 hrs"]],
+      ["fr", ["2,5 h", "1,3 h"]],
+    ]) {
+      application?.stop();
+      const calendar = await boot({ lang });
+      const at = (iso) => new Date(iso);
+      calendar.options.eventsSet([
+        {
+          start: at("2027-03-15T13:00:00Z"),
+          end: at("2027-03-15T14:20:00Z"),
+          extendedProps: { assignedUsers: [{ id: 5 }, { id: 6 }] },
+        },
+        {
+          start: at("2027-03-16T13:00:00Z"),
+          end: at("2027-03-16T14:12:00Z"),
+          extendedProps: { assignedUsers: [{ id: 5 }] },
+        },
+      ]);
+
+      const hours = [...document.querySelectorAll("[data-user-id]")].map(
+        (badge) => badge.textContent,
+      );
+      expect(hours).toEqual(shown);
+    }
+  });
+
+  it("writes the hours the default way on a page that names no language", async () => {
+    const calendar = await boot();
+    document.documentElement.lang = "";
+    calendar.options.eventsSet([
+      {
+        start: new Date("2027-03-15T13:00:00Z"),
+        end: new Date("2027-03-15T14:30:00Z"),
+        extendedProps: { assignedUsers: [{ id: 5 }] },
+      },
+    ]);
+
+    expect(document.querySelector("[data-user-id]").textContent).toBe(
+      `${(1.5).toLocaleString()} hrs`,
+    );
   });
 });

@@ -7,7 +7,7 @@ import { Tooltip } from "bootstrap";
 import { eventClick, eventCreate } from "../src/calendar_helper.js";
 import { closeSaved } from "../src/calendar_dialog.js";
 import { applyEventBackground } from "../src/calendar_background.js";
-import { calendarTexts, pageCalendar } from "../src/page_calendar.js";
+import { calendarTexts, pageCalendar, relabel } from "../src/page_calendar.js";
 import { rangeSource, unticked } from "../src/range_source.js";
 
 // Titles and descriptions come from imported calendars, so they are text, never markup.
@@ -227,7 +227,6 @@ export default class extends TypedController {
   }
 
   calendarOptions() {
-    const overlap = localStorage.fullCalendarEventOverlap === "true";
     return {
       initialView: "timeGridWeek",
       headerToolbar: {
@@ -238,18 +237,13 @@ export default class extends TypedController {
       slotMinTime: "07:00:00",
       slotMaxTime: "22:00:00",
       nowIndicator: true,
-      slotEventOverlap: overlap,
       selectable: true,
       selectMirror: true,
       selectMinDistance: 15,
       customButtons: {
         toggleWeekends: {
           text: this.texts.hideWeekends,
-          click: (_event, button) => this.toggleWeekends(button),
-        },
-        toggleEventOverlap: {
-          text: this.overlapLabel(overlap),
-          click: (_event, button) => this.toggleOverlap(button),
+          click: () => this.toggleWeekends(),
         },
       },
       eventDidMount: (info) => this.decorate(info),
@@ -262,23 +256,14 @@ export default class extends TypedController {
     };
   }
 
-  toggleWeekends(button) {
+  toggleWeekends() {
     const weekends = !this.calendar.getOption("weekends");
     this.calendar.setOption("weekends", weekends);
-    button.textContent = weekends
-      ? this.texts.hideWeekends
-      : this.texts.showWeekends;
-  }
-
-  toggleOverlap(button) {
-    const overlap = !this.calendar.getOption("slotEventOverlap");
-    localStorage.fullCalendarEventOverlap = overlap;
-    this.calendar.setOption("slotEventOverlap", overlap);
-    button.textContent = this.overlapLabel(overlap);
-  }
-
-  overlapLabel(overlap) {
-    return overlap ? this.texts.disableOverlap : this.texts.enableOverlap;
+    relabel(
+      this.calendar,
+      "toggleWeekends",
+      weekends ? this.texts.hideWeekends : this.texts.showWeekends,
+    );
   }
 
   // Fades the event in, gives it a tooltip and the staff colours.
@@ -309,29 +294,24 @@ export default class extends TypedController {
     this.deleteDraftsTarget.innerText = deleteDrafts[info.view.type];
   }
 
-  // Each staff member's hours in the events shown that lie within the view.
+  // Each staff member's hours in the events shown that lie within the view, to
+  // a tenth of an hour in the page's language.
   showHours(events) {
     const { activeStart, activeEnd } = this.calendar.view;
-    const shifts = events.filter(
-      (event) =>
-        event.start >= activeStart &&
-        event.end <= activeEnd &&
-        event.extendedProps.assignedUsers?.length >= 1,
+    const shown = events.filter(
+      (event) => event.start >= activeStart && event.end <= activeEnd,
     );
+    const locale = this.element.ownerDocument.documentElement.lang || undefined;
     this.hoursTargets.forEach((badge) => {
-      const hours = shifts
+      const time = shown
         .filter((event) =>
-          event.extendedProps.assignedUsers.some(
+          event.extendedProps.assignedUsers?.some(
             (user) => String(user.id) === badge.dataset.userId,
           ),
         )
-        .reduce(
-          (sum, event) =>
-            sum +
-            (event.end.getTime() - event.start.getTime()) / 1000 / 60 / 60,
-          0,
-        );
-      badge.textContent = this.texts.hours.replace("{hours}", String(hours));
+        .reduce((sum, { start, end }) => sum + (end - start), 0);
+      const hours = (Math.round(time / 360000) / 10).toLocaleString(locale);
+      badge.textContent = this.texts.hours.replace("{hours}", hours);
     });
   }
 }

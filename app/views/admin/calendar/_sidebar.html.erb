@@ -1,36 +1,36 @@
 <%# The calendar's filters: each checkbox shows or hides events already fetched, and the address keeps what is hidden. %>
-<p class="fw-bold mt-1">Events / Unavailabilities</p>
+<p class="fw-bold mt-1"><%= t("admin.calendar_page.events_and_unavailabilities") %></p>
 <div id="staff_checkbox_container">
     <div class="m-2 d-flex align-items-center gap-1">
         <input type="checkbox" class="form-check-input calendar-filter all_events_checkbox" id="checkbox-all-events" value="all-events" data-color="#919191" <%= "checked" if @hidden[:hidden_staff_events].empty? %> data-admin-calendar-target="allStaffEvents" data-action="admin-calendar#toggleAllStaffEvents">
         <label class="form-check-label" for="checkbox-all-events"> / </label>
         <input type="checkbox" class="form-check-input calendar-filter all_checkbox" id="checkbox-all" value="all" data-color="#919191" <%= "checked" if @hidden[:hidden_staff].empty? %> data-admin-calendar-target="allStaff" data-action="admin-calendar#toggleAllStaff">
-        <label class="form-check-label" for="checkbox-all">All Staff</label>
+        <label class="form-check-label" for="checkbox-all"><%= t("admin.calendar_page.all_staff") %></label>
     </div>
     <% @sidebar_staff.each do |member| %>
         <div class="m-2 d-flex align-items-center gap-1">
             <input type="checkbox" class="form-check-input calendar-filter staff_events" id="checkbox-events-<%= member[:id] %>" value="<%= member[:id] %>" data-color="<%= member[:color] %>" <%= "checked" unless @hidden[:hidden_staff_events].include?(member[:id].to_s) %> data-admin-calendar-target="staffEvents" data-action="admin-calendar#toggleStaffEvents">
             <label class="form-check-label" for="checkbox-events-<%= member[:id] %>"> / </label>
             <input type="checkbox" class="form-check-input calendar-filter staff" id="checkbox-<%= member[:id] %>" value="<%= member[:id] %>" data-color="<%= member[:color] %>" <%= "checked" unless @hidden[:hidden_staff].include?(member[:id].to_s) %> data-admin-calendar-target="staff" data-action="admin-calendar#toggleStaff">
-            <label class="form-check-label flex-grow-1" for="checkbox-<%= member[:id] %>"><%= member[:busy] ? member[:name] : "#{member[:name]} (0 unavailabilities)" %></label>
+            <label class="form-check-label flex-grow-1" for="checkbox-<%= member[:id] %>"><%= member[:busy] ? member[:name] : t("admin.calendar_page.no_unavailabilities", name: member[:name]) %></label>
             <span class="user-hours px-2 py-1 bg-secondary-subtle rounded text-nowrap" data-user-id="<%= member[:id] %>" data-admin-calendar-target="hours"></span>
         </div>
     <% end %>
 </div>
 <% if @event_types.any? %>
-    <p class="fw-bold">Events</p>
+    <p class="fw-bold"><%= t("admin.calendar_page.events") %></p>
 <% end %>
 <div id="events_checkbox_container">
     <% @event_types.each do |type| %>
         <div class="m-2 d-flex align-items-center gap-1">
             <input type="checkbox" class="form-check-input calendar-filter" id="checkbox-<%= type %>" value="<%= type %>" <%= "checked" unless @hidden[:hidden_events].include?(type) %> data-admin-calendar-target="eventType" data-action="admin-calendar#toggleEventType">
-            <label class="form-check-label" for="checkbox-<%= type %>"><%= type.capitalize %></label>
+            <label class="form-check-label" for="checkbox-<%= type %>"><%= t(type, scope: "admin.calendar_page.event_types", default: type.capitalize) %></label>
         </div>
     <% end %>
 </div>
-<p class="fw-bold mt-1">Imported Calendars</p>
+<p class="fw-bold mt-1"><%= t("admin.calendar_page.imported_calendars") %></p>
 <div id="calendars_checkbox_container">
-    <span id="imported_calendars_status" <%= "hidden" if @imported_calendars.any? %>>No calendars found</span>
+    <span id="imported_calendars_status" <%= "hidden" if @imported_calendars.any? %>><%= t("admin.calendar_page.no_calendars") %></span>
     <% @imported_calendars.each do |calendar| %>
         <% id = calendar.feed_id %>
         <div class="m-2 d-flex align-items-center gap-1">

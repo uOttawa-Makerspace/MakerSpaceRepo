@@ -8,6 +8,7 @@ const created = [];
 vi.mock("@fullcalendar/core", () => ({
   Calendar: class {
     constructor(el, options) {
+      this.el = el;
       this.options = { slotEventOverlap: false, ...options };
       this.eventList = [];
       this.rendered = false;
@@ -17,8 +18,16 @@ vi.mock("@fullcalendar/core", () => ({
     getOption(name) {
       return this.options[name];
     }
+    // FullCalendar draws each custom button with its label as its name too.
     setOption(name, value) {
       this.options[name] = value;
+      if (name === "customButtons") this.labelButtons();
+    }
+    labelButtons() {
+      Object.entries(this.options.customButtons).forEach(([name, { text }]) => {
+        const button = this.el.querySelector(`.fc-${name}-button`);
+        button.textContent = button.title = text;
+      });
     }
     getEvents() {
       return this.eventList;
@@ -28,6 +37,10 @@ vi.mock("@fullcalendar/core", () => ({
     }
     render() {
       this.rendered = true;
+      this.el.innerHTML = Object.keys(this.options.customButtons)
+        .map((name) => `<button class="fc-${name}-button"></button>`)
+        .join("");
+      this.labelButtons();
     }
     destroy() {
       this.destroyed = true;
@@ -56,8 +69,6 @@ const page = (lang) => `
     <div id="calendar" data-my-calendar-target="calendar" ${textsAttribute(lang)}><p id="stale">old</p></div>
   </div>
   <div id="spinner_container" data-my-calendar-target="spinner"></div>
-  <span class="fc-toggleOthersShifts-button"></span>
-  <span class="fc-toggleEventOverlap-button"></span>
 </div>
 <span class="fc-toggleOthersShifts-button" id="foreign"></span>`;
 
@@ -73,10 +84,14 @@ async function boot(lang = "en") {
 }
 
 // Presses a toolbar button, as FullCalendar does: the handler is given the
-// click and the button.
+// click and the button. It returns the new label, which also names the
+// button (its title).
 function press(cal, name) {
-  const button = document.querySelector(`.fc-${name}-button`);
+  const button = /** @type {HTMLElement} */ (
+    document.querySelector(`.fc-${name}-button`)
+  );
   cal.options.customButtons[name].click(new Event("click"), button);
+  expect(button.title).toBe(button.innerHTML);
   return button.innerHTML;
 }
 

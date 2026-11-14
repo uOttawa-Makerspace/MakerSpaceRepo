@@ -112,6 +112,17 @@ RSpec.describe "Admin calendar: sidebar and toolbar", type: :system do
       expect(find("#checkbox-#{admin.id}").ancestor("div.d-flex")).to have_css(".user-hours", text: "0 hrs")
     end
 
+    it "rounds the hours to a tenth, written the French way on a French page", js: true, skip_bullet: true do
+      talk = create(:event, space: space, title: "Talk", event_type: "meeting", draft: false,
+                            start_time: eastern.local(2027, 3, 18, 9), end_time: eastern.local(2027, 3, 18, 10, 20))
+      create(:event_assignment, event: talk, user: admin)
+      log_in_as(admin, to: admin_calendar_index_path(locale: :fr), local_storage: { fullCalendarDefaultDateAdmin: CalendarJsHelpers::WEEK_MIDDAY })
+      wait_for_admin_calendar_scripts
+
+      expect(find("#checkbox-#{admin.id}").ancestor("div.d-flex")).to have_css(".user-hours", exact_text: "1,3 h")
+      expect(find("#checkbox-#{worker.id}").ancestor("div.d-flex")).to have_css(".user-hours", exact_text: "3 h")
+    end
+
     it "hides the events assigned to a staff member with the slash checkbox", js: true, skip_bullet: true do
       open_admin_calendar
       expect(event_titled("Front desk").size).to eq(1)
@@ -195,6 +206,17 @@ RSpec.describe "Admin calendar: sidebar and toolbar", type: :system do
       expect(page).to have_css("th.fc-col-header-cell[data-date]", count: 7)
     end
 
+    it "names a toggled button after its new label, and keeps the label when another week is shown", js: true, skip_bullet: true do
+      open_admin_calendar
+      weekends = ".fc-toggleWeekends-button"
+
+      find(weekends).click
+      expect(page).to have_css("#{weekends}[title='Show Weekends']", exact_text: "Show Weekends")
+      find(".fc-next-button").click
+      expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 22 – 26, 2027")
+      expect(page).to have_css("#{weekends}[title='Show Weekends']", exact_text: "Show Weekends")
+    end
+
     it "remembers the event overlap setting in the browser", js: true, skip_bullet: true do
       open_admin_calendar
 
@@ -220,6 +242,26 @@ RSpec.describe "Admin calendar: sidebar and toolbar", type: :system do
       expect(page).to have_css(".fc-toggleEventOverlap-button", exact_text: "Désactiver le chevauchement des événements")
       find(".fc-dayGridMonth-button").click
       expect(page).to have_css("#delete_drafts_button", exact_text: "Supprimer les brouillons de ce mois-ci")
+    end
+
+    it "shows the page around the calendar in French on a French page", js: true, skip_bullet: true do
+      log_in_as(admin, to: admin_calendar_index_path(locale: :fr), local_storage: { fullCalendarDefaultDateAdmin: CalendarJsHelpers::WEEK_MIDDAY })
+      wait_for_admin_calendar_scripts
+
+      expect(page).to have_css("h1", exact_text: "Calendrier de l'administration")
+      expect(page).to have_link("son calendrier de travail", href: staff_my_calendar_index_path)
+      expect(page).to have_button("Afficher")
+      expect(page).to have_button("+ Ajouter un événement")
+      expect(page).to have_button("Copier des événements")
+      expect(page).to have_css("label", exact_text: "Tout le personnel")
+      expect(page).to have_css("label", exact_text: "Wanda Worker (aucune indisponibilité)")
+      expect(page).to have_css("p", exact_text: "Calendriers importés")
+      expect(page).to have_css("#imported_calendars_status", exact_text: "Aucun calendrier trouvé")
+      expect(page).to have_css("h3", exact_text: "Couleurs du personnel")
+      expect(page).to have_css("input[type=color][title='Choisissez votre couleur']", count: 2)
+      expect(page).to have_button("Actualiser le calendrier")
+      find("#publish_drafts_button").click
+      expect(page).to have_button("Confirmer la publication")
     end
 
     it "remembers the week shown when the page is reloaded", js: true, skip_bullet: true do

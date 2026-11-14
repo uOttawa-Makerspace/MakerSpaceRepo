@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus";
 import { Tooltip } from "bootstrap";
 
 import { applyEventBackground } from "../src/calendar_background.js";
-import { calendarTexts, pageCalendar } from "../src/page_calendar.js";
+import { calendarTexts, pageCalendar, relabel } from "../src/page_calendar.js";
 
 // The title and description are free text, so they go in as text nodes and
 // never as markup.
@@ -48,7 +48,6 @@ export default class extends TypedController {
   }
 
   calendarOptions() {
-    const overlap = localStorage.fullCalendarEventOverlap === "true";
     return {
       initialView: "timeGridWeek",
       headerToolbar: {
@@ -56,62 +55,42 @@ export default class extends TypedController {
         center: "title",
         right: "timeGridWeek,dayGridMonth",
       },
-      slotEventOverlap: overlap,
       customButtons: {
         toggleOthersShifts: {
           text: this.texts.showMyShiftsOnly,
-          click: (_event, button) => this.toggleOthersShifts(button),
-        },
-        toggleEventOverlap: {
-          text: this.overlapLabel(overlap),
-          click: (_event, button) => this.toggleEventOverlap(button),
+          click: () => this.toggleOthersShifts(),
         },
       },
       events: this.feedUrlValue,
       eventDidMount: (info) => this.decorateEvent(info),
       eventWillUnmount: (info) => Tooltip.getInstance(info.el)?.dispose(),
       initialDate: localStorage.fullCalendarDefaultDateStaffCalendar,
-      datesSet: (info) => {
-        // recall dates on refresh
-        const date = new Date(info.view.currentStart);
-        localStorage.fullCalendarDefaultDateStaffCalendar = date.toISOString();
+      // the week shown, for the next visit
+      datesSet: ({ view }) => {
+        localStorage.fullCalendarDefaultDateStaffCalendar =
+          view.currentStart.toISOString();
       },
     };
   }
 
-  toggleOthersShifts(button) {
-    this.onlyShowMyShifts = !this.onlyShowMyShifts;
-
+  // Hides the other people's shifts, or shows them all again.
+  toggleOthersShifts() {
+    const only = (this.onlyShowMyShifts = !this.onlyShowMyShifts);
     this.calendar.getEvents().forEach((event) => {
-      const mine = event.extendedProps.hasCurrentUser;
-      event.setProp(
-        "display",
-        this.onlyShowMyShifts && !mine ? "none" : "auto",
-      );
+      const hide = only && !event.extendedProps.hasCurrentUser;
+      event.setProp("display", hide ? "none" : "auto");
     });
-
-    button.textContent = this.onlyShowMyShifts
-      ? this.texts.showAllShifts
-      : this.texts.showMyShiftsOnly;
+    const { showAllShifts, showMyShiftsOnly } = this.texts;
+    relabel(
+      this.calendar,
+      "toggleOthersShifts",
+      only ? showAllShifts : showMyShiftsOnly,
+    );
   }
 
-  toggleEventOverlap(button) {
-    const overlap = !this.calendar.getOption("slotEventOverlap");
-    localStorage.fullCalendarEventOverlap = overlap;
-    this.calendar.setOption("slotEventOverlap", overlap);
-    button.textContent = this.overlapLabel(overlap);
-  }
-
-  overlapLabel(overlap) {
-    return overlap ? this.texts.disableOverlap : this.texts.enableOverlap;
-  }
-
+  // Fades the event in, gives it a tooltip and the staff colours.
   decorateEvent(info) {
-    // fade in event
-    requestAnimationFrame(() => {
-      info.el.classList.add("fade-in");
-    });
-
+    requestAnimationFrame(() => info.el.classList.add("fade-in"));
     new Tooltip(info.el, {
       title: tooltipContent(
         info.event.title,
@@ -119,8 +98,6 @@ export default class extends TypedController {
       ),
       html: true,
     });
-
-    // add user color bg gradient
     applyEventBackground(info.el, info.event.extendedProps.background);
   }
 }

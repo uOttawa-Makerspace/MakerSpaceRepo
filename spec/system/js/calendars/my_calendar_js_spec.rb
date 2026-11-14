@@ -55,6 +55,17 @@ RSpec.describe "Staff calendar: toolbar and events", type: :system do
     expect(page).to have_css(".fc-timegrid-event", text: "Their shift", visible: :all)
   end
 
+  it "names a toggled button after its new label, and keeps the label when another week is shown", js: true, skip_bullet: true do
+    open_calendar
+    button = ".fc-toggleOthersShifts-button"
+
+    find(button).click
+    expect(page).to have_css("#{button}[title='Show All Shifts']", exact_text: "Show All Shifts")
+    find(".fc-next-button").click
+    expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 21 – 27, 2027")
+    expect(page).to have_css("#{button}[title='Show All Shifts']", exact_text: "Show All Shifts")
+  end
+
   it "switches event overlap on and remembers it for the next visit", js: true, skip_bullet: true do
     open_calendar
     find(".fc-toggleEventOverlap-button").click

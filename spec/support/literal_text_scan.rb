@@ -22,10 +22,10 @@ module LiteralTextScan
   # A tag, read past any ">" inside its quoted attribute values (such as data-action="input->search#filter").
   TAG = /<(?:[^>"']|"[^"]*"|'[^']*')*>/m
 
-  # Markup with ERB output, comments, scripts, tags and entities removed leaves only visible text.
+  # Markup with ERB output, comments, scripts, style sheets, tags and entities removed leaves only visible text.
   # A path shown as written (such as /learning_area/s/) is the same in every language.
   def self.visible_literals(source)
-    stripped = source.gsub(/<%#.*?%>/m, "").gsub(/<%.*?%>/m, " ").gsub(/<!--.*?-->/m, " ").gsub(%r{<script.*?</script>}m, "")
+    stripped = source.gsub(/<%#.*?%>/m, "").gsub(/<%.*?%>/m, " ").gsub(/<!--.*?-->/m, " ").gsub(%r{<(script|style)\b.*?</\1>}m, "")
     words = stripped.gsub(TAG, " ").gsub(/&\w+;/, " ").split(/\s+/).grep(/[[:alpha:]]/)
     words.grep_v(%r{\A/[\w/]*\z}) - ALLOWED_LITERALS
   end
