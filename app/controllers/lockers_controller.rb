@@ -1,30 +1,12 @@
 class LockersController < AdminAreaController
   # Guests are sent to the login page before the admin check can send them away.
   prepend_before_action :signed_in
-  before_action :locker_queries, only: %i[show create create_multiple update]
+  before_action :locker_queries, only: %i[show create_multiple update]
 
   helper_method :rental_state_icon
 
   def index
-    # For the locker rental form
-    # This works on the basis that there's only one active locker rental
-    @lockers =
-      Locker.includes(locker_rentals: :rented_by).includes(
-        :locker_size
-      )
-
-    # Link to makerstore object
-    @locker_product_link = LockerOption.locker_product_link
-
-    # Locker sizes stored in DB
-    @locker_sizes = LockerSize.all
-    # Locker sizes received from makerstore
-    @locker_product_info = LockerOption.locker_product_info
-
-    @local_lookup = @locker_sizes.index_by(&:shopify_gid)
-
-    variants = (@locker_product_info.is_a?(Hash) && @locker_product_info[:variants]) || {}
-    @makerstore_lookup = variants.transform_keys { |gid| gid }
+    load_index_page
   end
 
   def show
@@ -42,6 +24,7 @@ class LockersController < AdminAreaController
       redirect_to @locker
     else
       flash.now[:alert] = validation_message(@locker, "errors.lockers.locker_not_saved")
+      load_index_page
       render :index, status: :unprocessable_entity
     end
   end
@@ -134,6 +117,29 @@ class LockersController < AdminAreaController
   end
 
   private
+
+  # Everything the index page shows: the inventory, the store product and the locker sizes.
+  def load_index_page
+    # For the locker rental form
+    # This works on the basis that there's only one active locker rental
+    @lockers =
+      Locker.includes(locker_rentals: :rented_by).includes(
+        :locker_size
+      )
+
+    # Link to makerstore object
+    @locker_product_link = LockerOption.locker_product_link
+
+    # Locker sizes stored in DB
+    @locker_sizes = LockerSize.all
+    # Locker sizes received from makerstore
+    @locker_product_info = LockerOption.locker_product_info
+
+    @local_lookup = @locker_sizes.index_by(&:shopify_gid)
+
+    variants = (@locker_product_info.is_a?(Hash) && @locker_product_info[:variants]) || {}
+    @makerstore_lookup = variants.transform_keys { |gid| gid }
+  end
 
   # Delete button: a locker with any rental history is refused, one by one, and reported; the others
   # are deleted.

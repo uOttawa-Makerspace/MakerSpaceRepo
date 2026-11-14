@@ -136,6 +136,46 @@ RSpec.describe "Profile page queries", type: :request do
     end
   end
 
+  describe "repositories and makes tabs" do
+    def join_rows_read(path)
+      get path
+      statements = []
+      collect = ->(*, payload) { statements << payload[:sql] unless payload[:cached] }
+      ActiveSupport::Notifications.subscribed(collect, "sql.active_record") { get path }
+      statements.grep(/\ASELECT "project_joins"\.\* FROM "project_joins"/)
+    end
+
+    def card_row_count = Nokogiri::HTML(response.body).css("section.mb-3 > div.row").size
+
+    it "reads no project join rows on the tabs that do not list them" do
+      create(:repository, owner: member, users: [member], title: "Shown")
+      ProjectJoin.create!(user: member, project_proposal: create(:project_proposal))
+
+      [user_path(member.username), user_path(member.username, show: "repositories"),
+       user_path(member.username, show: "makes")].each do |path|
+        expect(join_rows_read(path)).to be_empty, path
+      end
+      expect(cards.size).to eq(0)
+      get user_path(member.username)
+      expect(cards.map { |card| card.at_css(".card-body p").text }).to eq(["Shown"])
+    end
+
+    it "draws the card row unless both the list and the joined projects are empty" do
+      sign_in_as(:regular)
+      get user_path(member.username)
+      expect(card_row_count).to eq(0)
+
+      ProjectJoin.create!(user: member, project_proposal: create(:project_proposal))
+      get user_path(member.username)
+      expect([card_row_count, cards.size]).to eq([1, 0])
+
+      ProjectJoin.where(user: member).delete_all
+      create(:repository, owner: member, users: [member], title: "Shown")
+      get user_path(member.username)
+      expect([card_row_count, cards.size]).to eq([1, 1])
+    end
+  end
+
   it "runs the same number of queries for two makes as for five" do
     add_rows(2)
     two = queries_for(user_path(member.username, show: "makes"))

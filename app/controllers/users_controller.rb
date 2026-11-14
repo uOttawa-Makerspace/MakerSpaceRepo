@@ -292,7 +292,7 @@ class UsersController < SessionsController
     elsif (problems = user.plaintext_password_problems(params[:password])).any?
       # the strength rules see the plain password
       # A problem may already end its sentence with a full stop (the blank message does).
-      flash[:alert] = "Your password was not changed: #{problems.to_sentence.delete_suffix('.')}."
+      flash[:alert] = "#{t('errors.users.password_not_changed')} #{problems.to_sentence.delete_suffix('.')}."
       redirect_to reset_password_form_users_path(token: params[:token])
     else
       store_reset_password(user)

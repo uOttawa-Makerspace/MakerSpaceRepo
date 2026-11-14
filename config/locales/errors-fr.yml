@@ -176,6 +176,7 @@ fr:
       js:
         failed_title: "Échec de la réservation"
         updated_title: "Réservation modifiée"
+        partly_done_title: "Réservation en partie faite"
         updated: "La réservation a été enregistrée."
         feed: "Les réservations n'ont pas pu être chargées. Rechargez la page pour réessayer."
         unavailable_title: "Réservation indisponible"
@@ -284,6 +285,7 @@ fr:
       not_received: "Votre demande n'a pas été soumise."
       copy_not_sent: "Votre demande a été soumise, mais le courriel de confirmation n'a pas pu être mis en file d'attente, vous ne recevrez donc pas de copie."
     users:
+      password_not_changed: "Votre mot de passe n'a pas été modifié :"
       password_not_saved: "Votre nouveau mot de passe n'a pas pu être enregistré en raison d'un problème de notre côté. Rien n'a été modifié. Veuillez réessayer. Si le problème persiste, communiquez avec le personnel du makerspace en indiquant la référence %{reference}."
       programs_not_updated: "Les programmes n'ont pas été modifiés."
       staff_only: "Vous ne pouvez pas accéder à cette zone."

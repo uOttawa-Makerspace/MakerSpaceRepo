@@ -59,6 +59,7 @@ HTMLElement.prototype.flatpickr = function () {
 const PAGE = `
 <div id="booked-calendar" ${textsAttribute()}></div>
 <div id="booking_toast" data-failed-title="Booking failed"
+  data-partly-done-title="Booking partly done"
   data-feed="The bookings could not be loaded."
   data-unavailable-title="Booking unavailable"
   data-unavailable="This booking could not be opened."></div><span id="toast_title"></span><span id="toast_text"></span>
@@ -343,6 +344,31 @@ describe("new booking", () => {
     expect($("bookModal").classList.contains("show")).toBe(false);
   });
 
+  it("titles the partly booked toast with the page's own text", async () => {
+    const cal = boot();
+    $("booking_toast").dataset.partlyDoneTitle = "Réservation en partie faite";
+    stubFetch(() =>
+      reply(
+        JSON.stringify({
+          errors: ["TimeSlot taken"],
+          booked: 1,
+          summary: "1 sur 3",
+        }),
+        {
+          ok: false,
+          status: 422,
+        },
+      ),
+    );
+    cal.options.customButtons.book.click();
+    pickDates("2026-11-02T10:00", "2026-11-02T11:00");
+
+    $("bookSave").click();
+    await flush();
+
+    expect($("toast_title").innerText).toBe("Réservation en partie faite");
+  });
+
   it("enables the button again when the request fails", async () => {
     const cal = boot();
     stubFetch(() => {
@@ -563,6 +589,90 @@ describe("admin lists", () => {
     expect(boxes.some((b) => b.checked)).toBe(false);
     $("recurringSelectAll").click();
     expect(boxes.every((b) => b.checked)).toBe(true);
+  });
+
+  function openRecurringModal(dates) {
+    boot(
+      "http://localhost/sub_space_booking",
+      `<div id="approveRecurringModal"><div id="recurring-checkboxes"></div></div>`,
+    );
+    const trigger = document.createElement("button");
+    trigger.dataset.dates = JSON.stringify(dates);
+    const event = new Event("show.bs.modal");
+    event.relatedTarget = trigger;
+    $("approveRecurringModal").dispatchEvent(event);
+    return [...$("recurring-checkboxes").children];
+  }
+
+  it("draws each recurring date as a bordered row with a checked box and its label", () => {
+    const rows = openRecurringModal([
+      [7, "Nov  2 (10:00am-11:00am)"],
+      [8, "Nov  9 (10:00am-11:00am)"],
+    ]);
+    const shape = rows.map((row) => {
+      const input = row.querySelector("input");
+      const label = row.querySelector("label");
+      return {
+        tag: row.tagName,
+        className: row.className,
+        elements: [...row.children].map((child) => child.tagName),
+        input: {
+          className: input.className,
+          type: input.type,
+          name: input.name,
+          value: input.value,
+          id: input.id,
+          checked: input.checked,
+          defaultChecked: input.defaultChecked,
+        },
+        label: {
+          className: label.className,
+          for: label.htmlFor,
+          text: label.textContent,
+        },
+      };
+    });
+    expect(shape).toEqual(
+      [7, 8].map((id, i) => ({
+        tag: "DIV",
+        className: "form-check p-2 border rounded",
+        elements: ["INPUT", "LABEL"],
+        input: {
+          className: "form-check-input",
+          type: "checkbox",
+          name: "sub_space_booking_ids[]",
+          value: String(id),
+          id: `rc_${id}`,
+          checked: true,
+          defaultChecked: true,
+        },
+        label: {
+          className: "form-check-label w-100",
+          for: `rc_${id}`,
+          text: `Nov  ${2 + 7 * i} (10:00am-11:00am)`,
+        },
+      })),
+    );
+  });
+
+  it("shows a recurring date label as plain text, markup included", () => {
+    const [row] = openRecurringModal([[9, "<b>Nov 16</b>"]]);
+    const label = row.querySelector("label");
+    expect(label.textContent).toBe("<b>Nov 16</b>");
+    expect(label.children).toHaveLength(0);
+  });
+
+  it("empties the recurring approval modal before each opening", () => {
+    openRecurringModal([[1, "Mon"]]);
+    const trigger = document.createElement("button");
+    trigger.dataset.dates = JSON.stringify([[2, "Tue"]]);
+    const event = new Event("show.bs.modal");
+    event.relatedTarget = trigger;
+    $("approveRecurringModal").dispatchEvent(event);
+    const labels = [
+      ...document.querySelectorAll("#recurring-checkboxes label"),
+    ];
+    expect(labels.map((l) => l.textContent)).toEqual(["Tue"]);
   });
 
   it.each([
