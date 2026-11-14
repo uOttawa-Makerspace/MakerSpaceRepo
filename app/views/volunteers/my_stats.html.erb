@@ -186,7 +186,7 @@
                     <%
                       badge            = user.highest_badge(training)
                       current_level    = badge&.level
-                      raw_status       = training_status(training.id, user.id)
+                      raw_status       = training_status(training.id, user)
                       clean_status     = raw_status.to_s.gsub(/color:\s*black/i, 'color: currentColor')
                       skills_list      = training.skill_list
 
@@ -205,14 +205,14 @@
                       next_target_hours   = nil
                       if next_level.present?
                         next_projects_total = training.proficient_projects.select { |p| p.level == next_level }.size
-                        next_projects_done  = @proficient_projects_awarded.call(training).where(level: next_level).size
+                        next_projects_done  = training.awarded_proficient_projects(user).count { |p| p.level == next_level }
                         next_projects_pct   = next_projects_total.positive? ? (next_projects_done.to_f / next_projects_total * 100).round : 0
 
-                        next_modules_total  = training.learning_modules.select { |m| m.level == next_level.downcase }.size
-                        next_modules_done   = @learning_modules_completed.call(training).where(level: next_level).size
+                        next_modules_total  = training.learning_modules.select { |m| m.level_name == next_level }.size
+                        next_modules_done   = training.learning_modules_completed(user).count { |m| m.level_name == next_level }
                         next_modules_pct    = next_modules_total.positive? ? (next_modules_done.to_f / next_modules_total * 100).round : 0
 
-                        next_target_hours   = @recommended_hours.call(training, [next_level])
+                        next_target_hours   = training.recommended_hours([next_level])
                       end
 
                       has_distinct_desc = training.description.present? &&

@@ -129,6 +129,36 @@ RSpec.describe Training, type: :model do
       expect(t.learning_modules_completed(user, "beginner")).to be_empty
     end
 
+    it "reads the user's awarded projects, completed modules and the recommended hours from its own records" do
+      t = create(:training)
+      user = create(:user)
+      awarded = create(:proficient_project, training: t, level: "Beginner")
+      create(:proficient_project, training: t, level: "Advanced")
+      create(:order_item, :awarded, proficient_project: awarded, order: create(:order, :completed, user: user))
+      done = create(:learning_module, training: t, level: "Beginner")
+      create(:learning_module, training: t, level: "Intermediate")
+      create(:learning_module_track, :completed, user: user, learning_module: done)
+      training = Training.includes(:proficient_projects, :learning_modules).find(t.id)
+
+      expect(training.awarded_proficient_projects(user)).to eq([awarded])
+      expect(training.learning_modules_completed(user)).to eq([done])
+      expect(training.learning_modules_completed(user, "beginner")).to eq([done])
+      expect(training.learning_modules_completed(user, "Beginner")).to eq([done])
+      expect(training.learning_modules_completed(user, "intermediate")).to be_empty
+      expect(training.recommended_hours(%w[Beginner Intermediate])).to eq(3)
+      expect(training.recommended_hours(nil)).to eq(0)
+    end
+
+    it "lists proficient projects by level text, projects without a level last, Advanced ones moved to the end" do
+      t = create(:training)
+      beginner = create(:proficient_project, training: t, level: "Beginner")
+      advanced = create(:proficient_project, training: t, level: "Advanced")
+      intermediate = create(:proficient_project, training: t, level: "Intermediate")
+      unleveled = create(:proficient_project, training: t, level: nil)
+      expect(Training.includes(:proficient_projects).find(t.id).proficient_projects_by_level)
+        .to eq([beginner, intermediate, unleveled, advanced])
+    end
+
     it "destroy cascades to learning modules and shifts are nullified" do
       t = create(:training)
       create(:learning_module, training: t)

@@ -44,13 +44,18 @@ module LearningAreaHelper
     end
   end
 
+  # How many of the modules the signed-in user completed, optionally only those of one level.
+  def completed_modules_count(learning_modules, level = nil)
+    learning_modules.count { |m| @completed_module_ids.include?(m.id) && (level.nil? || m.level == level) }
+  end
+
   # The shortcut route's path in front of the shortcut itself, shown before the form's shortcut field.
   def learning_area_shortcut_prefix
     shortcut_learning_area_path('shortcut').delete_suffix('shortcut')
   end
 
-  def levels_ordered(training)
+  def levels_ordered(learning_modules)
     order = LearningModule.levels.keys
-    training.learning_modules.pluck(:level).uniq.sort_by { |level| order.index(level) }
+    learning_modules.map(&:level).uniq.sort_by { |level| order.index(level) }
   end
 end

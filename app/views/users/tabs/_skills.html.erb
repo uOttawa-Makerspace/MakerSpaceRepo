@@ -5,7 +5,7 @@
             <details>
                 <summary>
                     <span><%= training.localized_name %></span>
-                    <span><%= training_status(training.id, @repo_user.id) %></span>
+                    <span><%= training_status(training.id, @repo_user) %></span>
                 </summary>
 
                 <% if training.description.present? %>
@@ -33,9 +33,9 @@
                     </div>
                 <% end %>
 
-                <p>Proficient projects awarded: <%= @proficient_projects_awarded.call(training).count %></p>
-                <p>Learning modules completed: <%= @learning_modules_completed.call(training).count %></p>
-                <p>Recommended hours before moving on: <%= @recomended_hours.call(training, return_levels(training.id, @repo_user.id)) %></p>
+                <p>Proficient projects awarded: <%= training.awarded_proficient_projects(@repo_user).count %></p>
+                <p>Learning modules completed: <%= training.learning_modules_completed(@repo_user).count %></p>
+                <p>Recommended hours before moving on: <%= training.recommended_hours(@repo_user.recommended_levels(training.id)) %></p>
             </details>
         <% end %>
     </details>

@@ -11,6 +11,7 @@ class User < ApplicationRecord
   include BCrypt
   include ActiveModel::Serialization
   include UoengConcern
+  include TrainingProgress
   include SniffedUploadValidation
 
   # ============================================
@@ -1267,10 +1268,12 @@ class User < ApplicationRecord
     Training.all.where.not(id: held)
   end
 
-  def has_requirements?(training_reqs)
-    training_reqs.all? do |treq|
-      has_training?(treq.training_id, treq.level)
-    end
+  # The training requirements are all met by the given held [training_id, level] pairs; a page
+  # checking many requirements reads them once with held_training_levels.
+  def has_requirements?(training_reqs, held = nil)
+    return training_reqs.all? { |treq| has_training?(treq.training_id, treq.level) } if held.nil?
+
+    training_reqs.all? { |treq| held.include?([treq.training_id, treq.level]) }
   end
 
   def has_training?(training_id, level)
@@ -1278,17 +1281,6 @@ class User < ApplicationRecord
       trainings: { id: training_id },
       certifications: { level: level }
     )
-  end
-
-  def highest_badge(training)
-    badges = certifications.joins(:training_session)
-               .where(training_sessions: { training_id: training.id })
-
-    %w[Advanced Intermediate Beginner].each do |level|
-      badge = badges.find_by(training_sessions: { level: level })
-      return badge if badge
-    end
-    nil
   end
 
   # ============================================

@@ -31,18 +31,35 @@ class Training < ApplicationRecord
   validates :name_en, presence: true, uniqueness: true
   validates :name_fr, presence: true, uniqueness: true
 
-  # Returns all completed learning modules, optionally filters by level
+  # The learning modules of this training the user has completed, optionally only at one level.
+  # A page listing many trainings preloads learning_modules, and they are then filtered without a
+  # query; otherwise one query returns the completed ones.
   def learning_modules_completed(user, level = nil)
-    scope =
-      learning_modules.joins(:learning_module_tracks).where(
-        learning_module_tracks: {
-          user: user,
-          status: 'Completed'
-        }
-      )
+    return completed_among_loaded_modules(user, level) if learning_modules.loaded?
 
-    scope = scope.where(learning_modules: { level: level }) if level
-    scope
+    scope = learning_modules.joins(:learning_module_tracks).where(learning_module_tracks: { user: user, status: "Completed" })
+    level ? scope.where(learning_modules: { level: level }) : scope
+  end
+
+  # The training's proficient projects that the user has been awarded. Reads the loaded
+  # proficient_projects, so a page listing many trainings preloads them once.
+  def awarded_proficient_projects(user)
+    awarded_ids = user.awarded_proficient_project_ids
+    proficient_projects.select { |project| awarded_ids.include?(project.id) }
+  end
+
+  # The proficient projects ordered by level text (projects without a level last), with the
+  # Advanced ones moved to the end. Reads the loaded proficient_projects.
+  def proficient_projects_by_level
+    sorted = proficient_projects.sort_by.with_index { |project, index| [project.level.nil? ? 1 : 0, project.level.to_s, index] }
+    sorted.rotate(sorted.count { |project| project.level == "Advanced" })
+  end
+
+  # The number of learning modules and proficient projects at the given levels.
+  def recommended_hours(levels)
+    wanted = [levels].flatten
+    learning_modules.select { |m| wanted.include?(m.level_name) }.size +
+      proficient_projects.select { |p| wanted.include?(p.level) }.size
   end
 
   def self.all_training_names
@@ -67,5 +84,13 @@ class Training < ApplicationRecord
 
   def self.all_skills_fr
     pluck(:list_of_skills_fr).flat_map { |l| split_skills(l) }.uniq
+  end
+
+  private
+
+  def completed_among_loaded_modules(user, level)
+    completed_ids = user.completed_learning_module_ids
+    wanted = LearningModule.type_for_attribute("level").cast(level) if level
+    learning_modules.select { |m| completed_ids.include?(m.id) && (level.nil? || m.level == wanted) }
   end
 end

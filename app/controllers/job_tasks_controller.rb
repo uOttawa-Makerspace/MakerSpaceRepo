@@ -44,11 +44,7 @@ class JobTasksController < SessionsController
       @service_groups = JobServiceGroup.not_deleted.where(job_type: @job_type).order(:id)
       render "job_orders/wizard/service"
     when 3
-      @options = JobOption
-        .joins(:job_types)
-        .where(job_types: { id: @job_task.job_type_id })
-        .where("job_options.is_deleted = FALSE OR job_options.id IN (?)", 
-              @job_task.job_task_options.pluck(:job_option_id))
+      load_options_step
       render "job_orders/wizard/options"
     when 4
       render "job_orders/wizard/submission"
@@ -85,6 +81,18 @@ class JobTasksController < SessionsController
   end
 
   private
+
+  # What the options step lists, with the lookups it needs per option made once for all of them: the task's own rows
+  # (with their uploaded file) and, for job-wide options, the other task of the order that already selected them.
+  def load_options_step
+    @options = JobOption
+      .joins(:job_types)
+      .where(job_types: { id: @job_task.job_type_id })
+      .where("job_options.is_deleted = FALSE OR job_options.id IN (?)",
+            @job_task.job_task_options.pluck(:job_option_id))
+    @task_options_by_option = @job_task.job_task_options.includes(option_file_attachment: :blob).index_by(&:job_option_id)
+    @other_task_by_option = @job_task.other_task_ids_using(@options.select(&:is_job_wide).map(&:id))
+  end
 
   # Runs the block through JobOrder#apply_owner_change!. Returns :applied or :sent_back (with the "sent back for a
   # new quote" notice) when the change committed; otherwise nothing was committed: redirects with the reason and

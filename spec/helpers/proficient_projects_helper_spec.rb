@@ -8,7 +8,7 @@ RSpec.describe ProficientProjectsHelper, type: :helper do
     let(:user) { create(:user) }
 
     it "marks a user who has not started with the muted text class and no inline colour" do
-      html = helper.training_status(training.id, user.id)
+      html = helper.training_status(training.id, user)
 
       expect(html).to include("Not Started")
       expect(html).to include("text-body-secondary")
@@ -18,7 +18,7 @@ RSpec.describe ProficientProjectsHelper, type: :helper do
     it "marks a user who has started with the body text class and no inline colour" do
       project = create(:proficient_project, training: training)
       create(:order_item, :awarded, proficient_project: project, order: create(:order, user: user))
-      html = helper.training_status(training.id, user.id)
+      html = helper.training_status(training.id, user)
 
       expect(html).to include("Newbie")
       expect(html).to include("text-body")

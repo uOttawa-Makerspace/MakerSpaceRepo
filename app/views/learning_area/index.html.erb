@@ -16,7 +16,7 @@
                     <%= group_name %>
                     <% if training %>
                         <br />
-                        <b><%= t('learning_area.index.completed_count', done: training.learning_modules_completed(current_user).count, total: learning_modules.size) %></b>
+                        <b><%= t('learning_area.index.completed_count', done: completed_modules_count(learning_modules), total: learning_modules.size) %></b>
                     <% end %>
                 <% end %>
             <% end %>
@@ -36,16 +36,16 @@
                         <%= link_to t('learning_area.index.top'), '#', class: 'small' %>
                     </div>
                     <div class="d-flex align-items-center gap-3">
-                        <% (training ? levels_ordered(training) : []).each do |level| %>
+                        <% (training ? levels_ordered(learning_modules) : []).each do |level| %>
                             <% modules_for_level = learning_modules.select { |m| m.level == level } %>
                             <span class="badge rounded-pill border <%= return_text_color(level) %>">
-                                <%= training.learning_modules_completed(current_user, level).count %>
+                                <%= completed_modules_count(learning_modules, level) %>
                                 /
                                 <%= modules_for_level.size %>
                                 <%= t("learning_area.levels.#{level}").downcase %>
                             </span>
                         <% end %>
-                        <%= training_status(training.id, current_user.id) if training %>
+                        <%= training_status(training.id, current_user) if training %>
                     </div>
                 </div>
 
@@ -80,7 +80,7 @@
                                 <h2 class="d-inline fs-6 <%= return_text_color(level) %>"><%= t("learning_area.levels.#{level}") %></h2>
                                 <% if training %>
                                     <span class="text-muted">
-                                        <%= t('learning_area.index.completed_count', done: training.learning_modules_completed(current_user, level).count, total: modules_by_level.size) %>
+                                        <%= t('learning_area.index.completed_count', done: completed_modules_count(learning_modules, level), total: modules_by_level.size) %>
                                     </span>
                                 <% end %>
                             </div>

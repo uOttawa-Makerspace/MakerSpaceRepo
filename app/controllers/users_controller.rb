@@ -415,27 +415,7 @@ class UsersController < SessionsController
     @joined_projects = @repo_user.project_joins
     @photos = photo_hash
     @certifications = @repo_user.certifications.highest_level
-    @skills = Skill.includes(:trainings)
-    @proficient_projects_awarded =
-      proc do |training|
-        training.proficient_projects.where(
-          id: @repo_user.order_items.awarded.pluck(:proficient_project_id)
-        )
-      end
-    @learning_modules_completed =
-      proc do |training|
-        training.learning_modules.where(
-          id:
-            @repo_user.learning_module_tracks.completed.pluck(
-              :learning_module_id
-            )
-        )
-      end
-    @recomended_hours =
-      proc do |training, levels|
-        training.learning_modules.where(level: levels).count +
-          training.proficient_projects.where(level: levels).count
-      end
+    @skills = Skill.includes(trainings: %i[proficient_projects learning_modules])
     if @user.key_certification.nil? && @user.eql?(@repo_user) &&
          (
            @user.staff? ||

@@ -15,21 +15,20 @@
                       <button class="btn btn-link stretched-link" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="false" aria-controls="training-<%= training.id %>"><%= training.localized_name %></button>
                     </div>
                     <div class="col-4">
-                      <%= sanitize(training_status(training.id, current_user.id)) %>
+                      <%= sanitize(training_status(training.id, current_user)) %>
                     </div>
                 </div>
 
                 <div id="training-<%= training.id %>" class="accordion-collapse collapse">
                   <div class="accordion-body">
 
-                    <p>Proficient Projects finished : <%= @proficient_projects_awarded.call(training).count %> / <%= training.proficient_projects.count %></p>
+                    <p>Proficient Projects finished : <%= training.awarded_proficient_projects(current_user).size %> / <%= training.proficient_projects.size %></p>
 
                     <div class="row">
 
-                      <% pp_bought = @proficient_projects_bought.call(training) %>
-
-                      <% @all_proficient_projects.call(training).order(:level).rotate(@advanced_pp_count.call(training)).each do |pp| %>
-                        <% opacity = pp_bought.include?(pp) ? '' : 'w3-opacity-max' %>
+                      <% training.proficient_projects_by_level.each do |pp| %>
+                        <% opacity = @bought_project_ids.include?(pp.id) ? '' : 'w3-opacity-max' %>
+                        <% project_items = @order_items_by_project.fetch(pp.id, []) %>
                         <div class="col-md-4 mb-5 mt-3 w3-hover-opacity <%= return_hover_and_text_colors(pp.level) %>" style="border-width:2px !important;">
                           <div class="<%= opacity %>">
                             <div class="py-3">
@@ -46,12 +45,12 @@
                               </div>
                             </div>
                             <% if pp.photos.present? %>
-                              <% if @user_order_items.where(proficient_project: pp, status:  ['In progress', 'Waiting for approval']).present? %>
+                              <% if project_items.any? { |item| ['In progress', 'Waiting for approval'].include?(item.status) } %>
                                 <a href="<%= proficient_project_path(pp.id) %>">
                                   <div class="projects-image" style="background-image: url(<%= url_for(pp.photos.first.image) %>);">
                                   </div>
                                 </a>
-                              <% elsif @user_order_items.where(proficient_project: pp, status:  'Awarded').present? %>
+                              <% elsif project_items.any? { |item| item.status == 'Awarded' } %>
                                 <div class="watermark">
                                   <a href="<%= proficient_project_path(pp.id) %>">
                                     <div class="projects-image" style="background-image: url(<%= url_for(pp.photos.first.image) %>);">
@@ -78,7 +77,7 @@
                               <p><%= pp.level %></p>
                             </div>
                           </div>
-                          <%= render '/proficient_projects/proficient_project_row', proficient_project: pp, order_item: @order_item, user_order_items: @user_order_items %>
+                          <%= render '/proficient_projects/proficient_project_row', proficient_project: pp, order_item: @order_item, project_items: project_items, in_progress: @in_progress_project_ids.include?(pp.id), held_training_levels: @held_training_levels, training_requirements: @requirements_by_project.fetch(pp.id, []) %>
                         </div>
                       <% end %>
 

@@ -75,26 +75,6 @@ class VolunteersController < SessionsController
     @certifications = current_user.certifications.highest_level
     @remaining_trainings = current_user.remaining_trainings
     @skills = Skill.includes(trainings: [:proficient_projects, :learning_modules])
-    @proficient_projects_awarded =
-      Proc.new do |training|
-        training.proficient_projects.where(
-          id: current_user.order_items.awarded.pluck(:proficient_project_id)
-        )
-      end
-    @learning_modules_completed =
-      Proc.new do |training|
-        training.learning_modules.where(
-          id:
-            current_user.learning_module_tracks.completed.pluck(
-              :learning_module_id
-            )
-        )
-      end
-    @recommended_hours =
-      Proc.new do |training, levels|
-        training.learning_modules.where(level: levels).count +
-          training.proficient_projects.where(level: levels).count
-      end
   end
 
   def calendar
