@@ -374,3 +374,165 @@ describe("setup problems", () => {
     expect(items(preview)).toHaveLength(1);
   });
 });
+
+describe("setting up an input", () => {
+  const fieldName = (preview) =>
+    items(preview)[0].querySelector("input[type=file]").name;
+
+  it("prefers the prefix attribute over the input's name", () => {
+    const { input, preview } = setup(
+      {},
+      { inputAttrs: 'data-file-upload-prefix="repo[photos]"' },
+    );
+    expect(input.dataset.fileUploadPrefix).toBe("repo[photos]");
+    expect(input.hasAttribute("name")).toBe(false);
+    choose(input, [file("a.png")]);
+    expect(fieldName(preview)).toBe("repo[photos][]");
+  });
+
+  it("stores the prefix it took from the name on the input", () => {
+    const { input } = setup({}, { inputAttrs: "" });
+    expect(input.dataset.fileUploadPrefix).toBe("project[files]");
+  });
+
+  it("uses a name without brackets as the prefix as it is", () => {
+    document.body.innerHTML = `
+      <input type="file" id="in" data-file-upload-helper name="attachment"
+             data-file-upload-preview-selector="#preview">
+      <div id="preview"></div>`;
+    document.dispatchEvent(new Event("turbo:load"));
+    const input = document.getElementById("in");
+    const preview = document.getElementById("preview");
+    expect(input.dataset.fileUploadPrefix).toBe("attachment");
+    choose(input, [file("a.png")]);
+    expect(fieldName(preview)).toBe("attachment[]");
+  });
+
+  it("infers the nested suffix from a prefix taken from the name", () => {
+    document.body.innerHTML = `
+      <input type="file" id="in" data-file-upload-helper name="repository[photos_attributes][]"
+             data-file-upload-preview-selector="#preview">
+      <div id="preview"></div>`;
+    document.dispatchEvent(new Event("turbo:load"));
+    const input = document.getElementById("in");
+    expect(input.dataset.fileUploadSuffix).toBe("image");
+    choose(input, [file("a.png")]);
+    expect(fieldName(document.getElementById("preview"))).toMatch(
+      /^repository\[photos_attributes\]\[\d+\]\[image\]$/,
+    );
+  });
+
+  it("keeps a suffix that is given, even on a photos prefix", () => {
+    const { input } = setup(
+      {},
+      {
+        inputAttrs:
+          'data-file-upload-prefix="repo[photos_attributes]" data-file-upload-suffix="picture"',
+      },
+    );
+    expect(input.dataset.fileUploadSuffix).toBe("picture");
+  });
+
+  it("sets no suffix for any other prefix", () => {
+    const { input } = setup({});
+    expect(input.dataset.fileUploadSuffix).toBeUndefined();
+  });
+
+  it("marks the input as set up", () => {
+    const { input } = setup({});
+    expect(input.dataset.fileUploadInitialized).toBe("true");
+  });
+
+  it("leaves the name, and does not try again, when no prefix can be found", () => {
+    document.body.innerHTML = `<input type="file" id="in" data-file-upload-helper data-file-upload-preview-selector="#p"><div id="p"></div>`;
+    document.dispatchEvent(new Event("turbo:load"));
+    const input = document.getElementById("in");
+    expect(input.dataset.fileUploadInitialized).toBe("true");
+    expect(input.dataset.fileUploadPrefix).toBeUndefined();
+    document.dispatchEvent(new Event("turbo:load"));
+    expect(console.warn).toHaveBeenCalledTimes(1);
+  });
+
+  it("still drops the name and sets the prefix when the preview pane is missing", () => {
+    document.body.innerHTML = `<div class="file-upload-drop-zone" id="zone"><input type="file" id="in" data-file-upload-helper name="a[b][]" data-file-upload-preview-selector="#nope"></div>`;
+    document.dispatchEvent(new Event("turbo:load"));
+    const input = document.getElementById("in");
+    expect(input.hasAttribute("name")).toBe(false);
+    expect(input.dataset.fileUploadPrefix).toBe("a[b]");
+    expect(input.dataset.fileUploadInitialized).toBe("true");
+    // the drop zone is not wired up
+    const event = new Event("dragenter", { cancelable: true });
+    event.dataTransfer = { types: ["Files"], files: [] };
+    document.getElementById("zone").dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it("sets up every helper input on the page", () => {
+    document.body.innerHTML = `
+      <input type="file" id="one" data-file-upload-helper name="a[]" data-file-upload-preview-selector="#p1">
+      <input type="file" id="two" data-file-upload-helper name="b[]" data-file-upload-preview-selector="#p2">
+      <input type="file" id="plain" name="c[]">
+      <div id="p1"></div><div id="p2"></div>`;
+    document.dispatchEvent(new Event("turbo:load"));
+    expect(document.getElementById("one").dataset.fileUploadPrefix).toBe("a");
+    expect(document.getElementById("two").dataset.fileUploadPrefix).toBe("b");
+    expect(document.getElementById("plain").getAttribute("name")).toBe("c[]");
+  });
+
+  it("works without a drop zone around the input", () => {
+    document.body.innerHTML = `
+      <input type="file" id="in" data-file-upload-helper name="a[]" data-file-upload-preview-selector="#preview">
+      <div id="preview"></div>`;
+    document.dispatchEvent(new Event("turbo:load"));
+    const input = document.getElementById("in");
+    choose(input, [file("a.png")]);
+    expect(items(document.getElementById("preview"))).toHaveLength(1);
+  });
+
+  it("does not make an unsortable pane sortable or renumber it", () => {
+    const { preview } = setup({
+      items: `<div class="file-upload-item-preview">
+        <input type="hidden" data-file-upload-position value="9">
+        <input type="hidden" data-file-upload-hidden-destroy value="false">
+        <button type="button" data-file-upload-item-delete id="d"></button></div>`,
+    });
+    expect(sortables).toHaveLength(0);
+    expect(preview.querySelector(".file-upload-drag-handle")).toBeNull();
+    document.getElementById("d").click();
+    expect(preview.querySelector("[data-file-upload-position]").value).toBe(
+      "9",
+    );
+  });
+
+  it("numbers existing sortable items as soon as it is set up", () => {
+    const row = (p) => `<div class="file-upload-item-preview">
+      <input type="hidden" data-file-upload-position value="${p}"></div>`;
+    const { preview } = setup({
+      attrs: "data-file-upload-sortable",
+      items: row(7) + row(3),
+    });
+    expect(
+      [...preview.querySelectorAll("[data-file-upload-position]")].map(
+        (p) => p.value,
+      ),
+    ).toEqual(["0", "1"]);
+    expect(sortables[0].el).toBe(preview);
+  });
+
+  it.each([
+    [
+      "a delete button without a removal field",
+      '<button type="button" data-file-upload-item-delete id="d"></button>',
+    ],
+    [
+      "a removal field without a delete button",
+      '<input type="hidden" data-file-upload-hidden-destroy value="false"><button type="button" id="d"></button>',
+    ],
+  ])("does not hide an existing item with %s", (_label, inner) => {
+    const { preview } = setup({
+      items: `<div class="file-upload-item-preview" id="old">${inner}</div>`,
+    });
+    document.getElementById("d").click();
+    expect(preview.querySelector("#old").hidden).toBe(false);
+  });
+});

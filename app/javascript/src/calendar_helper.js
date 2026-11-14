@@ -228,7 +228,7 @@ function setEventTypeLock(isLocked) {
 // -------------------
 // Position save button correctly based on recurrence
 // -------------------
-function positionSaveButton(hasRecurrence, isEditing) {
+export function positionSaveButton(hasRecurrence, isEditing) {
   const saveButton = document.getElementById("save_button");
   const saveButtonContainer = document.getElementById("save_button_container");
   const dropdownSaveContainer = document.getElementById(

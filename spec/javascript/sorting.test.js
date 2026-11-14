@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 await import("../../app/javascript/src/sorting.js");
 
@@ -117,5 +117,169 @@ describe("selectAll", () => {
     expect(boxes().some(Boolean)).toBe(false);
     window.selectAll("tbl");
     expect(boxes().every(Boolean)).toBe(true);
+  });
+});
+
+// Each example loads the script afresh, so the shared sort direction starts
+// at ascending.
+describe("sortTable (fresh page)", () => {
+  beforeEach(async () => {
+    vi.resetModules();
+    await import("../../app/javascript/src/sorting.js");
+  });
+
+  const grid = (
+    cells,
+  ) => `<table class="t"><thead><tr><th>a</th><th>b</th></tr></thead><tbody>
+    ${cells.map((c) => `<tr>${c.map((v) => `<td>${v}</td>`).join("")}</tr>`).join("")}
+    </tbody></table>`;
+  const col = (n) =>
+    [...document.querySelectorAll(".t tbody tr")].map(
+      (tr) => tr.querySelectorAll("td")[n].textContent,
+    );
+
+  it("sorts text ascending on the first call and descending on the second", () => {
+    document.body.innerHTML = table(["pear", "Apple", "mango"]);
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["Apple", "mango", "pear"]);
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["pear", "mango", "Apple"]);
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["Apple", "mango", "pear"]);
+  });
+
+  it("compares text without regard to case", () => {
+    document.body.innerHTML = table(["b", "C", "a"]);
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["a", "b", "C"]);
+  });
+
+  it("keeps rows with equal keys in their original order", () => {
+    document.body.innerHTML = grid([
+      ["x", "1"],
+      ["X", "2"],
+      ["a", "3"],
+      ["x", "4"],
+    ]);
+    window.sortTable("t", 0);
+    expect(col(1)).toEqual(["3", "1", "2", "4"]);
+  });
+
+  it("sorts by the column asked for and moves whole rows", () => {
+    document.body.innerHTML = grid([
+      ["one", "c"],
+      ["two", "a"],
+      ["three", "b"],
+    ]);
+    window.sortTable("t", 1);
+    expect(col(0)).toEqual(["two", "three", "one"]);
+    expect(col(1)).toEqual(["a", "b", "c"]);
+  });
+
+  it("compares numbers as text", () => {
+    document.body.innerHTML = table(["9", "10", "100", "2"]);
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["10", "100", "2", "9"]);
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["9", "2", "100", "10"]);
+  });
+
+  it("puts empty cells first going up and last going down", () => {
+    document.body.innerHTML = table(["b", "", "a"]);
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["", "a", "b"]);
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["b", "a", ""]);
+  });
+
+  it("uses the cell text when the sort key is empty", () => {
+    document.body.innerHTML = `<table class="t"><tbody><tr><th></th></tr>
+      <tr><td data-sort-as="">b</td></tr>
+      <tr><td data-sort-as="c">a</td></tr>
+      <tr><td>a</td></tr></tbody></table>`;
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["a", "b", "a"]);
+  });
+
+  it("sorts date columns oldest first, then newest first", () => {
+    document.body.innerHTML = table([
+      "Nov 10, 2026",
+      "Jan 5, 2026",
+      "Dec 1, 2025",
+    ]);
+    window.sortTable("t", 0, true);
+    expect(column()).toEqual(["Dec 1, 2025", "Jan 5, 2026", "Nov 10, 2026"]);
+    window.sortTable("t", 0, true);
+    expect(column()).toEqual(["Nov 10, 2026", "Jan 5, 2026", "Dec 1, 2025"]);
+  });
+
+  it("sorts a date column by each cell's sort key", () => {
+    document.body.innerHTML = `<table class="t"><tbody><tr><th></th></tr>
+      <tr><td data-sort-as="2026-03-01">Mar 1 - Mar 4</td></tr>
+      <tr><td data-sort-as="2026-01-01">Jan 1 - Feb 9</td></tr></tbody></table>`;
+    window.sortTable("t", 0, true);
+    expect(column()).toEqual(["Jan 1 - Feb 9", "Mar 1 - Mar 4"]);
+  });
+
+  it("never picks a cell that is not a date, so it drifts to the end", () => {
+    document.body.innerHTML = table(["Jan 5, 2026", "soon", "Dec 1, 2025"]);
+    window.sortTable("t", 0, true);
+    expect(column()).toEqual(["Dec 1, 2025", "Jan 5, 2026", "soon"]);
+    window.sortTable("t", 0, true);
+    expect(column()).toEqual(["Jan 5, 2026", "Dec 1, 2025", "soon"]);
+  });
+
+  it("does not sort a date column as text", () => {
+    document.body.innerHTML = table(["b", "a", "c"]);
+    window.sortTable("t", 0, true);
+    expect(column()).toEqual(["b", "a", "c"]);
+  });
+
+  it("shares one direction across every table and column on the page", () => {
+    document.body.innerHTML =
+      table(["b", "a"]) +
+      `<table class="u"><tbody><tr><th></th></tr><tr><td>a</td></tr><tr><td>b</td></tr></tbody></table>`;
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["a", "b"]);
+    window.sortTable("u", 0);
+    expect(
+      [...document.querySelectorAll(".u td")].map((d) => d.textContent),
+    ).toEqual(["b", "a"]);
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["a", "b"]);
+  });
+
+  it("sorts only the first table with the class", () => {
+    document.body.innerHTML = table(["b", "a"]) + table(["d", "c"]);
+    window.sortTable("t", 0);
+    const tables = [...document.querySelectorAll("table.t")].map((t) =>
+      [...t.querySelectorAll("td:first-child")].map((d) => d.textContent),
+    );
+    expect(tables).toEqual([
+      ["a", "b"],
+      ["d", "c"],
+    ]);
+  });
+
+  it("flips the direction even when there is nothing to sort", () => {
+    document.body.innerHTML = table(["only"]);
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["only"]);
+    document.body.innerHTML = table(["a", "b"]);
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["b", "a"]);
+  });
+
+  it("keeps the direction when the table is missing", () => {
+    document.body.innerHTML = "";
+    window.sortTable("t", 0);
+    document.body.innerHTML = table(["b", "a"]);
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["a", "b"]);
+  });
+
+  it("throws when a row has no cell in that column", () => {
+    document.body.innerHTML = grid([["a", "1"], ["b"]]);
+    expect(() => window.sortTable("t", 1)).toThrow(TypeError);
   });
 });
