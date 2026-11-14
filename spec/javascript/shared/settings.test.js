@@ -100,6 +100,20 @@ describe("faculty and program", () => {
     expect(selects).toHaveLength(1);
   });
 
+  it("listens to the faculty select once over a second load of the same page", () => {
+    document.dispatchEvent(new Event("turbo:load"));
+    chooseFaculty("Sci");
+    expect($("user_program").tomselect.cleared).toBe(1);
+  });
+
+  it("still offers every faculty's programs after a second load of a narrowed page", () => {
+    chooseFaculty("Sci");
+    document.dispatchEvent(new Event("turbo:load"));
+    chooseFaculty("Eng");
+    const groups = [...$("user_program").querySelectorAll("optgroup")];
+    expect(groups.map((g) => g.label)).toEqual(["Eng"]);
+  });
+
   it("removes the picker before Turbo caches the page", () => {
     document.dispatchEvent(new Event("turbo:before-cache"));
     expect(selects[0].destroyed).toBe(1);

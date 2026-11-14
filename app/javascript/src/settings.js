@@ -3,6 +3,11 @@ import { tomSelectOptions } from "./page_locale.js";
 
 let programTomSelect = null;
 
+// The faculty selects already given their change listener: a second load over
+// the same page adds none. A page Turbo restores from its cache is a copy made
+// of new elements, which are bound again.
+const filteredFaculties = new WeakSet();
+
 function initializeProgramSelect() {
   const programSelect = document.getElementById("user_program");
   if (!programSelect) return;
@@ -23,23 +28,28 @@ function initializeProgramSelect() {
   );
 
   const facultySelect = document.getElementById("user_faculty");
-  if (facultySelect) {
-    facultySelect.addEventListener("change", () => {
-      programSelect.querySelectorAll("optgroup").forEach((e) => e.remove());
-      const targetLabel = facultySelect.value;
+  if (facultySelect && !filteredFaculties.has(facultySelect)) {
+    filteredFaculties.add(facultySelect);
+    facultySelect.addEventListener("change", () =>
+      showProgramsOf(facultySelect.value, programSelect, optgroups),
+    );
+  }
+}
 
-      optgroups.forEach((option) => {
-        if (option.getAttribute("label") === targetLabel) {
-          programSelect.appendChild(option.cloneNode(true));
-        }
-      });
+// Leaves in the program select only the programs of the chosen faculty.
+function showProgramsOf(faculty, programSelect, optgroups) {
+  programSelect.querySelectorAll("optgroup").forEach((e) => e.remove());
 
-      if (programSelect.tomselect) {
-        programSelect.tomselect.clear();
-        programSelect.tomselect.clearOptions();
-        programSelect.tomselect.sync();
-      }
-    });
+  optgroups.forEach((option) => {
+    if (option.getAttribute("label") === faculty) {
+      programSelect.appendChild(option.cloneNode(true));
+    }
+  });
+
+  if (programSelect.tomselect) {
+    programSelect.tomselect.clear();
+    programSelect.tomselect.clearOptions();
+    programSelect.tomselect.sync();
   }
 }
 

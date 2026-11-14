@@ -25,12 +25,4 @@ document.addEventListener("turbo:load", function () {
         }
       });
   }
-  if (document.getElementById("questions_trainings")) {
-    if (!document.getElementById("questions_trainings").tomselect) {
-      const trainings = /** @type {HTMLSelectElement} */ (
-        document.getElementById("questions_trainings")
-      );
-      newTomSelect(trainings, { plugins: ["clear_button"] });
-    }
-  }
 });

@@ -143,7 +143,7 @@
 1	app/javascript/entrypoints/project_proposals.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 1	app/javascript/entrypoints/questions.js	TS2322	Type 'string | ArrayBuffer' is not assignable to type 'string'.
 1	app/javascript/entrypoints/questions.js	TS2339	Property 'files' does not exist on type 'EventTarget'.
-2	app/javascript/entrypoints/questions.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
+1	app/javascript/entrypoints/questions.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 1	app/javascript/entrypoints/quote_modal.js	TS2339	Property 'closest' does not exist on type 'EventTarget'.
 2	app/javascript/entrypoints/quote_modal.js	TS2339	Property 'innerHTML' does not exist on type 'Node'.
 1	app/javascript/entrypoints/quote_modal.js	TS2339	Property 'querySelector' does not exist on type 'Node'.
@@ -276,7 +276,7 @@
 1	app/javascript/src/photo_gallery.js	TS2345	Argument of type '(itemData: SlideData, index: number) => { src: any; width: string; height: string; }' is not assignable to parameter of type '(itemData: SlideData, index: number) => SlideData'.
 1	app/javascript/src/settings.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
 1	app/javascript/src/settings.js	TS2345	Argument of type 'HTMLElement' is not assignable to parameter of type 'string | TomInput'.
-8	app/javascript/src/settings.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
+4	app/javascript/src/settings.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 1	app/javascript/src/sorting.js	TS2339	Property 'findSession' does not exist on type 'Window & typeof globalThis'.
 1	app/javascript/src/sorting.js	TS2339	Property 'selectAll' does not exist on type 'Window & typeof globalThis'.
 1	app/javascript/src/sorting.js	TS2339	Property 'sortTable' does not exist on type 'Window & typeof globalThis'.
