@@ -84,6 +84,25 @@ function userPicker(select) {
 const DATE_TIME_PICKER = { enableTime: true, time_24hr: true, altInput: true };
 
 // ── Recurring-approval modal: one checked box per date when it opens ────────
+// One row of the modal: a checked box for the booking and the date as its label, in plain text.
+function recurringDateRow([id, label]) {
+  const row = document.createElement("div");
+  row.className = "form-check p-2 border rounded";
+  const box = document.createElement("input");
+  box.className = "form-check-input";
+  box.type = "checkbox";
+  box.name = "sub_space_booking_ids[]";
+  box.value = id;
+  box.id = `rc_${id}`;
+  box.defaultChecked = true;
+  const text = document.createElement("label");
+  text.className = "form-check-label w-100";
+  text.htmlFor = box.id;
+  text.textContent = label;
+  row.append(box, text);
+  return row;
+}
+
 function wireRecurringApproval() {
   const approveRecurringModal = document.getElementById(
     "approveRecurringModal",
@@ -91,21 +110,9 @@ function wireRecurringApproval() {
   if (!approveRecurringModal) return;
   approveRecurringModal.addEventListener("show.bs.modal", (e) => {
     const dates = JSON.parse(e.relatedTarget.dataset.dates);
-    const container = document.getElementById("recurring-checkboxes");
-    container.innerHTML = "";
-    dates.forEach(([id, label]) => {
-      const div = document.createElement("div");
-      div.className = "form-check p-2 border rounded";
-      div.innerHTML = `
-          <input class="form-check-input" type="checkbox"
-                 name="sub_space_booking_ids[]"
-                 value="${id}"
-                 id="rc_${id}"
-                 checked />
-          <label class="form-check-label w-100" for="rc_${id}">${label}</label>
-        `;
-      container.appendChild(div);
-    });
+    document
+      .getElementById("recurring-checkboxes")
+      .replaceChildren(...dates.map(recurringDateRow));
   });
 
   const checkAll = (checked) => () =>
