@@ -276,12 +276,9 @@ function createFileInput(target) {
     console.warn("file_upload: data-file-upload-prefix is required on", target);
     return;
   }
-  target.dataset.fileUploadPrefix = prefix;
-  applyDefaultSuffix(target, prefix);
 
-  target.removeAttribute("name");
-  target.addEventListener("change", onFileUpload);
-
+  // Without its preview pane the input stays a plain file field: it keeps its
+  // name, so the chosen files are still submitted with the form.
   const preview = document.querySelector(
     target.dataset.fileUploadPreviewSelector,
   );
@@ -292,6 +289,11 @@ function createFileInput(target) {
     );
     return;
   }
+
+  target.dataset.fileUploadPrefix = prefix;
+  applyDefaultSuffix(target, prefix);
+  target.removeAttribute("name");
+  target.addEventListener("change", onFileUpload);
 
   setupExistingDeletes(preview);
 
