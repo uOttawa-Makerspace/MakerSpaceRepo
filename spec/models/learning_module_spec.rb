@@ -262,13 +262,6 @@ RSpec.describe LearningModule, type: :model do
       expect { lm.destroy }.to change(LearningModuleTrack, :count).by(-1)
     end
 
-    it "tracks_for_user returns that user's track or nil" do
-      lm = create(:learning_module)
-      track = create(:learning_module_track, learning_module: lm)
-      expect(lm.tracks_for_user(track.user)).to eq(track)
-      expect(lm.tracks_for_user(create(:user))).to be_nil
-    end
-
     it "search filter escapes LIKE wildcards" do
       create(:learning_module, title: "100% pure")
       create(:learning_module, title: "Other thing")

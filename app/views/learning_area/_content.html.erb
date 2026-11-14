@@ -9,7 +9,7 @@
         </div>
     <% end %>
 
-    <% if learning_module.tracks_for_user(current_user).blank? %>
+    <% if track.nil? %>
         <div class="flex-grow-1">
             <p class="mb-0"><%= t('learning_area.content.ready_to_start') %></p>
             <p class="small mb-0"><%= t('learning_area.content.not_begun') %></p>
@@ -17,7 +17,7 @@
         <%= button_to t('learning_area.content.start'),
                     start_learning_module_track_index_path(learning_module_id: learning_module.id),
                     class: 'btn btn-primary btn-sm' %>
-    <% elsif learning_module.tracks_for_user(current_user).in_progress? %>
+    <% elsif track.in_progress? %>
         <div class="flex-grow-1">
             <p class="mb-0"><%= t('learning_area.content.in_progress') %></p>
             <p class="small mb-0"><%= t('learning_area.content.mark_when_done') %></p>
@@ -25,7 +25,7 @@
         <%= button_to t('learning_area.content.mark_completed'),
                     completed_learning_module_track_index_path(learning_module_id: learning_module.id),
                     class: 'btn btn-primary btn-sm' %>
-    <% elsif learning_module.tracks_for_user(current_user).completed? %>
+    <% elsif track.completed? %>
         <div class="flex-grow-1">
             <p class="mb-0">
                 <i class="fa fa-check-circle text-success fs-5"></i>
