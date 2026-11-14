@@ -47,7 +47,8 @@ class LearningAreaController < DevelopmentProgramsController
 
   def subskill
     @subskill = params[:subskill]
-    @learning_modules = LearningModule.where(subskill: params[:subskill]).includes(:scorm_package_attachment)
+    @learning_modules = LearningModule.where(subskill: params[:subskill]).includes(:scorm_package_attachment).to_a
+    LearningModule.preload_content_attachments(@learning_modules)
   end
 
   def create

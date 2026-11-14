@@ -170,6 +170,15 @@ class LearningModule < ApplicationRecord
     end
   end
 
+  # Loads, in one query per attachment kind, the photos, videos and project files that every given module without a
+  # SCORM package shows on its page. A module with a package shows the package instead, so its files are not loaded.
+  def self.preload_content_attachments(modules)
+    ActiveRecord::Associations::Preloader.new(
+      records: modules.reject { |learning_module| learning_module.scorm_package.attached? },
+      associations: { photos_attachments: :blob, videos_attachments: :blob, project_files_attachments: :blob }
+    ).call
+  end
+
   def tracks_for_user(user)
     learning_module_tracks.find_by(user:)
   end
