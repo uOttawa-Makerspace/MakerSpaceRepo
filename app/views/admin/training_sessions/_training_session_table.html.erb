@@ -98,7 +98,7 @@
             <%= t('admin_area.training_sessions.status_not_completed') %>
           <% end %>
         </td>
-        <td>
+        <td data-sort-as="<%= sesh.users.length %>">
           <div class="inline-block">
             <%= sesh.users.length %>
             <div class="inline-block">

@@ -46,7 +46,7 @@
                 <%= l(vh.date_of_task, format: :volunteer_numeric) if vh.date_of_task %>
               </td>
 
-              <td>
+              <td data-sort-as="<%= vh.total_time %>">
                 <%= t('volunteer_area.hours.total_time', hours: vh.total_time) %>
               </td>
 
@@ -115,7 +115,7 @@
                 <%= l(vh.date_of_task, format: :volunteer_numeric) if vh.date_of_task %>
               </td>
 
-              <td>
+              <td data-sort-as="<%= vh.total_time %>">
                 <%= t('volunteer_area.hours.total_time', hours: vh.total_time) %>
               </td>
 

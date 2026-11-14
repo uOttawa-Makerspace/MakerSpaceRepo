@@ -20,7 +20,7 @@
         <td><%= link_to kt.user.name, user_path(kt.user.username) if kt.user %></td>
         <td><%= link_to kt.key.supervisor.name, user_path(kt.key.supervisor.username) if kt.key&.supervisor %></td>
         <td><%= kt.created_at.strftime('%Y-%m-%d') %></td>
-        <td>$<%= kt.deposit_amount %></td>
+        <td data-sort-as="<%= kt.deposit_amount %>">$<%= kt.deposit_amount %></td>
         <td><%= kt.return_date.nil? ? t('admin_pages.common.not_returned') : kt.return_date %></td>
         <td><%= kt.deposit_return_date.nil? ? t('admin_pages.common.not_returned') : kt.deposit_return_date %></td>
         <td>

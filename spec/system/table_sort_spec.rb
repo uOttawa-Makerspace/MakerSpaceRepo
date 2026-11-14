@@ -65,3 +65,31 @@ RSpec.describe "Table sort arrows", type: :system do
     expect(descriptions).to eq(["charlie note", "Alpha note", "Bravo note"])
   end
 end
+
+# A column whose cells all hold numbers (or a numeric sort key) sorts by value.
+RSpec.describe "Table sort arrows on a number column", type: :system do
+  let(:volunteer) { create(:user, :volunteer_with_volunteer_program) }
+
+  before do
+    [9, 10, 2.5].each_with_index do |hours, i|
+      create(:volunteer_hour, :approved1, user: volunteer, total_time: hours, created_at: Time.zone.local(2026, 1, 1 + i))
+    end
+    log_in_as(volunteer, to: volunteer_hours_path)
+  end
+
+  def hours
+    all("table.sessions-table tbody tr td:nth-child(4)").map { |cell| cell.text.strip }
+  end
+
+  it "sorts the hours column by value, then the other way on the next click" do
+    expect(hours).to eq(["2.5 Hours", "10.0 Hours", "9.0 Hours"])
+
+    find("table.sessions-table th", text: "Hours Worked").find("span").click
+    expect(page).to have_css("table.sessions-table tbody tr:first-child td:nth-child(4)", text: "2.5 Hours")
+    expect(hours).to eq(["2.5 Hours", "9.0 Hours", "10.0 Hours"])
+
+    find("table.sessions-table th", text: "Hours Worked").find("span").click
+    expect(page).to have_css("table.sessions-table tbody tr:first-child td:nth-child(4)", text: "10.0 Hours")
+    expect(hours).to eq(["10.0 Hours", "9.0 Hours", "2.5 Hours"])
+  end
+end
