@@ -359,10 +359,11 @@ class JobOrder < ApplicationRecord
             }
 
   # Prefixes the stored names of this order's files, and of its tasks' files, with the order id. Called by the
-  # actions that attach files, once the save has committed. The tasks' options are read in one query for all tasks.
+  # actions that attach files, once the save has committed. The tasks, their options and all their files are read
+  # in a fixed number of queries, however many tasks the order has.
   def prefix_file_names
-    prefix_blob_names(%w[user_files staff_files], "#{id}_")
-    job_tasks.includes(:job_task_options).each(&:prefix_file_names)
+    prefix_blob_names(%i[user_files_attachments staff_files_attachments], "#{id}_")
+    job_tasks.includes(*JobTask::FILE_ASSOCIATIONS).each(&:prefix_file_names)
   end
 
   # Every stored file of this order: its own files, its tasks' client and staff files, and its task options' files.

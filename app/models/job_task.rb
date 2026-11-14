@@ -75,15 +75,20 @@ class JobTask < ApplicationRecord
               if: -> { staff_files.attached? }
             }
 
+  # The task's files and its options' files, with their blobs, as preloaded by #prefix_file_names.
+  FILE_ASSOCIATIONS = [{ user_files_attachments: :blob }, { staff_files_attachments: :blob },
+                       { job_task_options: { option_file_attachment: :blob } }].freeze
+
   # The custom service the wizard has just made for this task (JobTasksController#use_custom_service!).
   attr_accessor :new_custom_service
 
   validate :job_service_belongs_to_task, if: :job_service_id_changed?
 
   # Prefixes the stored names of this task's files, and of its options' files, as set by the actions that attach
-  # them, once the save has committed. Preloaded options are used as loaded.
+  # them, once the save has committed. Preloaded options and files (FILE_ASSOCIATIONS) are used as loaded.
   def prefix_file_names
-    prefix_blob_names(%w[user_files staff_files], "#{job_order_id}_")
+    ActiveRecord::Associations::Preloader.new(records: [self], associations: FILE_ASSOCIATIONS).call
+    prefix_blob_names(%i[user_files_attachments staff_files_attachments], "#{job_order_id}_")
     job_task_options.each(&:prefix_file_names)
   end
 

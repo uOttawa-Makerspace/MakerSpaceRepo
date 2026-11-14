@@ -29,6 +29,6 @@ class JobTaskOption < ApplicationRecord
 
   # Prefixes the stored name of the option file with JMTS, as set by the action that attaches it.
   def prefix_file_names
-    prefix_blob_names(%w[option_file], "JMTS_", already: "JMTS")
+    prefix_blob_names(%i[option_file_attachment], "JMTS_", already: "JMTS")
   end
 end
