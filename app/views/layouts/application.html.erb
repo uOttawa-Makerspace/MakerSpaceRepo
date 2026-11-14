@@ -20,8 +20,7 @@
     
     <%# Vite Entrypoints %>
     <%= vite_client_tag %>
-    <%= vite_stylesheet_tag 'application.scss', 'data-turbo-track': 'reload' %>
-    <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
+    <%= render 'layouts/head_assets' %>
     
     <%# Namespaced and controller-specific JS entrypoints %>
     <% namespaced_entry = controller_path.tr('/', '_') %>

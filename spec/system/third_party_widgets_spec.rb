@@ -63,3 +63,15 @@ RSpec.describe "Accessibility widget across Turbo visits", type: :system do
     expect(page).to have_css("[data-controller=userway]", count: 1, visible: :all)
   end
 end
+
+RSpec.describe "Turbo visits between layouts", type: :system do
+  it "keeps one document on a Turbo visit from a public page to an admin page" do
+    log_in_as(create(:user, :admin))
+    page.execute_script("window.sameDocument = true")
+
+    page.execute_script("Turbo.visit(arguments[0])", admin_announcements_path)
+    expect(page).to have_current_path(admin_announcements_path)
+    expect(page).to have_css("h2", exact_text: "Announcements")
+    expect(page.evaluate_script("window.sameDocument")).to be(true)
+  end
+end

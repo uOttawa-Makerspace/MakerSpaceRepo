@@ -1,0 +1,5 @@
+<%# The Turbo-tracked head tags every layout shares. Turbo does a full page load when the tracked tags of the
+    current and the next page differ, so every layout renders these, in this order, from this one partial: a visit
+    between pages of different layouts then stays in one document (unless a page adds tracked tags of its own). %>
+<%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
+<%= vite_stylesheet_tag 'application.scss', 'data-turbo-track': 'reload' %>
