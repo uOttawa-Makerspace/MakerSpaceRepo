@@ -102,6 +102,14 @@ RSpec.describe MsrMailer, type: :mailer do
     expect(text(deliver { described_class.welcome_email(french) })).to include('href="http://makerepo.com/login"')
   end
 
+  it "puts the unlock link on the button and as copyable text, in each language" do
+    { english => "copy this link: ", french => "copiez ce lien : " }.each do |user, lead|
+      token = user.generate_token_for(:account_unlock)
+      url = Rails.application.routes.url_helpers.unlock_account_users_url(token: token, **ActionMailer::Base.default_url_options)
+      expect(text(deliver { described_class.unlock_account(user, token) })).to include(%(href="#{url}"), "#{lead}#{url}")
+    end
+  end
+
   it "writes the email change mails, sent to an address no account has, in the account owner's language" do
     expect(deliver { described_class.email_confirmation_email("new-address@example.com", french, "T") }.to)
       .to eq(["new-address@example.com"])
