@@ -34,7 +34,7 @@ class LearningAreaController < DevelopmentProgramsController
         .transform_values do |modules|
           modules.sort_by { |m| LearningModule.levels.keys.index(m.level) }
         end
-    @tracks_by_module = current_user.learning_module_tracks.index_by(&:learning_module_id)
+    load_tracks_by_module
     @completed_module_ids = current_user.completed_learning_module_ids.to_set
   end
 
@@ -43,12 +43,14 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   def show
+    load_tracks_by_module
   end
 
   def subskill
     @subskill = params[:subskill]
     @learning_modules = LearningModule.where(subskill: params[:subskill]).includes(:scorm_package_attachment).to_a
     LearningModule.preload_content_attachments(@learning_modules)
+    load_tracks_by_module
   end
 
   def create
@@ -181,6 +183,12 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   private
+
+  # The signed-in user's tracks, read once for the page and keyed by module, so each module shows its status without
+  # a query of its own.
+  def load_tracks_by_module
+    @tracks_by_module = current_user.learning_module_tracks.index_by(&:learning_module_id)
+  end
 
   # A minimal answer: no success headers are set before the content is known
   # to be readable, so there is nothing to clear.

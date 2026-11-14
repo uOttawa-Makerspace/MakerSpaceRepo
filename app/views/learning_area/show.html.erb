@@ -13,9 +13,9 @@
         </p>
 
         <% if @learning_module.scorm_package.attached? %>
-            <%= render 'scorm', learning_module: @learning_module %>
+            <%= render 'scorm', learning_module: @learning_module, track: @tracks_by_module[@learning_module.id] %>
         <% else %>
-            <%= render 'content', learning_module: @learning_module %>
+            <%= render 'content', learning_module: @learning_module, track: @tracks_by_module[@learning_module.id] %>
         <% end %>
     </div>
 </section>
