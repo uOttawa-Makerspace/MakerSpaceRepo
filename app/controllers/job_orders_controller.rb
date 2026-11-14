@@ -366,7 +366,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   def settings
     @service_groups = JobServiceGroup.not_deleted.order(:job_type_id)
     @services = JobService.not_deleted.not_user_created.order(:job_service_group_id)
-    @options = JobOption.not_deleted
+    @options = JobOption.not_deleted.preload(:job_types)
     @job_types = JobType.all
   end
 
