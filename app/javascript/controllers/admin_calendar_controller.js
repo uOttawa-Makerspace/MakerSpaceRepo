@@ -301,7 +301,7 @@ export default class extends TypedController {
     const shown = events.filter(
       (event) => event.start >= activeStart && event.end <= activeEnd,
     );
-    const { lang } = this.element.ownerDocument.documentElement;
+    const locale = this.element.ownerDocument.documentElement.lang || undefined;
     this.hoursTargets.forEach((badge) => {
       const time = shown
         .filter((event) =>
@@ -309,11 +309,8 @@ export default class extends TypedController {
             (user) => String(user.id) === badge.dataset.userId,
           ),
         )
-        .reduce(
-          (sum, event) => sum + (event.end.getTime() - event.start.getTime()),
-          0,
-        );
-      const hours = (Math.round(time / 360000) / 10).toLocaleString(lang);
+        .reduce((sum, { start, end }) => sum + (end - start), 0);
+      const hours = (Math.round(time / 360000) / 10).toLocaleString(locale);
       badge.textContent = this.texts.hours.replace("{hours}", hours);
     });
   }

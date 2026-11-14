@@ -21,7 +21,9 @@ export function calendarTexts(target) {
 export function pageCalendar(target, options, ...plugins) {
   target.replaceChildren();
   const texts = calendarTexts(target);
-  const toolbar = Object.values(options.headerToolbar ?? {}).join(",");
+  const toolbar = Object.values(options.headerToolbar ?? {})
+    .join(",")
+    .split(/[ ,]/);
   const overlap = toolbar.includes("toggleEventOverlap")
     ? overlapToggle(texts, () => calendar)
     : {};

@@ -764,4 +764,20 @@ describe("calendar options", () => {
       expect(hours).toEqual(shown);
     }
   });
+
+  it("writes the hours the default way on a page that names no language", async () => {
+    const calendar = await boot();
+    document.documentElement.lang = "";
+    calendar.options.eventsSet([
+      {
+        start: new Date("2027-03-15T13:00:00Z"),
+        end: new Date("2027-03-15T14:30:00Z"),
+        extendedProps: { assignedUsers: [{ id: 5 }] },
+      },
+    ]);
+
+    expect(document.querySelector("[data-user-id]").textContent).toBe(
+      `${(1.5).toLocaleString()} hrs`,
+    );
+  });
 });

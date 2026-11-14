@@ -211,6 +211,18 @@ describe("pageCalendar", () => {
       expect(button().textContent).toBe("Enable Event Overlap");
     });
 
+    it("is left out of a toolbar that only shows a button with a longer name", () => {
+      drawn = draw("en", {
+        headerToolbar: { left: "prev toggleEventOverlapFoo", right: "" },
+        customButtons: { toggleEventOverlapFoo: { text: "Foo", click() {} } },
+      });
+
+      expect(drawn.calendar.getOption("slotEventOverlap")).toBeUndefined();
+      expect(Object.keys(drawn.calendar.getOption("customButtons"))).toEqual([
+        "toggleEventOverlapFoo",
+      ]);
+    });
+
     it("is left out of a calendar whose toolbar does not show it", () => {
       localStorage.fullCalendarEventOverlap = "true";
       drawn = draw("en", {
