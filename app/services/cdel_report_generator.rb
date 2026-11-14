@@ -93,10 +93,18 @@ class CdelReportGenerator
     start_date&.beginning_of_day..end_date&.end_of_day
   end
 
+  # A text field that a spreadsheet would read as a formula (one starting
+  # with =, +, -, @, a tab or a carriage return) is written with a leading
+  # single quote, so it opens as the text that was entered.
+  FORMULA_START = /\A[=+\-@\t\r]/
+  TEXT_AS_ENTERED = lambda do |field|
+    field.is_a?(String) && FORMULA_START.match?(field) ? "'#{field}" : field
+  end
+
   private
 
   def self.make_into_csv(headers, query)
-    CSV.generate do |csv|
+    CSV.generate(write_converters: [TEXT_AS_ENTERED]) do |csv|
       csv << headers
       query.each { |row| csv << row }
     end

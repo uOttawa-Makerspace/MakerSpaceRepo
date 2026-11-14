@@ -12,6 +12,23 @@ class ReportGenerator
   # for the readers that load them by position: the cell under "Student ID"
   # holds the join date (new users) or the attendee name (attendees).
   STUDENT_NUMBER = "Student number"
+  # Cell types: text that people entered is written as text (TEXT), so a
+  # value that looks like a number, a date or a formula opens as it was
+  # entered; a nil type leaves the cell's type to its value. A label row
+  # (LABEL_ROW) has its text in the first cell and counts after it.
+  TEXT = :string
+  LABEL_ROW = [TEXT].freeze
+  # A new users line: the six text columns, then the year of study and the
+  # join date as before, and the student number as text.
+  NEW_USER_TYPES = ([TEXT] * 6 + [nil, nil, nil, TEXT]).freeze
+  # An attendee line (see attendee_row): the date and the empty column keep
+  # their own types.
+  ATTENDEE_TYPES = [TEXT, TEXT, TEXT, nil, TEXT, TEXT, TEXT, nil, TEXT].freeze
+  # A trainings line: every column but the date and the attendee count.
+  TRAINING_TYPES = [TEXT, TEXT, TEXT, TEXT, nil, TEXT].freeze
+  # A visitors line with a label in the first and the sixth cells (identity
+  # and faculty, or department and level), counts between them.
+  TWO_LABEL_TYPES = [TEXT, nil, nil, nil, nil, TEXT].freeze
   # region Date Range Reports
 
   # @param [DateTime] start_date
@@ -82,7 +99,8 @@ class ReportGenerator
           space_visits
             .group_by { |d| User.identity_label(d["identity"]) }
             .each do |identity, counts|
-              sheet.add_row [identity, counts.uniq.count, "", counts.count]
+              sheet.add_row [identity, counts.uniq.count, "", counts.count],
+                            types: LABEL_ROW
             end
 
           sheet.add_row # spacing
@@ -92,7 +110,9 @@ class ReportGenerator
           space_visits
             .group_by { |x| x["gender"] }
             .sort
-            .each { |gender, counts| sheet.add_row [gender, counts.uniq.count] }
+            .each do |gender, counts|
+              sheet.add_row [gender, counts.uniq.count], types: LABEL_ROW
+            end
 
           sheet.add_row # spacing
 
@@ -107,7 +127,8 @@ class ReportGenerator
                               counts.uniq.count,
                               "",
                               counts.count
-                            ]
+                            ],
+                            types: LABEL_ROW
             end
 
           # group by faculty, identity
@@ -139,7 +160,8 @@ class ReportGenerator
                                   "",
                                   faculty
                                 ],
-                                style: toggle_grey ? grey_cell : merge_cell
+                                style: toggle_grey ? grey_cell : merge_cell,
+                                types: TWO_LABEL_TYPES
                 end
               end_cell = sheet.rows.last.cells.first.pos
               sheet.merge_cells Axlsx.cell_r(start_cell[0], start_cell[1] + 1) +
@@ -175,7 +197,8 @@ class ReportGenerator
                                   "",
                                   level
                                 ],
-                                style: toggle_grey ? grey_cell : merge_cell
+                                style: toggle_grey ? grey_cell : merge_cell,
+                                types: TWO_LABEL_TYPES
                 end
               end_cell = sheet.rows.last.cells.first.pos
               sheet.merge_cells Axlsx.cell_r(start_cell[0], start_cell[1] + 1) +
@@ -199,7 +222,8 @@ class ReportGenerator
           end
           .sort
           .each do |program, counts|
-            sheet.add_row [program, counts.uniq.count, "", counts.count]
+            sheet.add_row [program, counts.uniq.count, "", counts.count],
+                          types: LABEL_ROW
           end
       end
 
@@ -234,7 +258,8 @@ class ReportGenerator
                             k,
                             training_type.count,
                             training_type.sum { |d| d["attendee_count"] }
-                          ]
+                          ],
+                          types: LABEL_ROW
           end
 
         sheet.add_row # spacing
@@ -278,7 +303,8 @@ class ReportGenerator
                           row["date"].in_time_zone.strftime("%Y-%m-%d %H:%M"),
                           row["space_name"],
                           row["attendee_count"]
-                        ] # ,
+                        ],
+                        types: TRAINING_TYPES # ,
           # style: [style]
         end
       end
@@ -350,7 +376,8 @@ class ReportGenerator
           # push headers, add space to be merged
           sheet.add_row [""] + courses.map { |d| [d || "Open", ""] }.flatten +
                           ["Total", ""],
-                        style: centered_style
+                        style: centered_style,
+                        types: TEXT
           # merge subheaders
           # Plus the total header
           (courses.count + 1).times do |n|
@@ -400,7 +427,7 @@ class ReportGenerator
             entry += [total_sessions, total_certs]
 
             # finally push row
-            sheet.add_row entry, style: centered_style
+            sheet.add_row entry, style: centered_style, types: LABEL_ROW
           end
 
           # push final total row, for each course
@@ -455,13 +482,11 @@ class ReportGenerator
         sheet.add_row
 
         title(sheet, "Year of Study")
-        # year of study is stored as text, transform key to int for sorting
-        users
-          .group(:year_of_study)
-          .count
-          .transform_keys { |k| k.to_i }
-          .sort
-          .each { |key, value| sheet.add_row [key, value] }
+        User
+          .years_of_study_in_order(users.group(:year_of_study).count)
+          .each do |year, count|
+            sheet.add_row [year, count], types: year_row_types(year)
+          end
 
         sheet.add_row
         title(sheet, "Level of Study")
@@ -481,7 +506,7 @@ class ReportGenerator
           .group(:gender)
           .count
           .sort
-          .each { |key, value| sheet.add_row [key, value] }
+          .each { |key, value| sheet.add_row [key, value], types: LABEL_ROW }
       end
 
     spreadsheet
@@ -607,7 +632,9 @@ class ReportGenerator
 
         users
           .group_by(&:identity)
-          .each { |identity, values| sheet.add_row [identity, values.length] }
+          .each do |identity, values|
+            sheet.add_row [identity, values.length], types: LABEL_ROW
+          end
 
         sheet.add_row # spacing
 
@@ -625,7 +652,6 @@ class ReportGenerator
         ]
         table_header(sheet, columns)
 
-        types = student_id_as_text(columns)
         users.with_shown_faculty.each do |user|
           sheet.add_row [
                           user.name,
@@ -639,7 +665,7 @@ class ReportGenerator
                           nil,
                           user.student_id
                         ],
-                        types: types
+                        types: NEW_USER_TYPES
         end
       end
 
@@ -716,10 +742,8 @@ class ReportGenerator
           ]
           table_header(sheet, columns)
 
-          types = student_id_as_text(columns)
           space_certifications.each do |certification|
-            sheet.add_row attendee_row(certification),
-                          types: types
+            sheet.add_row attendee_row(certification), types: ATTENDEE_TYPES
           end
 
           sheet.add_row #spacing
@@ -796,14 +820,14 @@ class ReportGenerator
         sheet.add_row # spacing
 
         title(sheet, "Categories")
-        category_count.each { |key, value| sheet.add_row [key, value] }
+        push_hash(sheet, category_count)
         # add total sum
         sheet.add_row ["Total", category_count.values.sum]
 
         sheet.add_row
 
         title(sheet, "Equipment usage")
-        equipment_count.each { |key, value| sheet.add_row [key, value] }
+        push_hash(sheet, equipment_count)
         sheet.add_row ["Total", equipment_count.values.sum]
 
         sheet.add_row
@@ -814,7 +838,7 @@ class ReportGenerator
           .group(:license)
           .count
           .each do |key, value|
-            sheet.add_row [key, value]
+            sheet.add_row [key, value], types: LABEL_ROW
             total_licenses += value
           end
         sheet.add_row ["Total", total_licenses]
@@ -826,7 +850,7 @@ class ReportGenerator
           .group(:share_type)
           .count
           .each do |key, value|
-            sheet.add_row [key, value]
+            sheet.add_row [key, value], types: LABEL_ROW
             total_share_type += value
           end
         sheet.add_row ["Total", total_share_type]
@@ -854,7 +878,8 @@ class ReportGenerator
                             user_username: repository.user_username
                           ),
                           repository.categories.map(&:name).join(", ")
-                        ]
+                        ],
+                        types: TEXT
         end
       end
 
@@ -884,8 +909,10 @@ class ReportGenerator
       .add_worksheet(name: "Report") do |sheet|
         title(sheet, "Training Session")
 
-        session_summary_rows(session).each { |row| sheet.add_row row }
-        sheet.add_row ["Course", session.course]
+        session_summary_rows(session).each do |row|
+          sheet.add_row row, types: TEXT
+        end
+        sheet.add_row ["Course", session.course], types: TEXT
         sheet.add_row ["Number of Trainees", session.users.length]
 
         sheet.add_row # spacing
@@ -893,7 +920,7 @@ class ReportGenerator
         table_header(sheet, %w[Name Email])
 
         session.users.each do |student|
-          sheet.add_row [student.name, student.email]
+          sheet.add_row [student.name, student.email], types: TEXT
         end
       end
 
@@ -924,7 +951,8 @@ class ReportGenerator
         table_header(sheet, %w[Name Email])
 
         lab_sessions.each do |lab_session|
-          sheet.add_row [lab_session.user.name, lab_session.user.email]
+          sheet.add_row [lab_session.user.name, lab_session.user.email],
+                        types: TEXT
         end
       end
 
@@ -1027,7 +1055,8 @@ class ReportGenerator
                           kit.user.name,
                           kit.created_at,
                           status
-                        ]
+                        ],
+                        types: [TEXT, TEXT]
         end
       end
 
@@ -1155,14 +1184,15 @@ class ReportGenerator
     worksheet.add_row # spacing
   end
 
-  def self.push_hash(sheet, hash)
-    hash.each { |key, value| sheet.add_row [key, value] }
+  # A Year of Study line: a numbered year stays a number, any other value
+  # (Alumni, N/A, Unknown or other text) is a text label.
+  def self.year_row_types(year)
+    year.is_a?(Integer) ? nil : LABEL_ROW
   end
+  private_class_method :year_row_types
 
-  # The cell types for a row under these headers: the student number column
-  # is text, so leading zeros are kept; the others are inferred from the values.
-  def self.student_id_as_text(columns)
-    columns.map { |column| :string if column == STUDENT_NUMBER }
+  def self.push_hash(sheet, hash)
+    hash.each { |key, value| sheet.add_row [key, value], types: LABEL_ROW }
   end
 
   # The calendar months or weeks (unit :month or :week) that overlap the

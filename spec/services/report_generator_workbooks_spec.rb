@@ -325,11 +325,11 @@ RSpec.describe ReportGenerator do
       expect(sheets.keys).to eq(%w[Demographics Faculties Report])
     end
 
-    it "Demographics: total, year of study (a blank year counts as 0), level and gender" do
+    it "Demographics: total, year of study (a missing year as Unknown), level and gender" do
       rows = sheets["Demographics"]
       expect(rows[0..9]).to eq(
         [["New Users Breakdown"], ["From", "2026-03-01"], ["To", "2026-03-31"], [],
-         ["Total new users", 4], [], ["Year of Study"], [0, 1], [2020, 3], []]
+         ["Total new users", 4], [], ["Year of Study"], [2020, 3], ["Unknown", 1], []]
       )
       expect(rows[10]).to eq(["Level of Study"])
       expect(rows[11..12]).to contain_exactly(["Undergrad", 3], ["Community member", 1])
@@ -415,6 +415,17 @@ RSpec.describe ReportGenerator do
       student("Zed Zero", student_id: "012345678")
       rows = grid(described_class.generate_new_users_report(from, to))["Report"]
       expect(rows.find { |r| r.first == "Zed Zero" }.last).to eq("012345678")
+    end
+
+    it "Demographics: each year of study keeps its own count, in year order" do
+      { "Alumni" => 2, "N/A" => 1, "" => 1, "10" => 1, "2" => 2, "1" => 1 }.each do |year, count|
+        count.times { student("Year #{year}").update_columns(year_of_study: year) }
+      end
+      rows = grid(described_class.generate_new_users_report(from, to))["Demographics"]
+      years = blocks(rows)[2]
+      expect(years).to eq(
+        [["Year of Study"], [1, 1], [2, 2], [10, 1], [2020, 3], ["Alumni", 2], ["N/A", 1], ["Unknown", 2]]
+      )
     end
 
     it "shows a missing identity as None on Demographics and as stored on Report" do
@@ -708,11 +719,6 @@ RSpec.describe ReportGenerator do
   end
 
   describe "helpers no action calls" do
-    it "student_id_as_text types only the student number column as text, wherever it is" do
-      expect(described_class.student_id_as_text(["Name", "Student number", "Student ID"])).to eq([nil, :string, nil])
-      expect(described_class.student_id_as_text(%w[Name Date])).to eq([nil, nil])
-    end
-
     it "title writes a bold underlined row; table_header writes a bold row" do
       package = Axlsx::Package.new
       package.workbook.add_worksheet(name: "S") do |sheet|
