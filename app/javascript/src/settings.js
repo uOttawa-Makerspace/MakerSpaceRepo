@@ -1,12 +1,8 @@
 import TomSelect from "tom-select";
 import { tomSelectOptions } from "./page_locale.js";
+import { bindOnce } from "./bind_once.js";
 
 let programTomSelect = null;
-
-// The faculty selects already given their change listener: a second load over
-// the same page adds none. A page Turbo restores from its cache is a copy made
-// of new elements, which are bound again.
-const filteredFaculties = new WeakSet();
 
 function initializeProgramSelect() {
   const programSelect = document.getElementById("user_program");
@@ -27,17 +23,18 @@ function initializeProgramSelect() {
     }),
   );
 
-  const facultySelect = document.getElementById("user_faculty");
-  if (facultySelect && !filteredFaculties.has(facultySelect)) {
-    filteredFaculties.add(facultySelect);
-    facultySelect.addEventListener("change", () =>
-      showProgramsOf(facultySelect.value, programSelect, optgroups),
-    );
-  }
+  // The listener keeps the full program list of the first load of the page.
+  bindOnce(document.getElementById("user_faculty"), (facultySelect) =>
+    facultySelect.addEventListener(
+      "change",
+      showProgramsOf.bind(null, facultySelect, programSelect, optgroups),
+    ),
+  );
 }
 
 // Leaves in the program select only the programs of the chosen faculty.
-function showProgramsOf(faculty, programSelect, optgroups) {
+function showProgramsOf(facultySelect, programSelect, optgroups) {
+  const faculty = facultySelect.value;
   programSelect.querySelectorAll("optgroup").forEach((e) => e.remove());
 
   optgroups.forEach((option) => {

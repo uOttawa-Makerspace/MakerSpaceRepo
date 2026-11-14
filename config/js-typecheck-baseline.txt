@@ -274,7 +274,6 @@
 16	app/javascript/src/manage_unavailabilities.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
 1	app/javascript/src/photo_gallery.js	TS2339	Property 'src' does not exist on type 'HTMLElement'.
 1	app/javascript/src/photo_gallery.js	TS2345	Argument of type '(itemData: SlideData, index: number) => { src: any; width: string; height: string; }' is not assignable to parameter of type '(itemData: SlideData, index: number) => SlideData'.
-1	app/javascript/src/settings.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
 1	app/javascript/src/settings.js	TS2345	Argument of type 'HTMLElement' is not assignable to parameter of type 'string | TomInput'.
 4	app/javascript/src/settings.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 1	app/javascript/src/sorting.js	TS2339	Property 'findSession' does not exist on type 'Window & typeof globalThis'.

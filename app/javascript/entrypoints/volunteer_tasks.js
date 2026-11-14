@@ -1,20 +1,10 @@
 // app/javascript/entrypoints/volunteer_tasks.js
 import { newTomSelect } from "../src/tom_select.js";
+import { bindOnce } from "../src/bind_once.js";
 
 function initTomSelect(selector, options) {
   const el = document.querySelector(selector);
   if (el && !el.tomselect) newTomSelect(el, options);
-}
-
-// The elements this script has already bound: a second load over the same
-// page binds nothing twice. A page Turbo restores from its cache is a copy made
-// of new elements, which are bound again.
-const boundElements = new WeakSet();
-
-function bindOnce(el, bind) {
-  if (boundElements.has(el)) return;
-  boundElements.add(el);
-  bind(el);
 }
 
 function bindImageRemoval(el) {
@@ -165,5 +155,5 @@ document.addEventListener("turbo:load", function () {
   // 3. Volunteer Tasks Index Filter & Search Engine
   // ------------------------------------------------------------------------
   const taskIndexContainer = document.getElementById("volunteerTasksIndex");
-  if (taskIndexContainer) bindOnce(taskIndexContainer, initTaskIndexFilters);
+  bindOnce(taskIndexContainer, initTaskIndexFilters);
 });
