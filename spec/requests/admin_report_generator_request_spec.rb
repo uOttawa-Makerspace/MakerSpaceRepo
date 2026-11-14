@@ -290,16 +290,14 @@ RSpec.describe "Admin report generator", type: :request do
       response.body.scan(/Chartkick\["PieChart"\]\("chart-\d+", (.*?), \{\}\)/).flatten.map { |data| JSON.parse(data) }
     end
 
-    it "new users: counts each user under their own faculty" do
+    it "new users: counts a user under the uOEng faculty when there is one, otherwise under their own" do
       get admin_report_generator_index_path, params: range.merge(report_type: "new_users")
-      expect(pie_charts.last).to eq([["Arts", 1], ["Engineering", 1], ["Science", 1]])
+      expect(pie_charts.last).to eq([["Engineering", 2], ["Science", 1]])
     end
 
-    it "visitors: counts each visitor and visit under the visitor's own faculty" do
+    it "visitors: counts each visitor and visit under the uOEng faculty when there is one, otherwise the visitor's own" do
       get admin_report_generator_index_path, params: range.merge(report_type: "visitors")
-      expect(pie_charts.last(2)).to eq(
-        [[["Arts", 1], ["Engineering", 1], ["Science", 1]], [["Arts", 2], ["Engineering", 1], ["Science", 1]]]
-      )
+      expect(pie_charts.last(2)).to eq([[["Engineering", 2], ["Science", 1]], [["Engineering", 3], ["Science", 1]]])
     end
   end
 

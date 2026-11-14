@@ -350,14 +350,13 @@ class Admin::ReportGeneratorController < AdminAreaController
   end
 
   def visitors
-    @lab_sessions =
-      (
-        if @date_specified
-          LabSession.where(created_at: @report_window)
-        else
-          LabSession.all
-        end
-      ).includes(:user)
+    visits =
+      if @date_specified
+        LabSession.where(created_at: @report_window)
+      else
+        LabSession.all
+      end
+    @lab_sessions = visits.includes(:user)
 
     @space_total_count = {}
     @space_unique_count = {}
@@ -380,52 +379,29 @@ class Admin::ReportGeneratorController < AdminAreaController
     @identity_total_count = {}
     @identity_unique_count = {}
 
-    @faculty_total_count = {}
-    @faculty_unique_count = {}
-
     @lab_sessions.each do |lab_session|
-      if lab_session.user.present?
-        faculty = lab_session.user.faculty
-        identity = lab_session.user.identity
-      else
-        faculty = 'unknown'
-        identity = 'unknown'
-      end
+      identity = lab_session.user.present? ? lab_session.user.identity : 'unknown'
 
       if !@identity_total_count.has_key?(identity)
         @identity_total_count[identity] = 1
       else
         @identity_total_count[identity] += 1
       end
+    end
 
-      if !@faculty_total_count.has_key?(faculty)
-        @faculty_total_count[faculty] = 1
+    visitor_users = User.including_deleted.where(id: @lab_sessions.pluck(:user_id).uniq)
+    visitor_users.each do |user|
+      identity = user.identity
+
+      if !@identity_unique_count.has_key?(identity)
+        @identity_unique_count[identity] = 1
       else
-        @faculty_total_count[faculty] += 1
+        @identity_unique_count[identity] += 1
       end
     end
 
-    all_users = @lab_sessions.pluck(:user_id).uniq
-    User
-      .including_deleted
-      .where(id: all_users)
-      .each do |user|
-        next if user.nil?
-        faculty = user.faculty
-        identity = user.identity
-
-        if !@identity_unique_count.has_key?(identity)
-          @identity_unique_count[identity] = 1
-        else
-          @identity_unique_count[identity] += 1
-        end
-
-        if !@faculty_unique_count.has_key?(faculty)
-          @faculty_unique_count[faculty] = 1
-        else
-          @faculty_unique_count[faculty] += 1
-        end
-      end
+    @faculty_total_count = visits.count_by_shown_faculty
+    @faculty_unique_count = visitor_users.count_by_shown_faculty
     @identity_total_count = @identity_total_count.transform_keys(&:humanize)
     @identity_unique_count = @identity_unique_count.transform_keys(&:humanize)
   end

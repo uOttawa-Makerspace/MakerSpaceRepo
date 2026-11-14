@@ -24,6 +24,14 @@ class LabSession < ApplicationRecord
   # A user's newest session is the one created last (highest id), whichever space it was in.
   scope :newest_first, -> { order(id: :desc) }
 
+  # { the visitor's shown faculty (see User#shown_faculty) => number of visits }, in one query. A
+  # visit with no user counts as unknown.
+  def self.count_by_shown_faculty
+    left_joins(user: :uoeng_profile)
+      .group(Arel.sql("CASE WHEN users.id IS NULL THEN 'unknown' ELSE #{User.shown_faculty_sql} END"))
+      .count
+  end
+
   def self.to_csv(attributes)
     CSV.generate { |csv| attributes.each { |row| csv << row } }
   end

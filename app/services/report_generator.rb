@@ -19,9 +19,10 @@ class ReportGenerator
       LabSession
         .where(created_at: start_date..end_date)
         .joins(:user, :space)
+        .left_joins(user: :uoeng_profile)
         .select(
           :"users.id",
-          :"users.faculty",
+          User.shown_faculty_sql.as("faculty"),
           :"users.gender",
           :"users.identity",
           :"users.program",
@@ -499,8 +500,7 @@ class ReportGenerator
         push_hash(
           sheet,
           users
-            .group(:faculty)
-            .count
+            .count_by_shown_faculty
             .each_with_object(Hash.new(0)) do |(faculty, count), counts|
               counts[User.faculty_label(faculty)] += count
             end
@@ -620,14 +620,14 @@ class ReportGenerator
         table_header(sheet, columns)
 
         types = student_id_as_text(columns)
-        users.each do |user|
+        users.with_shown_faculty.each do |user|
           sheet.add_row [
                           user.name,
                           user.username,
                           user.email,
                           user.gender,
                           User.identity_label(user.identity),
-                          user.faculty,
+                          user.shown_faculty,
                           user.year_of_study,
                           user.student_id,
                           user.created_at.in_time_zone.strftime("%Y-%m-%d %H:%M")

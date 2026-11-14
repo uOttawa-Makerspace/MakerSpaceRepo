@@ -146,17 +146,19 @@ RSpec.describe ReportGenerator do
         [vera, vera, uma].each { |user| create(:lab_session, space: beta, user: user, created_at: march_10) }
       end
 
-      it "counts each visitor under their own faculty" do
+      it "counts a visitor under the uOEng faculty when there is one, otherwise under their own, with the same totals" do
         b = blocks(sheets["Report"])
         expect(sheets["Report"][5..6]).to eq([["CEED-Wide unique visitors", 6], ["CEED-Wide total visitors", 8]])
         expect(b[4].drop(1)).to contain_exactly(
-          ["None", 1, nil, 1], ["Engineering", 1, nil, 2], ["Science", 2, nil, 2], ["Arts", 2, nil, 3]
+          ["None", 1, nil, 1], ["Engineering", 2, nil, 4], ["Science", 2, nil, 2], ["Arts", 1, nil, 1]
         )
         expect(b[5].drop(1)).to contain_exactly(
-          ["Community member", 1, nil, 1, nil, "None"], ["Undergrad", 1, nil, 2, nil, "Engineering"],
-          ["Undergrad", 2, nil, 2, nil, "Science"], ["Undergrad", 2, nil, 3, nil, "Arts"]
+          ["Community member", 1, nil, 1, nil, "None"], ["Undergrad", 2, nil, 4, nil, "Engineering"],
+          ["Undergrad", 2, nil, 2, nil, "Science"], ["Undergrad", 1, nil, 1, nil, "Arts"]
         )
-        expect(blocks(sheets["Beta"])[4].drop(1)).to contain_exactly(["Science", 2, nil, 2], ["Arts", 2, nil, 3])
+        expect(blocks(sheets["Beta"])[4].drop(1)).to contain_exactly(
+          ["Science", 2, nil, 2], ["Arts", 1, nil, 1], ["Engineering", 1, nil, 2]
+        )
       end
     end
 
@@ -381,21 +383,21 @@ RSpec.describe ReportGenerator do
 
       let(:book) { grid(described_class.generate_new_users_report(from, to)) }
 
-      it "Faculties: counts each user under their own faculty, and the rows still add up to the total" do
+      it "Faculties: counts a user under the uOEng faculty when there is one, otherwise under their own, with the same total" do
         faculty = blocks(book["Faculties"])[1]
         expect(faculty[2..]).to contain_exactly(
-          ["Arts", 2], ["Science", 2], ["None", 1], ["Engineering", 1], ["Total", 6]
+          ["Arts", 1], ["Science", 2], ["None", 1], ["Engineering", 2], ["Total", 6]
         )
         expect(book["Demographics"][4]).to eq(["Total new users", 6])
       end
 
-      it "Report: the Faculty column shows each user's own faculty, under the same headers" do
+      it "Report: the Faculty column shows the uOEng faculty when there is one, otherwise the user's own, under the same headers" do
         rows = book["Report"]
         header = rows.index(["Name", "Username", "Email", "Gender", "Identity", "Faculty", "Year of Study", "Student ID", "Joined on"])
         body = rows[(header + 1)..]
         expect(body.size).to eq(6)
         expect(body.to_h { |r| [r[1], r[5]] }).to eq(
-          "gina" => "Génie", "cam" => nil, "mo" => "Arts", "phil" => "Science", "vera" => "Arts", "uma" => "Science"
+          "gina" => "Génie", "cam" => nil, "mo" => "Arts", "phil" => "Science", "vera" => "Engineering", "uma" => "Science"
         )
       end
     end

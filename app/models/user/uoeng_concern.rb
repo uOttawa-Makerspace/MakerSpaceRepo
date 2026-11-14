@@ -17,6 +17,25 @@ module User::UoengConcern
   # the account, so it says nothing about this user.
   NO_ANSWER = %i[unknown unavailable mismatch].freeze
 
+  class_methods do
+    # #shown_faculty in SQL, for a query that left-joins users to uoeng_profiles: the uOEng faculty
+    # when there is one, otherwise the user's own.
+    def shown_faculty_sql
+      Arel.sql("COALESCE(NULLIF(uoeng_profiles.faculty, ''), users.faculty)")
+    end
+
+    # The users with their shown faculty read in the same query, so #shown_faculty needs no
+    # further one.
+    def with_shown_faculty
+      left_joins(:uoeng_profile).select(arel_table[Arel.star], shown_faculty_sql.as("shown_faculty"))
+    end
+
+    # { shown faculty => number of users }, in one query.
+    def count_by_shown_faculty
+      left_joins(:uoeng_profile).group(shown_faculty_sql).count
+    end
+  end
+
   included do
     has_one :uoeng_profile, dependent: :destroy
 
@@ -60,8 +79,10 @@ module User::UoengConcern
     end
 
     # The faculty to show: the one uOEng states, when it maps to a faculty the app knows, otherwise
-    # the one on the profile.
+    # the one on the profile. A user loaded through .with_shown_faculty already carries it.
     def shown_faculty
+      return self[:shown_faculty] if has_attribute?(:shown_faculty)
+
       uoeng_profile&.faculty.presence || faculty
     end
 
