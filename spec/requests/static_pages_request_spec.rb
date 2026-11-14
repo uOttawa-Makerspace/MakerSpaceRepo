@@ -509,9 +509,7 @@ RSpec.describe "Static pages", type: :request do
       expect(response.body).not_to include(I18n.t("home.volunteer_program.no_shifts_scheduled"))
     end
 
-    it "shows each training's track progress against every module of that training" do
-      # The completed count reads the stored status label, while a track's status reads back as the
-      # enum key, so the count shows 0 even for a completed track.
+    it "shows each training's completed tracks against every module of that training" do
       user = sign_in_as(:regular)
       user.programs.create!(program_type: Program::DEV_PROGRAM)
       training = create(:training, name_en: "Laser Cutting Basics")
@@ -524,8 +522,8 @@ RSpec.describe "Static pages", type: :request do
       get root_path
 
       expect(controller.instance_variable_get(:@user_tracks))
-        .to contain_exactly(["Laser Cutting Basics", "0/3"], ["Soldering Basics", "0/1"])
-      expect(response.body).to include("Laser Cutting Basics", "0/3")
+        .to contain_exactly(["Laser Cutting Basics", "1/3"], ["Soldering Basics", "0/1"])
+      expect(response.body).to include("Laser Cutting Basics", "1/3")
       expect(response.body).not_to include(I18n.t("home.development_program.no_devs"))
     end
 

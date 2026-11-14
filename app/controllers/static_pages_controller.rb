@@ -144,12 +144,7 @@ class StaticPagesController < SessionsController
       .learning_module_tracks
       .includes(learning_module: :training)
       .group_by { |x| x.learning_module.training.name_en }
-      .transform_values { |x| x.map(&:status).tally }
-      .map { |key, value| [key, track_progress(value, total_tracks[key])] }
-  end
-
-  def track_progress(status_counts, total)
-    "#{status_counts['Completed'] || 0}/#{total || 0}"
+      .map { |key, tracks| [key, "#{tracks.count(&:completed?)}/#{total_tracks[key] || 0}"] }
   end
 
   # Cached total tracks count
