@@ -65,7 +65,7 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
         select "24x24", from: "locker_size_id", visible: :all
         find("input[type=submit]").click
       end
-      expect(page).to have_text("Some lockers were not created (the number may already exist): 1, 2, 3, and 7")
+      expect_flash("Some lockers were not created (the number may already exist): 1, 2, 3, and 7")
       expect(Locker.pluck(:specifier)).to match_array(%w[1 2 3 4 5 6 7 8 9])
       expect(Locker.find_by(specifier: "5").locker_size).to eq(size_large)
       expect(Locker.find_by(specifier: "1").locker_size).to eq(size_small)
@@ -78,7 +78,7 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
         select "24x24", from: "locker_size_id", visible: :all
         find("input[type=submit]").click
       end
-      expect(page).to have_text("Lockers created")
+      expect_flash("Lockers created")
       expect(Locker.where(specifier: "50").count).to eq(1)
     end
 
@@ -88,7 +88,7 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
         select "24x24", from: "locker_size_id", visible: :all
         find("input[type=submit]").click
       end
-      expect(page).to have_text("Lockers created")
+      expect_flash("Lockers created")
       expect(Locker.where(specifier: %w[9 10]).count).to eq(2)
     end
   end
@@ -101,7 +101,7 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
         select "24x24", from: "locker_locker_size_id", visible: :all
         click_button "Create Locker"
       end
-      expect(page).to have_text("Created locker #55")
+      expect_flash("Created locker #55")
       created = Locker.find_by(specifier: "55")
       expect(created.locker_size).to eq(size_large)
       expect(page).to have_current_path(locker_path(created))
@@ -156,7 +156,7 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
         select "24x24", from: "locker_locker_size_id", visible: :all
         click_button "Update Lockers"
       end
-      expect(page).to have_text("Lockers updated")
+      expect_flash("Lockers updated")
       expect([l1, l3].map { |l| l.reload.locker_size }).to all(eq(size_large))
       expect(l2.reload.locker_size).to eq(size_small)
     end
@@ -165,7 +165,7 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
       select_rows(l2)
       open_modal "Bulk edit", "#lockerBulkEditModal"
       accept_confirm { click_button "Delete Selected" }
-      expect(page).to have_text("Selected lockers deleted")
+      expect_flash("Selected lockers deleted")
       expect(Locker.exists?(l2.id)).to be(false)
       expect(Locker.exists?(l1.id)).to be(true)
     end

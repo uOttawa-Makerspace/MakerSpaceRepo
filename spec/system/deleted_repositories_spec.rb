@@ -16,7 +16,7 @@ RSpec.describe "Deleted repositories", type: :system do
 
   it "restores the repository when the confirmation is accepted" do
     accept_confirm("Restore this repository?") { click_button "Restore" }
-    expect(page).to have_content("Repository restored.")
+    expect_flash("Repository restored.")
     expect(Repository.unscoped.find(repo.id).deleted).to be(false)
   end
 end

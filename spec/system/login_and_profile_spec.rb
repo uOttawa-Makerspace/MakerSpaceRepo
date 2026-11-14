@@ -27,7 +27,7 @@ RSpec.describe "Login and profile", type: :system do
     fill_in "user_name", with: "Pat Renamed"
     click_button "Save Changes"
 
-    expect(page).to have_text("Profile updated successfully.")
+    expect_flash("Profile updated successfully.")
     expect(page).to have_current_path(settings_profile_path)
     expect(page).to have_css("input#user_name[value='Pat Renamed']")
     expect(user.reload.name).to eq("Pat Renamed")
@@ -41,7 +41,7 @@ RSpec.describe "Login and profile", type: :system do
 
     # the PATCH redirects back to this same path, so the path alone proves
     # nothing: wait for the failure flash the redirect renders
-    expect(page).to have_text("Could not save changes.")
+    expect_flash("Could not save changes.")
     expect(page).to have_current_path(settings_profile_path)
     expect(user.reload.name).to eq("Pat Example")
   end
@@ -55,7 +55,7 @@ RSpec.describe "Login and profile", type: :system do
     fill_in "confirm_new_email", with: "pat.new@example.com"
     fill_in "current_password", with: "asa32A353#"
     click_button "Update Email"
-    expect(page).to have_text("A confirmation email has been sent to the new email")
+    expect_flash("A confirmation email has been sent to the new email")
 
     mail = ActionMailer::Base.deliveries.find { |m| m.to == ["pat.new@example.com"] }
     token = CGI.unescape(mail.body.to_s[/confirm_edited_email\?token=([^"'&\s<]+)/, 1])
@@ -64,7 +64,7 @@ RSpec.describe "Login and profile", type: :system do
     expect(user.reload.email).not_to eq("pat.new@example.com")
 
     click_button "Confirm email change"
-    expect(page).to have_text("The email has been updated to pat.new@example.com !")
+    expect_flash("The email has been updated to pat.new@example.com !")
     expect(user.reload.email).to eq("pat.new@example.com")
   end
 
@@ -80,7 +80,7 @@ RSpec.describe "Login and profile", type: :system do
     fill_in "username_email", with: user.username
     fill_in "password", with: "wrong-password"
     find("input[type=submit]").click
-    expect(page).to have_text("Incorrect username, email or password.")
+    expect_flash("Incorrect username, email or password.")
     expect(page).to have_css("input#username_email")
   end
 

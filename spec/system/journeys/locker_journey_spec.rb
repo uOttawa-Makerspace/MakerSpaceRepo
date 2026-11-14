@@ -56,7 +56,7 @@ RSpec.describe "Journey: locker rental", type: :system do
         select "JA-1", from: "locker_rental_locker_id_checkout"
         accept_confirm { click_button "Send to Checkout" }
       end
-      expect(page).to have_text("Locker rental updated")
+      expect_flash("Locker rental updated")
       expect(page).to have_text("Awaiting Payment").or have_text("Await payment").or have_text(I18n.t("lockers.state.await_payment"))
     end
 
@@ -107,7 +107,7 @@ RSpec.describe "Journey: locker rental", type: :system do
         select "JB-2", from: "locker_rental_locker_id_assign"
         accept_confirm { click_button "Move Locker" }
       end
-      expect(page).to have_text("Locker rental updated")
+      expect_flash("Locker rental updated")
     end
     expect(rental.reload.locker).to eq(locker_b)
     expect(rental.state).to eq("active")
@@ -133,7 +133,7 @@ RSpec.describe "Journey: locker rental", type: :system do
         expect(page).to have_unchecked_field("Indefinite")
         accept_confirm { click_button "Assign Now" }
       end
-      expect(page).to have_text("Locker rental updated")
+      expect_flash("Locker rental updated")
       expect(page).to have_text("Move Locker")
     end
     rental.reload
@@ -156,7 +156,7 @@ RSpec.describe "Journey: locker rental", type: :system do
         select "JB-2", from: "locker_rental_locker_id_assign"
         accept_confirm { click_button "Move Locker" }
       end
-      expect(page).to have_text("Locker rental updated")
+      expect_flash("Locker rental updated")
     end
     expect(rental.reload.locker).to eq(locker_b)
     expect(mails_to(user.email).map(&:subject)).to eq(["Your locker rental for Locker JB-2 has been modified"])
@@ -173,7 +173,7 @@ RSpec.describe "Journey: locker rental", type: :system do
       select "#{user.name} (#{user.username})", from: "locker_rental_rented_by_id"
       select "#JB-2", from: "locker_rental_locker_id", match: :prefer_exact
       click_button "Assign Locker"
-      expect(page).to have_text("Locker assigned")
+      expect_flash("Locker assigned")
     end
     rental = LockerRental.order(:id).last
     expect(rental.rented_by).to eq(user)
@@ -196,7 +196,7 @@ RSpec.describe "Journey: locker rental", type: :system do
         check "Indefinite"
         accept_confirm { click_button "Assign Now" }
       end
-      expect(page).to have_text("Locker rental updated")
+      expect_flash("Locker rental updated")
     end
     rental.reload
     expect(rental.state).to eq("active")

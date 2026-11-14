@@ -47,7 +47,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       tom_select "Wood Shop (WS-2)", from: "space-select", search: "Wood"
       select "Inventory", from: "status-select"
       click_button "Create Key"
-      expect(page).to have_text("Successfully created key.")
+      expect_flash("Successfully created key.")
       expect(Key.find_by(number: 12)).to have_attributes(space_id: other_space.id, key_type: "regular", status: "inventory")
     end
 
@@ -57,7 +57,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       fill_in "custom-keycode", with: "CARD-77"
       select "Inventory", from: "status-select"
       click_button "Create Key"
-      expect(page).to have_text("Successfully created key.")
+      expect_flash("Successfully created key.")
       expect(Key.find_by(number: 77)).to have_attributes(key_type: "keycard", custom_keycode: "CARD-77")
     end
 
@@ -95,7 +95,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       expect(page).to have_css("#space-select.tomselected", visible: :all)
       select "Lost", from: "status-select"
       click_button "Update Key"
-      expect(page).to have_text("The key was successfully updated.")
+      expect_flash("The key was successfully updated.")
       expect(regular.reload).to have_attributes(status: "lost", space_id: space.id, number: "5")
     end
   end
@@ -115,7 +115,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       tom_select "Hank Holder", from: "key-request-select", search: "Hank"
       fill_in "deposit_amount", with: "25"
       click_button "Assign Key"
-      expect(page).to have_text("Successfully assigned key")
+      expect_flash("Successfully assigned key")
       expect(key.reload).to have_attributes(status: "held", user_id: holder.id, supervisor_id: admin.id)
       expect(KeyTransaction.find_by(key_id: key.id).deposit_amount).to eq(25)
     end
@@ -149,7 +149,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       find(".flatpickr-calendar.open .flatpickr-day.today").click
       expect(page).to have_field("deposit-return-date", with: Time.zone.today.to_s)
       click_button "Revoke Key"
-      expect(page).to have_text("Successfully revoked key")
+      expect_flash("Successfully revoked key")
       expect(key.reload).to have_attributes(status: "inventory", user_id: nil)
       expect(deposit.reload.deposit_return_date).to eq(Time.zone.today)
       expect(deposit.return_date).to eq(Time.zone.today)
@@ -163,7 +163,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       click_button "deposit-return-date-clear"
       expect(page).to have_field("deposit-return-date", with: "")
       click_button "Revoke Key"
-      expect(page).to have_text("Successfully revoked key")
+      expect_flash("Successfully revoked key")
       expect(key.reload.status).to eq("inventory")
       expect(deposit.reload.deposit_return_date).to be_nil
     end

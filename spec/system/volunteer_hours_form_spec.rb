@@ -20,7 +20,7 @@ RSpec.describe "Volunteer hours form", type: :system, skip_bullet: true do
     fill_in "minutes", with: "30"
     click_button "send"
 
-    expect(page).to have_text("You've successfully sent your volunteer working hours")
+    expect_flash("You've successfully sent your volunteer working hours")
     expect(VolunteerHour.where(user: volunteer).pluck(:total_time)).to eq([2.5])
   end
 
@@ -31,7 +31,7 @@ RSpec.describe "Volunteer hours form", type: :system, skip_bullet: true do
     fill_in "minutes", with: "15"
     click_button "Update Volunteer Hour"
 
-    expect(page).to have_text("Volunteer hour updated")
+    expect_flash("Volunteer hour updated")
     expect(hour.reload.total_time).to eq(3.25)
   end
 
@@ -40,7 +40,7 @@ RSpec.describe "Volunteer hours form", type: :system, skip_bullet: true do
     log_in_as(volunteer, to: edit_volunteer_hour_path(hour))
     click_button "Update Volunteer Hour"
 
-    expect(page).to have_text("Volunteer hour updated")
+    expect_flash("Volunteer hour updated")
     expect(hour.reload.total_time).to eq(0.33)
   end
 
@@ -50,7 +50,7 @@ RSpec.describe "Volunteer hours form", type: :system, skip_bullet: true do
     expect(find_field("minutes").value).to eq("19")
     click_button "Update Volunteer Hour"
 
-    expect(page).to have_text("Volunteer hour updated")
+    expect_flash("Volunteer hour updated")
     expect(hour.reload.total_time).to eq(0.32)
   end
 
@@ -60,7 +60,7 @@ RSpec.describe "Volunteer hours form", type: :system, skip_bullet: true do
     fill_in "minutes", with: "59"
     click_button "Update Volunteer Hour"
 
-    expect(page).to have_text("Volunteer hour updated")
+    expect_flash("Volunteer hour updated")
     expect(hour.reload.total_time).to eq(0.98)
   end
 end

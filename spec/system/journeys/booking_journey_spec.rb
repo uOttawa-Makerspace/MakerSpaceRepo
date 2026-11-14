@@ -77,7 +77,7 @@ RSpec.describe "Journey: space booking", type: :system do
       within(:xpath, "//tr[.//strong[contains(.,'Robot team')] or contains(.,'Robot team')][.//button[contains(.,'Approve')]]") do
         click_button "Approve"
       end
-      expect(page).to have_text("Booking for Journey Room approved successfully.")
+      expect_flash("Booking for Journey Room approved successfully.")
     end
 
     booking.reload
@@ -120,7 +120,7 @@ RSpec.describe "Journey: space booking", type: :system do
       find("#booking-admin-tab-btn").click
       expect(page).to have_css("#pendingBody", text: "Club night")
       click_button title: "Approve All"
-      expect(page).to have_text("Bookings approved successfully.")
+      expect_flash("Bookings approved successfully.")
     end
     bookings.each do |b|
       expect(b.reload.booking_status).to eq(@approved_status)
