@@ -25,6 +25,7 @@ RSpec.describe AddActiveToUniPrograms do
 
   def migrate(direction = :up)
     ActiveRecord::Migration.suppress_messages { described_class.new.migrate(direction) }
+    PooledStatements.reset
   end
 
   def insert(department: "Computing", faculty: "Engineering")
