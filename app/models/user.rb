@@ -401,12 +401,13 @@ class User < ApplicationRecord
   end
 
   YEAR_OF_STUDY_TEXT_ORDER = ['Alumni', 'N/A'].freeze
-  BLANK_YEAR_OF_STUDY = 'Blank'
+  UNKNOWN_YEAR_OF_STUDY = 'Unknown'
 
   # Counts by year of study ({ year => count }, as a group count or a tally
   # gives them), each year with its own count, in year order: the numbered
   # years (as numbers) from the first up, then Alumni, then N/A, then any
-  # other text, then the users with no year (nil and empty together) as Blank.
+  # other text, then the users with no year (nil and empty together) as
+  # Unknown; a stored Unknown is counted in that row too.
   def self.years_of_study_in_order(counts)
     counts
       .each_with_object(Hash.new(0)) { |(year, count), totals| totals[year_of_study_key(year)] += count }
@@ -415,7 +416,7 @@ class User < ApplicationRecord
 
   def self.year_of_study_key(year)
     text = year.to_s.strip
-    return BLANK_YEAR_OF_STUDY if text.empty?
+    return UNKNOWN_YEAR_OF_STUDY if text.empty?
 
     text.match?(/\A\d+\z/) ? text.to_i : text
   end
@@ -425,7 +426,7 @@ class User < ApplicationRecord
     case year
     when Integer then [0, year]
     when *YEAR_OF_STUDY_TEXT_ORDER then [1, YEAR_OF_STUDY_TEXT_ORDER.index(year)]
-    when BLANK_YEAR_OF_STUDY then [3, 0]
+    when UNKNOWN_YEAR_OF_STUDY then [3, 0]
     else [2, year]
     end
   end

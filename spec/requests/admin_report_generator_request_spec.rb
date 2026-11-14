@@ -100,7 +100,7 @@ RSpec.describe "Admin report generator", type: :request do
       end
       get admin_report_generator_index_path, params: range.merge(report_type: "new_users")
       # the visitor from the shared records is in year 2020
-      expect(response.body).to include('[[2,2],[10,1],[2020,1],["Alumni",1],["N/A",1],["Blank",1]]')
+      expect(response.body).to include('[[2,2],[10,1],[2020,1],["Alumni",1],["N/A",1],["Unknown",1]]')
     end
 
     context "with several records of each kind" do

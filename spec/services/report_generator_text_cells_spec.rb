@@ -55,6 +55,14 @@ RSpec.describe ReportGenerator do
     expect(report).to include(["Total new users", :string, false], [1, :float, false])
   end
 
+  it "new users: a year of study that is not a number is a text row label, a numbered one stays a number" do
+    person(year_of_study: "=1+1")
+    person(year_of_study: "1e3")
+    person(year_of_study: "3")
+    report = cells(described_class.generate_new_users_report(from, to))
+    expect(report).to include(["=1+1", :string, false], ["1e3", :string, false], [3, :float, false])
+  end
+
   it "visitors: the identity, gender, faculty and program" do
     user = person(identity: "-201", gender: "-202", faculty: "-203", program: "-204")
     create(:lab_session, user: user, space: create(:space, name: "Alpha"), created_at: march_10)

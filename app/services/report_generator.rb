@@ -26,8 +26,9 @@ class ReportGenerator
   ATTENDEE_TYPES = [TEXT, TEXT, TEXT, nil, TEXT, TEXT, TEXT, nil, TEXT].freeze
   # A trainings line: every column but the date and the attendee count.
   TRAINING_TYPES = [TEXT, TEXT, TEXT, TEXT, nil, TEXT].freeze
-  # An identity and faculty line of the visitors sheets.
-  IDENTITY_FACULTY_TYPES = [TEXT, nil, nil, nil, nil, TEXT].freeze
+  # A visitors line with a label in the first and the sixth cells (identity
+  # and faculty, or department and level), counts between them.
+  TWO_LABEL_TYPES = [TEXT, nil, nil, nil, nil, TEXT].freeze
   # region Date Range Reports
 
   # @param [DateTime] start_date
@@ -159,7 +160,7 @@ class ReportGenerator
                                   faculty
                                 ],
                                 style: toggle_grey ? grey_cell : merge_cell,
-                                types: IDENTITY_FACULTY_TYPES
+                                types: TWO_LABEL_TYPES
                 end
               end_cell = sheet.rows.last.cells.first.pos
               sheet.merge_cells Axlsx.cell_r(start_cell[0], start_cell[1] + 1) +
@@ -195,7 +196,8 @@ class ReportGenerator
                                   "",
                                   level
                                 ],
-                                style: toggle_grey ? grey_cell : merge_cell
+                                style: toggle_grey ? grey_cell : merge_cell,
+                                types: TWO_LABEL_TYPES
                 end
               end_cell = sheet.rows.last.cells.first.pos
               sheet.merge_cells Axlsx.cell_r(start_cell[0], start_cell[1] + 1) +
@@ -481,7 +483,9 @@ class ReportGenerator
         title(sheet, "Year of Study")
         User
           .years_of_study_in_order(users.group(:year_of_study).count)
-          .each { |key, value| sheet.add_row [key, value] }
+          .each do |year, count|
+            sheet.add_row [year, count], types: year_row_types(year)
+          end
 
         sheet.add_row
         title(sheet, "Level of Study")
@@ -1179,6 +1183,13 @@ class ReportGenerator
                            bottom_row.cells.last.reference
     worksheet.add_row # spacing
   end
+
+  # A Year of Study line: a numbered year stays a number, any other value
+  # (Alumni, N/A, Unknown or other text) is a text label.
+  def self.year_row_types(year)
+    year.is_a?(Integer) ? nil : LABEL_ROW
+  end
+  private_class_method :year_row_types
 
   def self.push_hash(sheet, hash)
     hash.each { |key, value| sheet.add_row [key, value], types: LABEL_ROW }

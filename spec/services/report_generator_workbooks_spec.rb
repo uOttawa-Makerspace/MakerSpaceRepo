@@ -294,11 +294,11 @@ RSpec.describe ReportGenerator do
       expect(sheets.keys).to eq(%w[Demographics Faculties Report])
     end
 
-    it "Demographics: total, year of study (a missing year as Blank), level and gender" do
+    it "Demographics: total, year of study (a missing year as Unknown), level and gender" do
       rows = sheets["Demographics"]
       expect(rows[0..9]).to eq(
         [["New Users Breakdown"], ["From", "2026-03-01"], ["To", "2026-03-31"], [],
-         ["Total new users", 4], [], ["Year of Study"], [2020, 3], ["Blank", 1], []]
+         ["Total new users", 4], [], ["Year of Study"], [2020, 3], ["Unknown", 1], []]
       )
       expect(rows[10]).to eq(["Level of Study"])
       expect(rows[11..12]).to contain_exactly(["Undergrad", 3], ["Community member", 1])
@@ -366,7 +366,7 @@ RSpec.describe ReportGenerator do
       rows = grid(described_class.generate_new_users_report(from, to))["Demographics"]
       years = blocks(rows)[2]
       expect(years).to eq(
-        [["Year of Study"], [1, 1], [2, 2], [10, 1], [2020, 3], ["Alumni", 2], ["N/A", 1], ["Blank", 2]]
+        [["Year of Study"], [1, 1], [2, 2], [10, 1], [2020, 3], ["Alumni", 2], ["N/A", 1], ["Unknown", 2]]
       )
     end
 
