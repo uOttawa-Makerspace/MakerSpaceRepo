@@ -27,44 +27,41 @@ export default class extends Controller {
       this.clearButtonTarget.classList.toggle("d-none", query.length === 0);
     }
 
-    // Filter Active Volunteers
-    let activeVisible = 0;
-    this.activeRowTargets.forEach((row) => {
-      const match =
-        query === "" || row.textContent.toLowerCase().includes(query);
-      row.classList.toggle("d-none", !match);
-      if (match) activeVisible++;
-    });
+    this.filterActive(query);
+    this.filterInactive(query);
+  }
+
+  filterActive(query) {
+    const visible = showMatchingRows(this.activeRowTargets, query);
 
     if (this.hasActiveCountTarget) {
       this.activeCountTarget.textContent =
-        query === "" ? this.totalActive : activeVisible;
+        query === "" ? this.totalActive : visible;
     }
 
     if (this.hasActiveEmptyTarget && this.hasActiveTableContainerTarget) {
-      const showEmpty = activeVisible === 0 && this.totalActive > 0;
-      this.activeEmptyTarget.classList.toggle("d-none", !showEmpty);
-      this.activeTableContainerTarget.classList.toggle("d-none", showEmpty);
+      toggleEmptyMessage(
+        this.activeEmptyTarget,
+        this.activeTableContainerTarget,
+        visible === 0 && this.totalActive > 0,
+      );
     }
+  }
 
-    // Filter Inactive Volunteers
-    let inactiveVisible = 0;
-    this.inactiveRowTargets.forEach((row) => {
-      const match =
-        query === "" || row.textContent.toLowerCase().includes(query);
-      row.classList.toggle("d-none", !match);
-      if (match) inactiveVisible++;
-    });
+  filterInactive(query) {
+    const visible = showMatchingRows(this.inactiveRowTargets, query);
 
     if (this.hasInactiveCountTarget) {
       this.inactiveCountTarget.textContent =
-        query === "" ? this.totalInactive : inactiveVisible;
+        query === "" ? this.totalInactive : visible;
     }
 
     if (this.hasInactiveEmptyTarget && this.hasInactiveTableContainerTarget) {
-      const showEmpty = inactiveVisible === 0 && this.totalInactive > 0;
-      this.inactiveEmptyTarget.classList.toggle("d-none", !showEmpty);
-      this.inactiveTableContainerTarget.classList.toggle("d-none", showEmpty);
+      toggleEmptyMessage(
+        this.inactiveEmptyTarget,
+        this.inactiveTableContainerTarget,
+        visible === 0 && this.totalInactive > 0,
+      );
     }
   }
 
@@ -73,4 +70,22 @@ export default class extends Controller {
     this.inputTarget.focus();
     this.filter();
   }
+}
+
+// Hides the rows whose text does not contain the query (every row matches an
+// empty query) and returns how many stay visible.
+function showMatchingRows(rows, query) {
+  let visible = 0;
+  rows.forEach((row) => {
+    const match = query === "" || row.textContent.toLowerCase().includes(query);
+    row.classList.toggle("d-none", !match);
+    if (match) visible++;
+  });
+  return visible;
+}
+
+// Shows the no-match message in place of the table, or the table in place of it.
+function toggleEmptyMessage(empty, tableContainer, showEmpty) {
+  empty.classList.toggle("d-none", !showEmpty);
+  tableContainer.classList.toggle("d-none", showEmpty);
 }

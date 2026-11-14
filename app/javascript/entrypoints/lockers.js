@@ -40,14 +40,8 @@ export function validateRange() {
   const modal = document.querySelector("#newRangeLockerModal");
   if (!modal) return;
 
-  const startInput = modal.querySelector("#newLockerRangeStart");
-  const endInput = modal.querySelector("#newLockerRangeEnd");
-  if (!startInput || !endInput) return;
-
-  const rangeStart = parseInt(startInput.value);
-  const rangeEnd = parseInt(endInput.value);
-
-  if (isNaN(rangeStart) || isNaN(rangeEnd) || rangeStart > rangeEnd) return;
+  const createSet = requestedRange(modal);
+  if (!createSet) return;
 
   // Find all lockers present already
   const currentLockers = new Set(
@@ -56,57 +50,60 @@ export function validateRange() {
     ),
   );
 
-  const createSet = new Set(
+  showLockerRanges(
+    "#newRangeLockersAlreadyPresent",
+    sortedSpecifiers(currentLockers.intersection(createSet)),
+  );
+  showLockerRanges(
+    "#newRangeLockersPossible",
+    sortedSpecifiers(createSet.difference(currentLockers)),
+  );
+}
+
+// The specifiers from the start field to the end field, or null while either
+// is not a number or the start is above the end.
+function requestedRange(modal) {
+  const startInput = modal.querySelector("#newLockerRangeStart");
+  const endInput = modal.querySelector("#newLockerRangeEnd");
+  if (!startInput || !endInput) return null;
+
+  const rangeStart = parseInt(startInput.value);
+  const rangeEnd = parseInt(endInput.value);
+
+  if (isNaN(rangeStart) || isNaN(rangeEnd) || rangeStart > rangeEnd)
+    return null;
+
+  return new Set(
     Array.from({ length: rangeEnd - rangeStart + 1 }, (_, i) =>
       (rangeStart + i).toString(),
     ),
   );
+}
 
-  const lockersAlreadyThere = [...currentLockers.intersection(createSet)].sort(
-    (a, b) => a.length - b.length || a.localeCompare(b),
-  );
-  const newRangeLockersAlreadyPresent = document.querySelector(
-    "#newRangeLockersAlreadyPresent",
-  );
-  if (newRangeLockersAlreadyPresent) {
-    newRangeLockersAlreadyPresent.hidden = lockersAlreadyThere.length === 0;
-    if (lockersAlreadyThere.length > 0) {
-      const ul = newRangeLockersAlreadyPresent.querySelector("ul");
-      ul.replaceChildren();
-      const ranges = findContiguous(lockersAlreadyThere);
-      for (const range of ranges) {
-        const li = document.createElement("li");
-        li.textContent =
-          range[0] === range[1]
-            ? range[0]
-            : `Range from ${range[0]} to ${range[1]}`;
-        ul.appendChild(li);
-      }
-    }
-  }
+function sortedSpecifiers(set) {
+  return [...set].sort((a, b) => a.length - b.length || a.localeCompare(b));
+}
 
-  const lockersPossible = [...createSet.difference(currentLockers)].sort(
-    (a, b) => a.length - b.length || a.localeCompare(b),
-  );
-  const newRangeLockersPossible = document.querySelector(
-    "#newRangeLockersPossible",
-  );
-  if (newRangeLockersPossible) {
-    newRangeLockersPossible.hidden = lockersPossible.length === 0;
-    if (lockersPossible.length > 0) {
-      const ul = newRangeLockersPossible.querySelector("ul");
-      ul.replaceChildren();
-      const ranges = findContiguous(lockersPossible);
-      for (const range of ranges) {
-        const li = document.createElement("li");
-        li.textContent =
-          range[0] === range[1]
-            ? range[0]
-            : `Range from ${range[0]} to ${range[1]}`;
-        ul.appendChild(li);
-      }
-    }
+// Lists the specifiers as collapsed ranges in the list with this id, or hides
+// the list (keeping its old items) when there are none.
+function showLockerRanges(selector, specifiers) {
+  const list = document.querySelector(selector);
+  if (!list) return;
+
+  list.hidden = specifiers.length === 0;
+  if (specifiers.length === 0) return;
+
+  const ul = list.querySelector("ul");
+  ul.replaceChildren();
+  for (const range of findContiguous(specifiers)) {
+    const li = document.createElement("li");
+    li.textContent = rangeLabel(range);
+    ul.appendChild(li);
   }
+}
+
+function rangeLabel([first, last]) {
+  return first === last ? first : `Range from ${first} to ${last}`;
 }
 
 // Show a list of what's going to happen server-side when creating a range of lockers
