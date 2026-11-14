@@ -1,5 +1,4 @@
-import TomSelect from "tom-select";
-import { tomSelectOptions } from "../src/page_locale.js";
+import { newTomSelect } from "../src/tom_select.js";
 import { reportFailure, requestJson } from "../src/request_error";
 import "../src/file_upload.js";
 
@@ -119,7 +118,7 @@ function repositorySelects() {
 function decorateSelect(id, options) {
   const select = document.getElementById(id);
   if (select && !select.tomselect) {
-    new TomSelect("#" + id, tomSelectOptions(document, options));
+    newTomSelect(select, options);
   }
 }
 

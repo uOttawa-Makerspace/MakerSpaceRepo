@@ -70,6 +70,26 @@ describe("locker-picker", () => {
     expect(instances).toHaveLength(0);
   });
 
+  it("replaces the copied pickers of its selects on a page restored from the cache", async () => {
+    await mount(`
+      <form data-controller="locker-picker">
+        <select id="locker_a" class="form-select tomselected ts-hidden-accessible" tabindex="-1" data-locker-picker-target="locker"></select><div class="ts-wrapper"></div>
+        <select id="user" class="tomselected ts-hidden-accessible" tabindex="-1" data-locker-picker-target="user"></select><div class="ts-wrapper"></div>
+      </form>`);
+    expect(document.querySelectorAll(".ts-wrapper")).toHaveLength(0);
+    expect(document.querySelectorAll(".tomselected")).toHaveLength(0);
+    expect(document.getElementById("locker_a").className).toBe("form-select");
+    expect(instances.map((i) => i.element.id)).toEqual(["locker_a", "user"]);
+  });
+
+  it("leaves the copied picker of a select outside its form alone", async () => {
+    await mount(
+      `<select id="outside" class="tomselected"></select><div class="ts-wrapper" id="outside-copy"></div>${form("locker_a")}`,
+    );
+    expect(document.getElementById("outside-copy")).not.toBeNull();
+    expect(document.getElementById("outside").className).toBe("tomselected");
+  });
+
   it("makes the user select searchable by name or username", async () => {
     await mount(
       form(

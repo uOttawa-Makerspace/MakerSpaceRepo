@@ -47,14 +47,25 @@ afterEach(() => {
 });
 
 describe("repository selects", () => {
-  it("decorates every select on the page, in page script order, by its id selector", () => {
+  it("decorates every select on the page, in page script order", () => {
     load(
       [...IDS]
         .reverse()
         .map((id) => `<select id="${id}"></select>`)
         .join(""),
     );
-    expect(selects.map((s) => s.target)).toEqual(IDS.map((id) => `#${id}`));
+    expect(selects.map((s) => s.target)).toEqual(IDS.map((id) => $(id)));
+  });
+
+  it("replaces the copied picker of a select on a page restored from the cache", () => {
+    load(
+      `<select id="repository_categories" class="form-select tomselected ts-hidden-accessible" tabindex="-1"></select><div class="ts-wrapper"></div><div id="next"></div>`,
+    );
+    expect(document.querySelectorAll(".ts-wrapper")).toHaveLength(0);
+    expect($("repository_categories").className).toBe("form-select");
+    expect($("repository_categories").hasAttribute("tabindex")).toBe(false);
+    expect($("repository_categories").nextElementSibling.id).toBe("next");
+    expect(selects.map((s) => s.el.id)).toEqual(["repository_categories"]);
   });
 
   it("gives each select its own options", () => {
@@ -132,7 +143,7 @@ describe("repository selects", () => {
 
   it("decorates only the selects that are present", () => {
     load('<select id="repository_equipments"></select>');
-    expect(selects.map((s) => s.target)).toEqual(["#repository_equipments"]);
+    expect(selects.map((s) => s.el.id)).toEqual(["repository_equipments"]);
   });
 });
 

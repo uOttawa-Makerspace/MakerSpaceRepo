@@ -1,37 +1,5 @@
 // app/javascript/entrypoints/volunteer_tasks.js
-import TomSelect from "tom-select";
-import { tomSelectOptions } from "../src/page_locale.js";
-
-// TomSelect sets the select's tabindex to -1 and uses the select's own tabindex
-// for its control. The tabindex the view gave the select (none on these pages)
-// is kept on the select, so a cached copy can give it back.
-function rememberTabIndex(el) {
-  el.dataset.viewTabindex = el.getAttribute("tabindex") ?? "";
-}
-
-function restoreTabIndex(el) {
-  const viewTabindex = el.dataset.viewTabindex;
-  if (viewTabindex) el.setAttribute("tabindex", viewTabindex);
-  else el.removeAttribute("tabindex");
-}
-
-// A page Turbo restores from its cache is a copy of the page as it was left: a
-// select on it still carries the markup of its TomSelect, but no TomSelect.
-// That markup is removed first, so the new TomSelect replaces it rather than
-// adding a second one beside it, and can be reached with Tab like the first.
-function clearCachedTomSelect(el) {
-  if (!el.classList.contains("tomselected")) return;
-  const wrapper = el.nextElementSibling;
-  if (wrapper && wrapper.classList.contains("ts-wrapper")) wrapper.remove();
-  el.classList.remove("tomselected", "ts-hidden-accessible");
-  restoreTabIndex(el);
-}
-
-function newTomSelect(el, options) {
-  clearCachedTomSelect(el);
-  rememberTabIndex(el);
-  return new TomSelect(el, tomSelectOptions(el, options));
-}
+import { newTomSelect } from "../src/tom_select.js";
 
 function initTomSelect(selector, options) {
   const el = document.querySelector(selector);
