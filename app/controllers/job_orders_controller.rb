@@ -64,26 +64,19 @@ class JobOrdersController < SessionsController
       return redirect_to job_orders_path
     end
 
-    unless current_user.admin? || current_user.staff? || current_user.id == @job_order.user_id
+    unless @job_order.accessible_by?(current_user)
       flash[:alert] = t("job_orders.alerts.no_permission")
       return redirect_to new_job_orders_path
     end
 
     @staff = User.staff
     @message = processed_message_text
-
-    if current_user.id == @job_order.user_id
-      @unread_messages = @job_order.chat_messages.unread(current_user)
-      @unread_messages.update_all(is_read: true) # rubocop:disable Rails/SkipsModelValidations
-    end
-
-    flash.now[:notice] = t("job_orders.alerts.action_required_scroll_to_timeline") if [JobStatus.user_approval, 
-JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&.job_status) && @job_order.user_id == current_user.id
+    mark_chat_read_by_owner
+    flash.now[:notice] = t("job_orders.alerts.action_required_scroll_to_timeline") if owner_input_needed?
 
     @job_tasks = ordered_job_tasks_for_show
     @tasks_missing_information = @job_order.tasks_missing_information(@job_tasks)
-    flash.now[:alert] =
-"#{t('job_orders.alerts.missing_info')} #{@tasks_missing_information.map(&:title).join(', ')}" if @tasks_missing_information.any? 
+    flash_missing_information
   end
 
   def new
@@ -426,6 +419,25 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     tasks
   end
 
+  # The owner opening the order has read every chat message the others sent.
+  def mark_chat_read_by_owner
+    return unless current_user.id == @job_order.user_id
+
+    @job_order.chat_messages.unread(current_user).update_all(is_read: true) # rubocop:disable Rails/SkipsModelValidations
+  end
+
+  # The order waits on the owner, who is the one viewing it.
+  def owner_input_needed?
+    @job_order.awaiting_owner_input? && @job_order.user_id == current_user.id
+  end
+
+  # Names the order's tasks that still lack required information, when there are any.
+  def flash_missing_information
+    return if @tasks_missing_information.none?
+
+    flash.now[:alert] = "#{t('job_orders.alerts.missing_info')} #{@tasks_missing_information.map(&:title).join(', ')}"
+  end
+
   # The editable "processed" mail text for this order, blank when that row is missing.
   # The staff message typed in the completion modal, only when staff chose to email it.
   def staff_completion_message
@@ -544,57 +556,70 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   # The quote form's writes, run by JobOrder#transition! under the order's row lock (the order was reloaded by
   # lock!, so its tasks are read fresh). Validation failures raise, which rolls the transition back.
   def apply_quote_params!
-    @job_order.job_tasks.each do |task|
-      price_key = "job_task_quote_price_#{task.id}"
-      job_task_quote = task.job_task_quote || task.build_job_task_quote
-      job_task_quote.price = params[price_key].presence || 0.0
+    @job_order.job_tasks.each { |task| apply_task_quote_params!(task) }
+    replace_quote_line_items! if params[:job_quote_line_items].present?
+    apply_staff_comments
+    @job_order.save!
+  end
 
-      # Service
-      qty_key   = "task_#{task.id}_service_qty"
-      svc_price_key = "task_#{task.id}_service_price"
+  # One task's quote row (price, service quantity and price), then its option prices, then its staff files.
+  def apply_task_quote_params!(task)
+    job_task_quote = task.job_task_quote || task.build_job_task_quote
+    job_task_quote.assign_attributes(quote_amounts_for(task))
+    job_task_quote.save!
 
-      job_task_quote.service_quantity = params[qty_key].presence || 0.0
-      # A blank price stays blank (not 0): a free service is entered as 0, and a missing price refuses the quote.
-      job_task_quote.service_price = params[svc_price_key].presence
+    apply_option_prices!(task, job_task_quote)
+    attach_staff_files(task)
+  end
 
-      job_task_quote.save!
+  # The task's price and service quantity, blank as 0, and its service price. A blank service price stays blank
+  # (not 0): a free service is entered as 0, and a missing price refuses the quote.
+  def quote_amounts_for(task)
+    {
+      price: params["job_task_quote_price_#{task.id}"].presence || 0.0,
+      service_quantity: params["task_#{task.id}_service_qty"].presence || 0.0,
+      service_price: params["task_#{task.id}_service_price"].presence
+    }
+  end
 
-      # Options
-      task.job_task_options.each do |option|
-        opt_key = "task_#{task.id}_option_price_#{option.job_option_id}"
-        next if params[opt_key].blank?
+  # A price for each of the task's options the form filled in; an option left blank keeps what it had.
+  def apply_option_prices!(task, job_task_quote)
+    task.job_task_options.each do |option|
+      price = params["task_#{task.id}_option_price_#{option.job_option_id}"]
+      next if price.blank?
 
-        qt_option = job_task_quote.job_task_quote_options.find_or_initialize_by(job_option_id: option.job_option_id)
-        qt_option.price = params[opt_key]
-        qt_option.save!
-      end
-
-      file_key = "task_#{task.id}_staff_files"
-      next if params[file_key].blank?
-      params[file_key].each do |file|
-        task.staff_files.attach(file)
-      end
+      qt_option = job_task_quote.job_task_quote_options.find_or_initialize_by(job_option_id: option.job_option_id)
+      qt_option.price = price
+      qt_option.save!
     end
+  end
 
-    # line items
-    if params[:job_quote_line_items].present?
-      @job_order.job_quote_line_items.destroy_all
+  def attach_staff_files(task)
+    files = params["task_#{task.id}_staff_files"]
+    return if files.blank?
 
-      params[:job_quote_line_items].each_value do |item_params|
-        desc = item_params[:description].to_s.strip
-        price = item_params[:price].to_s.strip
+    files.each { |file| task.staff_files.attach(file) }
+  end
 
-        next if desc.blank? && price.blank?
+  # The sent line items replace the order's; a row with neither a description nor a price is skipped.
+  def replace_quote_line_items!
+    @job_order.job_quote_line_items.destroy_all
 
-        @job_order.job_quote_line_items.create!(description: desc, price: price.presence || 0.0)
-      end
+    params[:job_quote_line_items].each_value do |item_params|
+      desc = item_params[:description].to_s.strip
+      price = item_params[:price].to_s.strip
+
+      next if desc.blank? && price.blank?
+
+      @job_order.job_quote_line_items.create!(description: desc, price: price.presence || 0.0)
     end
+  end
 
-    # one scalar read from job_order; its other keys are not this action's to permit, so none is logged unpermitted
+  # one scalar read from job_order; its other keys are not this action's to permit, so none is logged unpermitted
+  def apply_staff_comments
     fields = params[:job_order]
     staff_comments = fields[:staff_comments] if fields.is_a?(ActionController::Parameters)
     @job_order.staff_comments = staff_comments if staff_comments.is_a?(String) && staff_comments.present?
-    @job_order.save!
   end
 
   # The customer's comment on a quote or a decline, posted to the order chat. Only after the transition committed:

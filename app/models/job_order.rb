@@ -186,6 +186,11 @@ class JobOrder < ApplicationRecord
     ServicePriceMissing.new(tasks.map { |task| task.title.presence || "##{task.id}" }) if tasks.any?
   end
 
+  # True while the order waits on its owner: a quote to answer (also after a reminder) or a completed order to pay.
+  def awaiting_owner_input?
+    [JobStatus.user_approval, JobStatus.sent_reminder, JobStatus.completed].include?(latest_status&.job_status)
+  end
+
   # Who may open the order and use its chat: its owner, staff and admins.
   def accessible_by?(user)
     return false if user.nil?
@@ -301,15 +306,7 @@ class JobOrder < ApplicationRecord
     tasks = job_tasks.reorder(:id).includes({ job_task_options: :option_file_attachment },
                                             :user_files_attachments, :staff_files_attachments).to_a
     service_names = JobService.where(id: tasks.filter_map(&:job_service_id)).pluck(:id, :name).to_h
-    rows = tasks.filter_map do |task|
-      options = task.job_task_options.map { |o| [o.job_option_id, o.option_file_attachment&.blob_id] }
-                    .sort_by { |o| o.map(&:to_i) }
-      files = task.user_files_attachments.map(&:blob_id).sort
-      staff_files = task.staff_files_attachments.map(&:blob_id).sort
-      next if task.job_type_id.nil? && task.job_service_id.nil? && options.empty? && files.empty? && staff_files.empty?
-
-      [task.id, task.job_type_id, task.job_service_id, service_names[task.job_service_id], options, files, staff_files]
-    end
+    rows = tasks.filter_map { |task| task.work_fingerprint_row(service_names) }
     Digest::SHA256.hexdigest(rows.to_json)
   end
 

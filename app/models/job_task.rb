@@ -95,7 +95,27 @@ class JobTask < ApplicationRecord
              .group("job_task_options.job_option_id").minimum("job_tasks.id")
   end
 
+  # This task's row of JobOrder#work_fingerprint: its id, job type, service and the service's name (from
+  # +service_names+, by service id), options with their files, and its user and staff files, each sorted. A blank
+  # task (no type, service, options or files) has none.
+  def work_fingerprint_row(service_names)
+    parts = [fingerprint_options, *fingerprint_files]
+    return if job_type_id.nil? && job_service_id.nil? && parts.all?(&:empty?)
+
+    [id, job_type_id, job_service_id, service_names[job_service_id], *parts]
+  end
+
   private
+
+  # The blob ids of the task's user files and of its staff files, each sorted.
+  def fingerprint_files
+    [user_files_attachments.map(&:blob_id).sort, staff_files_attachments.map(&:blob_id).sort]
+  end
+
+  # Each option as [job option id, its file's blob id or nil], sorted by both (nil first).
+  def fingerprint_options
+    job_task_options.map { |o| [o.job_option_id, o.option_file_attachment&.blob_id] }.sort_by { |o| o.map(&:to_i) }
+  end
 
   # A listed service must be in a group of the task's job type; a custom one must be the one just made for this task
   # or already be on a task of this order.
