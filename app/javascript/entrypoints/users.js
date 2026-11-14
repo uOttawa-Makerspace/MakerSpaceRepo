@@ -16,11 +16,11 @@ function restorePreviousAnchor() {
 }
 
 function bindAdminSubTabs() {
+  const adminTabPane = document.getElementById("adminTabPane");
+  if (!adminTabPane) return;
+
   // Get all admin sub tabs
-  const adminTablist = document
-    .getElementById("adminTabPane")
-    .querySelectorAll(".nav-link");
-  adminTablist.forEach((el) => {
+  adminTabPane.querySelectorAll(".nav-link").forEach((el) => {
     // on click, change hash
     el.addEventListener("click", (ev) => {
       window.location.hash = el.getAttribute("href");
@@ -33,36 +33,36 @@ function bindAdminSubTabs() {
   });
 }
 
+// Opens the outer admin tab and keeps the admin sub tab in the address.
+function openAdminTab(adminTab) {
+  const subTabHash = window.location.hash;
+  adminTab.click();
+  window.location.hash = subTabHash;
+}
+
 function bindProfileTabs() {
   // Find hash and manually click on load
   // this only finds links within the #myTab element
   // because having random links be clicked via a hash is a security nightmare
   const profileTablist = document.getElementById("myTab");
-  if (profileTablist) {
-    // Find admin tab, exists if user is an admin
-    const adminTab = profileTablist.querySelector("#admin-tab");
+  if (!profileTablist) return;
 
-    if (adminTab) bindAdminSubTabs();
+  // Find admin tab, exists if user is an admin
+  const adminTab = profileTablist.querySelector("#admin-tab");
+  if (adminTab) bindAdminSubTabs();
 
-    profileTablist.querySelectorAll(".nav-link").forEach((el) => {
-      // Add the hash on click on any outer tab
-      el.addEventListener("click", (ev) => {
-        window.location.hash = el.getAttribute("href");
-      });
-      // special case for admin.
-      if (window.location.hash.startsWith("#admin-")) {
-        // This is an admin pane
-        if (adminTab) {
-          // preserve this hash
-          let this_hash = window.location.hash;
-          adminTab.click();
-          window.location.hash = this_hash;
-        }
-      } else if (el.getAttribute("href") == window.location.hash) {
-        el.click();
-      }
+  // An "#admin-..." address names an admin sub tab, inside the admin tab.
+  const adminAddress = window.location.hash.startsWith("#admin-");
+  profileTablist.querySelectorAll(".nav-link").forEach((el) => {
+    // Add the hash on click on any outer tab
+    el.addEventListener("click", (ev) => {
+      window.location.hash = el.getAttribute("href");
     });
-  }
+    if (!adminAddress && el.getAttribute("href") == window.location.hash) {
+      el.click();
+    }
+  });
+  if (adminAddress && adminTab) openAdminTab(adminTab);
 }
 
 function bindShowHideControls() {
@@ -73,14 +73,12 @@ function bindShowHideControls() {
         this.getAttribute("data-show") || this.getAttribute("data-hide");
       const show = this.getAttribute("data-show") != null;
       const hide = this.getAttribute("data-hide") != null;
-      const checked = this.checked;
+      if (!this.checked || !(show || hide)) return;
 
-      if (checked && (show || hide)) {
-        document.querySelector(selector).style.display = show
-          ? "block"
-          : "none";
-        document.querySelector(selector).disabled = !show;
-      }
+      const target = document.querySelector(selector);
+      if (!target) return;
+      target.style.display = show ? "block" : "none";
+      target.disabled = !show;
     });
 
     if (elements[i].checked) {
@@ -124,19 +122,18 @@ function initProgramSelect() {
 }
 
 function bindRoleButtons() {
-  const staffRoleButtons = document.querySelectorAll(".role-button");
   const staffSpaceChanger = document.getElementById("staff-space-changer");
-  if (staffRoleButtons) {
-    staffRoleButtons.forEach((button) => {
-      button.addEventListener("click", (e) => {
-        if (e.target.value === "regular_user") {
-          staffSpaceChanger.style.display = "none";
-        } else {
-          staffSpaceChanger.style.display = "block";
-        }
-      });
+  if (!staffSpaceChanger) return;
+
+  document.querySelectorAll(".role-button").forEach((button) => {
+    button.addEventListener("click", (e) => {
+      if (e.target.value === "regular_user") {
+        staffSpaceChanger.style.display = "none";
+      } else {
+        staffSpaceChanger.style.display = "block";
+      }
     });
-  }
+  });
 }
 
 function bindKeyCertUploads() {
@@ -167,24 +164,6 @@ function bindKeyCertUploads() {
         alert("Please attach a pdf file only");
       }
     });
-  });
-}
-
-function decorateRoleSpaceSelects() {
-  // For the select boxes in admin/users/manage_roles
-  document.querySelectorAll(".role-space-select").forEach((i) => {
-    new TomSelect(
-      i,
-      tomSelectOptions(i, {
-        plugins: {
-          checkbox_options: {
-            checkedClassNames: ["ts-checked"],
-            uncheckedClassNames: ["ts-unchecked"],
-          },
-          remove_button: { title: "Remove space" },
-        },
-      }),
-    );
   });
 }
 
@@ -221,6 +200,5 @@ document.addEventListener("turbo:load", function () {
   initProgramSelect();
   bindRoleButtons();
   bindKeyCertUploads();
-  decorateRoleSpaceSelects();
   bindUserSpaceButtons();
 });

@@ -53,15 +53,25 @@ export function validateRange() {
   ]);
 }
 
+// A whole number as the server's Integer(text, 10) reads one: spaces around it,
+// an optional sign, an optional 0d prefix and digits, which single underscores
+// may group. Anything else, such as "1abc" or "1.5", is NaN.
+const WHOLE_NUMBER = /^\s*([+-]?)(?:0d)?(\d+(?:_\d+)*)\s*$/i;
+
+function wholeNumber(text) {
+  const match = WHOLE_NUMBER.exec(text);
+  return match ? Number(match[1] + match[2].replaceAll("_", "")) : NaN;
+}
+
 // The specifiers from the start field to the end field, or null while either
-// is not a number or the start is above the end.
+// is not a whole number or the start is above the end.
 function requestedRange(modal) {
   const startInput = modal.querySelector("#newLockerRangeStart");
   const endInput = modal.querySelector("#newLockerRangeEnd");
   if (!startInput || !endInput) return null;
 
-  const rangeStart = parseInt(startInput.value);
-  const rangeEnd = parseInt(endInput.value);
+  const rangeStart = wholeNumber(startInput.value);
+  const rangeEnd = wholeNumber(endInput.value);
 
   if (isNaN(rangeStart) || isNaN(rangeEnd) || rangeStart > rangeEnd)
     return null;

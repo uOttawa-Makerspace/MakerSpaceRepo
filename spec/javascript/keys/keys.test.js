@@ -75,6 +75,14 @@ describe("keys page script", () => {
       $("deposit-return-date-clear").click();
       expect(pickers[0].clear).toHaveBeenCalledTimes(1);
     });
+
+    it("keeps the picker and sets up the rest of the page without the clear button", () => {
+      load(
+        `<input id="deposit-return-date"><select id="space-select"></select>`,
+      );
+      expect(pickers).toHaveLength(1);
+      expect(instances.map((i) => i.selector)).toEqual(["#space-select"]);
+    });
   });
 
   describe("searchable selects", () => {
@@ -157,6 +165,22 @@ describe("keys page script", () => {
       change("key-type-select", "regular");
       expect($("space-wrap").style.display).toBe("block");
       expect($("code-wrap").style.display).toBe("none");
+    });
+
+    it("toggles the keycode on a page without the space select", () => {
+      load(`
+        <select id="key-type-select"><option value="regular"></option><option value="keycard"></option></select>
+        <div id="code-wrap"><input id="custom-keycode"></div>`);
+      change("key-type-select", "keycard");
+      expect($("code-wrap").style.display).toBe("block");
+    });
+
+    it("toggles the space on a page without the keycode field", () => {
+      load(`
+        <select id="key-type-select"><option value="regular"></option><option value="keycard"></option></select>
+        <div id="space-wrap"><select id="space-select"></select></div>`);
+      change("key-type-select", "keycard");
+      expect($("space-wrap").style.display).toBe("none");
     });
   });
 

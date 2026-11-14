@@ -133,14 +133,20 @@ describe("profile tabs", () => {
     expect(window.location.hash).toBe("");
   });
 
-  it("opens the admin tab once for each outer tab on an admin address", () => {
+  it("opens the admin tab once on an admin address", () => {
     const clicked = [];
     document.addEventListener("click", (e) => clicked.push(e.target.id), {
       capture: true,
     });
     load(tabs(true), "#admin-roles");
-    expect(clicked).toEqual(["a-roles", "admin-tab", "admin-tab", "admin-tab"]);
+    expect(clicked).toEqual(["a-roles", "admin-tab"]);
     expect(window.location.hash).toBe("#admin-roles");
+  });
+
+  it("sets up the rest of the page when the admin tab has no admin pane", () => {
+    load(`<ul id="myTab"><a class="nav-link" id="admin-tab" href="#admin"></a></ul>
+      ${BASE}<select id="user_program"></select>`);
+    expect(selects.map((s) => s.el.id)).toEqual(["user_program"]);
   });
 
   it("opens the outer admin tab itself for its own address", () => {
@@ -197,6 +203,18 @@ describe("show and hide controls", () => {
     );
     expect($("extra").style.display).toBe("none");
     expect($("extra").disabled).toBe(true);
+  });
+
+  it("reports no error for a control whose target is not on the page", () => {
+    const errors = [];
+    const record = (e) => errors.push(e.error ?? e);
+    window.addEventListener("error", record);
+    load(
+      `${BASE}<input type="radio" id="r" data-hide="#gone" checked><input type="radio" id="s" data-hide="#extra" checked><input id="extra">`,
+    );
+    window.removeEventListener("error", record);
+    expect(errors).toEqual([]);
+    expect($("extra").style.display).toBe("none");
   });
 
   it("does nothing while unchecked", () => {
@@ -282,6 +300,18 @@ describe("role buttons", () => {
   });
 });
 
+describe("role buttons without the space changer", () => {
+  it("reports no error when a role button is clicked", () => {
+    const errors = [];
+    const record = (e) => errors.push(e.error ?? e);
+    window.addEventListener("error", record);
+    load(`<button class="role-button" id="a" value="staff"></button>`);
+    $("a").click();
+    window.removeEventListener("error", record);
+    expect(errors).toEqual([]);
+  });
+});
+
 describe("key certificate upload", () => {
   const page = `${BASE}
     <form id="cert_form" action="/users/ann/cert"></form>
@@ -358,10 +388,9 @@ describe("key certificate upload", () => {
 });
 
 describe("role spaces", () => {
-  it("decorates the role space selects again on every load", () => {
+  it("leaves a role space select as it is, as no page has one", () => {
     load(`${BASE}<select class="role-space-select"></select>`);
-    document.dispatchEvent(new Event("turbo:load"));
-    expect(selects).toHaveLength(2);
+    expect(selects).toHaveLength(0);
   });
 
   it("counts only the space boxes beside the changed one", () => {
@@ -382,14 +411,6 @@ describe("role spaces", () => {
       "Content-Type": "application/json",
       "X-CSRF-Token": "tok",
     });
-  });
-
-  it("decorates each role space select with checkboxes", () => {
-    load(
-      `${BASE}<select class="role-space-select"></select><select class="role-space-select"></select>`,
-    );
-    expect(selects).toHaveLength(2);
-    expect(selects[0].config.plugins.remove_button.title).toBe("Remove space");
   });
 
   it("saves the checked spaces of a user as they change", () => {

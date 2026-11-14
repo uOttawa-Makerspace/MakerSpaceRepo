@@ -163,11 +163,25 @@ describe("validateRange", () => {
     expect(items("newRangeLockersAlreadyPresent")).toEqual(["stale"]);
   });
 
-  it("reads the leading number of each field", () => {
-    fixture(["2"], "1abc", "3 lockers");
+  it.each(["1abc", "1.5", "1e3", "1 2", "1__0", "_1", "0x1"])(
+    "leaves the lists untouched for %j, which the server refuses",
+    (start) => {
+      fixture([], start, 3);
+      validateRange();
+      expect(items("newRangeLockersPossible")).toEqual(["stale"]);
+    },
+  );
+
+  it.each([
+    [" 2 ", "3", "Range from 2 to 3"],
+    ["+2", "0d3", "Range from 2 to 3"],
+    ["1_0", "11", "Range from 10 to 11"],
+    ["-1", "0", "Range from -1 to 0"],
+    ["02", "3", "Range from 2 to 3"],
+  ])("reads %j to %j as the server does", (start, end, possible) => {
+    fixture([], start, end);
     validateRange();
-    expect(items("newRangeLockersAlreadyPresent")).toEqual(["2"]);
-    expect(items("newRangeLockersPossible")).toEqual(["1", "3"]);
+    expect(items("newRangeLockersPossible")).toEqual([possible]);
   });
 
   it("compares names as text, as the server does: 01 and A1 are not 1", () => {

@@ -24,11 +24,11 @@ function setUpDepositDatePicker() {
     }),
   );
 
-  document
-    .getElementById("deposit-return-date-clear")
-    .addEventListener("click", () => {
-      depositDatePicker.clear();
-    });
+  const clearButton = document.getElementById("deposit-return-date-clear");
+  if (!clearButton) return;
+  clearButton.addEventListener("click", () => {
+    depositDatePicker.clear();
+  });
 }
 
 // A select whose options are searched by name, unless it already has a widget
@@ -60,6 +60,11 @@ function setUpNotesToggle() {
   });
 }
 
+// Shows or hides the box around a field, when the page has that field.
+function showFieldBox(field, shown) {
+  if (field) field.parentElement.style.display = shown ? "block" : "none";
+}
+
 // A regular key belongs to a space; any other key type has its own keycode
 function setUpKeyTypeToggle() {
   const spaceSelect = document.getElementById("space-select");
@@ -69,8 +74,8 @@ function setUpKeyTypeToggle() {
 
   keyTypeSelect.addEventListener("change", (e) => {
     const regular = e.target.value === "regular";
-    spaceSelect.parentElement.style.display = regular ? "block" : "none";
-    customKeycode.parentElement.style.display = regular ? "none" : "block";
+    showFieldBox(spaceSelect, regular);
+    showFieldBox(customKeycode, !regular);
   });
 }
 

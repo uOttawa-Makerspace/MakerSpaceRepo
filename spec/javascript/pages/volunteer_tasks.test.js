@@ -9,6 +9,9 @@ vi.mock("tom-select", () => ({
       this.config = config;
       this.value = el.dataset.initial ?? (config.maxItems === null ? [] : "");
       this.handlers = {};
+      // the real TomSelect gives its control the select's tabindex, then -1 to the select
+      this.tabIndex = el.tabIndex || 0;
+      el.tabIndex = -1;
       el.tomselect = this;
       selects.push(this);
     }
@@ -68,78 +71,103 @@ describe("task form", () => {
     expect(selects).toHaveLength(1);
   });
 
+  // the edit form's image card: the remove button sits in the card footer
+  const imageCard = (id) =>
+    `<div class="image-item" id="card-${id}"><div class="card"><img alt=""><div class="card-footer"><a class="image-remove" id="${id}"></a></div></div></div>`;
+
   it("collects the ids of removed images and drops them from the page", () => {
-    load(`<input id="deleteimages" value="">
-      <div><a class="image-remove" id="11"></a></div>
-      <div id="two"><a class="image-remove" id="12"></a></div>`);
+    load(`<div id="image-container">${imageCard(11)}${imageCard(12)}
+      <input id="deleteimages" value=""></div>`);
     const event = new Event("click", { cancelable: true, bubbles: true });
     document.getElementById("11").dispatchEvent(event);
     document.getElementById("12").click();
     expect($("deleteimages").value).toBe("11,12,");
     expect(event.defaultPrevented).toBe(true);
-    expect(document.querySelectorAll(".image-remove")).toHaveLength(0);
+    expect(document.querySelectorAll(".image-item, img")).toHaveLength(0);
+    expect($("image-container").contains($("deleteimages"))).toBe(true);
+  });
+
+  it("records a remove button outside an image card and removes nothing", () => {
+    load(
+      `<input id="deleteimages" value=""><div id="box"><a class="image-remove" id="11"></a></div>`,
+    );
+    $("11").click();
+    expect($("deleteimages").value).toBe("11,");
+    expect($("box")).not.toBeNull();
   });
 
   it("removes an image on a form without the hidden list", () => {
-    load('<div><a class="image-remove" id="11"></a></div>');
+    load(imageCard(11));
     document.getElementById("11").click();
-    expect(document.querySelectorAll(".image-remove")).toHaveLength(0);
+    expect($("card-11")).toBeNull();
   });
 
-  it("hides and shows the completed tasks", () => {
+  it("leaves a completed task toggle alone, as no page has one", () => {
     load(`<button id="task-hider">Hide Completed Task</button>
-      <table><tr completed="completed" id="done"></tr><tr id="open"></tr></table>`);
-    $("task-hider").click();
-    expect($("done").classList.contains("d-none")).toBe(true);
-    expect($("open").classList.contains("d-none")).toBe(false);
-    expect($("task-hider").innerHTML).toBe("Show Completed Task");
+      <table><tr completed="completed" id="done"></tr></table>`);
     $("task-hider").click();
     expect($("done").classList.contains("d-none")).toBe(false);
     expect($("task-hider").innerHTML).toBe("Hide Completed Task");
   });
 
-  it("toggles the rows that were completed when the page loaded", () => {
-    load(`<button id="task-hider">Hide Completed Task</button>
-      <table><tbody id="t"><tr completed="completed" id="done"></tr></tbody></table>`);
-    const later = document.createElement("tr");
-    later.id = "later";
-    later.setAttribute("completed", "completed");
-    $("t").appendChild(later);
-    $("task-hider").click();
-    expect($("done").classList.contains("d-none")).toBe(true);
-    expect($("later").classList.contains("d-none")).toBe(false);
-  });
-
-  it("shows the hide label after any other label", () => {
-    load(`<button id="task-hider">Something else</button>`);
-    $("task-hider").click();
-    expect($("task-hider").innerHTML).toBe("Hide Completed Task");
-  });
-
   it("binds each page control once when the same page loads a second time", () => {
-    load(`<input id="deleteimages" value="">
-      <div><a class="image-remove" id="11"></a></div>
-      <button id="task-hider">Hide Completed Task</button>
-      <table><tr completed="completed" id="done"></tr></table>`);
+    load(`<input id="deleteimages" value="">${imageCard(11)}`);
     document.dispatchEvent(new Event("turbo:load"));
-    $("task-hider").click();
-    expect($("done").classList.contains("d-none")).toBe(true);
-    expect($("task-hider").innerHTML).toBe("Show Completed Task");
     $("11").click();
     expect($("deleteimages").value).toBe("11,");
   });
 
   it("binds the copies of the controls on a page restored from the cache", () => {
-    load(`<input id="deleteimages" value="">
-      <div><a class="image-remove" id="11"></a></div>
-      <button id="task-hider">Hide Completed Task</button>
-      <table><tr completed="completed" id="done"></tr></table>`);
+    load(`<input id="deleteimages" value="">${imageCard(11)}`);
     document.body.replaceWith(document.body.cloneNode(true));
     document.dispatchEvent(new Event("turbo:load"));
-    $("task-hider").click();
-    expect($("done").classList.contains("d-none")).toBe(true);
     $("11").click();
     expect($("deleteimages").value).toBe("11,");
+  });
+
+  it("replaces the copied picker of a form select on a page restored from the cache", () => {
+    load(
+      `<select id="user_id" class="form-select tomselected ts-hidden-accessible"></select><div class="ts-wrapper" id="copy"></div><div id="next"></div>`,
+    );
+    expect(selects.map((s) => s.el.id)).toEqual(["user_id"]);
+    expect($("copy")).toBeNull();
+    expect($("next")).not.toBeNull();
+    expect($("user_id").className).toBe("form-select");
+  });
+
+  it("lets the new picker of a copied select be reached with Tab", () => {
+    load(
+      `<select id="user_id" class="tomselected ts-hidden-accessible" tabindex="-1" data-view-tabindex=""></select><div class="ts-wrapper"></div>`,
+    );
+    expect(byId("user_id").tabIndex).toBe(0);
+  });
+
+  it("lets the new picker of a copied select without a kept tabindex be reached with Tab", () => {
+    load(
+      `<select id="user_id" class="tomselected ts-hidden-accessible" tabindex="-1"></select><div class="ts-wrapper"></div>`,
+    );
+    expect(byId("user_id").tabIndex).toBe(0);
+  });
+
+  it("gives the new picker of a copied select the tabindex the view set", () => {
+    load(
+      `<select id="user_id" class="tomselected ts-hidden-accessible" tabindex="-1" data-view-tabindex="3"></select><div class="ts-wrapper"></div>`,
+    );
+    expect(byId("user_id").tabIndex).toBe(3);
+  });
+
+  it("keeps the tabindex the view set on a select it decorates", () => {
+    load(`<select id="user_id" tabindex="3"></select>`);
+    expect($("user_id").dataset.viewTabindex).toBe("3");
+    expect(byId("user_id").tabIndex).toBe(3);
+  });
+
+  it("keeps the element after a copied select when it is not a picker", () => {
+    load(
+      `<select id="user_id" class="tomselected"></select><div id="next"></div>`,
+    );
+    expect($("next")).not.toBeNull();
+    expect($("user_id").className).toBe("");
   });
 
   it("does nothing on a page without the task controls", () => {
@@ -205,6 +233,17 @@ describe("task index filters", () => {
     expect(selects).toHaveLength(0);
     space.set("Studio");
     expect(visible()).toEqual(["paint"]);
+  });
+
+  it("replaces the copied pickers of the filter selects on a page restored from the cache", () => {
+    load(`<div id="volunteerTasksIndex">
+      <select id="spaceFilter" class="tomselected ts-hidden-accessible"></select><div class="ts-wrapper"></div>
+      <select id="categoryFilter" class="tomselected ts-hidden-accessible"></select><div class="ts-wrapper"></div>
+      <select id="certFilter" class="tomselected ts-hidden-accessible" multiple></select><div class="ts-wrapper"></div>
+    </div>`);
+    expect(selects).toHaveLength(3);
+    expect(document.querySelectorAll(".ts-wrapper")).toHaveLength(0);
+    expect(document.querySelectorAll(".tomselected")).toHaveLength(0);
   });
 
   it("works without any of the filter controls", () => {
