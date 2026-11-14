@@ -1,20 +1,20 @@
 <% content_for :preheader do %>
-  MakerRepo - Account Locked
+  <%= t(".preheader") %>
 <% end %>
 
 <% content_for :team_name do %>
-  The MakerRepo Team
+  <%= t("layouts.mailer.makerrepo_team") %>
 <% end %>
 
 <% content_for :why_received do %>
-  You have received this email because your account was locked due to multiple unsuccessful login attempts on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+  <%= t(".why_received_html", site_link: link_to("makerepo.com", "https://makerepo.com", style: "text-decoration: underline; color: #999999; font-size: 12px; text-align: center;")) %>
 <% end %>
 
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.name %>,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t("msr_mailer.account.hello", name: @user.name) %></p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  Your account on MakerRepo had 5 unsuccessful login attempts. <br>
-  To unlock your account, click the button below or copy this link: <%= unlock_account_users_url(token: @user_hash) %> <br>
-  If you have forgotten your password, you can reset it by clicking this link or copying it: <a href='https://makerepo.com/forgot_password' style="color: #e55426ff; text-decoration: underline;">https://makerepo.com/forgot_password</a> <br>
+  <%= t(".attempts") %> <br>
+  <%= t(".unlock", url: unlock_account_users_url(token: @user_hash)) %> <br>
+  <%= t(".forgot_html", link: link_to("https://makerepo.com/forgot_password", "https://makerepo.com/forgot_password", style: "color: #e55426ff; text-decoration: underline;")) %> <br>
 </p>
 <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
   <tbody>
@@ -24,7 +24,7 @@
           <tbody>
             <tr>
               <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; border-radius: 5px; text-align: center; background-color: #e55426ff;" valign="top" align="center" bgcolor="#e55426ff">
-                <a href="<%= unlock_account_users_url(token: @user_hash) %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;">Unlock your Account</a>
+                <a href="<%= unlock_account_users_url(token: @user_hash) %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;"><%= t(".button") %></a>
               </td>
             </tr>
           </tbody>

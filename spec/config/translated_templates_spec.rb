@@ -192,6 +192,15 @@ RSpec.describe "Translated templates" do
     app/views/locker_mailer/locker_moved.html.erb
     app/views/locker_mailer/locker_requested.html.erb
     app/views/locker_mailer/rental_expired.html.erb
+    app/views/layouts/mailer.html.erb
+    app/views/layouts/mailer.text.erb
+    app/views/msr_mailer/confirmation_email.html.erb
+    app/views/msr_mailer/email_confirmation_email.html.erb
+    app/views/msr_mailer/email_changed_email.html.erb
+    app/views/msr_mailer/confirm_password_change.html.erb
+    app/views/msr_mailer/welcome_email.html.erb
+    app/views/msr_mailer/forgot_password.html.erb
+    app/views/msr_mailer/unlock_account.html.erb
   ].freeze
 
   TRANSLATED_TEMPLATES.each do |path|

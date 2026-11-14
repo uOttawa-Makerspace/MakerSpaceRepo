@@ -4,7 +4,8 @@
 # strings handed to helpers that render them.
 module LiteralTextScan
   # Names and addresses that are the same in every language.
-  ALLOWED_LITERALS = ["@uOCEED", "@uoceed", "CEED", "makerepo.com/new", "MakerRepo", "email@uottawa.ca"].freeze
+  ALLOWED_LITERALS = ["@uOCEED", "@uoceed", "CEED", "makerepo.com", "MakerRepo.com", "makerepo.com/new", "MakerRepo", "MAKERREPO",
+                      "email@uottawa.ca"].freeze
 
   LITERAL_ARGUMENT = /
     (?<helper>link_to|button_to|button_tag|label_tag|submit_tag|provide|tag\.\w+|content_tag|(?<![.\w'"])\w+\.(?:label|submit)\b|
@@ -22,10 +23,11 @@ module LiteralTextScan
   # A tag, read past any ">" inside its quoted attribute values (such as data-action="input->search#filter").
   TAG = /<(?:[^>"']|"[^"]*"|'[^']*')*>/m
 
-  # Markup with ERB output, comments, scripts, tags and entities removed leaves only visible text.
+  # Markup with ERB output, comments, scripts, styles, tags and entities removed leaves only visible text.
   # A path shown as written (such as /learning_area/s/) is the same in every language.
   def self.visible_literals(source)
     stripped = source.gsub(/<%#.*?%>/m, "").gsub(/<%.*?%>/m, " ").gsub(/<!--.*?-->/m, " ").gsub(%r{<script.*?</script>}m, "")
+                     .gsub(%r{<style.*?</style>}m, "")
     words = stripped.gsub(TAG, " ").gsub(/&\w+;/, " ").split(/\s+/).grep(/[[:alpha:]]/)
     words.grep_v(%r{\A/[\w/]*\z}) - ALLOWED_LITERALS
   end

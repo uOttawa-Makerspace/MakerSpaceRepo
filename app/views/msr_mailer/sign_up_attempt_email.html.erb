@@ -1,5 +1,5 @@
 <% content_for :preheader do %><%= @subject %><% end %>
-<% content_for :team_name do %>The MakerRepo Team<% end %>
+<% content_for :team_name do %><%= t("layouts.mailer.makerrepo_team") %><% end %>
 <% content_for :why_received do %>
   <%= t("msr_mailer.sign_up_attempt.why_received", locale: :fr) %>
   <br>

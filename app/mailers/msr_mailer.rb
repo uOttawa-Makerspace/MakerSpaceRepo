@@ -4,7 +4,7 @@ class MsrMailer < ApplicationMailer
   def confirmation_email(user, hash)
     @user = user
     @hash = hash
-    mail(to: @user.email, subject: "Makerepo | Please confirm your email")
+    mail(to: @user.email)
   end
 
   # Sent to an address that already has an account when someone tries to sign up with it.
@@ -21,23 +21,23 @@ class MsrMailer < ApplicationMailer
     @new_email = new_email
     @user = user
     @token = token
-    mail(to: new_email, subject: "Makerepo | Please confirm your new email")
+    mail(to: new_email, locale: user.locale)
   end
 
   def email_changed_email(user, old_email)
     @user = user
-    mail(to: old_email, subject: "Makerepo | Email has changed")
+    mail(to: old_email, locale: user.locale)
   end
 
   def confirm_password_change(user)
     @user = user
-    mail(to: @user.email, subject: "MakerRepo | Your password has been changed")
+    mail(to: @user.email)
   end
 
   def welcome_email(user)
     @user = user
     @url = "http://makerepo.com/login"
-    mail(to: @user.email, subject: "Welcome to MakerRepo")
+    mail(to: @user.email)
   end
 
   def send_profile_update(bcc_emails)
@@ -122,7 +122,7 @@ class MsrMailer < ApplicationMailer
     return skip_expired_link("forgot_password", User.find_by(email: email)&.id) unless User.password_reset_link_valid?(token)
 
     @token = token
-    mail(to: email, subject: "Reset your MakerRepo password")
+    mail(to: email)
   end
 
   def send_training_report(to)
@@ -389,7 +389,7 @@ class MsrMailer < ApplicationMailer
 
     @user = user
     @user_hash = user_hash
-    mail(to: @user.email, subject: "Unlock your MakerRepo Account")
+    mail(to: @user.email)
   end
 
   def new_printer_issue(issue, recipient_email)
