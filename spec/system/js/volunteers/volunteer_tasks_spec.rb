@@ -65,12 +65,11 @@ RSpec.describe "Volunteer task pages", type: :system, skip_bullet: true do
       wait_for_app_js
     end
 
-    it "records a removed image once when the script has run again over the same page" do
-      filename = task.photos.first.image.filename.to_s
+    it "records a removed image's id once when the script has run again over the same page" do
       run_page_script_again
       find(".image-remove").click
       expect(page).to have_no_css(".image-remove")
-      expect(find_by_id("deleteimages", visible: :hidden).value).to eq("#{filename},")
+      expect(find_by_id("deleteimages", visible: :hidden).value).to eq("#{task.photos.first.id},")
     end
 
     it "removes the whole image card, and the saved task no longer has the image" do
@@ -81,6 +80,26 @@ RSpec.describe "Volunteer task pages", type: :system, skip_bullet: true do
       find("#volunteerForm button[type=submit]").click
       expect(page).to have_current_path(volunteer_tasks_path)
       expect(task.reload.photos).to be_empty
+    end
+  end
+
+  describe "task edit form with a photo whose file name contains a comma" do
+    let(:task) { create(:volunteer_task) }
+    let!(:kept) { create(:photo, volunteer_task: task) }
+    let!(:comma) do
+      png = Rails.root.join("spec/support/assets/avatar.png")
+      create(:photo, volunteer_task: task, image: Rack::Test::UploadedFile.new(png, "image/png", original_filename: "before,after.png"))
+    end
+
+    it "removes that photo only, and keeps the other" do
+      log_in_as(create(:user, :staff), to: edit_volunteer_task_path(task))
+      expect(page).to have_css(".image-remove", count: 2)
+      wait_for_app_js
+      find(".image-remove[data-photo-id='#{comma.id}']").click
+      expect(page).to have_css(".image-remove", count: 1)
+      find("#volunteerForm button[type=submit]").click
+      expect(page).to have_current_path(volunteer_tasks_path)
+      expect(task.reload.photos).to contain_exactly(kept)
     end
   end
 end

@@ -124,7 +124,7 @@
                           <%= image_tag img.image, alt: @volunteer_task.title.presence || t('volunteer_area.tasks.form.task_photo'), class: 'object-fit-cover' %>
                         </div>
                         <div class="card-footer p-1 bg-body-tertiary text-center border-top">
-                          <span id="<%= img.image.filename %>" class="image-remove btn btn-sm btn-outline-danger w-100 py-1" role="button" title="<%= t('volunteer_area.tasks.form.remove_image') %>">
+                          <span data-photo-id="<%= img.id %>" class="image-remove btn btn-sm btn-outline-danger w-100 py-1" role="button" title="<%= t('volunteer_area.tasks.form.remove_image') %>">
                             <i class="fa-solid fa-trash-can me-1"></i><%= t('common.remove') %>
                           </span>
                         </div>

@@ -284,16 +284,16 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
     it "keeps a ticked photo when a new photo in the same request is refused" do
       photo = create(:photo, volunteer_task: task)
       patch volunteer_task_path(task),
-            params: task_params.merge(images: [content_bmp_upload], deleteimages: [photo.image.filename.to_s])
+            params: task_params.merge(images: [content_bmp_upload], deleteimages: "#{photo.id},")
       expect(Photo.exists?(photo.id)).to be(true)
       expect(photo.reload.image).to be_attached
     end
 
     describe "removing ticked photos" do
-      def named_photo(filename)
+      def named_photo(filename, on: task)
         png = Rails.root.join("spec/support/assets/avatar.png")
         image = Rack::Test::UploadedFile.new(png, "image/png", original_filename: filename)
-        create(:photo, volunteer_task: task, image: image)
+        create(:photo, volunteer_task: on, image: image)
       end
 
       let!(:short) { named_photo("a.png") }
@@ -303,22 +303,45 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
         task.photos.reload.map { |photo| photo.image.filename.to_s }.sort
       end
 
-      it "removes only the photo whose file name the form sent, not one whose name it contains" do
-        expect { patch volunteer_task_path(task), params: task_params.merge(deleteimages: "aa.png,") }
+      it "removes only the photo whose id the form sent" do
+        expect { patch volunteer_task_path(task), params: task_params.merge(deleteimages: "#{long.id},") }
           .to change(Photo, :count).by(-1)
         expect(remaining_names).to eq(["a.png"])
         expect(short.reload.image).to be_attached
       end
 
+      it "removes a photo whose file name contains a comma" do
+        comma = named_photo("before,after.png")
+        expect { patch volunteer_task_path(task), params: task_params.merge(deleteimages: "#{comma.id},") }
+          .to change(Photo, :count).by(-1)
+        expect(Photo.exists?(comma.id)).to be(false)
+        expect(remaining_names).to eq(["a.png", "aa.png"])
+      end
+
       it "removes every photo the form sent, and keeps the others" do
         named_photo("b.png")
-        patch volunteer_task_path(task), params: task_params.merge(deleteimages: "a.png,aa.png,")
+        patch volunteer_task_path(task), params: task_params.merge(deleteimages: "#{short.id},#{long.id},")
         expect(remaining_names).to eq(["b.png"])
       end
 
-      it "removes nothing for a sent name that only ends with a stored one" do
-        expect { patch volunteer_task_path(task), params: task_params.merge(deleteimages: "ba.png,") }
+      it "removes nothing for an id of another task's photo or one that does not exist" do
+        other = named_photo("a.png", on: create(:volunteer_task))
+        missing = Photo.maximum(:id) + 1
+        expect { patch volunteer_task_path(task), params: task_params.merge(deleteimages: "#{other.id},#{missing},") }
           .not_to change(Photo, :count)
+        expect(other.reload.image).to be_attached
+        expect(remaining_names).to eq(["a.png", "aa.png"])
+      end
+
+      it "removes nothing for a sent file name" do
+        expect { patch volunteer_task_path(task), params: task_params.merge(deleteimages: "a.png,") }
+          .not_to change(Photo, :count)
+      end
+
+      it "removes nothing and saves the form when the field is blank" do
+        expect { patch volunteer_task_path(task), params: task_params(title: "Renamed").merge(deleteimages: "") }
+          .not_to change(Photo, :count)
+        expect(task.reload.title).to eq("Renamed")
       end
     end
 
