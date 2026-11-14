@@ -491,9 +491,11 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
     end
 
     it "refuses 0 hours and a future date on an edit" do
-      hour = make_hour
       vol_login!(owner)
+      hour = nil
+      # The hour is made inside the frozen day, so its date (today) differs from the future date sent on any real date.
       travel_to(ActiveSupport::TimeZone["America/Toronto"].local(2026, 11, 12, 12, 0)) do
+        hour = make_hour
         patch volunteer_hour_path(hour), params: { volunteer_hour: { total_time: 0, date_of_task: "2026-11-14" } }
       end
       expect(flash[:alert]).to eq("Total time must be greater than 0 and Date of task cannot be in the future")
