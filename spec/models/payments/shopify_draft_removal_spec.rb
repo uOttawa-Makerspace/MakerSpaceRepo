@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # The one classification of a Shopify draft delete, shared by JobOrder::DraftDeletion and LockerRental.
-RSpec.describe ShopifyConcern::DraftRemoval do
+RSpec.describe Payments::ShopifyAdapter::DraftRemoval do
   let!(:fake) { stub_shopify_admin! }
   let(:gid) { fake.draft_id }
 

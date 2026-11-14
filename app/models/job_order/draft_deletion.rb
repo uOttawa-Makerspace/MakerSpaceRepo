@@ -5,7 +5,7 @@
 # inside it, can name it. #delete_unless_completed! checks the fetched draft's marker (this environment's operating
 # tag and exactly the given order's marker) unless the caller opts out with `marker: nil` (an order's own stored
 # draft, which may predate the marker); #delete itself checks nothing, so nothing outside JobOrder may reach it
-# (ShopifyConcern::DraftRemoval is the shared delete-and-classify rule under it, shared with LockerRental).
+# (Payments::ShopifyAdapter::DraftRemoval is the shared delete-and-classify rule under it, shared with LockerRental).
 class JobOrder
   module DraftDeletion
     module_function
@@ -23,23 +23,23 @@ class JobOrder
 
     # [:found | :gone, draft]; Shopify not answering raises (fail closed).
     def fetch_or_raise(gid)
-      unanswered_is_stale { ShopifyConcern::DraftRemoval.fetch_or_raise(gid) }
+      unanswered_is_stale { Payments::ShopifyAdapter::DraftRemoval.fetch_or_raise(gid) }
     end
 
     # The one place the shared rule's "Shopify did not answer" becomes the fail-closed StaleDraftOrderError.
     def unanswered_is_stale
       yield
-    rescue ShopifyConcern::DraftRemoval::Unanswered => e
+    rescue Payments::ShopifyAdapter::DraftRemoval::Unanswered => e
       JobOrder.stale_draft!(e.message)
     end
 
     # Deletes the draft `gid` (one Shopify call) and returns :deleted. When Shopify deleted nothing it is asked why
-    # by the shared rule (ShopifyConcern::DraftRemoval, which classifies): the draft vanished (:cleared), or it is
+    # by the shared rule (Payments::ShopifyAdapter::DraftRemoval, which classifies): the draft vanished (:cleared), or it is
     # paid (COMPLETED), which `paid` decides: :keep returns :kept (the payment record is never deleted), :refuse
     # raises (the caller is mid-transition and must not go on). Anything else raises StaleDraftOrderError with
     # Shopify's userErrors.
     def delete(gid, paid:)
-      result = unanswered_is_stale { ShopifyConcern::DraftRemoval.call(gid) }
+      result = unanswered_is_stale { Payments::ShopifyAdapter::DraftRemoval.call(gid) }
 
       case result.outcome
       when :deleted then :deleted

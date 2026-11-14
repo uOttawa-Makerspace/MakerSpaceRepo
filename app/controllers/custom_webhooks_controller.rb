@@ -5,24 +5,12 @@ require Rails.root.join("lib/report_throttle")
 # Shopify webhooks
 class CustomWebhooksController < ApplicationController
   # Shopify sends no CSRF token and no session cookie; the caller is authenticated by
-  # the X-Shopify-Hmac-Sha256 signature below (ShopifyApp::WebhookVerification, which
-  # also skips the check, but only outside development, so the skip is stated here).
+  # the X-Shopify-Hmac-Sha256 signature (Payments::ShopifyAdapter#verify_webhook!).
   skip_forgery_protection
   # Webhook verification is on in every environment, test included, so specs sign their
   # payloads and can detect its removal. Only development is exempt (decided once, at load
   # time) so unsigned webhooks can be replayed locally (e.g. with curl) without the secret.
-  unless Rails.env.development?
-    # 1. Fail closed when no webhook secret is configured (production/staging without the
-    #    credential): the app boots, but every request is refused with 503 and reported.
-    #    503 (not 401) because it is OUR misconfiguration, and Shopify retries non-2xx
-    #    webhooks, so deliveries are processed once the secret is set.
-    before_action :require_webhook_secret!
-    # 2. A request with no X-Shopify-Hmac-Sha256 header would make the gem's
-    #    secure_compare(nil, ..) raise (500); answer 401 before the gem's check instead.
-    before_action :require_hmac_header!
-    # 3. The gem's HMAC check (X-Shopify-Hmac-Sha256), added after the two above so they run first.
-    include ShopifyApp::WebhookVerification
-  end
+  before_action :verify_webhook! unless Rails.env.development?
 
   # Both order webhooks are an inbox: the verified body is stored (ProcessedOrder) and ApplyProcessedOrderJob applies
   # it, so the webhook itself never calls Shopify and never touches memberships, CC Money or lockers, and answers
@@ -60,8 +48,14 @@ class CustomWebhooksController < ApplicationController
 
   private
 
-  def require_hmac_header!
-    head :unauthorized if request.headers["HTTP_X_SHOPIFY_HMAC_SHA256"].blank?
+  # 1. No webhook secret configured (production/staging without the credential): the app boots, but every request
+  #    is refused with 503 and reported. 503 (not 401) because it is OUR misconfiguration, and Shopify retries non-2xx
+  #    webhooks, so deliveries are processed once the secret is set.
+  # 2. No X-Shopify-Hmac-Sha256 header, or one that does not sign the body under the secret or the old secret: 401.
+  def verify_webhook!
+    Payments::ShopifyAdapter.new.verify_webhook!(body: request.raw_post, headers: request.headers)
+  rescue Payments::WebhookRejected => e
+    e.reason == :not_configured ? refuse_unconfigured : head(:unauthorized)
   end
 
   MISSING_SECRET_REPORT_THROTTLE = ReportThrottle.new(interval: 10.minutes)
@@ -78,10 +72,7 @@ class CustomWebhooksController < ApplicationController
     end
   end
 
-  def require_webhook_secret!
-    return if ShopifyWebhookSecret.configured?(ShopifyApp.configuration.secret) ||
-              ShopifyWebhookSecret.configured?(ShopifyApp.configuration.old_secret)
-
+  def refuse_unconfigured
     if self.class.report_missing_secret?
       error = ShopifyWebhookSecret::MissingSecret.new(
         "Shopify webhook secret is not configured (credentials.#{Rails.env}.shopify.webhook); refusing webhooks (503)"

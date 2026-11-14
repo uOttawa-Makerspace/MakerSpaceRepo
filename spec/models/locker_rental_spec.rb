@@ -893,8 +893,8 @@ RSpec.describe LockerRental, type: :model do
     it "saving alone never calls Shopify; the explicit sync destroys the draft only after a save that cancelled" do
       rental = create(:locker_rental, :await_payment)
       rental.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/5")
-      expect(ShopifyConcern::DraftRemoval).to receive(:call).with("gid://shopify/DraftOrder/5").once
-        .and_return(ShopifyConcern::DraftRemoval::Result.new(:deleted, []))
+      expect(Payments::ShopifyAdapter::DraftRemoval).to receive(:call).with("gid://shopify/DraftOrder/5").once
+        .and_return(Payments::ShopifyAdapter::DraftRemoval::Result.new(:deleted, []))
       rental.update!(notes: "x")
       expect(rental.sync_shopify_draft_order_after_commit).to be(true) # nothing cancelled: nothing to do
       rental.update!(state: :cancelled)
@@ -939,7 +939,7 @@ RSpec.describe LockerRental, type: :model do
         expect_cancelled_but_reported
       end
 
-      # The shared rule (ShopifyConcern::DraftRemoval, the one JobOrder uses): a refused delete (200, userErrors, no
+      # The shared rule (Payments::ShopifyAdapter::DraftRemoval, the one JobOrder uses): a refused delete (200, userErrors, no
       # deletedId) is classified by fetching the draft.
       describe "when Shopify refuses the delete (200 with userErrors, no deletedId)" do
         let!(:fake) do

@@ -350,7 +350,7 @@ class LockerRental < ApplicationRecord
   # Current callers: LockerRentalsController#update and #renew.
   #
   # THE rule for the stored draft when the state changes, after a save that did it: the draft is classified by the one
-  # shared rule (ShopifyConcern::DraftRemoval, the same classification JobOrder uses). Call it AFTER the transaction has
+  # shared rule (Payments::ShopifyAdapter::DraftRemoval, the same classification JobOrder uses). Call it AFTER the transaction has
   # committed (no row lock is held during the HTTP call). The state change is already committed, so a Shopify failure
   # cannot undo it. What the stored id becomes follows the outcome:
   #   deleted / gone  the id is forgotten (nothing left to remove)
@@ -361,8 +361,6 @@ class LockerRental < ApplicationRecord
   #                   still arrives is recorded as held for staff to refund
   # An exception (HTTP, timeout, configuration, no answer) is the same failure. Returns true when there was nothing
   # to do or nothing is left to remove.
-  DraftOrderNotDeleted = ShopifyConcern::DraftOrderNotDeleted
-
   def sync_shopify_draft_order_after_commit
     return true unless saved_change_to_state?
 
@@ -372,7 +370,7 @@ class LockerRental < ApplicationRecord
     gid = shopify_draft_order_id
     return true if gid.blank?
 
-    settle_removed_draft(gid, ShopifyConcern::DraftRemoval.call(gid), new_term: new_term)
+    settle_removed_draft(gid, Payments::ShopifyAdapter::DraftRemoval.call(gid), new_term: new_term)
     true
   rescue StandardError => e
     report_checkout_failure(e, 'delete_shopify_draft_order')
@@ -417,17 +415,17 @@ class LockerRental < ApplicationRecord
   # fetched first and must carry tags the block accepts (this environment's tag and the expected marker, or none); a
   # paid draft is never sent a delete. Refuses (OrphanDraftRefused) anything else.
   def self.settle_orphan_draft(gid, refusal)
-    state, draft = ShopifyConcern::DraftRemoval.fetch_or_raise(gid)
+    state, draft = Payments::ShopifyAdapter::DraftRemoval.fetch_or_raise(gid)
     return :cleared if state == :gone
     raise OrphanDraftRefused, refusal unless yield(draft['tags'])
-    return :kept if ShopifyConcern::DraftRemoval.paid?(draft)
-    raise OrphanDraftRefused, "the draft order has the unknown status #{draft['status'].inspect}" unless ShopifyConcern::DraftRemoval.payable?(draft)
+    return :kept if Payments::ShopifyAdapter::DraftRemoval.paid?(draft)
+    raise OrphanDraftRefused, "the draft order has the unknown status #{draft['status'].inspect}" unless Payments::ShopifyAdapter::DraftRemoval.payable?(draft)
 
     delete_orphan_draft(gid)
   end
 
   def self.delete_orphan_draft(gid)
-    result = ShopifyConcern::DraftRemoval.call(gid)
+    result = Payments::ShopifyAdapter::DraftRemoval.call(gid)
     return { deleted: :deleted, gone: :cleared, completed: :kept }.fetch(result.outcome) unless result.outcome == :open
 
     raise OrphanDraftRefused, "Shopify did not delete the draft order: #{result.user_errors.map { |e| e['message'] }.join(', ')}"
@@ -636,10 +634,10 @@ class LockerRental < ApplicationRecord
     return nil if state == :error # Shopify did not answer: no link now, the stored id is untouched
     return :gone unless state == :found
 
-    if ShopifyConcern::DraftRemoval.payable?(draft)
+    if Payments::ShopifyAdapter::DraftRemoval.payable?(draft)
       @checkout_state = :link
       draft['invoiceUrl']
-    elsif ShopifyConcern::DraftRemoval.paid?(draft)
+    elsif Payments::ShopifyAdapter::DraftRemoval.paid?(draft)
       @checkout_state = :processing
       nil
     else
@@ -753,12 +751,9 @@ class LockerRental < ApplicationRecord
     end
   end
 
-  # Definitions for the shopify concern
-
-  # The environment's operating tag plus the marker that names the rental (LockerRental::DraftSweep reconciles by it).
-  def shopify_draft_order_tags
-    [self.class.draft_order_operating_tag, self.class.draft_marker_tag(id)]
-  end
+  # Definitions for the shopify concern. A locker draft carries the environment's operating tag and the marker that
+  # names the rental ("locker_rental:<id>", Payments::ShopifyAdapter::MARKERS), which LockerRental::DraftSweep
+  # reconciles by.
 
   def shopify_draft_order_line_items
     if Rails.env.production?
@@ -783,7 +778,4 @@ class LockerRental < ApplicationRecord
   def self.shopify_draft_order_key_name
     'locker'
   end
-
-  # The marker every locker draft carries (#shopify_draft_order_tags): which rental it was made for.
-  def self.draft_marker_name = 'locker_rental'
 end

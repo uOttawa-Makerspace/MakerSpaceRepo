@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # ShopifyAPI::Context and ShopifyApp.configuration are process-global. Examples that prime
-# the Context (ShopifyContext.ensure_setup!, ShopifyService.start_shopify_session, draft
+# the Context (ShopifyContext.ensure_setup!, ShopifyContext.start_session!, draft
 # orders), blank it, re-load config/initializers/*.rb or re-run the ShopifyApp.configure
 # block would otherwise leak that state into every example that runs after them (random
 # order => flakes). Examples tagged :shopify_context get ALL instance variables of both

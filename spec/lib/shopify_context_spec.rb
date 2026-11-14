@@ -4,7 +4,7 @@ require "rails_helper"
 require Rails.root.join("lib/shopify_context")
 
 # ShopifyContext.ensure_setup! is the single place that calls ShopifyAPI::Context.setup
-# (boot initializer, ShopifyConcern, ShopifyService). Credentials come
+# (boot initializer, Payments::ShopifyAdapter.admin_client). Credentials come
 # from spec/support/shopify_http_helpers.rb's fake config (shpat_test_fake, fake-shop, 2025-01).
 RSpec.describe ShopifyContext, :shopify_context do
   include ActiveSupport::Testing::TimeHelpers
@@ -310,20 +310,19 @@ RSpec.describe ShopifyContext, :shopify_context do
       expect(ShopifyAPI::Context.api_version).to eq("2025-01")
     end
 
-    it "is what ShopifyService, and the draft client delegate to" do
+    it "is what the Admin client builder delegates to" do
       sentinel = Object.new
       allow(described_class).to receive(:start_session!).and_return(sentinel)
-      expect(ShopifyService.start_shopify_session).to equal(sentinel)
       allow(ShopifyAPI::Clients::Graphql::Admin).to receive(:new)
       allow(ShopifyAPI::Context).to receive(:active_session).and_return(sentinel)
       expect(ShopifyAPI::Clients::Graphql::Admin).to receive(:new).with(session: sentinel)
-      ShopifyConcern::DraftOrders.client
+      Payments::ShopifyAdapter.admin_client
     end
 
-    it "ShopifyService digs: a missing shopify section raises NotConfigured, not NoMethodError" do
+    it "digs: a missing shopify section raises NotConfigured, not NoMethodError" do
       allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return(nil)
       allow(Rails.application.credentials).to receive(:[]).with(:test).and_return({})
-      expect { ShopifyService.start_shopify_session }.to raise_error(ShopifyContext::NotConfigured)
+      expect { described_class.start_session! }.to raise_error(ShopifyContext::NotConfigured)
     end
 
     describe "when the Context cannot be set up" do

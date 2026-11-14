@@ -193,6 +193,46 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
     end
   end
 
+  # The reads other than the draft orders: the exact query text (SHA-256 of what is sent today) and variables.
+  describe "the catalogue, metafield and draft listing reads" do
+    def sent(seen) = seen.map { |call| [Digest::SHA256.hexdigest(call[:body]["query"]), call[:body]["variables"]] }
+
+    it "reads the locker product (LockerOption.locker_product_info) with the product query" do
+      seen = stub_shopify_graphql("product(id:", { "product" => nil })
+      LockerOption.locker_product_link = "gid://shopify/Product/1"
+      expect(LockerOption.locker_product_info).to be_nil # no such product: reported, the pages render without it
+      expect(sent(seen)).to eq([["04b93391e577b44fbe056f17d4cdefbfc274e9e6cbe7e910dd9b27ad4e4bd707", nil]])
+    end
+
+    it "reads the homepage collections from the makerspace store with the access token only" do
+      seen = []
+      stub_request(:post, "https://uottawa-makerspace.myshopify.com/admin/api/2025-01/graphql.json")
+        .with { |req| seen << { body: JSON.parse(req.body), token: req.headers["X-Shopify-Access-Token"] } }
+        .to_return(status: 200, headers: ShopifyHttpHelpers::JSON_HEADERS, body: { data: { collections: { nodes: [
+                     { id: "gid://shopify/Collection/1", handle: "kits", title: "Kits", image: { url: "https://cdn.example.test/k.png" } }
+                   ] } } }.to_json)
+
+      links = StaticPagesController.new.send(:home_makerstore_links)
+      expect(links).to eq([{ "title" => "Kits", "url" => "https://makerstore.ca/collections/kits", "image" => "https://cdn.example.test/k.png" }])
+      expect(sent(seen)).to eq([["d055f0871cdb14d7ef06e9179b323eee353ab396990b470ea8f2659d23d1e6e5", nil]])
+      expect(seen.first[:token] == "shpat_test_fake").to be(true)
+    end
+
+    it "reads an order's metafields with NodeMetafields" do
+      seen = stub_shopify_graphql("query NodeMetafields", { "node" => nil })
+      expect(Payments::ShopifyAdapter::Metafields.of("gid://shopify/DraftOrder/5")).to eq([])
+      expect(sent(seen)).to eq([["bad596ff5d91ba97b27551267d7fe782730e6100d93a9fe01fc7d8fdcd05730a", { "ownerId" => "gid://shopify/DraftOrder/5" }]])
+    end
+
+    it "lists the payable locker drafts (LockerRental::DraftSweep) with shopifyOpenDrafts" do
+      seen = stub_shopify_graphql("query shopifyOpenDrafts",
+                                  { "draftOrders" => { "nodes" => [], "pageInfo" => { "hasNextPage" => false, "endCursor" => nil } } })
+      expect(LockerRental::DraftSweep.run).to be_ok
+      expect(sent(seen)).to eq([["01412ebb1ed6c49843382380002679bbdd0af35257fd1ed57ba3ce4fe35e8e5a",
+                                 { "query" => "(status:open OR status:invoice_sent) tag:makerepo_test_locker", "first" => 50, "after" => nil }]])
+    end
+  end
+
   it "ShopifyAPI::Context.setup has a single call site: ShopifyContext.ensure_setup!" do
     callers = Dir[Rails.root.join("{app,lib,config}/**/*.rb")].select { |f| File.read(f).include?("ShopifyAPI::Context.setup") }
                   .map { |f| Pathname(f).relative_path_from(Rails.root).to_s }
@@ -200,7 +240,7 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
   end
 
   it "every Shopify session start goes through ShopifyContext.start_session!, and the boot initializer through ensure_setup!" do
-    %w[app/services/shopify_service.rb app/models/concerns/shopify_concern.rb].each do |file|
+    %w[app/models/payments/shopify_adapter.rb].each do |file|
       src = File.read(Rails.root.join(file))
       expect(src).to include("ShopifyContext.start_session!"), file
       expect(src).not_to include("ShopifyAPI::Auth::Session.new"), "#{file} builds its own session"
@@ -208,23 +248,23 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
     expect(File.read(Rails.root.join("config/initializers/shopify_api.rb"))).to include("ShopifyContext.ensure_setup!")
   end
 
-  it "ShopifyAPI::Clients::Graphql::Admin has a single construction site: ShopifyConcern::DraftOrders.client" do
+  it "ShopifyAPI::Clients::Graphql::Admin has a single construction site: Payments::ShopifyAdapter.admin_client" do
     callers = Dir[Rails.root.join("{app,lib}/**/*.rb")].select { |f| File.read(f).include?("Clients::Graphql::Admin") }
                   .map { |f| Pathname(f).relative_path_from(Rails.root).to_s }
-    expect(callers).to eq(["app/models/concerns/shopify_concern.rb"])
+    expect(callers).to eq(["app/models/payments/shopify_adapter.rb"])
   end
 
   # The homepage makerstore query is the one deliberate exception: it uses the hard-coded store and
   # only the access token (original behaviour), priming the Context through ensure_setup!, whose result it ignores.
   it "the homepage makerstore query uses its own hard-coded-shop session and only primes via ensure_setup!" do
-    src = File.read(Rails.root.join("app/controllers/static_pages_controller.rb"))
+    src = File.read(Rails.root.join("app/models/payments/shopify_catalog.rb"))
     expect(src).to include("uottawa-makerspace.myshopify.com")
     expect(src).to include("ShopifyContext.ensure_setup!")
     expect(src).not_to include("start_session!")
   end
 
   describe "in a fresh process (nothing but the boot initializer ran Context.setup)" do
-    # ShopifyConcern::DraftOrders.client never calls
+    # Payments::ShopifyAdapter.admin_client never calls
     # Context.setup, so the API version comes from config/initializers/shopify_api.rb.
     # Simulated by blanking the Context, then re-running the initializer.
     let(:context_ivars) { %i[@api_key @api_secret_key @api_version @host] }

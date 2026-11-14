@@ -1,15 +1,19 @@
 # frozen_string_literal: true
 
 module Payments
-  # The Payments contract on Shopify. A checkout is a Shopify draft order (its id is the draft's gid, its pay URL the
-  # draft's invoice URL). Built on the existing Shopify calls (ShopifyConcern::DraftOrders, ShopifyConcern::DraftRemoval),
-  # so it sends the same GraphQL operations and variables as the models that include ShopifyConcern.
+  # The Payments contract on Shopify, and the only code that talks to the Shopify SDK (with its siblings under
+  # app/models/payments/; spec/config/payments_boundary_spec.rb keeps it so). A checkout is a Shopify draft order (its
+  # id is the draft's gid, its pay URL the draft's invoice URL), made with the calls in DraftOrders and DraftRemoval.
   #
   #   create_checkout(lines:, reference:) -> Checkout       raises when Shopify refuses or does not answer
   #   cancel_checkout(id) -> :cancelled | :already_paid | :gone | :failed
   #   checkout_status(id) -> :open | :paid | :gone | :unknown
   #   find_open_checkout(reference:) -> Checkout or nil     the payable draft tagged with reference.checkout_id
-  #   parse_webhook(request) -> PaymentEvent                raises WebhookRejected (see ShopifyAdapter::Webhook)
+  #   verify_webhook!(body:, headers:) -> nil               raises WebhookRejected unless the request is signed by Shopify
+  #   parse_webhook(body:, headers:) -> PaymentEvent        raises WebhookRejected (see ShopifyAdapter::Webhook)
+  #
+  # The products that still keep their own draft id (lockers, memberships, job orders) call the Shopify-level parts
+  # directly: DraftOrders (fetch, create, delete, list), DraftRemoval (the delete-and-classify rule) and Metafields.
   #
   # checkout_status answers :unknown when Shopify answers with an error (a 2xx other than 200, or GraphQL errors) or
   # with a draft in a status it does not know. cancel_checkout raises when the check after a refused delete gets no
@@ -37,8 +41,23 @@ module Payments
     GRAPHQL
     OPEN_CHECKOUT_PAGE = 10
 
+    # The prefix of every tag this environment puts on its drafts (production drafts are not marked with an env).
+    def self.target_tag
+      Rails.env.production? ? "makerepo" : "makerepo_#{Rails.env}"
+    end
+
+    # THE Admin GraphQL client builder. Without a session it starts the configured one; a caller that needs another
+    # store or token passes its own session.
+    def self.admin_client(session: nil)
+      unless session
+        ShopifyContext.start_session!
+        session = ShopifyAPI::Context.active_session
+      end
+      ShopifyAPI::Clients::Graphql::Admin.new(session: session)
+    end
+
     # The tag a draft made for a checkout record carries: this environment's prefix and the record's id.
-    def self.checkout_tag_prefix = "#{ShopifyConcern.target_tag}_checkout_"
+    def self.checkout_tag_prefix = "#{target_tag}_checkout_"
     def self.checkout_tag(checkout_id) = "#{checkout_tag_prefix}#{checkout_id}"
 
     # `webhook_secrets`: the HMAC secrets webhooks are signed with; by default the configured ones, read per request.
@@ -47,14 +66,14 @@ module Payments
     end
 
     def create_checkout(lines:, reference:)
-      id, pay_url = ShopifyConcern::DraftOrders.create(draft_input(lines, reference))
+      id, pay_url = DraftOrders.create(draft_input(lines, reference))
       Checkout.new(id: id, pay_url: pay_url)
     end
 
-    def cancel_checkout(id) = CANCEL_OUTCOMES.fetch(ShopifyConcern::DraftRemoval.call(id).outcome)
+    def cancel_checkout(id) = CANCEL_OUTCOMES.fetch(DraftRemoval.call(id).outcome)
 
     def checkout_status(id)
-      state, draft = ShopifyConcern::DraftOrders.fetch_result(id)
+      state, draft = DraftOrders.fetch_result(id)
       return :gone if state == :gone
       return :unknown unless state == :found
 
@@ -71,21 +90,25 @@ module Payments
       node && Checkout.new(id: node["id"], pay_url: node["invoiceUrl"])
     end
 
-    def parse_webhook(request) = Webhook.new(request, secrets: webhook_secrets).event
+    def verify_webhook!(body:, headers:) = webhook(body, headers).verify!
+
+    def parse_webhook(body:, headers:) = webhook(body, headers).event
 
     private
+
+    def webhook(body, headers) = Webhook.new(body: body, headers: headers, secrets: webhook_secrets)
 
     def webhook_secrets
       @webhook_secrets || [ShopifyApp.configuration.secret, ShopifyApp.configuration.old_secret]
     end
 
     def draft_status(draft)
-      return :paid if ShopifyConcern::DraftRemoval.paid?(draft)
+      return :paid if DraftRemoval.paid?(draft)
 
-      ShopifyConcern::DraftRemoval.payable?(draft) ? :open : :unknown
+      DraftRemoval.payable?(draft) ? :open : :unknown
     end
 
-    # The same DraftOrderInput the models build (ShopifyConcern#shopify_draft_order_input); Reference only holds known kinds.
+    # The DraftOrderInput of a checkout; Reference only holds known kinds.
     def draft_input(lines, reference)
       {
         input: {
@@ -102,27 +125,26 @@ module Payments
     def draft_tags(reference)
       marker = MARKERS[reference.kind]
       [
-        "#{ShopifyConcern.target_tag}_#{reference.kind}",
+        "#{self.class.target_tag}_#{reference.kind}",
         marker && "#{marker}:#{reference.record_id}",
         reference.checkout_id && self.class.checkout_tag(reference.checkout_id)
       ].compact
     end
 
     def open_drafts_tagged(tag)
-      status_filter = ShopifyConcern::DraftRemoval::PAYABLE_STATUSES.map { |s| "status:#{s.downcase}" }.join(" OR ")
-      resp = ShopifyConcern::DraftOrders.client.query(
-        query: OPEN_CHECKOUT_QUERY, variables: { query: "(#{status_filter}) tag:#{tag}", first: OPEN_CHECKOUT_PAGE }
-      )
-      raise "Received HTTP #{resp.code} when looking up an open checkout" unless resp.code == 200
+      answer = Answer.new(self.class.admin_client.query(
+                            query: OPEN_CHECKOUT_QUERY, variables: { query: DraftOrders.payable_search(tag), first: OPEN_CHECKOUT_PAGE }
+                          ))
+      raise "Received HTTP #{answer.code} when looking up an open checkout" unless answer.ok?
 
-      nodes = resp.body.is_a?(Hash) && resp.body["errors"].blank? ? resp.body.dig("data", "draftOrders", "nodes") : nil
+      nodes = answer.clean_data("draftOrders", "nodes")
       raise "No draftOrders in the answer to the open checkout lookup" unless nodes.is_a?(Array)
 
       nodes
     end
 
     def open_with_tag?(node, tag)
-      ShopifyConcern::DraftRemoval.payable?(node) && Webhook.tag_list(node["tags"]).include?(tag)
+      DraftRemoval.payable?(node) && Webhook.tag_list(node["tags"]).include?(tag)
     end
   end
 end

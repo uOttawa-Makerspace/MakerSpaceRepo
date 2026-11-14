@@ -166,7 +166,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
   it "uses the env-specific tag names (production tags are not honored in test)" do
     expect(membership_tag).to eq("makerepo_test_membership")
     expect(job_order_tag).to eq("makerepo_test_job_order")
-    expect(ShopifyConcern.target_tag).to eq("makerepo_test")
+    expect(Payments::ShopifyAdapter.target_tag).to eq("makerepo_test")
   end
 
   # ------------------------------------------------------------ memberships
@@ -601,7 +601,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       before { allow_any_instance_of(ShopOrderApplier).to receive(:draft_order_metafields).and_call_original }
 
       def lookup_answers(client)
-        allow_any_instance_of(ShopOrderApplier).to receive(:shopify_admin_client).and_return(client)
+        allow(Payments::ShopifyAdapter).to receive(:admin_client).and_return(client)
       end
 
       def graphql_error(code) = double(code: 200, body: { "errors" => [{ "extensions" => { "code" => code } }] })

@@ -2,7 +2,7 @@
 
 # Reclaims the Shopify drafts no job order points at (the rules are in ShopifyDraftSweep).
 #
-# Every job-order draft carries a marker naming its order (JobOrder#shopify_draft_order_tags: the environment's
+# Every job-order draft carries a marker naming its order (Payments::ShopifyAdapter::MARKERS: the environment's
 # operating tag, e.g. "makerepo_job_order", plus "job_order:<id>"). A job-order draft is only created inside the order's
 # own locked operation, so there is no wait before the sweep may take one. Per draft, in ONE locked operation
 # (JobOrder.reconcile_orphan_draft!): the order is re-read and kept when the database backs it (JobOrder#backs_draft?:

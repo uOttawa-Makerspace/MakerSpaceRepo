@@ -983,15 +983,15 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       expect { JobOrder::DraftDeletion }.to raise_error(NameError, /private constant/)
     end
 
-    it "uses one Admin client builder for ShopifyService and the draft calls" do
-      expect(ShopifyConcern::DraftOrders).to receive(:client).and_return(:client)
-      expect(ShopifyService.admin_client).to eq(:client)
+    it "uses one Admin client builder for the catalogue and the draft calls" do
+      expect(Payments::ShopifyAdapter).to receive(:admin_client).and_return(double(query: double(body: { "data" => { "product" => nil } })))
+      expect(Payments::ShopifyCatalog.product("gid://shopify/Product/1")).to be_nil
     end
 
     it "builds the client for a draft create through the one builder" do
       order = order_with_draft!
       order.job_tasks.create!(title: "Task #1").build_job_task_quote(price: 5, service_price: 0, service_quantity: 0).save!
-      expect(ShopifyConcern::DraftOrders).to receive(:client).at_least(:once).and_call_original
+      expect(Payments::ShopifyAdapter).to receive(:admin_client).at_least(:once).and_call_original
 
       expect(order.reload.checkout_link).to be_ok
     end

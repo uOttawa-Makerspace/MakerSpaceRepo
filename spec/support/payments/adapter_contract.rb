@@ -10,7 +10,7 @@
 #   expect_provider_received(lines:, reference:)
 #   arrange_open_checkout(reference)          a payable checkout carrying reference.checkout_id; returns its Checkout
 #   arrange_no_open_checkout(reference)
-#   webhook(signature, provider_ref:, reference:, amount:, paid_at:)   a request, signature :valid, :none or :wrong
+#   webhook(signature, provider_ref:, reference:, amount:, paid_at:)   a request ({ body:, headers: }), signature :valid, :none or :wrong
 #   unsupported_topic_webhook                 a signed notice of a kind the adapter does not turn into a payment
 #   malformed_webhook                         a signed notice whose body is not a payment notice
 RSpec.shared_examples "a Payments adapter" do
@@ -73,32 +73,49 @@ RSpec.shared_examples "a Payments adapter" do
     end
   end
 
+  describe "#verify_webhook!" do
+    let(:fields) { { provider_ref: "5001", reference: reference, amount: BigDecimal("1"), paid_at: Time.zone.parse("2026-11-02 14:30:00") } }
+
+    it "accepts a signed request, whatever it is a notice of" do
+      expect(adapter.verify_webhook!(**webhook(:valid, **fields))).to be_nil
+      expect(adapter.verify_webhook!(**unsupported_topic_webhook)).to be_nil
+      expect(adapter.verify_webhook!(**malformed_webhook)).to be_nil
+    end
+
+    it "rejects a request without a signature, or whose signature does not match" do
+      expect { adapter.verify_webhook!(**webhook(:none, **fields)) }
+        .to raise_error(Payments::WebhookRejected) { |e| expect(e.reason).to eq(:unsigned) }
+      expect { adapter.verify_webhook!(**webhook(:wrong, **fields)) }
+        .to raise_error(Payments::WebhookRejected) { |e| expect(e.reason).to eq(:bad_signature) }
+    end
+  end
+
   describe "#parse_webhook" do
     let(:paid_at) { Time.zone.parse("2026-11-02 14:30:00") }
     let(:event_fields) { { provider_ref: "5001", reference: reference, amount: BigDecimal("12.5"), paid_at: paid_at } }
 
     it "returns the verified PaymentEvent of a signed request" do
-      event = adapter.parse_webhook(webhook(:valid, **event_fields))
+      event = adapter.parse_webhook(**webhook(:valid, **event_fields))
       expect(event).to eq(Payments::PaymentEvent.new(provider: provider_name, **event_fields))
     end
 
     it "rejects a request without a signature" do
-      expect { adapter.parse_webhook(webhook(:none, **event_fields)) }
+      expect { adapter.parse_webhook(**webhook(:none, **event_fields)) }
         .to raise_error(Payments::WebhookRejected) { |e| expect(e.reason).to eq(:unsigned) }
     end
 
     it "rejects a request whose signature does not match" do
-      expect { adapter.parse_webhook(webhook(:wrong, **event_fields)) }
+      expect { adapter.parse_webhook(**webhook(:wrong, **event_fields)) }
         .to raise_error(Payments::WebhookRejected) { |e| expect(e.reason).to eq(:bad_signature) }
     end
 
     it "rejects a signed notice it does not turn into a payment" do
-      expect { adapter.parse_webhook(unsupported_topic_webhook) }
+      expect { adapter.parse_webhook(**unsupported_topic_webhook) }
         .to raise_error(Payments::WebhookRejected) { |e| expect(e.reason).to eq(:unsupported_topic) }
     end
 
     it "rejects a signed body that is not a payment notice" do
-      expect { adapter.parse_webhook(malformed_webhook) }
+      expect { adapter.parse_webhook(**malformed_webhook) }
         .to raise_error(Payments::WebhookRejected) { |e| expect(e.reason).to eq(:malformed) }
     end
   end

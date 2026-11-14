@@ -45,7 +45,7 @@ class LockerRental
 
     # [gid, gid] for a payable draft of this environment with no locker marker at all (the record id is the gid).
     def marked(node)
-      return nil unless ShopifyConcern::DraftRemoval::PAYABLE_STATUSES.include?(node["status"]) && unmarked_here?(node["tags"])
+      return nil unless Payments::ShopifyAdapter::DraftRemoval::PAYABLE_STATUSES.include?(node["status"]) && unmarked_here?(node["tags"])
       return nil unless old_enough?(node)
 
       [node["id"], node["id"]] if node["id"].present?
