@@ -16,6 +16,8 @@ class KeyCertification < ApplicationRecord
   NUMBER_OF_SUPERVISOR_FILES = TOTAL_NUMBER_OF_FILES - NUMBER_OF_STAFF_FILES
   PDF_FILE_ATTACHMENTS =
     (1..TOTAL_NUMBER_OF_FILES).to_h { |i| [i, :"pdf_file_#{i}"] }.freeze
+  # The attachment rows of every file, for preloading the file counts of many certifications.
+  FILE_ATTACHMENTS = PDF_FILE_ATTACHMENTS.values.map { |name| :"#{name}_attachment" }.freeze
 
   FILE_NAMES = %w[
     WHMIS

@@ -443,6 +443,29 @@ RSpec.describe "Admin keys", type: :request do
       expect(doc.css("table.key-requests-table-approval tbody tr, table.key-requests-table-approved tbody tr")).to be_empty
     end
 
+    # Bullet's own bookkeeping reads each attachment's blob, which the page does not, so the count runs without it.
+    it "shows each requester's certificate counts in a number of queries that does not grow with the requests", :aggregate_failures, skip_bullet: true do
+      pdf = Rack::Test::UploadedFile.new(StringIO.new("%PDF-1.4"), "application/pdf", original_filename: "cert.pdf")
+      add_requests = lambda do
+        user = create(:user, :staff)
+        create(:key_request, :status_waiting_for_approval, :all_questions_answered, user: user, supervisor: supervisor, space: space)
+        certification = KeyCertification.create!(user: user)
+        [1, 2, KeyCertification::TOTAL_NUMBER_OF_FILES].each { |n| certification.pdf_file_at(n).attach(pdf.tap(&:rewind)) }
+        create(:key_request, :status_approved, :all_questions_answered, user: create(:user, :staff), supervisor: supervisor, space: space)
+      end
+      add_requests.call
+      get requests_admin_keys_path # warm caches
+      few = count_queries { get requests_admin_keys_path }
+      2.times { add_requests.call }
+      get requests_admin_keys_path # warm caches again
+      many = count_queries { get requests_admin_keys_path }
+      expect(many).to eq(few)
+
+      counts = Nokogiri::HTML(response.body).css("table tbody tr").map { |tr| tr.css("td")[7].text.squish }
+      with_files = "#{I18n.t('admin_pages.keys.staff_files_count', attached: 2, total: 9)} #{I18n.t('admin_pages.keys.supervisor_files_count', attached: 1, total: 1)}"
+      expect(counts.count(with_files)).to eq(3)
+    end
+
     it "shows the reason field next to Deny for a waiting request" do
       get requests_admin_keys_path
       expect(response.body).to include('name="denial_reason"')
@@ -532,6 +555,25 @@ RSpec.describe "Admin keys", type: :request do
       expect(response).to have_http_status(:ok)
       get edit_admin_key_transaction_path(tx)
       expect(response).to have_http_status(:ok)
+    end
+
+    it "lists every transaction with its key, holder and supervisor in a number of queries that does not grow with them", :aggregate_failures do
+      add_transactions = lambda do
+        held = create(:key, :regular_key_type, :inventory_status, space: create(:space), supervisor: create(:user, :admin))
+        KeyTransaction.create!(user: create(:user, :staff), key: held, deposit_amount: 20)
+        card = create(:key, :keycard_key_type, :inventory_status, supervisor: create(:user, :admin))
+        KeyTransaction.create!(user: create(:user, :staff), key: card, deposit_amount: 10)
+      end
+      add_transactions.call
+      get admin_key_transactions_path # warm caches
+      few = count_queries { get admin_key_transactions_path }
+      2.times { add_transactions.call }
+      get admin_key_transactions_path # warm caches again
+      many = count_queries { get admin_key_transactions_path }
+      expect(many).to eq(few)
+
+      rows = Nokogiri::HTML(response.body).css("table.key-request-all tbody tr").map { |tr| tr.css("td").first(3).map { |td| td.text.squish } }
+      expect(rows).to eq(KeyTransaction.order(created_at: :desc).map { |kt| [kt.key.get_keycode, kt.user.name, kt.key.supervisor&.name.to_s] })
     end
 
     it "redirects an unknown transaction to the index with an alert" do
