@@ -27,6 +27,56 @@ RSpec.describe AnnouncementsHelper, type: :helper do
     end
   end
 
+  describe "#visible_announcements" do
+    let!(:by_goal) do
+      Announcement::PUBLIC_GOALS.index_with { |goal| create(:announcement, public_goal: goal, description: "For #{goal}") }
+    end
+
+    def bar_for(user, signed_in: user.persisted?)
+      allow(helper).to receive(:current_user).and_return(user)
+      helper.define_singleton_method(:signed_in?) { signed_in }
+      helper.visible_announcements.map { |group, id, text| [group, id, text] }
+    end
+
+    def rows(*pairs)
+      pairs.map { |group, goal| [group, by_goal[goal].id, "For #{goal}"] }
+    end
+
+    it "gives an admin every group, in bar order" do
+      expect(bar_for(create(:user, :admin))).to eq(
+        rows([:admins, "admin"], [:staff, "staff"], [:all_users, "regular_user"], [:all_visitors, "all"],
+             [:volunteers, "volunteer"])
+      )
+    end
+
+    it "gives staff the staff, signed-in, visitor and volunteer groups" do
+      expect(bar_for(create(:user, :staff))).to eq(
+        rows([:staff, "staff"], [:all_users, "regular_user"], [:all_visitors, "all"], [:volunteers, "volunteer"])
+      )
+    end
+
+    it "gives a member of the volunteer program the signed-in, visitor and volunteer groups" do
+      expect(bar_for(create(:user, :volunteer_with_volunteer_program))).to eq(
+        rows([:all_users, "regular_user"], [:all_visitors, "all"], [:volunteers, "volunteer"])
+      )
+    end
+
+    it "gives a regular user the signed-in and visitor groups" do
+      expect(bar_for(create(:user, :regular_user))).to eq(rows([:all_users, "regular_user"], [:all_visitors, "all"]))
+    end
+
+    it "gives a guest only the visitor group" do
+      expect(bar_for(User.new)).to eq(rows([:all_visitors, "all"]))
+    end
+
+    it "leaves out what the user dismissed and what is inactive" do
+      user = create(:user, :regular_user)
+      AnnouncementDismiss.create!(user: user, announcement: by_goal["all"])
+      create(:announcement, public_goal: "regular_user", active: false, description: "Old")
+      expect(bar_for(user)).to eq(rows([:all_users, "regular_user"]))
+    end
+  end
+
   describe "#return_active" do
     around { |example| travel_to(Time.zone.local(2026, 6, 15, 12)) { example.run } }
 
