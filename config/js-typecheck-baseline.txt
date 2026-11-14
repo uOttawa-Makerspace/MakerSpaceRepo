@@ -307,9 +307,3 @@
 3	app/javascript/src/unavailabilities_helpers.js	TS2339	Property 'style' does not exist on type 'Element'.
 6	app/javascript/src/unavailabilities_helpers.js	TS2339	Property 'value' does not exist on type 'Element'.
 10	app/javascript/src/unavailabilities_helpers.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
-1	app/javascript/src/validation.js	TS2339	Property 'scrollToError' does not exist on type 'Window & typeof globalThis'.
-1	app/javascript/src/validation.js	TS2339	Property 'scrow_to_error' does not exist on type 'Window & typeof globalThis'.
-1	app/javascript/src/validation.js	TS2339	Property 'validation_proposal' does not exist on type 'Window & typeof globalThis'.
-1	app/javascript/src/validation.js	TS2339	Property 'validation' does not exist on type 'Window & typeof globalThis'.
-5	app/javascript/src/validation.js	TS2339	Property 'value' does not exist on type 'Element'.
-1	app/javascript/src/validation.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.

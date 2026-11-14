@@ -2,7 +2,6 @@
 import "trix";
 
 // Imported from ../src/
-import "../src/validation";
 import "../src/direct_uploads";
 import "../src/effects";
 import "../src/forms";
