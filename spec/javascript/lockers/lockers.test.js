@@ -148,4 +148,81 @@ describe("validateRange", () => {
     document.body.innerHTML = "";
     expect(() => validateRange()).not.toThrow();
   });
+
+  it("leaves the lists untouched when the modal has no end field", () => {
+    fixture([], 1, 3);
+    document.getElementById("newLockerRangeEnd").remove();
+    validateRange();
+    expect(items("newRangeLockersPossible")).toEqual(["stale"]);
+    expect(hidden("newRangeLockersPossible")).toBe(false);
+  });
+
+  it("leaves the lists untouched when the modal has no start field", () => {
+    fixture([], 1, 3);
+    document.getElementById("newLockerRangeStart").remove();
+    validateRange();
+    expect(items("newRangeLockersAlreadyPresent")).toEqual(["stale"]);
+  });
+
+  it("reads the leading number of each field", () => {
+    fixture(["2"], "1abc", "3 lockers");
+    validateRange();
+    expect(items("newRangeLockersAlreadyPresent")).toEqual(["2"]);
+    expect(items("newRangeLockersPossible")).toEqual(["1", "3"]);
+  });
+
+  it("ignores existing lockers whose names are not plain numbers", () => {
+    fixture(["A1", "01", "2"], 1, 2);
+    validateRange();
+    expect(items("newRangeLockersAlreadyPresent")).toEqual(["2"]);
+    expect(items("newRangeLockersPossible")).toEqual(["1"]);
+  });
+
+  it("keeps the stale items of a list it hides", () => {
+    fixture(["50"], 1, 3);
+    validateRange();
+    expect(hidden("newRangeLockersAlreadyPresent")).toBe(true);
+    expect(items("newRangeLockersAlreadyPresent")).toEqual(["stale"]);
+  });
+
+  it("shows a list again once it has items", () => {
+    fixture(["2"], 1, 1);
+    validateRange();
+    expect(hidden("newRangeLockersAlreadyPresent")).toBe(true);
+    document.getElementById("newLockerRangeEnd").value = "3";
+    validateRange();
+    expect(hidden("newRangeLockersAlreadyPresent")).toBe(false);
+    expect(items("newRangeLockersAlreadyPresent")).toEqual(["2"]);
+  });
+
+  it("fills the other list when one list is missing from the page", () => {
+    fixture(["2"], 1, 3);
+    document.getElementById("newRangeLockersAlreadyPresent").remove();
+    validateRange();
+    expect(items("newRangeLockersPossible")).toEqual(["1", "3"]);
+  });
+
+  it("fills the existing list when the creatable list is missing", () => {
+    fixture(["2"], 1, 3);
+    document.getElementById("newRangeLockersPossible").remove();
+    validateRange();
+    expect(items("newRangeLockersAlreadyPresent")).toEqual(["2"]);
+  });
+
+  it("finds the lists and existing lockers anywhere on the page", () => {
+    document.body.innerHTML = `
+      <div id="newRangeLockerModal">
+        <input id="newLockerRangeStart" value="1">
+        <input id="newLockerRangeEnd" value="4">
+      </div>
+      <div id="newRangeLockersAlreadyPresent"><ul></ul></div>
+      <div id="newRangeLockersPossible"><ul></ul></div>
+      <table><tr data-locker-specifier="3"></tr></table>`;
+    validateRange();
+    expect(items("newRangeLockersAlreadyPresent")).toEqual(["3"]);
+    expect(items("newRangeLockersPossible")).toEqual([
+      "Range from 1 to 2",
+      "4",
+    ]);
+  });
 });
