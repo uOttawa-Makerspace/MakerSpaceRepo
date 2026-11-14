@@ -99,6 +99,31 @@ RSpec.describe "Profile page queries", type: :request do
       )
     end
 
+    it "shows a joined proposal's first photo as its card background, and no background without a photo" do
+      with_photo, without_photo = join_proposals!(2)
+      with_photo.photos.attach(FilesTestHelper.png)
+
+      get path
+
+      expect(response).to have_http_status(:ok)
+      backgrounds = Nokogiri::HTML(response.body).css(".repository-container").to_h do |row|
+        [row.at_css(".title a").text, row.at_css(".repo-display-wrapper")["style"]]
+      end
+      expect(backgrounds[with_photo.title]).to include("/rails/active_storage/blobs/").and include("test.png")
+      expect(backgrounds[without_photo.title]).to eq("background-image:url('')")
+    end
+
+    it "runs the same number of queries for two joined proposals with photos as for five" do
+      join_proposals!(2).each { |proposal| proposal.photos.attach(FilesTestHelper.png) }
+      two = queries_for(path)
+      join_proposals!(3).each { |proposal| proposal.photos.attach(FilesTestHelper.png) }
+      five = queries_for(path)
+
+      expect(response).to have_http_status(:ok)
+      expect(joined_rows.size).to eq(5)
+      expect(five).to eq(two)
+    end
+
     it "runs the same number of queries for two joined proposals as for five" do
       join_proposals!(2)
       two = queries_for(path)

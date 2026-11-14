@@ -402,7 +402,7 @@ class UsersController < SessionsController
   def joined_projects_of(user)
     return user.project_joins unless params[:show] == 'projects_assigned'
 
-    user.project_joins.includes(project_proposal: %i[user photos_attachments])
+    user.project_joins.includes(project_proposal: [:user, { photos_attachments: :blob }])
   end
 
   # Each private section is loaded only for a viewer who may see it.

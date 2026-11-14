@@ -31,7 +31,7 @@
     <% repos.each do |joined_project| %>
         <% project_proposal = joined_project.project_proposal %>
         <div class="repository-container">
-            <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(project_proposal.photos.first.image) if project_proposal.photos.present? && project_proposal.photos.first.present? && project_proposal.photos.first.image.attached?}')" %> >
+            <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(project_proposal.photos.first) if project_proposal.photos.attached?}')" %> >
                 <%= link_to '', project_proposal_path(project_proposal), class: 'link' %>
             </div>
             <div class="repo-info">
