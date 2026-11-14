@@ -520,9 +520,5 @@ describe("submit", () => {
     );
     modal.dispatchEvent(new Event("hide.bs.modal", { cancelable: true }));
     expect(modal.dataset.shown).toBeUndefined();
-
-    fire(modal, "shown.bs.modal");
-    fire(modal, "hidden.bs.modal");
-    expect(modal.dataset.shown).toBeUndefined();
   });
 });

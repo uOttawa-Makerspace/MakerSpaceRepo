@@ -362,7 +362,6 @@ onPageLoad("#eventModal", () => {
   });
   // Reset the form
   modal.addEventListener("hidden.bs.modal", () => {
-    delete modal.dataset.shown;
     modal.querySelector("form").reset();
     modal.querySelector("#calendar_dialog_alert").replaceChildren();
     allDayCheckbox.checked = false;

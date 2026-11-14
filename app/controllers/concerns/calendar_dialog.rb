@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
 # How the calendar dialogs answer a save or a delete. A Turbo form gets a stream: a save shows the flash, closes the
-# dialog and refetches the calendar's events; a refusal (an alert) shows the alert inside the open dialog and leaves
-# what was typed there. Any other request is redirected back to the page it came from, or to the admin calendar (a
-# controller may override `after_dialog_path`).
+# dialog and refetches the calendar; a refusal (an alert) shows it inside the open dialog, keeping what was typed. Any
+# other request is redirected back to the page it came from, or to the admin calendar (see `after_dialog_path`).
 module CalendarDialog
   extend ActiveSupport::Concern
 
@@ -18,6 +17,11 @@ module CalendarDialog
         render alert ? "calendar_dialog/refused" : "calendar_dialog/done"
       end
     end
+  end
+
+  # The answer to a save that `ok` says worked: the notice, or the record's validation messages after `key`.
+  def dialog_saved(ok, notice, record, key)
+    ok ? dialog_done(notice: notice) : dialog_done(alert: validation_message(record, key))
   end
 
   def after_dialog_path
