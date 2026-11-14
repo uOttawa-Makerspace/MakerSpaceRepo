@@ -52,8 +52,8 @@ module Api
       def deliver_request(help, version)
         text = help.comments.to_plain_text
         if current_user
-          MsrMailer.issue_email(help.name, help.email, help.subject, text, nil, version).deliver_later
           MsrMailer.issue_email_copy_to_team(help.name, help.email, help.subject, text, nil, version).deliver_later
+          MsrMailer.issue_email(help.name, help.email, help.subject, text, nil, version).deliver_later
         else
           # Anonymous: never mail the caller-supplied address (mail relay). Team only, reporter in Reply-To.
           MsrMailer.issue_email_to_team(help.name, help.email, help.subject, text, version).deliver_later

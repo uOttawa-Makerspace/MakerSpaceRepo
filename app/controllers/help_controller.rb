@@ -62,8 +62,8 @@ class HelpController < SessionsController
     if @help.save && @help.file_issue
       report = [@help.name, @help.email, @help.subject, @help.comments.to_plain_text, params[:share_email],
                 params[:app_version].to_s.presence]
-      MsrMailer.issue_email(*report).deliver_later
       MsrMailer.issue_email_copy_to_team(*report).deliver_later
+      MsrMailer.issue_email(*report).deliver_later
       render json: { status: 'sent' }
     else
       render json: { errors: @help.errors.full_messages }, status: :unprocessable_content
@@ -77,10 +77,10 @@ class HelpController < SessionsController
   def queue_issue_copy
     text = @help.comments.to_plain_text
     if signed_in?
-      # Signed in: one copy to the account's own address (never the typed one) and one to the team
+      # Signed in: one copy to the team (queued first) and one to the account's own address (never the typed one)
       report = [@help.name, current_user.email, @help.subject, text, params[:share_email]]
-      MsrMailer.issue_email(*report, contact_email: @help.email, account: current_user).deliver_later
       MsrMailer.issue_email_copy_to_team(*report, contact_email: @help.email, account: current_user).deliver_later
+      MsrMailer.issue_email(*report, contact_email: @help.email, account: current_user).deliver_later
     else
       MsrMailer.issue_email_to_team(@help.name, @help.email, @help.subject, text,
                                     via: 'the MakerRepo help page').deliver_later

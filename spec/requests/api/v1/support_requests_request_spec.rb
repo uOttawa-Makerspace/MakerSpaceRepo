@@ -107,6 +107,13 @@ RSpec.describe "POST /api/v1/support_requests", type: :request do
     expect(CGI.unescapeHTML(team.body.decoded)).not_to include("Bonjour", "Merci,")
   end
 
+  it "still sends the team its copy when a signed-in caller's copy cannot be queued" do
+    allow(MsrMailer).to receive(:issue_email).and_raise(ActiveJob::EnqueueError, "queue down")
+    perform_enqueued_jobs { post_request(payload, as: user) }
+    expect(response).to have_http_status(:internal_server_error)
+    expect(deliveries.map(&:to)).to eq([["uottawa.makerepo@gmail.com"]])
+  end
+
   it "needs no name or email from a signed-in caller" do
     post_request(payload.except(:name, :email), as: user)
     expect(response).to have_http_status(:accepted)

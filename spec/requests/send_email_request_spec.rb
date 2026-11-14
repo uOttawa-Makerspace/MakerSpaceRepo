@@ -45,6 +45,13 @@ RSpec.describe "PUT /send_email (React Help form)", type: :request do
     expect(user.email).to eq("original@example.com")
   end
 
+  it "still sends the team its copy when the caller's copy cannot be queued" do
+    allow(MsrMailer).to receive(:issue_email).and_raise(ActiveJob::EnqueueError, "queue down")
+    perform_enqueued_jobs { put "/send_email", params: payload.to_json, headers: headers.merge("Content-Type" => "application/json") }
+    expect(response).to have_http_status(:internal_server_error)
+    expect(deliveries.map(&:to)).to eq([["uottawa.makerepo@gmail.com"]])
+  end
+
   # the confirmation goes to the account email, never the posted one.
   it "ignores the posted email and name for addressing (no mail relay)" do
     expect do
