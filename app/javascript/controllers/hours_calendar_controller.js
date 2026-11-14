@@ -1,6 +1,4 @@
 import { Controller } from "@hotwired/stimulus";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
 
 import { pageCalendar } from "../src/page_calendar.js";
 import { rangeSource, unticked } from "../src/range_source.js";
@@ -75,7 +73,6 @@ export default class extends TypedController {
   /** @returns {import("@fullcalendar/core").CalendarOptions} */
   calendarOptions() {
     return {
-      plugins: [timeGridPlugin, dayGridPlugin],
       initialView: this.viewForWidth(),
       views: {
         timeGridTwoDay: { type: "timeGrid", duration: { days: 2 } },
@@ -83,13 +80,11 @@ export default class extends TypedController {
         timeGridFiveDay: { type: "timeGrid", duration: { days: 5 } },
         timeGridSevenDay: { type: "timeGridWeek" },
       },
-      firstDay: 0,
       headerToolbar: { left: "prev", center: "title", right: "next" },
       eventSources: [this.hoursSource()],
       expandRows: true,
       contentHeight: "auto",
       stickyHeaderDates: false,
-      timeZone: "America/Toronto",
       nowIndicator: true,
       slotEventOverlap: false,
       allDaySlot: this.weekValue,

@@ -1,26 +1,28 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it } from "vitest";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import dayGridPlugin from "@fullcalendar/daygrid";
+import listPlugin from "@fullcalendar/list";
 
 import { pageCalendar } from "../../app/javascript/src/page_calendar.js";
 
 // The real FullCalendar, drawn on a page of the given language with the
 // toolbar the staff calendars use.
-function draw(lang, options = {}) {
+function draw(lang, options = {}, ...plugins) {
   document.body.innerHTML = `<div id="cal"><p id="stale">old</p></div>`;
   document.documentElement.setAttribute("lang", lang);
   const target = document.getElementById("cal");
-  const calendar = pageCalendar(target, {
-    plugins: [timeGridPlugin, dayGridPlugin],
-    initialView: "timeGridWeek",
-    headerToolbar: {
-      left: "prev,next,today",
-      center: "title",
-      right: "timeGridWeek,dayGridMonth",
+  const calendar = pageCalendar(
+    target,
+    {
+      initialView: "timeGridWeek",
+      headerToolbar: {
+        left: "prev,next,today",
+        center: "title",
+        right: "timeGridWeek,dayGridMonth",
+      },
+      ...options,
     },
-    ...options,
-  });
+    ...plugins,
+  );
   calendar.render();
   const name = (button) => target.querySelector(`.fc-${button}-button`).title;
   return { calendar, target, name };
@@ -76,5 +78,26 @@ describe("pageCalendar", () => {
     expect(
       drawn.target.querySelector(".fc-icon").getAttribute("aria-hidden"),
     ).toBe("true");
+  });
+
+  it("starts from the shared settings", () => {
+    drawn = draw("en");
+
+    expect(drawn.calendar.getOption("timeZone")).toBe("America/Toronto");
+    expect(drawn.calendar.getOption("firstDay")).toBe(0);
+    expect(drawn.calendar.getOption("height")).toBe("80vh");
+    expect(drawn.calendar.getOption("scrollTime")).toBe("07:00:00");
+  });
+
+  it("lets the options change a shared setting, and adds the plugins given", () => {
+    drawn = draw(
+      "en",
+      { timeZone: "America/New_York", height: "auto", initialView: "listWeek" },
+      listPlugin,
+    );
+
+    expect(drawn.calendar.getOption("timeZone")).toBe("America/New_York");
+    expect(drawn.calendar.getOption("height")).toBe("auto");
+    expect(drawn.calendar.view.type).toBe("listWeek");
   });
 });

@@ -1,6 +1,4 @@
 import { Controller } from "@hotwired/stimulus";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
 import { closeSaved } from "../src/calendar_dialog.js";
@@ -50,7 +48,11 @@ export default class extends TypedController {
   static outlets = ["unavailability-form", "imported-event-details"];
 
   connect() {
-    this.calendar = pageCalendar(this.calendarTarget, this.calendarOptions());
+    this.calendar = pageCalendar(
+      this.calendarTarget,
+      this.calendarOptions(),
+      interactionPlugin,
+    );
     this.containerTarget.style.display = "block";
     this.spinnerTarget.style.display = "none";
     this.calendar.render();
@@ -117,19 +119,15 @@ export default class extends TypedController {
 
   calendarOptions() {
     return {
-      plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin],
-      timeZone: "America/Toronto",
       initialView: "timeGridWeek",
       headerToolbar: {
         left: "prev,next,today",
         center: "title",
         right: "timeGridWeek,dayGridMonth",
       },
-      scrollTime: "07:00:00",
       selectable: true,
       selectMirror: true,
       selectMinDistance: 30,
-      height: "80vh",
       events: {
         url: this.feedUrlValue,
         success: (_events, response) => this.showFailures(response),

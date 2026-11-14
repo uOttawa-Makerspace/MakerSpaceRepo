@@ -1,5 +1,4 @@
 import interactionPlugin from "@fullcalendar/interaction";
-import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import TomSelect from "tom-select";
 import "flatpickr";
@@ -560,11 +559,10 @@ document.addEventListener("turbo:load", function () {
     );
   }
 
-  const bookedCalendar = pageCalendar(bookedCalendarEl, {
+  const calendarOptions = {
     initialDate: window.location.href.includes("start")
       ? new Date(new URLSearchParams(window.location.search).get("start"))
       : new Date(),
-    plugins: [interactionPlugin, timeGridPlugin, listPlugin],
     height: "auto",
     headerToolbar: {
       left: "prev,today,next",
@@ -584,7 +582,6 @@ document.addEventListener("turbo:load", function () {
     initialView: "timeGridWeek",
     navLinks: true,
     slotEventOverlap: false,
-    scrollTime: "07:00:00",
     slotMinTime: "06:00:00",
     slotMaxTime: "22:00:00",
     selectable: true,
@@ -602,7 +599,13 @@ document.addEventListener("turbo:load", function () {
     ],
     select: (arg) => createEvent(arg),
     eventClick: (arg) => editEvent(arg),
-  });
+  };
+  const bookedCalendar = pageCalendar(
+    bookedCalendarEl,
+    calendarOptions,
+    interactionPlugin,
+    listPlugin,
+  );
 
   bookedCalendar.render();
 }); // end turbo:load

@@ -1,6 +1,4 @@
 import { Controller } from "@hotwired/stimulus";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import dayGridPlugin from "@fullcalendar/daygrid";
 import { Tooltip } from "bootstrap";
 
 import { applyEventBackground } from "../src/calendar_background.js";
@@ -51,8 +49,6 @@ export default class extends TypedController {
 
   calendarOptions() {
     return {
-      plugins: [timeGridPlugin, dayGridPlugin],
-      timeZone: "America/Toronto",
       initialView: "timeGridWeek",
       headerToolbar: {
         left: "prev,next,today toggleOthersShifts toggleEventOverlap",
@@ -72,8 +68,6 @@ export default class extends TypedController {
           click: () => this.toggleEventOverlap(),
         },
       },
-      scrollTime: "07:00:00",
-      height: "80vh",
       events: this.feedUrlValue,
       eventDidMount: (info) => this.decorateEvent(info),
       eventWillUnmount: (info) => Tooltip.getInstance(info.el)?.dispose(),
