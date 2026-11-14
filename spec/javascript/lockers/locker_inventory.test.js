@@ -134,6 +134,17 @@ describe("locker variant selects", () => {
     expect(tomSelects).toHaveLength(2);
   });
 
+  it("replaces the copied picker of a select on a page restored from the cache, and keeps it disabled", () => {
+    document.body.innerHTML = `
+      <select class="locker-variant-select tomselected ts-hidden-accessible" id="a" tabindex="-1" disabled></select><div class="ts-wrapper"></div><div id="next"></div>`;
+    load();
+    expect(document.querySelectorAll(".ts-wrapper")).toHaveLength(0);
+    expect($("#a").className).toBe("locker-variant-select");
+    expect($("#a").nextElementSibling.id).toBe("next");
+    expect(tomSelects).toHaveLength(1);
+    expect(tomSelects[0].enabled).toBe(false);
+  });
+
   it("renders an option with the product details, escaped", () => {
     document.body.innerHTML = page;
     load();

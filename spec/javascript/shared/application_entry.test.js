@@ -2,7 +2,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The entry file imports every shared script; each has its own tests.
-vi.mock("../../../app/javascript/src/validation", () => ({}));
 vi.mock("../../../app/javascript/src/direct_uploads", () => ({}));
 vi.mock("../../../app/javascript/src/effects", () => ({}));
 vi.mock("../../../app/javascript/src/forms", () => ({}));

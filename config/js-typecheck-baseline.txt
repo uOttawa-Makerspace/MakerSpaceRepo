@@ -120,7 +120,6 @@
 3	app/javascript/entrypoints/lockers.js	TS2339	Property 'hidden' does not exist on type 'Element'.
 9	app/javascript/entrypoints/lockers.js	TS2339	Property 'tomselect' does not exist on type 'Element'.
 3	app/javascript/entrypoints/lockers.js	TS2339	Property 'value' does not exist on type 'Element'.
-1	app/javascript/entrypoints/lockers.js	TS2345	Argument of type 'Element' is not assignable to parameter of type 'string | TomInput'.
 1	app/javascript/entrypoints/lockers.js	TS2550	Property 'difference' does not exist on type 'Set<string>'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2025' or later.
 1	app/javascript/entrypoints/lockers.js	TS2550	Property 'intersection' does not exist on type 'Set<any>'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2025' or later.
 2	app/javascript/entrypoints/printer_issues.js	TS2304	Cannot find name 'issueSummary'.
@@ -307,9 +306,3 @@
 3	app/javascript/src/unavailabilities_helpers.js	TS2339	Property 'style' does not exist on type 'Element'.
 6	app/javascript/src/unavailabilities_helpers.js	TS2339	Property 'value' does not exist on type 'Element'.
 10	app/javascript/src/unavailabilities_helpers.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
-1	app/javascript/src/validation.js	TS2339	Property 'scrollToError' does not exist on type 'Window & typeof globalThis'.
-1	app/javascript/src/validation.js	TS2339	Property 'scrow_to_error' does not exist on type 'Window & typeof globalThis'.
-1	app/javascript/src/validation.js	TS2339	Property 'validation_proposal' does not exist on type 'Window & typeof globalThis'.
-1	app/javascript/src/validation.js	TS2339	Property 'validation' does not exist on type 'Window & typeof globalThis'.
-5	app/javascript/src/validation.js	TS2339	Property 'value' does not exist on type 'Element'.
-1	app/javascript/src/validation.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.

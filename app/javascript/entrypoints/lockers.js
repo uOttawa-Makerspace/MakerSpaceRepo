@@ -1,6 +1,6 @@
 import { Tooltip } from "bootstrap";
-import TomSelect from "tom-select";
-import { dataTableOptions, tomSelectOptions } from "../src/page_locale.js";
+import { dataTableOptions } from "../src/page_locale.js";
+import { newTomSelect } from "../src/tom_select.js";
 import DataTable from "datatables.net-bs5";
 import "datatables.net-select-bs5";
 import { csrfHeaders } from "../src/csrf";
@@ -124,26 +124,23 @@ document.addEventListener("turbo:load", function () {
 document.addEventListener("turbo:load", function () {
   document.querySelectorAll("select.locker-variant-select").forEach((el) => {
     if (!el.tomselect) {
-      new TomSelect(
-        el,
-        tomSelectOptions(el, {
-          render: {
-            option: function (data, escape) {
-              let itemtitle = escape(data.text);
-              let jsondata = (data.data && JSON.parse(data.data)) || {};
-              let title = escape(jsondata.displayName || "");
-              let sku = escape(jsondata.sku || "");
-              let price = escape(jsondata.price || "");
-              return `<div>
+      newTomSelect(el, {
+        render: {
+          option: function (data, escape) {
+            let itemtitle = escape(data.text);
+            let jsondata = (data.data && JSON.parse(data.data)) || {};
+            let title = escape(jsondata.displayName || "");
+            let sku = escape(jsondata.sku || "");
+            let price = escape(jsondata.price || "");
+            return `<div>
                     <span>${itemtitle}</span> <br />
                     <span><b>Display Name:</b> ${title}</span> <br />
                     <span><b>SKU:</b> <code>${sku}</code></span> <br />
                     <span><b>Price:</b> <code>${price}</code></span>
                   </div>`;
-            },
           },
-        }),
-      );
+        },
+      });
       // Match initial disabled state
       if (el.disabled && el.tomselect) {
         el.tomselect.disable();

@@ -5,7 +5,6 @@ import { answerWith, dropConnection, flush, reset, toasts } from "./support.js";
 
 vi.mock("trix", () => ({}));
 for (const name of [
-  "validation",
   "direct_uploads",
   "effects",
   "forms",
