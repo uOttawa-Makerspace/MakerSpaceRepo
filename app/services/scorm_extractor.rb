@@ -126,79 +126,113 @@ class ScormExtractor
 
     @learning_module.scorm_package.blob.open do |tmp|
       Zip::File.open(tmp.path) do |zip|
-        all_paths = zip.entries.reject(&:directory?).map { |entry| PackagePath.new(entry) }
-
-        # Everything is checked before anything is uploaded: a package with a
-        # path that could leave its folder, a file the package needs that is
-        # not content, or two files with one final path is rejected whole
-        # rather than half used
-        if (unsafe = all_paths.find(&:unsafe?))
-          raise InvalidPackage, %(the package contains a file path that is not allowed: "#{unsafe.display}")
-        end
-
-        paths, skipped = all_paths.partition { |path| !path.non_content? }
-
-        manifests = paths.select { |path| path.segments.last == MANIFEST_FILE }
-        raise InvalidPackage, "no #{MANIFEST_FILE} found" if manifests.empty?
-
-        shallowest = manifests.map { |path| path.segments.size }.min
-        top = manifests.select { |path| path.segments.size == shallowest }
-        raise InvalidPackage, "more than one #{MANIFEST_FILE} at the same folder level" if top.size > 1
-
-        manifest_entry = top.first.entry
-        root_segments = top.first.segments[0...-1]
-
-        xml = Nokogiri.XML(manifest_entry.get_input_stream.read)
-        scorm_entry_point = xml.xpath("//*[local-name()='resource'][@href]").first&.[]('href')
-
-        skipped_paths = skipped.map { |path| path.rooted(root_segments).join('/') }
-        needed = [scorm_entry_point, *xml.xpath("//*[local-name()='file'][@href]").map { |node| node['href'] }].compact
-        if (missing = needed.map { |href| href_path(href) }.find { |path| skipped_paths.include?(path) })
-          raise InvalidPackage, %(the package needs a file that was skipped: "#{missing.truncate(120)}")
-        end
-
-        files = paths.map { |path| [path.entry, path.rooted(root_segments).join('/')] }
-        if (duplicate = files.group_by(&:last).find { |_, same| same.size > 1 })
-          raise InvalidPackage, %(duplicate file path: "#{duplicate.first.truncate(120)}")
-        end
-
-        files.each do |entry, normalized_name|
-          heartbeat
-
-          ext = File.extname(normalized_name)
-          content_type = Rack::Mime.mime_type(ext, 'application/octet-stream')
-
-          @uploaded << ActiveStorage::Blob.create_and_upload!(
-            io: entry.get_input_stream,
-            filename: normalized_name,
-            content_type: content_type,
-            key: "#{prefix}/#{normalized_name}"
-          )
-        end
-
-        # Swap the attachments in only while this run still holds the claim.
-        # The previous files are deleted after the commit, so a failure here
-        # leaves the old attachments pointing at files that still exist.
-        LearningModule.transaction do
-          raise Superseded unless claimed.lock.exists?
-
-          old_attachments = @learning_module.scorm_package_files.attachments.to_a
-          old_blobs = old_attachments.map(&:blob)
-          old_attachments.each(&:delete)
-          @learning_module.scorm_package_files.reset
-          @learning_module.scorm_package_files.attach(@uploaded)
-
-          @learning_module.update!(
-            scorm_prefix: prefix,
-            scorm_entry_point: scorm_entry_point,
-            scorm_status: :ready,
-            scorm_status_changed_at: Time.current
-          )
-        end
+        files, scorm_entry_point = checked_files(zip)
+        upload(files, prefix)
+        old_blobs = publish(prefix, scorm_entry_point)
         @published = true
       end
     end
 
+    purge_previous(old_blobs)
+  end
+
+  # Everything is checked before anything is uploaded: a package with a path
+  # that could leave its folder, a file the package needs that is not content,
+  # or two files with one final path is rejected whole rather than half used.
+  # Returns the [entry, stored name] pairs to upload and the entry point.
+  def checked_files(zip)
+    all_paths = zip.entries.reject(&:directory?).map { |entry| PackagePath.new(entry) }
+    reject_unsafe_path(all_paths)
+
+    paths, skipped = all_paths.partition { |path| !path.non_content? }
+
+    manifest = top_manifest(paths)
+    root_segments = manifest.segments[0...-1]
+
+    xml = Nokogiri.XML(manifest.entry.get_input_stream.read)
+    scorm_entry_point = xml.xpath("//*[local-name()='resource'][@href]").first&.[]('href')
+
+    reject_skipped_needed_file(xml, scorm_entry_point, skipped, root_segments)
+
+    files = paths.map { |path| [path.entry, path.rooted(root_segments).join('/')] }
+    reject_duplicate_path(files)
+
+    [files, scorm_entry_point]
+  end
+
+  def reject_unsafe_path(paths)
+    return unless (unsafe = paths.find(&:unsafe?))
+
+    raise InvalidPackage, %(the package contains a file path that is not allowed: "#{unsafe.display}")
+  end
+
+  # The single manifest with the fewest path segments
+  def top_manifest(paths)
+    manifests = paths.select { |path| path.segments.last == MANIFEST_FILE }
+    raise InvalidPackage, "no #{MANIFEST_FILE} found" if manifests.empty?
+
+    shallowest = manifests.map { |path| path.segments.size }.min
+    top = manifests.select { |path| path.segments.size == shallowest }
+    raise InvalidPackage, "more than one #{MANIFEST_FILE} at the same folder level" if top.size > 1
+
+    top.first
+  end
+
+  def reject_skipped_needed_file(xml, scorm_entry_point, skipped, root_segments)
+    skipped_paths = skipped.map { |path| path.rooted(root_segments).join('/') }
+    needed = [scorm_entry_point, *xml.xpath("//*[local-name()='file'][@href]").map { |node| node['href'] }].compact
+    return unless (missing = needed.map { |href| href_path(href) }.find { |path| skipped_paths.include?(path) })
+
+    raise InvalidPackage, %(the package needs a file that was skipped: "#{missing.truncate(120)}")
+  end
+
+  def reject_duplicate_path(files)
+    return unless (duplicate = files.group_by(&:last).find { |_, same| same.size > 1 })
+
+    raise InvalidPackage, %(duplicate file path: "#{duplicate.first.truncate(120)}")
+  end
+
+  def upload(files, prefix)
+    files.each do |entry, normalized_name|
+      heartbeat
+
+      ext = File.extname(normalized_name)
+      content_type = Rack::Mime.mime_type(ext, 'application/octet-stream')
+
+      @uploaded << ActiveStorage::Blob.create_and_upload!(
+        io: entry.get_input_stream,
+        filename: normalized_name,
+        content_type: content_type,
+        key: "#{prefix}/#{normalized_name}"
+      )
+    end
+  end
+
+  # Swap the attachments in only while this run still holds the claim.
+  # The previous files are deleted after the commit, so a failure here
+  # leaves the old attachments pointing at files that still exist.
+  # Returns the previous blobs.
+  def publish(prefix, scorm_entry_point)
+    LearningModule.transaction do
+      raise Superseded unless claimed.lock.exists?
+
+      old_attachments = @learning_module.scorm_package_files.attachments.to_a
+      old_blobs = old_attachments.map(&:blob)
+      old_attachments.each(&:delete)
+      @learning_module.scorm_package_files.reset
+      @learning_module.scorm_package_files.attach(@uploaded)
+
+      @learning_module.update!(
+        scorm_prefix: prefix,
+        scorm_entry_point: scorm_entry_point,
+        scorm_status: :ready,
+        scorm_status_changed_at: Time.current
+      )
+      old_blobs
+    end
+  end
+
+  def purge_previous(old_blobs)
     old_blobs.each do |blob|
       blob.purge
     rescue StandardError => e
