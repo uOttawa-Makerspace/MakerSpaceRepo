@@ -364,8 +364,9 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   end
 
   def settings
-    @service_groups = JobServiceGroup.not_deleted.order(:job_type_id)
-    @services = JobService.not_deleted.not_user_created.order(:job_service_group_id)
+    # Every group and service read once, in creation order, for the job type cards to list.
+    @service_groups_by_type = JobServiceGroup.not_deleted.order(:id).group_by(&:job_type_id)
+    @services_by_group = JobService.not_deleted.not_user_created.order(:id).group_by(&:job_service_group_id)
     @options = JobOption.not_deleted.preload(:job_types)
     @job_types = JobType.all
   end
