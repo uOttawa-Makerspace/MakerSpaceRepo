@@ -32,10 +32,10 @@ module Payments
         raise WebhookRejected, :unsupported_topic unless TOPICS.include?(topic)
 
         hook = body
-        order_id = ShopOrderApplier.order_id(hook)
-        raise WebhookRejected, :malformed if order_id.blank?
+        id = order_id(hook)
+        raise WebhookRejected, :malformed if id.blank?
 
-        PaymentEvent.new(provider: PROVIDER, provider_ref: ProcessedOrder.ref_for(order_id, topic),
+        PaymentEvent.new(provider: PROVIDER, provider_ref: ProcessedOrder.ref_for(id, topic),
                          reference: reference(self.class.tag_list(hook["tags"])),
                          amount: amount(hook["total_price"]), paid_at: paid_at(hook, topic))
       end
@@ -65,11 +65,11 @@ module Payments
       end
 
       def reference(tags)
-        kind = KINDS.find { |k| tags.include?("#{ShopifyConcern.target_tag}_#{k}") }
+        kind = Reference::KINDS.find { |k| tags.include?("#{ShopifyConcern.target_tag}_#{k}") }
         return nil unless kind
 
         Reference.new(kind: kind, record_id: MARKERS[kind] && tagged_id(tags, "#{MARKERS[kind]}:"),
-                      checkout_id: tagged_id(tags, ShopifyAdapter.checkout_tag("")))
+                      checkout_id: tagged_id(tags, ShopifyAdapter.checkout_tag_prefix))
       end
 
       # The id after `prefix` in the tags: nil when no tag or two different ones carry it.
@@ -77,6 +77,18 @@ module Payments
         pattern = /\A#{Regexp.escape(prefix)}(\d+)\z/
         ids = tags.filter_map { |t| pattern.match(t)&.captures&.first&.to_i }.uniq
         ids.first if ids.one?
+      end
+
+      # The Shopify order id: the payload's "id", else the numeric tail of its admin_graphql_api_id
+      # ("gid://shopify/Order/123"), so both spellings of one order are the same key.
+      def order_id(hook)
+        hook["id"].presence&.to_s || hook["admin_graphql_api_id"].presence&.to_s&.split("/")&.last
+      end
+
+      def parse_time(value)
+        Time.zone.parse(value.to_s) if value.present?
+      rescue ArgumentError
+        nil
       end
 
       def amount(value)
@@ -87,9 +99,9 @@ module Payments
       # orders/fulfilled: when the cash was taken (the latest fulfillment); orders/paid: the order's processed_at.
       def paid_at(hook, topic)
         time = if topic == "orders/fulfilled"
-                 Array(hook["fulfillments"]).filter_map { |f| ShopOrderApplier.parse_time(f["created_at"]) if f.is_a?(Hash) }.max
+                 Array(hook["fulfillments"]).filter_map { |f| parse_time(f["created_at"]) if f.is_a?(Hash) }.max
                else
-                 ShopOrderApplier.parse_time(hook["processed_at"])
+                 parse_time(hook["processed_at"])
                end
         time || Time.current
       end

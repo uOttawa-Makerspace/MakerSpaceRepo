@@ -10,11 +10,13 @@ module Payments
   #   :stuck       open, but the provider refuses to cancel it (:failed)
   #   :unanswered  the provider does not answer (status :unknown; cancel raises)
   # #refuse_next_create! makes the next create_checkout raise. Webhooks are JSON bodies signed with SECRET
-  # (#signed_request builds one).
+  # with the topic "payment" (#signed_request and #request build one).
   class FakeAdapter
     PROVIDER = "fake"
     SECRET = "fake-payments-secret"
     SIGNATURE_HEADER = "HTTP_X_FAKE_PAYMENTS_SIGNATURE"
+    TOPIC_HEADER = "HTTP_X_FAKE_PAYMENTS_TOPIC"
+    TOPIC = "payment"
     OPEN_STATES = %i[open stuck].freeze
     STATUS = { open: :open, stuck: :open, paid: :paid, gone: :gone, unanswered: :unknown }.freeze
     CANCEL = { stuck: :failed, paid: :already_paid, gone: :gone }.freeze
@@ -69,8 +71,9 @@ module Payments
       signature = request.headers[SIGNATURE_HEADER]
       raise WebhookRejected, :unsigned if signature.blank?
       raise WebhookRejected, :bad_signature unless ActiveSupport::SecurityUtils.secure_compare(signature, self.class.sign(request.raw_post))
+      raise WebhookRejected, :unsupported_topic unless request.headers[TOPIC_HEADER] == TOPIC
 
-      event_from(JSON.parse(request.raw_post))
+      event_from(payload(request.raw_post))
     end
 
     # --- spec controls ---
@@ -88,12 +91,26 @@ module Payments
     # A POST whose JSON body names the event's fields, signed (or with `signature:` instead).
     def self.signed_request(provider_ref:, reference:, amount:, paid_at:, signature: :sign)
       body = { provider_ref: provider_ref, reference: reference.to_h, amount: amount.to_s, paid_at: paid_at.iso8601 }.to_json
-      headers = { "CONTENT_TYPE" => "application/json" }
+      request(body, signature: signature)
+    end
+
+    # A POST of the raw `body`, signed (`signature: :sign`), unsigned (nil) or with the given signature.
+    def self.request(body, signature: :sign, topic: TOPIC)
+      headers = { "CONTENT_TYPE" => "application/json", TOPIC_HEADER => topic }.compact
       headers[SIGNATURE_HEADER] = signature == :sign ? sign(body) : signature if signature
       ActionDispatch::Request.new(Rack::MockRequest.env_for("/payments/fake", method: "POST", input: body, **headers))
     end
 
     private
+
+    def payload(raw)
+      hook = JSON.parse(raw)
+      raise WebhookRejected, :malformed unless hook.is_a?(Hash) && hook["provider_ref"].present?
+
+      hook
+    rescue JSON::ParserError
+      raise WebhookRejected, :malformed
+    end
 
     def event_from(hook)
       ref = hook["reference"]

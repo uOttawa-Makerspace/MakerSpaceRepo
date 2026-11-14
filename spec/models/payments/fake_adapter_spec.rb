@@ -38,7 +38,18 @@ RSpec.describe Payments::FakeAdapter do
     described_class.signed_request(**fields, signature: { valid: :sign, none: nil, wrong: "0" * 64 }.fetch(signature))
   end
 
+  def unsupported_topic_webhook = described_class.request({ provider_ref: "1" }.to_json, topic: "refund")
+
+  def malformed_webhook = described_class.request("[1, 2]")
+
   it_behaves_like "a Payments adapter"
+
+  it "rejects a notice without a topic, and a body that is not JSON" do
+    expect { adapter.parse_webhook(described_class.request("{}", topic: nil)) }
+      .to raise_error(Payments::WebhookRejected) { |e| expect(e.reason).to eq(:unsupported_topic) }
+    expect { adapter.parse_webhook(described_class.request("not json")) }
+      .to raise_error(Payments::WebhookRejected) { |e| expect(e.reason).to eq(:malformed) }
+  end
 
   it "a cancelled checkout is gone afterwards" do
     id = checkout_in(:open)

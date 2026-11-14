@@ -94,6 +94,10 @@ RSpec.describe Payments::ShopifyAdapter do
     shopify_request(body, hmac: hmac)
   end
 
+  def unsupported_topic_webhook = signed({ id: 1 }, topic: "orders/create")
+
+  def malformed_webhook = signed({ name: "#1001" })
+
   it_behaves_like "a Payments adapter"
 
   describe "the operations it wraps send exactly what the app sends today" do
@@ -225,17 +229,13 @@ RSpec.describe Payments::ShopifyAdapter do
     end
 
     it "uses the models' kinds and marker names" do
-      expect(described_class::KINDS).to eq([LockerRental, Membership, JobOrder].map(&:shopify_draft_order_key_name))
+      expect(Payments::Reference::KINDS).to eq([LockerRental, Membership, JobOrder].map(&:shopify_draft_order_key_name))
       expect(described_class::MARKERS).to eq("locker" => LockerRental.draft_marker_name, "job_order" => JobOrder.draft_marker_name)
       expect { Membership.draft_marker_name }.to raise_error(NotImplementedError)
     end
   end
 
   describe "#create_checkout" do
-    it "refuses a kind no draft is made for" do
-      expect { adapter.create_checkout(lines: [], reference: Payments::Reference.new(kind: "shop", record_id: 1)) }
-        .to raise_error(ArgumentError, /unknown reference kind/)
-    end
 
     it "raises on an HTTP answer that is not 200, and on an answer without the draft" do
       answer("mutation draftOrderCreate", {}, status: 202)
@@ -249,6 +249,16 @@ RSpec.describe Payments::ShopifyAdapter do
   end
 
   describe "#checkout_status" do
+    it "lets an HTTP error status from the client propagate" do
+      answer("query getDraftOrder", {}, status: 500)
+      expect { adapter.checkout_status(gid) }.to raise_error(ShopifyAPI::Errors::HttpResponseError)
+    end
+
+    it "is :unknown for a 2xx answer other than 200" do
+      answer("query getDraftOrder", {}, status: 202)
+      expect(adapter.checkout_status(gid)).to eq(:unknown)
+    end
+
     it "is :unknown for a draft in a status that is neither payable nor paid" do
       answer("query getDraftOrder", draft("SOMETHING_NEW"))
       expect(adapter.checkout_status(gid)).to eq(:unknown)

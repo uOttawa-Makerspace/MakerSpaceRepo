@@ -11,6 +11,8 @@
 #   arrange_open_checkout(reference)          a payable checkout carrying reference.checkout_id; returns its Checkout
 #   arrange_no_open_checkout(reference)
 #   webhook(signature, provider_ref:, reference:, amount:, paid_at:)   a request, signature :valid, :none or :wrong
+#   unsupported_topic_webhook                 a signed notice of a kind the adapter does not turn into a payment
+#   malformed_webhook                         a signed notice whose body is not a payment notice
 RSpec.shared_examples "a Payments adapter" do
   let(:lines) { [{ quantity: 1, title: "Locker", originalUnitPriceWithCurrency: { amount: "10.0", currencyCode: "CAD" } }] }
   let(:reference) { Payments::Reference.new(kind: "locker", record_id: 42, checkout_id: 7) }
@@ -88,6 +90,16 @@ RSpec.shared_examples "a Payments adapter" do
     it "rejects a request whose signature does not match" do
       expect { adapter.parse_webhook(webhook(:wrong, **event_fields)) }
         .to raise_error(Payments::WebhookRejected) { |e| expect(e.reason).to eq(:bad_signature) }
+    end
+
+    it "rejects a signed notice it does not turn into a payment" do
+      expect { adapter.parse_webhook(unsupported_topic_webhook) }
+        .to raise_error(Payments::WebhookRejected) { |e| expect(e.reason).to eq(:unsupported_topic) }
+    end
+
+    it "rejects a signed body that is not a payment notice" do
+      expect { adapter.parse_webhook(malformed_webhook) }
+        .to raise_error(Payments::WebhookRejected) { |e| expect(e.reason).to eq(:malformed) }
     end
   end
 end
