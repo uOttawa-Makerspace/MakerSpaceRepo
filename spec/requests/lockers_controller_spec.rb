@@ -138,6 +138,26 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(flash[:alert]).to eq("The locker could not be saved: Specifier has already been taken")
     end
 
+    it "POST create that fails shows the alert on the full index page, with the lockers and store sizes" do
+      variant = { title: "Small", sku: "S1", id: "gid://shopify/ProductVariant/1", price: "10.00",
+                  displayName: "Lockers - Small" }
+      allow(LockerOption).to receive(:locker_product_info).and_return(
+        { title: "Lockers", status: "ACTIVE", id: "gid://shopify/Product/1", price: "10.00",
+          variants: { variant[:id] => variant } }
+      )
+      size = create(:locker_size, size: "Small", shopify_gid: variant[:id])
+      create(:locker, specifier: "C-4", locker_size: size)
+      create(:locker, specifier: "C-5", locker_size: size)
+
+      post lockers_path, params: { locker: { specifier: "C-4", locker_size_id: size.id } }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      page = Nokogiri::HTML(response.body)
+      expect(page.text).to include("The locker could not be saved: Specifier has already been taken")
+      expect(page.css("#locker_inventory_table tbody").text).to include("C-4", "C-5")
+      expect(page.text).to include("Linked to", "S1")
+    end
+
     it "POST create with a duplicate specifier does not show its alert on the next page" do
       existing = create(:locker, specifier: "C-3")
       post lockers_path, params: { locker: { specifier: "C-3", locker_size_id: existing.locker_size_id } }
