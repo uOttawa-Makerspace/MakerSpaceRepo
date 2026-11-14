@@ -35,6 +35,23 @@ RSpec.describe "Table sort arrows", type: :system do
     expect(descriptions).to eq(["charlie note", "Bravo note", "Alpha note"])
   end
 
+  it "sorts a row without a cell in the column as an empty cell" do
+    page.execute_script(<<~JS)
+      const row = document.createElement("tr");
+      row.innerHTML = "<td>short row</td>";
+      document.querySelector("table.sessions-table tbody").prepend(row);
+    JS
+    expect(page).to have_css("table.sessions-table tbody tr:first-child td", text: "short row")
+
+    sort_by("Description")
+    expect(page).to have_css("table.sessions-table tbody tr:nth-child(2) td:nth-child(2)", text: "Alpha note")
+    expect(descriptions).to eq(["Alpha note", "Bravo note", "charlie note"])
+
+    sort_by("Description")
+    expect(page).to have_css("table.sessions-table tbody tr:last-child td", text: "short row")
+    expect(descriptions).to eq(["charlie note", "Bravo note", "Alpha note"])
+  end
+
   it "sorts the date column by date, in the direction the last click left for any column" do
     sort_by("Description")
     expect(page).to have_css("table.sessions-table tbody tr:first-child td:nth-child(2)", text: "Alpha note")

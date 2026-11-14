@@ -278,8 +278,11 @@ describe("sortTable (fresh page)", () => {
     expect(column()).toEqual(["a", "b"]);
   });
 
-  it("throws when a row has no cell in that column", () => {
-    document.body.innerHTML = grid([["a", "1"], ["b"]]);
-    expect(() => window.sortTable("t", 1)).toThrow(TypeError);
+  it("sorts a row with no cell in that column as an empty cell", () => {
+    document.body.innerHTML = grid([["a", "2"], ["b"], ["c", "1"]]);
+    window.sortTable("t", 1);
+    expect(col(0)).toEqual(["b", "c", "a"]);
+    window.sortTable("t", 1);
+    expect(col(0)).toEqual(["a", "c", "b"]);
   });
 });

@@ -31,8 +31,11 @@ function cellAt(row, col) {
 }
 
 // sub_space_booking has date ranges, we can't parse the whole thing as a date
-// So we specify the start date as the sort key
-function sortKey(cell) {
+// So we specify the start date as the sort key.
+// A row without a cell in the column sorts as an empty cell.
+function sortKey(row, col) {
+  const cell = cellAt(row, col);
+  if (!cell) return "";
   return cell.dataset.sortAs || cell.innerText;
 }
 
@@ -47,24 +50,23 @@ function outOfOrder(swapElStr, currElStr, isDateColumn) {
   return inSortDirection(swapElStr.toLowerCase(), currElStr.toLowerCase());
 }
 
-// The cell, from row i down, that belongs at row i in the sort direction.
-function cellForRow(rows, i, col, isDateColumn) {
-  let swapElement = cellAt(rows[i], col);
+// The row, from row i down, that belongs at row i in the sort direction.
+function rowForPosition(rows, i, col, isDateColumn) {
+  let swapRow = rows[i];
   for (let j = i + 1; j < rows.length; j++) {
-    const currentElement = cellAt(rows[j], col);
     if (
-      outOfOrder(sortKey(swapElement), sortKey(currentElement), isDateColumn)
+      outOfOrder(sortKey(swapRow, col), sortKey(rows[j], col), isDateColumn)
     ) {
-      swapElement = currentElement;
+      swapRow = rows[j];
     }
   }
-  return swapElement;
+  return swapRow;
 }
 
 function sortRows(rows, col, isDateColumn) {
   for (let i = 1; i < rows.length - 1; i++) {
-    const swapElement = cellForRow(rows, i, col, isDateColumn);
-    rows[i].parentNode.insertBefore(swapElement.parentNode, rows[i]);
+    const swapRow = rowForPosition(rows, i, col, isDateColumn);
+    rows[i].parentNode.insertBefore(swapRow, rows[i]);
   }
 }
 
