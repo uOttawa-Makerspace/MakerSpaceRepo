@@ -14,21 +14,10 @@
         <%== @pagy.series_nav(:bootstrap) if @pagy && @pagy.pages > 1 %>
     </div>
 <% end %>
-<% if params[:show] == 'makes' %>
-    <% repos = @makes %>
-<% else %>
-    <% repos = (params[:show] == 'projects_assigned' ? @joined_projects : @repositories) %>
-<% end %>
-<% if repos != @joined_projects %>
-    <div class="row">
-        <% repos.each do |repository| %>
-            <div class="col-md-4 col-lg-4 g-2">
-                <%= render 'repositories/repository_card', repository: repository %>
-            </div>
-        <% end %>
-    </div>
-<% else %>
-    <% repos.each do |joined_project| %>
+<%# The joined projects tab lists the joined proposals. The other tabs show their cards in a row, left out when neither their list nor the joined projects have anything. %>
+<% repos = params[:show] == 'makes' ? @makes : @repositories %>
+<% if params[:show] == 'projects_assigned' %>
+    <% @joined_projects.each do |joined_project| %>
         <% project_proposal = joined_project.project_proposal %>
         <div class="repository-container">
             <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(project_proposal.photos.first) if project_proposal.photos.attached?}')" %> >
@@ -53,4 +42,12 @@
             </div>
         </div>
     <% end %>
+<% elsif repos.present? || @joined_projects.exists? %>
+    <div class="row">
+        <% repos.each do |repository| %>
+            <div class="col-md-4 col-lg-4 g-2">
+                <%= render 'repositories/repository_card', repository: repository %>
+            </div>
+        <% end %>
+    </div>
 <% end %>
