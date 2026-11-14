@@ -68,22 +68,35 @@ describe("task form", () => {
     expect(selects).toHaveLength(1);
   });
 
+  // the edit form's image card: the remove button sits in the card footer
+  const imageCard = (id) =>
+    `<div class="image-item" id="card-${id}"><div class="card"><img alt=""><div class="card-footer"><a class="image-remove" id="${id}"></a></div></div></div>`;
+
   it("collects the ids of removed images and drops them from the page", () => {
-    load(`<input id="deleteimages" value="">
-      <div><a class="image-remove" id="11"></a></div>
-      <div id="two"><a class="image-remove" id="12"></a></div>`);
+    load(`<div id="image-container">${imageCard(11)}${imageCard(12)}
+      <input id="deleteimages" value=""></div>`);
     const event = new Event("click", { cancelable: true, bubbles: true });
     document.getElementById("11").dispatchEvent(event);
     document.getElementById("12").click();
     expect($("deleteimages").value).toBe("11,12,");
     expect(event.defaultPrevented).toBe(true);
-    expect(document.querySelectorAll(".image-remove")).toHaveLength(0);
+    expect(document.querySelectorAll(".image-item, img")).toHaveLength(0);
+    expect($("image-container").contains($("deleteimages"))).toBe(true);
+  });
+
+  it("records a remove button outside an image card and removes nothing", () => {
+    load(
+      `<input id="deleteimages" value=""><div id="box"><a class="image-remove" id="11"></a></div>`,
+    );
+    $("11").click();
+    expect($("deleteimages").value).toBe("11,");
+    expect($("box")).not.toBeNull();
   });
 
   it("removes an image on a form without the hidden list", () => {
-    load('<div><a class="image-remove" id="11"></a></div>');
+    load(imageCard(11));
     document.getElementById("11").click();
-    expect(document.querySelectorAll(".image-remove")).toHaveLength(0);
+    expect($("card-11")).toBeNull();
   });
 
   it("leaves a completed task toggle alone, as no page has one", () => {
@@ -95,16 +108,14 @@ describe("task form", () => {
   });
 
   it("binds each page control once when the same page loads a second time", () => {
-    load(`<input id="deleteimages" value="">
-      <div><a class="image-remove" id="11"></a></div>`);
+    load(`<input id="deleteimages" value="">${imageCard(11)}`);
     document.dispatchEvent(new Event("turbo:load"));
     $("11").click();
     expect($("deleteimages").value).toBe("11,");
   });
 
   it("binds the copies of the controls on a page restored from the cache", () => {
-    load(`<input id="deleteimages" value="">
-      <div><a class="image-remove" id="11"></a></div>`);
+    load(`<input id="deleteimages" value="">${imageCard(11)}`);
     document.body.replaceWith(document.body.cloneNode(true));
     document.dispatchEvent(new Event("turbo:load"));
     $("11").click();

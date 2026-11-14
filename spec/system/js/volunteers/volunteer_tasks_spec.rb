@@ -70,5 +70,15 @@ RSpec.describe "Volunteer task pages", type: :system, skip_bullet: true do
       expect(page).to have_no_css(".image-remove")
       expect(find_by_id("deleteimages", visible: :hidden).value).to eq("#{filename},")
     end
+
+    it "removes the whole image card, and the saved task no longer has the image" do
+      expect(page).to have_css("#image-container .image-item img")
+      find(".image-remove").click
+      expect(page).to have_no_css("#image-container .image-item")
+      expect(page).to have_no_css("#image-container img")
+      find("#volunteerForm button[type=submit]").click
+      expect(page).to have_current_path(volunteer_tasks_path)
+      expect(task.reload.photos).to be_empty
+    end
   end
 end

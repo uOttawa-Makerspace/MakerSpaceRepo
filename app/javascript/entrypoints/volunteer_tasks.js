@@ -42,7 +42,8 @@ function bindImageRemoval(el) {
     if (deleteImagesInput) {
       deleteImagesInput.value += el.id + ",";
     }
-    el.parentElement.remove();
+    // The whole image card goes, not only the footer that holds the button.
+    el.closest(".image-item")?.remove();
   });
 }
 
