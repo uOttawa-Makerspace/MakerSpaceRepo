@@ -86,8 +86,8 @@ class MembershipsController < SessionsController
   end
 
   def load_membership_data
-    @memberships = current_user.memberships.where(status: 'paid').order(created_at: :desc)
-    @active_memberships = current_user.memberships.active
+    @memberships = current_user.memberships.where(status: 'paid').order(created_at: :desc).preload(:membership_tier)
+    @active_memberships = current_user.memberships.active.preload(:membership_tier)
   end
   
   def membership_params
