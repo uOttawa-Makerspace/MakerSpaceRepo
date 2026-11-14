@@ -70,12 +70,13 @@ module User::TrainingProgress
   end
 
   # Every active certification with its training loaded, whether it came from a training session
-  # or from a proficient project session, in a fixed number of queries.
+  # or from a proficient project session, in a fixed number of queries. A project certification's empty
+  # training session is marked loaded too (no query), since Certification#training looks at it first.
   def certifications_with_training
     certs = certifications.to_a
     from_session, from_project = certs.partition(&:training_session_id)
     preload(from_session, training_session: :training)
-    preload(from_project, proficient_project_session: { proficient_project: :training })
+    preload(from_project, [:training_session, { proficient_project_session: { proficient_project: :training } }])
     certs
   end
 

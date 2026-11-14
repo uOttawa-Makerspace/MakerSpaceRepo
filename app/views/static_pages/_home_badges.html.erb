@@ -2,11 +2,12 @@
     <div class="card-body">
         <h2 class="d-inline me-2"><%= t('home.badges.header') %></h2><%= link_to t('home.show_all'), "#{user_path(@user.username)}#badges-manager" %>
         <div class="text-nowrap overflow-auto d-flex gap-1 flex-wrap">
-            <% if @user.certifications.empty? %>
+            <% badges = @user.certifications_with_training %>
+            <% if badges.empty? %>
                 <p><%= t('home.badges.no_badges') %></p>
                 <p><%= link_to t('home.badges.no_badges_anchor'), development_programs_path %></p>
             <% else %>
-            <% @user.certifications.each do |badge| %>
+            <% badges.each do |badge| %>
                 <a target="_blank" href="<%= badge_path(badge.badge_param) %>">
                     <%= render "badges/badge_icon", width: 75, height: 75, margin: "auto", display: "block", level: badge.level, name: badge.training.localized_name, skill: badge.get_skill_id %>
                 </a>
