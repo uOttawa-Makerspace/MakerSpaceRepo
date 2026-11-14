@@ -5,9 +5,9 @@ class SpaceManagerJoin < ApplicationRecord
   validate :is_admin
   validates_uniqueness_of :user_id, scope: :space_id
 
-  # The space managers as [name, id] options, each once, sorted by name ignoring case.
+  # The space managers as [name, id] options, each once, sorted by name ignoring case. A row with no user is left out.
   def self.supervisor_options
-    includes(:user).map { |join| [join.user.name, join.user.id] }.uniq.sort_by { |option| option[0].downcase }
+    User.where(id: select(:user_id)).pluck(:name, :id).sort_by { |name, _id| name.downcase }
   end
 
   private

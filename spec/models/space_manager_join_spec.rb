@@ -34,6 +34,14 @@ RSpec.describe SpaceManagerJoin, type: :model do
       expect(SpaceManagerJoin.supervisor_options).to eq([["alice Manager", alice.id], ["Bob Manager", bob.id]])
     end
 
+    it "leaves out a manager row with no user" do
+      admin = create(:user, :admin, name: "Ada Manager")
+      SpaceManagerJoin.create!(space: space, user: admin)
+      SpaceManagerJoin.create!(space: create(:space))
+
+      expect(SpaceManagerJoin.supervisor_options).to eq([["Ada Manager", admin.id]])
+    end
+
     it "is empty when no space has a manager" do
       expect(SpaceManagerJoin.supervisor_options).to eq([])
     end
