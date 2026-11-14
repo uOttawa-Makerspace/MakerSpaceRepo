@@ -37,13 +37,19 @@ RSpec.describe Printer, type: :model do
       end
     end
 
-    context "Get last session" do
-      it "should return last session" do
-        create :user, :regular_user
-        create(:printer_session, printer_id: @pt_1_2.id)
-        expect(Printer.get_last_model_session(@pt_1.name).printer.number).to eq(
-          @pt_1_2.number
-        )
+    context "last sessions by type" do
+      it "gives the latest session of each type across its printers, with printer and user, and none for a type without sessions" do
+        create(:printer_session, printer: @pt_1_2, created_at: 2.days.ago)
+        latest = create(:printer_session, printer: @pt_1_1, created_at: 1.day.ago)
+        other = create(:printer_session, printer: @pt_3_2)
+
+        found = nil
+        queries = count_queries do
+          found = Printer.last_sessions_by_type([@pt_1, @pt_2, @pt_3]).transform_values { |s| [s.id, s.printer.number, s.user.id] }
+        end
+
+        expect(found).to eq(@pt_1.id => [latest.id, "1", latest.user_id], @pt_3.id => [other.id, "2", other.user_id])
+        expect(queries).to eq(3)
       end
     end
 

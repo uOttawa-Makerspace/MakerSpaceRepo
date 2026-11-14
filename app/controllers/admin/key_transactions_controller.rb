@@ -2,7 +2,7 @@ class Admin::KeyTransactionsController < AdminAreaController
   before_action :set_key_transaction, only: %i[edit update show]
 
   def index
-    @key_transactions = KeyTransaction.order(created_at: :desc)
+    @key_transactions = KeyTransaction.includes(:user, key: %i[space supervisor]).order(created_at: :desc)
   end
 
   def update

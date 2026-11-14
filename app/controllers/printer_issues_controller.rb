@@ -4,20 +4,13 @@ class PrinterIssuesController < StaffAreaController
   before_action :ensure_admin, only: :update_notification_email
 
   def index
-    @issues = PrinterIssue.all.order(:printer_id)
-    @issues_summary =
-      @issues
-        .filter(&:active)
-        .group_by do |issue|
-          PrinterIssue.summaries.values.detect do |s|
-            issue.summary.include? s
-          end || "Other"
-        end
+    @issues = PrinterIssue.includes(:reporter).order(:printer_id)
+    @issues_summary = PrinterIssue.group_by_summary(@issues.filter(&:active))
 
     @maintenance_email = Setting.maintenance_email
 
     respond_to do |format|
-      format.html
+      format.html { preload_printers(@issues) }
       format.json do
         render json: {
           issues: @issues.map do |issue|
@@ -42,14 +35,8 @@ class PrinterIssuesController < StaffAreaController
 
   def new
     @issue ||= PrinterIssue.new
-    @printers = Printer.show_options.all
-    @issueSummary =
-      @printers
-        .filter_map do |printer|
-          counts = printer.count_printer_issues(except: @issue.id)
-          [printer.id, counts] if counts.any?
-        end
-        .to_h
+    @printers = Printer.with_type.to_a
+    @issueSummary = Printer.active_issue_counts(@printers, except: @issue.id)
   end
 
   def create
@@ -129,6 +116,11 @@ class PrinterIssuesController < StaffAreaController
   end
 
   private
+
+  # The page names each issue's printer; the JSON list does not, so only the page loads them.
+  def preload_printers(issues)
+    ActiveRecord::Associations::Preloader.new(records: issues.to_a, associations: { printer: :printer_type }).call
+  end
 
   def ensure_admin
     return if current_user.admin?

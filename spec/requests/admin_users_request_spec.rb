@@ -330,6 +330,26 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "manage_roles ticks each admin's and staff member's spaces in a number of queries that does not grow with them", :aggregate_failures do
+      spaces = create_list(:space, 2)
+      add_people = lambda do
+        create(:staff_space, user: create(:user, :staff), space: spaces[0])
+        create(:staff_space, user: create(:user, :admin), space: spaces[1])
+        both = create(:user, :staff)
+        spaces.each { |space| create(:staff_space, user: both, space: space) }
+      end
+      add_people.call
+      get manage_roles_admin_users_path # warm caches
+      few = count_queries { get manage_roles_admin_users_path }
+      2.times { add_people.call }
+      many = count_queries { get manage_roles_admin_users_path }
+      expect(many).to eq(few)
+
+      ticked = Nokogiri::HTML(response.body).css("input.set-user-space-button[checked]")
+                       .map { |box| [box["data-user-id"].to_i, box["data-space-id"].to_i] }
+      expect(ticked).to match_array(StaffSpace.where(user: User.where(role: %w[admin staff])).pluck(:user_id, :space_id))
+    end
+
     describe "space buttons" do
       def luminance(hex)
         r, g, b = hex.delete("#").scan(/../).map { |c| c.hex / 255.0 }.map { |c| c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055)**2.4 }

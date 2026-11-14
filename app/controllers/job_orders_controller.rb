@@ -358,6 +358,8 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
 
     @job_orders = JobOrder.without_drafts.includes(:user, :assigned_staff, latest_job_order_status: :job_status, job_tasks: :job_type)
                        .order(created_at: :desc)
+    @expedited_ids = JobOrder.expedited_ids(@job_orders)
+    @unread_counts = ChatMessage.unread_by_admin_counts(@job_orders)
   end
 
   def settings

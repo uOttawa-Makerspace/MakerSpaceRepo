@@ -107,7 +107,8 @@ class Admin::KeysController < AdminAreaController
   end
 
   def requests
-    @key_requests = KeyRequest.includes(:space, :display_user, :display_supervisor).order(created_at: :asc)
+    @key_requests = KeyRequest.includes(:space, :display_supervisor, display_user: { key_certification: KeyCertification::FILE_ATTACHMENTS })
+                              .order(created_at: :asc)
   end
 
   def approve_key_request

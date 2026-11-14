@@ -7,6 +7,7 @@ class PrintersController < StaffAreaController
 
   def index
     @printer = Printer.new
+    @printers = Printer.with_type
     @printer_models =
       PrinterType
         .all
@@ -77,6 +78,7 @@ class PrintersController < StaffAreaController
         .pluck(:name, :id)
     @list_users.unshift(%w[Clear clear])
     @printer_types = PrinterType.includes(:printers).order("lower(name) ASC")
+    @last_sessions = Printer.last_sessions_by_type(@printer_types)
   end
 
   def staff_printers_updates
