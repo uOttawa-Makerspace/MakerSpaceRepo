@@ -213,7 +213,10 @@ RSpec.describe "Member mails in the recipient's language", type: :mailer do
 
   it "keeps the recipients of the help and print mails in each language" do
     issue = deliver { MsrMailer.issue_email("Ada", french.email, "Help", "Text", nil) }
-    expect([issue.to, issue.bcc]).to eq([[french.email], ["uottawa.makerepo@gmail.com"]])
+    expect([issue.to, issue.bcc]).to eq([[french.email], nil])
+    team = deliver { MsrMailer.issue_email_copy_to_team("Ada", french.email, "Help", "Text", nil) }
+    expect([team.to, team.bcc, team.subject]).to eq([["uottawa.makerepo@gmail.com"], nil, "Issue Report | Help"])
+    expect(text(team)).to include("We have received the following help request from you:", "Thank you,")
     printed = deliver { MsrMailer.print_failed(create(:printer, :UM2P_01), french, "nozzle") }
     expect([printed.to, printed.bcc, printed.reply_to]).to eq([[french.email], ["uottawa.makerepo@gmail.com"], ["makerspace@uottawa.ca"]])
   end

@@ -29,15 +29,16 @@ RSpec.describe "PUT /send_email (React Help form)", type: :request do
   it "sends the support email and never touches the signed-in user" do
     expect do
       perform_enqueued_jobs { put "/send_email", params: payload.to_json, headers: headers.merge("Content-Type" => "application/json", "Accept" => "application/json") }
-    end.to change { deliveries.size }.by(1)
+    end.to change { deliveries.size }.by(2)
 
     expect(response).to have_http_status(:ok)
     expect(JSON.parse(response.body)).to eq("status" => "sent")
-    mail = deliveries.last
-    expect(mail.to).to eq(["original@example.com"])
-    expect(mail.bcc).to include("uottawa.makerepo@gmail.com")
-    expect(mail.subject).to eq("Issue Report | Printer will not start")
-    expect(mail.body.encoded).to include("It beeps three times", "2.4.1")
+    expect(deliveries.map { |m| [m.to, m.bcc] })
+      .to contain_exactly([["original@example.com"], nil], [["uottawa.makerepo@gmail.com"], nil])
+    deliveries.each do |mail|
+      expect(mail.subject).to eq("Issue Report | Printer will not start")
+      expect(mail.body.encoded).to include("It beeps three times", "2.4.1")
+    end
 
     user.reload
     expect(user.name).to eq("Original Name")
@@ -51,13 +52,14 @@ RSpec.describe "PUT /send_email (React Help form)", type: :request do
         put "/send_email", params: payload.merge(email: "victim@example.com", name: "Someone Else").to_json,
                            headers: headers.merge("Content-Type" => "application/json")
       end
-    end.to change { deliveries.size }.by(1)
+    end.to change { deliveries.size }.by(2)
 
-    mail = deliveries.last
-    expect(mail.to).to eq(["original@example.com"])
-    expect(mail.body.encoded).to include("Original Name")
-    expect(mail.body.encoded).not_to include("Someone Else")
-    expect(mail.to + (mail.cc || [])).not_to include("victim@example.com")
+    expect(deliveries.map(&:to)).to contain_exactly(["original@example.com"], ["uottawa.makerepo@gmail.com"])
+    deliveries.each do |mail|
+      expect(mail.body.encoded).to include("Original Name")
+      expect(mail.body.encoded).not_to include("Someone Else")
+      expect(Array(mail.to) + Array(mail.cc) + Array(mail.bcc)).not_to include("victim@example.com")
+    end
   end
 
   # same persistence path as HelpController#create.
