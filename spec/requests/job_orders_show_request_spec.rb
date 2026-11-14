@@ -61,7 +61,7 @@ RSpec.describe "Job order show page", type: :request do
         expect(response.body).to include("Job Order ##{order.id}")
         processed = CGI.escapeHTML(JobOrderMessage.find_by!(name: "processed").retrieve_message(order.id))
         expect(response.body.include?(%(id="job-order-message" value="#{processed}"))).to be(staff_section)
-        expect(response.body.include?(%(id="jo-staff-select"))).to be(staff_select)
+        expect(response.body.include?(%(id="jo-staff-select-#{order.id}"))).to be(staff_select)
         expect(response.body.include?(%(<option value="#{other_staff.id}">Other Staffer</option>))).to be(staff_select)
         expect(flash[:alert]).to be_nil
         expect(flash[:notice]).to be_nil

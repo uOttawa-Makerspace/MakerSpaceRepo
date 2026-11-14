@@ -110,7 +110,7 @@ RSpec.describe "Pickers on a page restored from the Turbo cache", type: :system,
     seed_job_statuses!
     seed_job_order_message!
     order = make_job_order!(owner: create(:user, :regular_user), status_key: :staff_approval)
-    restore_with_picker(create(:user, :admin), job_order_path(order), "jo-staff-select")
+    restore_with_picker(create(:user, :admin), job_order_path(order), "jo-staff-select-#{order.id}")
   end
 
   it "keeps one working subskill picker on the new learning module form" do

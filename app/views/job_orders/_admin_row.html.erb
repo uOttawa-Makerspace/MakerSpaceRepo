@@ -39,7 +39,7 @@
     <%= link_to jo.assigned_staff.name, user_path(jo.assigned_staff.username) %>
   <% else %>
     <% if current_user.admin? %>
-      <button type="button" class="btn btn-link fw-bold" style="font-size: 0.9rem !important;" data-bs-toggle="modal" data-bs-target="#assignStaffModal">
+      <button type="button" class="btn btn-link fw-bold" style="font-size: 0.9rem !important;" data-bs-toggle="modal" data-bs-target="#assignStaffModal-<%= jo.id %>">
         Assign Staff
       </button>
     <% else %>
@@ -53,11 +53,11 @@
   %>
 </td>
 
-<div class="modal fade" id="assignStaffModal" tabindex="-1" aria-labelledby="assignStaffModalLabel" aria-hidden="true">
+<div class="modal fade" id="assignStaffModal-<%= jo.id %>" tabindex="-1" aria-labelledby="assignStaffModalLabel-<%= jo.id %>" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="assignStaffModalLabel">Assign Staff</h5>
+        <h5 class="modal-title" id="assignStaffModalLabel-<%= jo.id %>">Assign Staff</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
       </div>
       <div class="modal-body">
