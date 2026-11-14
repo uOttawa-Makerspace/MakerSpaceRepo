@@ -184,28 +184,7 @@ class Admin::SpacesController < AdminAreaController
   def destroy
     space = Space.find(params[:id])
     if params[:admin_input] == space.name.upcase
-      if space.destroy_admin_id.present? && space.destroy_admin_id != @user.id
-        # The pi readers are detached only if the space is really deleted. A refusal (the space still has
-        # history it must not lose) is the model's, so its errors say why; the pending request is cleared.
-        deleted = Space.transaction do
-          PiReader.where(space_id: space.id).update_all(space_id: nil)
-          space.destroy || raise(ActiveRecord::Rollback)
-        end
-        if deleted
-          flash[:notice] = t("admin_area.spaces.flash.deleted")
-        else
-          space.update_columns(destroy_admin_id: nil)
-          flash[:alert] = validation_message(space, "errors.admin.spaces.not_deleted")
-        end
-      elsif (refusals = space.deletion_refusals).any?
-        # Said at the first request, so nobody waits for a second admin to be told, and no request is recorded.
-        space.update_columns(destroy_admin_id: nil) if space.destroy_admin_id.present?
-        flash[:alert] = refusals.to_sentence
-      elsif space.update(
-          destroy_admin_id: @user.id
-        )
-        flash[:notice] = t("admin_area.spaces.flash.destroy_requested")
-      end
+      advance_space_deletion(space)
     else
       flash[:alert] = I18n.t("errors.admin.spaces.confirmation_mismatch")
     end
@@ -272,6 +251,39 @@ class Admin::SpacesController < AdminAreaController
   end
 
   private
+
+  # A second admin's confirmation deletes the space; otherwise this admin's request is recorded, unless the space
+  # has history it must not lose, which is said at once (so nobody waits for a second admin to be told).
+  def advance_space_deletion(space)
+    if space.destroy_admin_id.present? && space.destroy_admin_id != @user.id
+      confirm_space_deletion(space)
+    elsif (refusals = space.deletion_refusals).any?
+      refuse_space_deletion_request(space, refusals)
+    elsif space.update(destroy_admin_id: @user.id)
+      flash[:notice] = t("admin_area.spaces.flash.destroy_requested")
+    end
+  end
+
+  # The pi readers are detached only if the space is really deleted. A refusal (the space still has
+  # history it must not lose) is the model's, so its errors say why; the pending request is cleared.
+  def confirm_space_deletion(space)
+    deleted = Space.transaction do
+      PiReader.where(space_id: space.id).update_all(space_id: nil)
+      space.destroy || raise(ActiveRecord::Rollback)
+    end
+    if deleted
+      flash[:notice] = t("admin_area.spaces.flash.deleted")
+    else
+      space.update_columns(destroy_admin_id: nil)
+      flash[:alert] = validation_message(space, "errors.admin.spaces.not_deleted")
+    end
+  end
+
+  # No request is recorded, and one pending from before the history appeared is cleared.
+  def refuse_space_deletion_request(space, refusals)
+    space.update_columns(destroy_admin_id: nil) if space.destroy_admin_id.present?
+    flash[:alert] = refusals.to_sentence
+  end
 
   # Sessions and active certifications of each training offered in the space, over every space,
   # counted in two queries for the trainings table.
