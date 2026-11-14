@@ -123,6 +123,38 @@ RSpec.describe User do
 
       expect(User.delete_account!(target, actor: actor)).to be(true)
     end
+
+    it "removes the deleted user's uOEng record and no other user's" do
+      actor = create(:user, :admin)
+      target = create(:user, :regular_user)
+      other = create(:user, :regular_user)
+      [target, other].each { |u| UoengProfile.create!(user: u, source: "email", checked_at: Time.current) }
+
+      User.delete_account!(target, actor: actor)
+
+      expect(UoengProfile.where(user: target)).to be_empty
+      expect(UoengProfile.where(user: other).count).to eq(1)
+    end
+
+    it "keeps the uOEng record when a later step of the deletion fails" do
+      actor = create(:user, :admin)
+      target = create(:user, :regular_user)
+      UoengProfile.create!(user: target, source: "email", checked_at: Time.current)
+      allow(target).to receive(:soft_delete!).and_raise(ActiveRecord::StatementInvalid, "write failed")
+
+      expect { User.delete_account!(target, actor: actor) }.to raise_error(ActiveRecord::StatementInvalid)
+      expect(UoengProfile.where(user: target).count).to eq(1)
+      expect(target.reload.deleted).to be(false)
+    end
+
+    it "keeps the uOEng record when the deletion is refused" do
+      create(:user, :admin)
+      target = create(:user, :regular_user)
+      UoengProfile.create!(user: target, source: "email", checked_at: Time.current)
+
+      expect { User.delete_account!(target, actor: nil) }.to raise_error(User::NotAdminError)
+      expect(UoengProfile.where(user: target).count).to eq(1)
+    end
   end
 
   describe "#sync_programs! atomicity" do

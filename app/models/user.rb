@@ -618,8 +618,9 @@ class User < ApplicationRecord
 
   # Deleting an account hides it; nothing the user did is deleted. Each repository they own passes to
   # another member, or is hidden when there is none, and a lab session still open is ended now, so a
-  # deleted user is not listed as in a space. Every other row (visits, certifications, training)
-  # stays as it was. Raises LastAdminError for the last usable admin. Returns false, doing nothing,
+  # deleted user is not listed as in a space. The user's uOEng record is removed: it is a copy of
+  # uOttawa data that a later check fetches again. Every other row (visits, certifications,
+  # training) stays as it was. Raises LastAdminError for the last usable admin. Returns false, doing nothing,
   # if the account was already deleted by another request. With an actor, the actor's role is read
   # again once the admin rows are locked, and NotAdminError is raised if they are no longer an admin.
   def self.delete_account!(user, actor:)
@@ -631,6 +632,7 @@ class User < ApplicationRecord
 
         Repository.release_owned_by!(user)
         LabSession.where(user_id: user.id).active.update_all(sign_out_time: Time.zone.now)
+        UoengProfile.where(user_id: user.id).delete_all
         user.soft_delete!
         true
       end
