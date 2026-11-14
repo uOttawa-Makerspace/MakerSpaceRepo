@@ -22,8 +22,9 @@ RSpec.describe AddYearOfStudyReferenceToUsers do
     User.reset_column_information
   end
 
-  # The schema already has the columns; the migration adds them.
+  # The schema already has the view and the columns; the migration adds them.
   def drop_new_columns
+    connection.drop_view(:reporting_user_years)
     connection.remove_check_constraint(:users, name: "users_year_of_study_set_by_known")
     new_columns.each { |column| connection.remove_column(:users, column) }
     User.reset_column_information
@@ -114,6 +115,12 @@ RSpec.describe AddYearOfStudyReferenceToUsers do
     expect { migrate(:up) }.to raise_error(/year-of-study task seems to have run after 2026-08-01/)
     expect(snapshot).to eq(before)
     expect(connection.column_exists?(:users, :year_of_study_entered)).to be(false)
+  end
+
+  it "is in db/schema.rb, so the test database built from it has the view" do
+    user = create(:user, :student, year_of_study: "2")
+    expect(connection.select_value("SELECT year_of_study FROM reporting_user_years WHERE user_id = #{user.id}")).to eq("2")
+    expect(Rails.root.join("db/schema.rb").read).to include('create_view "reporting_user_years"')
   end
 
   describe "the reporting_user_years view" do

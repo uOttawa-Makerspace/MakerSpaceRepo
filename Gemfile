@@ -43,6 +43,8 @@ gem "rrule"
 gem "rubyzip", "~> 3.0", require: "zip"
 gem "zip_kit", "~> 6.4"
 gem "saml_idp", "~> 1.0"
+# Database views (reporting_user_years) kept as versioned SQL in db/views and dumped into db/schema.rb
+gem "scenic", "1.9.0"
 gem "shopify_app", "~> 23.0"
 gem "sitemap_generator", "~> 6.3"
 gem "solid_cable"

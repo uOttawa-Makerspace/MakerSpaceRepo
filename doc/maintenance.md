@@ -86,7 +86,7 @@ The release that adds `users.year_of_study_entered`, `year_of_study_set_on` and 
 - Before the deploy, confirm in `/var/www/makerrepo/log/cron_log.log` that the task has not run since 2026-08-01. The migration stops, changing nothing, if the data shows a scheduled run after that day; then set `LAST_TASK_RUN` in the migration to the last run and rehearse again.
 - In the same deploy, remove the `increment_year` line from the host crontab (`crontab -e`). Read it first with `crontab -l`. The task no longer exists, so a line left behind only fails.
 - `down` drops the view and the three columns, which restores the table exactly.
-- The view is not in `db/schema.rb` (the Ruby schema format cannot hold views), so a database built with `db:schema:load` does not have it; one built by running the migrations does.
+- The view's SQL is `db/views/reporting_user_years_v01.sql`, managed by the `scenic` gem (`create_view` in the migration and in `db/schema.rb`, so `db:schema:load` builds it too). A change to the view is a new version file (`_v02.sql`) and an `update_view` migration; dropping or changing the type of a column the view reads needs the view dropped and recreated in the same migration.
 
 The locker notices migration must run before the first 8:30am run of the locker expiry notices (`locker_expiry_notices`). It marks the rentals that expired long ago as already notified, so renters are not mailed about old expiries. Running the migrations as part of the deploy covers this.
 

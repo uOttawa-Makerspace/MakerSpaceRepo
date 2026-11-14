@@ -3,7 +3,7 @@
 # The year of study becomes a reference point (the year as entered and the day
 # it was set) from which the current year is counted (User::YearOfStudy), and
 # the read-only view reporting_user_years gives reports outside the app the
-# current year counted the same way.
+# current year counted the same way (db/views/reporting_user_years_v01.sql, scenic).
 #
 # Additive only: users.year_of_study is not changed. The backfill copies it into
 # year_of_study_entered and sets the reference day to the day the old monthly
@@ -39,38 +39,6 @@ class AddYearOfStudyReferenceToUsers < ActiveRecord::Migration[8.1]
 
   def local(column) = "((#{column} AT TIME ZONE 'UTC') AT TIME ZONE '#{ZONE}')"
 
-  VIEW_SQL = <<~SQL
-    CREATE VIEW reporting_user_years AS
-    SELECT users.id AS user_id,
-      CASE
-        WHEN moves.n = 0 OR users.year_of_study_entered IS NULL OR users.year_of_study_entered = 'Alumni'
-          THEN users.year_of_study_entered
-        WHEN entered.year BETWEEN 1 AND 7 AND entered.year + moves.n <= 8 THEN (entered.year + moves.n)::text
-        ELSE 'Alumni'
-      END AS year_of_study,
-      users.year_of_study_entered,
-      users.year_of_study_set_on,
-      users.year_of_study_set_by
-    FROM users
-    CROSS JOIN LATERAL (
-      SELECT (users.created_at AT TIME ZONE 'UTC') AT TIME ZONE '#{ZONE}' AS created,
-             #{LOCAL_TODAY} AS today
-    ) here
-    CROSS JOIN LATERAL (
-      SELECT CASE WHEN users.identity IN (#{STUDENTS}) THEN GREATEST(0,
-        EXTRACT(YEAR FROM here.today)::int
-          - CASE WHEN EXTRACT(MONTH FROM here.created) > EXTRACT(MONTH FROM here.today) THEN 1 ELSE 0 END
-          - GREATEST(
-              EXTRACT(YEAR FROM users.year_of_study_set_on)::int
-                + CASE WHEN EXTRACT(MONTH FROM here.created) > EXTRACT(MONTH FROM users.year_of_study_set_on) THEN 0 ELSE 1 END,
-              EXTRACT(YEAR FROM here.created)::int + 1)
-          + 1)
-      ELSE 0 END AS n
-    ) moves
-    CROSS JOIN LATERAL (
-      SELECT COALESCE(substring(users.year_of_study_entered FROM '^[0-9]+')::numeric, 0) AS year
-    ) entered
-  SQL
 
   def up
     refuse_when_the_task_ran_after_its_last_known_run
@@ -85,11 +53,11 @@ class AddYearOfStudyReferenceToUsers < ActiveRecord::Migration[8.1]
     change_column_default :users, :year_of_study_set_on, -> { LOCAL_TODAY }
     change_column_default :users, :year_of_study_set_by, "entered"
     add_check_constraint :users, "year_of_study_set_by IN (#{SET_BY})", name: "users_year_of_study_set_by_known"
-    execute VIEW_SQL
+    create_view :reporting_user_years, version: 1
   end
 
   def down
-    execute "DROP VIEW reporting_user_years"
+    drop_view :reporting_user_years, revert_to_version: nil
     remove_check_constraint :users, name: "users_year_of_study_set_by_known"
     remove_column :users, :year_of_study_set_by
     remove_column :users, :year_of_study_set_on
