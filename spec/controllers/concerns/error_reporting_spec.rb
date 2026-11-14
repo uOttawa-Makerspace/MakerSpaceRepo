@@ -70,5 +70,14 @@ RSpec.describe ErrorReporting do
       allow(I18n).to receive(:t).with("errors.generic.not_found").and_return("Could not save.")
       expect(host.send(:validation_message, User.new, "errors.generic.not_found")).to eq("Could not save.")
     end
+
+    it "adds the messages of related records after the record's own, in one sentence" do
+      allow(I18n).to receive(:t).and_call_original
+      allow(I18n).to receive(:t).with("errors.generic.not_found").and_return("Could not save.")
+      related = User.new.tap { |user| user.errors.add(:base, "Related is wrong") }
+      expected = (record.errors.full_messages + ["Related is wrong"]).to_sentence
+      expect(host.send(:validation_message, record, "errors.generic.not_found", related))
+        .to eq("Could not save. #{expected}")
+    end
   end
 end
