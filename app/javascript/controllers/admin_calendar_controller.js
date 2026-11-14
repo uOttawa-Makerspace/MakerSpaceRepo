@@ -1,8 +1,5 @@
 import { Controller } from "@hotwired/stimulus";
-import { Calendar } from "@fullcalendar/core";
 import rrulePlugin from "@fullcalendar/rrule";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { rrulestr } from "rrule";
 import { Tooltip } from "bootstrap";
@@ -10,6 +7,7 @@ import { Tooltip } from "bootstrap";
 import { eventClick, eventCreate } from "../src/calendar_helper.js";
 import { closeSaved } from "../src/calendar_dialog.js";
 import { applyEventBackground } from "../src/calendar_background.js";
+import { pageCalendar } from "../src/page_calendar.js";
 import { rangeSource, unticked } from "../src/range_source.js";
 
 // Titles and descriptions come from imported calendars, so they are text, never markup.
@@ -86,12 +84,14 @@ export default class extends TypedController {
 
   connect() {
     this.paintFilters();
-    // A page restored from Turbo's cache still holds the calendar drawn before.
-    this.calendarTarget.replaceChildren();
     // the feeds a saved dialog changes
     this.edited = [this.eventsSource(), this.unavailabilitySource()];
-    this.calendar = new Calendar(this.calendarTarget, this.calendarOptions());
-
+    this.calendar = pageCalendar(
+      this.calendarTarget,
+      this.calendarOptions(),
+      rrulePlugin,
+      interactionPlugin,
+    );
     this.containerTarget.style.display = "block";
     this.spinnerTarget.style.display = "none";
     this.calendar.render();
@@ -228,8 +228,6 @@ export default class extends TypedController {
 
   calendarOptions() {
     return {
-      plugins: [timeGridPlugin, dayGridPlugin, rrulePlugin, interactionPlugin],
-      timeZone: "America/Toronto",
       initialView: "timeGridWeek",
       headerToolbar: {
         left: "prev,next,today toggleEventOverlap",
@@ -238,13 +236,11 @@ export default class extends TypedController {
       },
       slotMinTime: "07:00:00",
       slotMaxTime: "22:00:00",
-      scrollTime: "07:00:00",
       nowIndicator: true,
       slotEventOverlap: localStorage.fullCalendarEventOverlap === "true",
       selectable: true,
       selectMirror: true,
       selectMinDistance: 15,
-      height: "80vh",
       customButtons: {
         toggleWeekends: { text: "", click: () => this.toggleWeekends() },
         toggleEventOverlap: { text: "", click: () => this.toggleOverlap() },
