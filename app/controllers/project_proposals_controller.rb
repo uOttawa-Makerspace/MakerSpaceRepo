@@ -28,27 +28,7 @@ class ProjectProposalsController < SessionsController
         .order(created_at: :desc)
         .search(params[:query])
 
-    scope = visible_to_viewer(scope)
-
-    # Status filtering (handles approved: 1, 0, and nil for pending/revisions)
-    if params[:status].present?
-      statuses = Array(params[:status])
-      include_pending = statuses.include?('nil')
-      numeric_statuses = statuses.reject { |s| s == 'nil' }.map(&:to_i)
-
-      if include_pending && numeric_statuses.any?
-        scope = scope.where(approved: numeric_statuses).or(scope.where(approved: nil))
-      elsif include_pending
-        scope = scope.where(approved: nil)
-      elsif numeric_statuses.any?
-        scope = scope.where(approved: numeric_statuses)
-      end
-    end
-
-    season, year = params[:semester]&.split('_')
-    if ProjectProposal.seasons.keys.include?(season) && year.to_i.positive?
-      scope = scope.where(season: season, year: year.to_i)
-    end
+    scope = filter_by_semester(filter_by_status(visible_to_viewer(scope)))
 
     @pagy, @project_proposals = pagy(scope, limit: 20)
 
@@ -325,6 +305,25 @@ class ProjectProposalsController < SessionsController
   # The listing shows the proposer and reviewer to admins only, deleted accounts included.
   def with_display_users(scope)
     current_user.admin? ? scope.includes(:display_user, :display_admin) : scope
+  end
+
+  # Status filtering: approved is 1 or 0, and "nil" stands for pending (and revisions), so several statuses
+  # combine into one approved IN (...) OR approved IS NULL condition.
+  def filter_by_status(scope)
+    return scope if params[:status].blank?
+
+    statuses = Array(params[:status])
+    approved = statuses.reject { |s| s == 'nil' }.map(&:to_i)
+    approved << nil if statuses.include?('nil')
+    scope.where(approved: approved)
+  end
+
+  # A semester filter is "<season>_<year>"; one with an unknown season or a missing year is ignored.
+  def filter_by_semester(scope)
+    season, year = params[:semester]&.split('_')
+    return scope unless ProjectProposal.seasons.keys.include?(season) && year.to_i.positive?
+
+    scope.where(season: season, year: year.to_i)
   end
 
   def visible_to_viewer(scope)

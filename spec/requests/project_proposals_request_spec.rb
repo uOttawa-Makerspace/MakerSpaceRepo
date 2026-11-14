@@ -72,6 +72,28 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(response.body).not_to include("Approved One")
     end
 
+    it "filters by several numeric statuses, and by approved and pending together" do
+      content_sign_in_as(:admin)
+      get project_proposals_path, params: { status: %w[0 1] }
+      expect(response.body).to include("Approved One", "Declined One")
+      expect(response.body).not_to include("Pending One")
+      get project_proposals_path, params: { status: %w[1 nil] }
+      expect(response.body).to include("Approved One", "Pending One")
+      expect(response.body).not_to include("Declined One")
+      get project_proposals_path, params: { status: "0" }
+      expect(response.body).to include("Declined One")
+      expect(response.body).not_to include("Approved One", "Pending One")
+    end
+
+    it "ignores a semester whose year is missing or not positive" do
+      approved.update_columns(season: ProjectProposal.seasons[:fall], year: 2024)
+      content_sign_in_as(:admin)
+      %w[fall fall_0 fall_-1].each do |semester|
+        get project_proposals_path, params: { semester: semester }
+        expect(response.body).to include("Approved One", "Pending One", "Declined One")
+      end
+    end
+
     it "searches by title and filters by semester" do
       approved.update_columns(season: ProjectProposal.seasons[:fall], year: 2024)
       create(:project_proposal, :approved, title: "Zebra Crossing")
