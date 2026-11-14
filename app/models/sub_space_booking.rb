@@ -217,18 +217,37 @@ class SubSpaceBooking < ApplicationRecord
 
     now = reference_time.beginning_of_minute
     if new_record?
-      errors.add(:start_time, :in_the_past) if self.class.start_in_past?(start_time, now)
+      start_not_in_past(now)
     elsif times_changing?
-      stored_end = attribute_in_database(:end_time)
-      if stored_end.present? && stored_end <= now
-        errors.add(:end_time, :booking_ended)
-      elsif minute_changed?(:start_time)
-        errors.add(:start_time, :in_the_past) if self.class.start_in_past?(start_time, now)
-      elsif self.class.start_in_past?(start_time, now) && end_time.present? && end_time <= now
-        errors.add(:end_time, :in_the_past)
-      end
+      moved_times_not_in_past(now)
     end
   end
+
+  # An edit that moves the times: an ended booking may not move, a moved start may not be in the past, and a
+  # booking in progress may not end in the past.
+  def moved_times_not_in_past(now)
+    if stored_end_passed?(now)
+      errors.add(:end_time, :booking_ended)
+    elsif minute_changed?(:start_time)
+      start_not_in_past(now)
+    elsif in_progress_ending_in_past?(now)
+      errors.add(:end_time, :in_the_past)
+    end
+  end
+
+  def start_not_in_past(now)
+    errors.add(:start_time, :in_the_past) if self.class.start_in_past?(start_time, now)
+  end
+
+  def stored_end_passed?(now)
+    stored_end = attribute_in_database(:end_time)
+    stored_end.present? && stored_end <= now
+  end
+
+  def in_progress_ending_in_past?(now)
+    self.class.start_in_past?(start_time, now) && end_time.present? && end_time <= now
+  end
+  private :moved_times_not_in_past, :start_not_in_past, :stored_end_passed?, :in_progress_ending_in_past?
 
   # Whether this save moves the booking, at minute precision (the form picks
   # whole minutes, so "09:00" resubmitted for a stored 09:00:30 is no move).
