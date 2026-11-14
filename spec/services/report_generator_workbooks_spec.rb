@@ -419,7 +419,7 @@ RSpec.describe ReportGenerator do
 
     it "Demographics: each year of study keeps its own count, in year order" do
       { "Alumni" => 2, "N/A" => 1, "" => 1, "10" => 1, "2" => 2, "1" => 1 }.each do |year, count|
-        count.times { student("Year #{year}").update_columns(year_of_study: year) }
+        count.times { student("Year #{year}").update_columns(year_of_study_entered: year) }
       end
       rows = grid(described_class.generate_new_users_report(from, to))["Demographics"]
       years = blocks(rows)[2]

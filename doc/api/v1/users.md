@@ -40,6 +40,7 @@ Staff/admin: any user; only an admin can open a soft-deleted account (as in the 
 ```
 
 - `rfid` is `null` when no card is linked.
+- `year_of_study` is the current year of study, a string or `null`: a student moves up one year on the first day of the month their account was created in, every year after it was created, up to `"8"` and then `"Alumni"`. It is counted from the year as entered and the day it was set, so it can differ from the `users.year_of_study` column, which holds the year as last entered.
 - `certifications`: active certifications, highest level per training, including trainings held only through a proficient project.
 - `remaining_trainings`: every training the user has no active certification for. Before this endpoint the field was always empty (never sent); it now holds `User#remaining_trainings`.
 - Never returned: `password`, `access_token`, `student_id`, `wallet`, `mac_address`, or any other column.

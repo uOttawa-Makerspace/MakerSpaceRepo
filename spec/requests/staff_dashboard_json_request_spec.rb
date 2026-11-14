@@ -23,9 +23,11 @@ RSpec.describe "Staff dashboard JSON", type: :request do
     expect(entry).not_to have_key("access_token")
     expect(entry).to include("username" => visitor.username, "name" => visitor.name, "email" => visitor.email)
     expect(entry).to include("certifications", "signed_safety_sheet", "membership_status", "flagged")
-    # The React app's contract: every column except the two secrets, plus the three computed keys.
+    # The React app's contract: every column except the two secrets and the year-of-study
+    # reference point (year_of_study is sent as the current year), plus the three computed keys.
     expect(entry.keys).to match_array(
-      User.column_names - %w[password access_token] + %w[certifications signed_safety_sheet membership_status]
+      User.column_names - %w[password access_token year_of_study_entered year_of_study_set_on year_of_study_set_by] +
+        %w[certifications signed_safety_sheet membership_status]
     )
   end
 

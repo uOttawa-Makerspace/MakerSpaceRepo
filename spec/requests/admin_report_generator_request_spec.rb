@@ -96,7 +96,7 @@ RSpec.describe "Admin report generator", type: :request do
 
     it "charts new users by year of study, each year with its own count, in year order" do
       { "Alumni" => 1, "N/A" => 1, nil => 1, "10" => 1, "2" => 2 }.each do |year, count|
-        count.times { create(:user, :student, created_at: march_10).update_columns(year_of_study: year) }
+        count.times { create(:user, :student, created_at: march_10).update_columns(year_of_study_entered: year) }
       end
       get admin_report_generator_index_path, params: range.merge(report_type: "new_users")
       # the visitor from the shared records is in year 2020

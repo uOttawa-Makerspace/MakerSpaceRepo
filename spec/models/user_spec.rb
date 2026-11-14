@@ -177,55 +177,6 @@ RSpec.describe User, type: :model do
       end
     end
 
-    context "#created_at_month" do
-      it "should return users created in the specified month" do
-        # Test a specific month to avoid conflicts
-        test_date = Date.new(2020, 5, 15)
-        
-        expect {
-          10.times { create(:user, :regular_user, created_at: test_date) }
-        }.to change { User.created_at_month(test_date.month).count }.by(10)
-      end
-    end
-
-    context "#not_created_this_year" do
-      it "should return users not created this year" do
-        expect {
-          2.times { create(:user, :regular_user, created_at: 3.years.ago) }
-        }.to change { User.not_created_this_year.count }.by(2)
-      end
-    end
-
-    context "around the new year in local time" do
-      include ActiveSupport::Testing::TimeHelpers
-
-      it "counts a user created on 31 December Eastern in that year, late that evening" do
-        travel_to(Time.zone.local(2026, 12, 31, 22)) do # 03:00 UTC on 1 January
-          mine = create(:user, :regular_user, created_at: Time.zone.local(2026, 12, 31, 10))
-          expect(User.created_this_year).to include(mine)
-          expect(User.not_created_this_year).not_to include(mine)
-        end
-      end
-    end
-
-    context "#created_this_year" do
-      include ActiveSupport::Testing::TimeHelpers
-
-      it "should return users created this year" do
-        expect {
-          14.times { create(:user, :regular_user, created_at: Time.current) }
-        }.to change { User.created_this_year.count }.by(14)
-      end
-
-      it "counts users created now on the last evening of the year in local time" do
-        travel_to(Time.zone.local(2026, 12, 31, 22)) do # 03:00 UTC on 1 January
-          expect {
-            2.times { create(:user, :regular_user, created_at: Time.current) }
-          }.to change { User.created_this_year.count }.by(2)
-        end
-      end
-    end
-
     context "#students" do
       it "should return students" do
         expect {

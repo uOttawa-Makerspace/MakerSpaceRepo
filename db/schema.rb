@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_13_150000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_14_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1811,12 +1811,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_13_150000) do
     t.citext "username"
     t.integer "wallet", default: 0
     t.string "year_of_study"
+    t.string "year_of_study_entered"
+    t.string "year_of_study_set_by", default: "entered", null: false
+    t.date "year_of_study_set_on", default: -> { "((now() AT TIME ZONE 'America/New_York'::text))::date" }, null: false
     t.index "lower((email)::text)", name: "index_users_on_lowercase_email", unique: true
     t.index "lower((username)::text)", name: "index_users_on_lowercase_username", unique: true
     t.index ["name"], name: "index_users_on_name", opclass: :gin_trgm_ops, using: :gin
     t.index ["space_id"], name: "index_users_on_space_id"
     t.index ["username"], name: "index_users_on_username", opclass: :gin_trgm_ops, using: :gin
     t.check_constraint "locale::text = ANY (ARRAY['en'::character varying, 'fr'::character varying]::text[])", name: "users_locale_supported"
+    t.check_constraint "year_of_study_set_by::text = ANY (ARRAY['entered'::character varying, 'backfill_last_run'::character varying, 'backfill_marked_inactive'::character varying]::text[])", name: "users_year_of_study_set_by_known"
   end
 
   create_table "videos", id: :serial, force: :cascade do |t|
@@ -2158,4 +2162,33 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_13_150000) do
   add_foreign_key "volunteer_tasks", "users"
   add_foreign_key "walk_in_safety_sheets", "spaces"
   add_foreign_key "walk_in_safety_sheets", "users"
+
+  create_view "reporting_user_years", sql_definition: <<-SQL
+      SELECT users.id AS user_id,
+          CASE
+              WHEN ((moves.n = 0) OR (users.year_of_study_entered IS NULL) OR ((users.year_of_study_entered)::text = 'Alumni'::text)) THEN users.year_of_study_entered
+              WHEN (((entered.year >= (1)::numeric) AND (entered.year <= (7)::numeric)) AND ((entered.year + (moves.n)::numeric) <= (8)::numeric)) THEN (((entered.year + (moves.n)::numeric))::text)::character varying
+              ELSE 'Alumni'::character varying
+          END AS year_of_study,
+      users.year_of_study_entered,
+      users.year_of_study_set_on,
+      users.year_of_study_set_by
+     FROM (((users
+       CROSS JOIN LATERAL ( SELECT ((users.created_at AT TIME ZONE 'UTC'::text) AT TIME ZONE 'America/New_York'::text) AS created,
+              ((now() AT TIME ZONE 'America/New_York'::text))::date AS today) here)
+       CROSS JOIN LATERAL ( SELECT
+                  CASE
+                      WHEN ((users.identity)::text = ANY ((ARRAY['grad'::character varying, 'undergrad'::character varying, 'international_grad'::character varying, 'international_undergrad'::character varying])::text[])) THEN GREATEST(0, ((((EXTRACT(year FROM here.today))::integer -
+                      CASE
+                          WHEN (EXTRACT(month FROM here.created) > EXTRACT(month FROM here.today)) THEN 1
+                          ELSE 0
+                      END) - GREATEST(((EXTRACT(year FROM users.year_of_study_set_on))::integer +
+                      CASE
+                          WHEN (EXTRACT(month FROM here.created) > EXTRACT(month FROM users.year_of_study_set_on)) THEN 0
+                          ELSE 1
+                      END), ((EXTRACT(year FROM here.created))::integer + 1))) + 1))
+                      ELSE 0
+                  END AS n) moves)
+       CROSS JOIN LATERAL ( SELECT COALESCE(("substring"((users.year_of_study_entered)::text, '^[0-9]+'::text))::numeric, (0)::numeric) AS year) entered);
+  SQL
 end

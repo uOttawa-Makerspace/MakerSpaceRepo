@@ -26,6 +26,16 @@ module ApplicationHelper
       year: date.year)
   end
 
+  # The year-of-study choices 1 to 10 for a profile form, plus the user's current
+  # year when it is another value (such as Alumni), so saving another field does
+  # not blank it.
+  def year_of_study_options(user)
+    options = (1..10).map { |year| [year, year.to_s] }
+    current = user.current_year_of_study
+    options.unshift([current, current]) if current.present? && options.none? { |_, value| value == current }
+    options
+  end
+
   # Keys that are not about who is signed in and must survive the session
   # reset done on sign-in (sign-out keeps only the locale).
   SESSION_KEYS_KEPT_ON_SIGN_IN = %w[locale authorized_repo_ids selected_dates order_id].freeze

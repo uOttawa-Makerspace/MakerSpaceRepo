@@ -483,7 +483,7 @@ class ReportGenerator
 
         title(sheet, "Year of Study")
         User
-          .years_of_study_in_order(users.group(:year_of_study).count)
+          .years_of_study_in_order(users.current_years_of_study.tally)
           .each do |year, count|
             sheet.add_row [year, count], types: year_row_types(year)
           end
@@ -660,7 +660,7 @@ class ReportGenerator
                           user.gender,
                           user.identity,
                           user.shown_faculty,
-                          user.year_of_study,
+                          user.current_year_of_study,
                           user.created_at.in_time_zone.strftime("%Y-%m-%d %H:%M"),
                           nil,
                           user.student_id

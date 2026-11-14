@@ -11,7 +11,7 @@
         <span class="col-md-2"><%= t('.program') %></span>
         <span class="text-secondary col-md-10"><%= @repo_user.program.presence || '-' %></span>
         <span class="col-md-2"><%= t('.year_of_study') %></span>
-        <span class="text-secondary col-md-10"><%= @repo_user.year_of_study.presence || '-' %></span>
+        <span class="text-secondary col-md-10"><%= @repo_user.current_year_of_study.presence || '-' %></span>
         <span class="col-md-2"><%= t('.identity') %></span>
         <span class="text-secondary col-md-10"><%= @repo_user.identity.present? ? @repo_user.identity.humanize : '-' %></span>
         <% if (uoeng = @repo_user.uoeng_profile) %>
