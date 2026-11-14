@@ -1,21 +1,21 @@
 <% content_for :preheader do %>
-  Makerepo - Complete Your Exam
+  <%= t(".preheader") %>
 <% end %>
 
 <% content_for :team_name do %>
-  The MakerRepo Team
+  <%= t("layouts.mailer.makerrepo_team") %>
 <% end %>
 
 <% content_for :why_received do %>
-  You have received this email because you have an exam to complete on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+  <%= t(".why_received") %> <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
 <% end %>
 
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.name %>,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t("msr_mailer.account.hello", name: @user.name) %></p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  You are receiving this email because you were in the <b><%= @training_session.training.localized_name %> at uOttawa.</b> </br>
-  Sign in to your account: <a href="http://makerepo.com/login" target="_blank"> Log In </a> <br />
-  and check all the exams available <%= link_to 'Exams', exams_url %>. <br />
-  You have 3 days to complete the exam. <br />
+  <%= t("msr_mailer.exam.in_training_html", training: @training_session.training.localized_name) %> </br>
+  <%= t(".sign_in") %> <a href="http://makerepo.com/login" target="_blank"> <%= t(".log_in") %> </a> <br />
+  <%= t(".check_html", link: link_to(t(".exams_link"), exams_url)) %> <br />
+  <%= t(".deadline") %> <br />
 </p>
 <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
   <tbody>
@@ -25,7 +25,7 @@
           <tbody>
             <tr>
               <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; border-radius: 5px; text-align: center; background-color: #e55426ff;" valign="top" align="center" bgcolor="#e55426ff">
-                <a href="http://makerepo.com/login" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;">Start exam</a>
+                <a href="http://makerepo.com/login" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;"><%= t(".button") %></a>
               </td>
             </tr>
           </tbody>

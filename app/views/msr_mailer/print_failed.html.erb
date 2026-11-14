@@ -1,13 +1,13 @@
 <% content_for :preheader do %>
-  Makerepo - New Message
+  <%= t(".preheader") %>
 <% end %>
 
 <% content_for :team_name do %>
-  CEED Team
+  <%= t("layouts.mailer.ceed_team") %>
 <% end %>
 
 <% content_for :why_received do %>
-  You have received this email because you started a print job at the MakerSpace
+  <%= t(".why_received") %>
 <% end %>
 
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= @message %></p>

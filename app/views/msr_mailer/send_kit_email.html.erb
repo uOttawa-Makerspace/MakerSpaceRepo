@@ -1,17 +1,17 @@
 <% content_for :preheader do %>
-  Makerepo - Your Kit is Ready
+  <%= t(".preheader") %>
 <% end %>
 
 <% content_for :team_name do %>
-  The MakerRepo Team
+  <%= t("layouts.mailer.makerrepo_team") %>
 <% end %>
 
 <% content_for :why_received do %>
-  You have received this email because you bought a Proficient Project Kit on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+  <%= t(".why_received") %> <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
 <% end %>
 
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.name %>,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t("msr_mailer.account.hello", name: @user.name) %></p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  We received your kit order for your <%= ProficientProject.find(@pp).title %> project. You can pick it up at the UOttawa Makerspace during the regular
-  <a href="https://makerepo.com/hours">opening hours</a>.
+  <%= t(".received", project: ProficientProject.find(@pp).title) %>
+  <a href="https://makerepo.com/hours"><%= t(".opening_hours") %></a>.
 </p>

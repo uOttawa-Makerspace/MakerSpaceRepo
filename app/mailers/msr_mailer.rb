@@ -57,7 +57,7 @@ class MsrMailer < ApplicationMailer
   def send_kit_email(user, pp)
     @user = user
     @pp = pp
-    mail(to: @user.email, subject: "Your proficient project kit order")
+    mail(to: @user.email)
   end
 
   def send_admin_pp_evaluation(pp)
@@ -80,7 +80,7 @@ class MsrMailer < ApplicationMailer
       else
         "mtc@uottawa.ca"
       end
-    mail(to: @user.email, subject: "Your Proficient Project Request")
+    mail(to: @user.email)
   end
 
   def send_results_pp(oi, user, result)
@@ -88,7 +88,7 @@ class MsrMailer < ApplicationMailer
     @pp = oi.proficient_project
     @oi = oi
     @user = user
-    mail(to: @user.email, subject: "Your Proficient Project Results")
+    mail(to: @user.email)
   end
 
   def repo_report(repository, user)
@@ -232,7 +232,7 @@ class MsrMailer < ApplicationMailer
       to: user.email,
       reply_to: "makerspace@uottawa.ca",
       bcc: "uottawa.makerepo@gmail.com",
-      subject: "Your 3D print on #{printer.number} has failed"
+      subject: subject_for(user.email, printer: printer.number)
     )
   end
 
@@ -252,7 +252,7 @@ class MsrMailer < ApplicationMailer
     mail(
       to: @email,
       bcc: "uottawa.makerepo@gmail.com",
-      subject: "Issue Report | #{@subject}"
+      subject: subject_for(@email, subject: @subject)
     )
   end
 
@@ -277,7 +277,7 @@ class MsrMailer < ApplicationMailer
     @user = user
     @training_session = training_session
     email = @user.email
-    mail(to: email, subject: "An exam was sent to you")
+    mail(to: email)
   end
 
   def finishing_exam(user, exam)
@@ -285,7 +285,7 @@ class MsrMailer < ApplicationMailer
     @exam = exam
     @training_session = exam.training_session
     email = @user.email
-    mail(to: email, subject: "You finished your exam")
+    mail(to: email)
   end
 
   def exam_results_staff(user, exam)
@@ -296,7 +296,7 @@ class MsrMailer < ApplicationMailer
     email = @staff.email
     mail(
       to: email,
-      subject: "#{@user.name.split.first.capitalize} finished an exam"
+      subject: subject_for(email, name: @user.name.split.first.capitalize)
     )
   end
 
@@ -316,7 +316,7 @@ class MsrMailer < ApplicationMailer
     email_staff = (staff ? staff.email : "volunteer@makerepo.com")
     mail(
       to: email_staff,
-      subject: "New join in task: #{@volunteer_task.title.capitalize}"
+      subject: subject_for(email_staff, task: @volunteer_task.title.capitalize)
     )
   end
 
@@ -336,7 +336,7 @@ class MsrMailer < ApplicationMailer
     email_volunteer = volunteer.email
     mail(
       to: email_volunteer,
-      subject: "New join in task: #{@volunteer_task.title.capitalize}"
+      subject: subject_for(email_volunteer, task: @volunteer_task.title.capitalize)
     )
   end
 
@@ -347,7 +347,7 @@ class MsrMailer < ApplicationMailer
     email_volunteer = volunteer.email
     mail(
       to: email_volunteer,
-      subject: "New Request for task: #{@volunteer_task.title.capitalize}",
+      subject: subject_for(email_volunteer, task: @volunteer_task.title.capitalize),
       bcc: @email_staff
     )
   end
@@ -359,7 +359,7 @@ class MsrMailer < ApplicationMailer
     email_volunteer = volunteer_task_request.user.email
     mail(
       to: email_volunteer,
-      subject: "Your request was updated: #{@volunteer_task.title.capitalize}"
+      subject: subject_for(email_volunteer, task: @volunteer_task.title.capitalize)
     )
   end
 
