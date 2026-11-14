@@ -103,6 +103,54 @@ describe("profile tabs", () => {
     load(BASE);
     expect(window.location.hash).toBe("#badges");
   });
+
+  it("puts the address back only once after a form submit", () => {
+    window.happyDOM.setURL("http://localhost/users/ann#badges");
+    document.dispatchEvent(new Event("turbo:submit-start"));
+    load(BASE);
+    load(BASE, "#info");
+    expect(window.location.hash).toBe("#info");
+  });
+
+  it("opens the tab of the address kept from a form submit", () => {
+    window.happyDOM.setURL("http://localhost/users/ann#badges");
+    document.dispatchEvent(new Event("turbo:submit-start"));
+    const clicked = [];
+    document.addEventListener("click", (e) => clicked.push(e.target.id), {
+      capture: true,
+    });
+    load(tabs(false));
+    expect(clicked).toContain("t-badges");
+  });
+
+  it("opens no tab when the address names none", () => {
+    const clicked = [];
+    document.addEventListener("click", (e) => clicked.push(e.target.id), {
+      capture: true,
+    });
+    load(tabs(true));
+    expect(clicked).toEqual([]);
+    expect(window.location.hash).toBe("");
+  });
+
+  it("opens the admin tab once for each outer tab on an admin address", () => {
+    const clicked = [];
+    document.addEventListener("click", (e) => clicked.push(e.target.id), {
+      capture: true,
+    });
+    load(tabs(true), "#admin-roles");
+    expect(clicked).toEqual(["a-roles", "admin-tab", "admin-tab", "admin-tab"]);
+    expect(window.location.hash).toBe("#admin-roles");
+  });
+
+  it("opens the outer admin tab itself for its own address", () => {
+    const clicked = [];
+    document.addEventListener("click", (e) => clicked.push(e.target.id), {
+      capture: true,
+    });
+    load(tabs(true), "#admin");
+    expect(clicked).toEqual(["admin-tab"]);
+  });
 });
 
 describe("show and hide controls", () => {
@@ -131,6 +179,24 @@ describe("show and hide controls", () => {
       `${BASE}<input type="radio" id="r" data-hide="#extra" checked><input id="extra">`,
     );
     expect($("extra").style.display).toBe("none");
+  });
+
+  it("shows its target when a control has both a show and a hide target", () => {
+    load(
+      `${BASE}<input type="radio" id="r" data-show="#extra" data-hide="#other"><div id="extra" style="display:none"></div><div id="other"></div>`,
+    );
+    $("r").checked = true;
+    $("r").dispatchEvent(new Event("change"));
+    expect($("extra").style.display).toBe("block");
+    expect($("other").style.display).toBe("");
+  });
+
+  it("applies every control in page order", () => {
+    load(
+      `${BASE}<input type="radio" id="a" data-show="#extra" checked><input type="radio" id="b" data-hide="#extra" checked><input id="extra">`,
+    );
+    expect($("extra").style.display).toBe("none");
+    expect($("extra").disabled).toBe(true);
   });
 
   it("does nothing while unchecked", () => {
@@ -166,6 +232,37 @@ describe("faculty and program", () => {
     expect(selects[0].cleared).toBe(1);
     expect(selects[0].optionsCleared).toBe(1);
     expect(selects[0].synced).toBe(1);
+  });
+
+  it("offers no programs for a faculty without any", () => {
+    load(page);
+    $("user_faculty").insertAdjacentHTML(
+      "beforeend",
+      '<option value="Art">Art</option>',
+    );
+    $("user_faculty").value = "Art";
+    $("user_faculty").dispatchEvent(new Event("change"));
+    expect($("user_program").querySelectorAll("optgroup")).toHaveLength(0);
+  });
+
+  it("leaves a program select decorated before the page loaded", () => {
+    document.body.innerHTML = page;
+    $("user_program").tomselect = "existing";
+    selects.length = 0;
+    document.dispatchEvent(new Event("turbo:load"));
+    expect(selects).toHaveLength(0);
+    $("user_faculty").value = "Sci";
+    $("user_faculty").dispatchEvent(new Event("change"));
+    expect($("user_program").querySelectorAll("optgroup")).toHaveLength(2);
+  });
+
+  it("gives the program select its options", () => {
+    load(page);
+    expect(selects[0].config).toEqual({
+      maxItems: 1,
+      maxOptions: null,
+      searchOnKeyUp: true,
+    });
   });
 
   it("works without a faculty select", () => {
@@ -234,6 +331,18 @@ describe("key certificate upload", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("asks for a PDF when the file choice is emptied", () => {
+    load(page);
+    const alertMock = vi.fn();
+    vi.stubGlobal("alert", alertMock);
+    Object.defineProperty($("cert"), "files", {
+      value: [],
+      configurable: true,
+    });
+    $("cert").dispatchEvent(new Event("change"));
+    expect(alertMock).toHaveBeenCalledWith("Please attach a pdf file only");
+  });
+
   it("tells the user when the upload cannot be sent", async () => {
     load(page);
     document.documentElement.dataset.requestNetwork = "Server unreachable";
@@ -249,6 +358,32 @@ describe("key certificate upload", () => {
 });
 
 describe("role spaces", () => {
+  it("decorates the role space selects again on every load", () => {
+    load(`${BASE}<select class="role-space-select"></select>`);
+    document.dispatchEvent(new Event("turbo:load"));
+    expect(selects).toHaveLength(2);
+  });
+
+  it("counts only the space boxes beside the changed one", () => {
+    load(`${BASE}<div>
+      <input type="checkbox" class="set-user-space-button" id="s1" data-user-id="9" data-space-id="1">
+    </div><div>
+      <input type="checkbox" class="set-user-space-button" id="s2" data-user-id="8" data-space-id="2" checked>
+    </div>`);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    $("s1").dispatchEvent(new Event("change"));
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+      user_ids: ["9"],
+      spaces: { 9: [] },
+    });
+    expect(fetchMock.mock.calls[0][1].headers).toEqual({
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-CSRF-Token": "tok",
+    });
+  });
+
   it("decorates each role space select with checkboxes", () => {
     load(
       `${BASE}<select class="role-space-select"></select><select class="role-space-select"></select>`,
