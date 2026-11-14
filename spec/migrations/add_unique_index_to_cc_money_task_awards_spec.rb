@@ -32,6 +32,7 @@ RSpec.describe AddUniqueIndexToCcMoneyTaskAwards do
 
   def migrate(direction = :up)
     ActiveRecord::Migration.suppress_messages { described_class.new.migrate(direction) }
+    PooledStatements.reset
   end
 
   def insert(cc: 5, created_at: old, user_id: user.id, volunteer_task_id: task.id)
@@ -113,6 +114,24 @@ RSpec.describe AddUniqueIndexToCcMoneyTaskAwards do
     expect(found).to be_nil
     expect(rows).to eq(before_rows)
     expect(flagged).to be_empty
+  end
+
+  # Adding the column back puts it last, which changes the row type of SELECT cc_moneys.*. A plan another
+  # pooled connection prepared before that must not survive into a later example's transaction.
+  it "leaves no other pooled connection with a prepared plan for the old row shape" do
+    migrate
+    migrate(:down)
+    other = ActiveRecord::Base.connection_pool.checkout
+    select_awards = lambda do
+      other.select_all("SELECT cc_moneys.* FROM cc_moneys WHERE user_id = $1", "awards", [user.id], preparable: true)
+    end
+    select_awards.call
+
+    migrate
+
+    expect { other.transaction { select_awards.call } }.not_to raise_error
+  ensure
+    ActiveRecord::Base.connection_pool.checkin(other) if other
   end
 
   it "builds the index on clean data without flagging anything" do
