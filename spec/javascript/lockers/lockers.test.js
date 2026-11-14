@@ -82,13 +82,12 @@ describe("handleLinkInput", () => {
 describe("validateRange", () => {
   const fixture = (existing, start, end) => {
     document.body.innerHTML = `
-      <div id="newRangeLockerModal">
+      <div id="newRangeLockerModal" data-locker-specifiers='${JSON.stringify(existing)}'>
         <input id="newLockerRangeStart" value="${start}">
         <input id="newLockerRangeEnd" value="${end}">
         <div id="newRangeLockersAlreadyPresent"><ul><li>stale</li></ul></div>
         <div id="newRangeLockersPossible"><ul><li>stale</li></ul></div>
-      </div>
-      ${existing.map((s) => `<div data-locker-specifier="${s}"></div>`).join("")}`;
+      </div>`;
   };
   const items = (id) =>
     [...document.querySelectorAll(`#${id} li`)].map((li) => li.textContent);
@@ -171,18 +170,18 @@ describe("validateRange", () => {
     expect(items("newRangeLockersPossible")).toEqual(["1", "3"]);
   });
 
-  it("ignores existing lockers whose names are not plain numbers", () => {
+  it("compares names as text, as the server does: 01 and A1 are not 1", () => {
     fixture(["A1", "01", "2"], 1, 2);
     validateRange();
     expect(items("newRangeLockersAlreadyPresent")).toEqual(["2"]);
     expect(items("newRangeLockersPossible")).toEqual(["1"]);
   });
 
-  it("keeps the stale items of a list it hides", () => {
+  it("empties a list it hides", () => {
     fixture(["50"], 1, 3);
     validateRange();
     expect(hidden("newRangeLockersAlreadyPresent")).toBe(true);
-    expect(items("newRangeLockersAlreadyPresent")).toEqual(["stale"]);
+    expect(items("newRangeLockersAlreadyPresent")).toEqual([]);
   });
 
   it("shows a list again once it has items", () => {
@@ -209,20 +208,42 @@ describe("validateRange", () => {
     expect(items("newRangeLockersAlreadyPresent")).toEqual(["2"]);
   });
 
-  it("finds the lists and existing lockers anywhere on the page", () => {
+  it("reads the lists and the existing lockers from the modal only", () => {
+    document.body.innerHTML = `
+      <div id="newRangeLockerModal" data-locker-specifiers='["2"]'>
+        <input id="newLockerRangeStart" value="1">
+        <input id="newLockerRangeEnd" value="4">
+        <div id="newRangeLockersAlreadyPresent"><ul></ul></div>
+        <div id="newRangeLockersPossible"><ul></ul></div>
+      </div>
+      <div id="newRangeLockersAlreadyPresent"><ul><li>outside</li></ul></div>
+      <table><tr data-locker-specifier="3"></tr></table>`;
+    validateRange();
+    const modal = document.getElementById("newRangeLockerModal");
+    const inModal = (id) =>
+      [...modal.querySelectorAll(`#${id} li`)].map((li) => li.textContent);
+    expect(inModal("newRangeLockersAlreadyPresent")).toEqual(["2"]);
+    expect(inModal("newRangeLockersPossible")).toEqual([
+      "1",
+      "Range from 3 to 4",
+    ]);
+    expect(
+      document.querySelector("body > #newRangeLockersAlreadyPresent")
+        .textContent,
+    ).toBe("outside");
+  });
+
+  it("treats every locker as new when the modal lists no existing lockers", () => {
     document.body.innerHTML = `
       <div id="newRangeLockerModal">
         <input id="newLockerRangeStart" value="1">
-        <input id="newLockerRangeEnd" value="4">
-      </div>
-      <div id="newRangeLockersAlreadyPresent"><ul></ul></div>
-      <div id="newRangeLockersPossible"><ul></ul></div>
-      <table><tr data-locker-specifier="3"></tr></table>`;
+        <input id="newLockerRangeEnd" value="2">
+        <div id="newRangeLockersAlreadyPresent"><ul><li>stale</li></ul></div>
+        <div id="newRangeLockersPossible"><ul></ul></div>
+      </div>`;
     validateRange();
-    expect(items("newRangeLockersAlreadyPresent")).toEqual(["3"]);
-    expect(items("newRangeLockersPossible")).toEqual([
-      "Range from 1 to 2",
-      "4",
-    ]);
+    expect(items("newRangeLockersPossible")).toEqual(["Range from 1 to 2"]);
+    expect(hidden("newRangeLockersAlreadyPresent")).toBe(true);
+    expect(items("newRangeLockersAlreadyPresent")).toEqual([]);
   });
 });

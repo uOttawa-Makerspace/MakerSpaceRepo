@@ -9,24 +9,36 @@ function initTomSelect(selector, options) {
   }
 }
 
-function bindImageRemovals() {
-  document.querySelectorAll(".image-remove").forEach((el) => {
-    el.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const deleteImagesInput = document.getElementById("deleteimages");
-      if (deleteImagesInput) {
-        deleteImagesInput.value += el.id + ",";
-      }
-      el.parentElement.remove();
-    });
+// The elements this script has already bound: a second load over the same
+// page binds nothing twice. A page Turbo restores from its cache is a copy made
+// of new elements, which are bound again.
+const boundElements = new WeakSet();
+
+function bindOnce(el, bind) {
+  if (boundElements.has(el)) return;
+  boundElements.add(el);
+  bind(el);
+}
+
+function bindImageRemoval(el) {
+  el.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const deleteImagesInput = document.getElementById("deleteimages");
+    if (deleteImagesInput) {
+      deleteImagesInput.value += el.id + ",";
+    }
+    el.parentElement.remove();
   });
 }
 
-function bindCompletedTaskToggle() {
-  const hider = document.getElementById("task-hider");
-  if (!hider) return;
+function bindImageRemovals() {
+  document
+    .querySelectorAll(".image-remove")
+    .forEach((el) => bindOnce(el, bindImageRemoval));
+}
 
+function bindCompletedTaskToggle(hider) {
   const completedRows = document.querySelectorAll('tr[completed="completed"]');
   hider.addEventListener("click", () => {
     completedRows.forEach((row) => row.classList.toggle("d-none"));
@@ -161,11 +173,12 @@ document.addEventListener("turbo:load", function () {
   // 2. Task Form Image Removals & Completed Task Toggler
   // ------------------------------------------------------------------------
   bindImageRemovals();
-  bindCompletedTaskToggle();
+  const hider = document.getElementById("task-hider");
+  if (hider) bindOnce(hider, bindCompletedTaskToggle);
 
   // ------------------------------------------------------------------------
   // 3. Volunteer Tasks Index Filter & Search Engine
   // ------------------------------------------------------------------------
   const taskIndexContainer = document.getElementById("volunteerTasksIndex");
-  if (taskIndexContainer) initTaskIndexFilters(taskIndexContainer);
+  if (taskIndexContainer) bindOnce(taskIndexContainer, initTaskIndexFilters);
 });

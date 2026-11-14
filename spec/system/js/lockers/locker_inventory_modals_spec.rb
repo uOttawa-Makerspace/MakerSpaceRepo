@@ -93,6 +93,42 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
     end
   end
 
+  describe "range preview of lockers the table is not showing" do
+    it "counts the lockers that the table search has filtered out" do
+      find(".dt-search input[type=search]").fill_in(with: "#7")
+      expect(page).to have_css("#locker_inventory_table tbody tr", count: 1)
+      open_modal "Make a range of lockers", "#newRangeLockerModal"
+      fill_in "newLockerRangeStart", with: "1"
+      fill_in "newLockerRangeEnd", with: "4"
+      within("#newRangeLockersAlreadyPresent") do
+        expect(page).to have_css("li", text: "Range from 1 to 3")
+        expect(page).to have_css("li", count: 1)
+      end
+      within("#newRangeLockersPossible") do
+        expect(page).to have_css("li", text: "4")
+        expect(page).to have_css("li", count: 1)
+      end
+    end
+
+    it "offers a number as new when only a locker with a leading zero exists, as the server creates it" do
+      create(:locker, specifier: "05", locker_size: size_small)
+      visit lockers_path
+      expect(page).to have_css("#locker_inventory_table")
+      wait_for_app_js
+      open_modal "Make a range of lockers", "#newRangeLockerModal"
+      fill_in "newLockerRangeStart", with: "5"
+      fill_in "newLockerRangeEnd", with: "5"
+      expect(page).to have_css("#newRangeLockersPossible li", text: "5")
+      expect(page).to have_css("#newRangeLockersAlreadyPresent", visible: :hidden)
+      within("#newRangeLockerModal") do
+        select "24x24", from: "locker_size_id", visible: :all
+        find("input[type=submit]").click
+      end
+      expect_flash("Lockers created")
+      expect(Locker.where(specifier: %w[5 05]).count).to eq(2)
+    end
+  end
+
   describe "single locker" do
     it "creates a locker with the chosen size and opens it" do
       open_modal "Make a single locker", "#newLockerModal"

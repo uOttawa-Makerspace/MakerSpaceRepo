@@ -246,7 +246,7 @@ describe("volunteer-search", () => {
       true,
     ]);
     expect($("ac").textContent).toBe("1");
-    // (a count of 0 is not asserted: the DOM test environment renders a numeric 0 as empty text)
+    expect($("ic").textContent).toBe("0");
     expect($("clear").classList.contains("d-none")).toBe(false);
   });
 
@@ -324,16 +324,35 @@ describe("volunteer-search", () => {
     expect($("it").classList.contains("d-none")).toBe(true);
   });
 
-  it("keeps the counts taken when the page loaded for an empty search", async () => {
+  it("counts the rows the list has now for an empty search", async () => {
     await mount(page);
     const added = document.createElement("tr");
     added.dataset.volunteerSearchTarget = "activeRow";
     added.textContent = "Dee New";
     $("at").querySelector("tr").after(added);
     search("");
-    expect($("ac").textContent).toBe("2");
+    expect($("ac").textContent).toBe("3");
     search("dee");
     expect($("ac").textContent).toBe("1");
+    document
+      .querySelector('[data-volunteer-search-target="inactiveRow"]')
+      .remove();
+    search("");
+    expect($("ic").textContent).toBe("0");
+  });
+
+  it("shows the empty message for a list that gained its rows after the page loaded", async () => {
+    await mount(`
+      <div data-controller="volunteer-search">
+        <input data-volunteer-search-target="input" data-action="input->volunteer-search#filter" id="q">
+        <div data-volunteer-search-target="activeTableContainer" id="at"><table><tbody id="rows"></tbody></table></div>
+        <div data-volunteer-search-target="activeEmpty" class="d-none" id="ae"></div>
+      </div>`);
+    $("rows").innerHTML =
+      `<tr data-volunteer-search-target="activeRow"><td>Ann</td></tr>`;
+    search("zzz");
+    expect($("ae").classList.contains("d-none")).toBe(false);
+    expect($("at").classList.contains("d-none")).toBe(true);
   });
 
   it("never shows the empty message for a list that had no volunteers", async () => {

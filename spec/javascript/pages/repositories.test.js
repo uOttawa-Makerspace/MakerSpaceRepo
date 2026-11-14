@@ -15,6 +15,10 @@ vi.mock("tom-select", () => ({
   },
 }));
 vi.mock("../../../app/javascript/src/file_upload.js", () => ({}));
+const toasts = vi.hoisted(() => []);
+vi.mock("../../../app/javascript/src/toast", () => ({
+  showToast: (message, options) => toasts.push({ message, ...options }),
+}));
 
 await import("../../../app/javascript/entrypoints/repositories.js");
 
@@ -147,49 +151,87 @@ describe.each(["owner_select", "search_users_add"])(
       expect(shouldLoad("abc")).toBe(true);
     });
 
-    it("does not search, or answer, for fewer than two characters", () => {
-      const fetchMock = vi.fn();
-      vi.stubGlobal("fetch", fetchMock);
-      const callback = vi.fn();
-      expect(config().load("a", callback)).toBeUndefined();
-      expect(fetchMock).not.toHaveBeenCalled();
-      expect(callback).not.toHaveBeenCalled();
-    });
+    const answer = (body, init = {}) =>
+      vi.fn(async () => new Response(JSON.stringify(body), init));
 
     it("offers the id and username of each user the server finds", async () => {
-      const fetchMock = vi.fn(async () => ({
-        json: async () => ({
-          users: [
-            { id: 4, username: "ann", name: "Ann" },
-            { id: 7, username: "bob", email: "b@example.com" },
-          ],
-        }),
-      }));
+      const fetchMock = answer({
+        users: [
+          { id: 4, username: "ann", name: "Ann" },
+          { id: 7, username: "bob", email: "b@example.com" },
+        ],
+      });
       vi.stubGlobal("fetch", fetchMock);
       const callback = vi.fn();
-      config().load("an n", callback);
+      config().load("ann", callback);
       await vi.waitFor(() => expect(callback).toHaveBeenCalled());
-      expect(fetchMock).toHaveBeenCalledWith(
-        "/repositories/populate_users?search=an n",
+      expect(fetchMock.mock.calls[0][0]).toBe(
+        "/repositories/populate_users?search=ann",
       );
-      expect(fetchMock.mock.calls[0]).toHaveLength(1);
       expect(callback).toHaveBeenCalledWith([
         { id: 4, username: "ann" },
         { id: 7, username: "bob" },
       ]);
     });
 
-    it("searches from two characters when asked directly", async () => {
-      const fetchMock = vi.fn(async () => ({
-        json: async () => ({ users: [] }),
-      }));
+    it("sends the typed text encoded, so spaces, & # and + reach the server", async () => {
+      const fetchMock = answer({ users: [] });
       vi.stubGlobal("fetch", fetchMock);
       const callback = vi.fn();
-      config().load("ab", callback);
+      config().load("a b&c#d+e", callback);
       await vi.waitFor(() => expect(callback).toHaveBeenCalledWith([]));
-      expect(fetchMock).toHaveBeenCalledWith(
-        "/repositories/populate_users?search=ab",
+      const url = new URL(fetchMock.mock.calls[0][0], "http://example.test");
+      expect(url.pathname).toBe("/repositories/populate_users");
+      expect([...url.searchParams]).toEqual([["search", "a b&c#d+e"]]);
+    });
+
+    it("shows the server's error and answers with no options when the search fails", async () => {
+      toasts.length = 0;
+      vi.stubGlobal(
+        "fetch",
+        answer({ error: "Search unavailable" }, { status: 500 }),
       );
+      const callback = vi.fn();
+      config().load("ann", callback);
+      await vi.waitFor(() => expect(callback).toHaveBeenCalled());
+      expect(callback).toHaveBeenCalledWith();
+      expect(toasts).toEqual([
+        { message: "Search unavailable", type: "error" },
+      ]);
+    });
+
+    it("tells the user and answers with no options when the server is unreachable", async () => {
+      toasts.length = 0;
+      document.documentElement.dataset.requestNetwork = "Server unreachable";
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => {
+          throw new TypeError("Failed to fetch");
+        }),
+      );
+      const callback = vi.fn();
+      config().load("ann", callback);
+      await vi.waitFor(() => expect(callback).toHaveBeenCalled());
+      expect(callback).toHaveBeenCalledWith();
+      expect(toasts).toEqual([
+        { message: "Server unreachable", type: "error" },
+      ]);
+      delete document.documentElement.dataset.requestNetwork;
+    });
+
+    it("treats an answer that is not JSON as a failed search", async () => {
+      toasts.length = 0;
+      document.documentElement.dataset.requestFailed = "Request failed";
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => new Response("<html>sign in</html>")),
+      );
+      const callback = vi.fn();
+      config().load("ann", callback);
+      await vi.waitFor(() => expect(callback).toHaveBeenCalled());
+      expect(callback).toHaveBeenCalledWith();
+      expect(toasts).toEqual([{ message: "Request failed", type: "error" }]);
+      delete document.documentElement.dataset.requestFailed;
     });
   },
 );

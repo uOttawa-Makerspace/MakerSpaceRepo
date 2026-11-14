@@ -14,11 +14,6 @@ export default class extends Controller {
     "inactiveTableContainer",
   ];
 
-  connect() {
-    this.totalActive = this.activeRowTargets.length;
-    this.totalInactive = this.inactiveRowTargets.length;
-  }
-
   filter() {
     const query = this.inputTarget.value.trim().toLowerCase();
 
@@ -35,15 +30,14 @@ export default class extends Controller {
     const visible = showMatchingRows(this.activeRowTargets, query);
 
     if (this.hasActiveCountTarget) {
-      this.activeCountTarget.textContent =
-        query === "" ? this.totalActive : visible;
+      this.activeCountTarget.textContent = String(visible);
     }
 
     if (this.hasActiveEmptyTarget && this.hasActiveTableContainerTarget) {
       toggleEmptyMessage(
         this.activeEmptyTarget,
         this.activeTableContainerTarget,
-        visible === 0 && this.totalActive > 0,
+        visible === 0 && this.activeRowTargets.length > 0,
       );
     }
   }
@@ -52,15 +46,14 @@ export default class extends Controller {
     const visible = showMatchingRows(this.inactiveRowTargets, query);
 
     if (this.hasInactiveCountTarget) {
-      this.inactiveCountTarget.textContent =
-        query === "" ? this.totalInactive : visible;
+      this.inactiveCountTarget.textContent = String(visible);
     }
 
     if (this.hasInactiveEmptyTarget && this.hasInactiveTableContainerTarget) {
       toggleEmptyMessage(
         this.inactiveEmptyTarget,
         this.inactiveTableContainerTarget,
-        visible === 0 && this.totalInactive > 0,
+        visible === 0 && this.inactiveRowTargets.length > 0,
       );
     }
   }
@@ -73,7 +66,8 @@ export default class extends Controller {
 }
 
 // Hides the rows whose text does not contain the query (every row matches an
-// empty query) and returns how many stay visible.
+// empty query) and returns how many stay visible: for an empty query, the
+// number of rows the list has now.
 function showMatchingRows(rows, query) {
   let visible = 0;
   rows.forEach((row) => {

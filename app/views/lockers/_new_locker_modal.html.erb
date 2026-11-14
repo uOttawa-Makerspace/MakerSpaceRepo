@@ -1,4 +1,4 @@
-<div class="modal" id="newRangeLockerModal">
+<div class="modal" id="newRangeLockerModal" data-locker-specifiers="<%= Array(@lockers).filter_map(&:specifier).to_json %>">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">

@@ -453,13 +453,16 @@ describe("setting up an input", () => {
     expect(console.warn).toHaveBeenCalledTimes(1);
   });
 
-  it("still drops the name and sets the prefix when the preview pane is missing", () => {
+  it("leaves the input a plain named file field when the preview pane is missing", () => {
     document.body.innerHTML = `<div class="file-upload-drop-zone" id="zone"><input type="file" id="in" data-file-upload-helper name="a[b][]" data-file-upload-preview-selector="#nope"></div>`;
     document.dispatchEvent(new Event("turbo:load"));
     const input = document.getElementById("in");
-    expect(input.hasAttribute("name")).toBe(false);
-    expect(input.dataset.fileUploadPrefix).toBe("a[b]");
+    expect(input.getAttribute("name")).toBe("a[b][]");
+    expect(input.dataset.fileUploadPrefix).toBeUndefined();
     expect(input.dataset.fileUploadInitialized).toBe("true");
+    // choosing a file keeps it on the input for the form to submit
+    expect(() => choose(input, [file("a.png")])).not.toThrow();
+    expect(input.files).toHaveLength(1);
     // the drop zone is not wired up
     const event = new Event("dragenter", { cancelable: true });
     event.dataTransfer = { types: ["Files"], files: [] };

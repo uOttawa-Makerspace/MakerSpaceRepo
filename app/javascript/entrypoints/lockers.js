@@ -44,21 +44,13 @@ export function validateRange() {
   const createSet = requestedRange(modal);
   if (!createSet) return;
 
-  // Find all lockers present already
-  const currentLockers = new Set(
-    [...document.querySelectorAll("[data-locker-specifier]")].map(
-      (el) => el.dataset.lockerSpecifier,
-    ),
-  );
-
-  showLockerRanges(
-    "#newRangeLockersAlreadyPresent",
-    sortedSpecifiers(currentLockers.intersection(createSet)),
-  );
-  showLockerRanges(
-    "#newRangeLockersPossible",
-    sortedSpecifiers(createSet.difference(currentLockers)),
-  );
+  const existing = existingSpecifiers(modal);
+  showLockerRanges(modal.querySelector("#newRangeLockersAlreadyPresent"), [
+    ...existing.intersection(createSet),
+  ]);
+  showLockerRanges(modal.querySelector("#newRangeLockersPossible"), [
+    ...createSet.difference(existing),
+  ]);
 }
 
 // The specifiers from the start field to the end field, or null while either
@@ -81,30 +73,28 @@ function requestedRange(modal) {
   );
 }
 
-function sortedSpecifiers(set) {
-  return [...set].sort((a, b) => a.length - b.length || a.localeCompare(b));
+// The specifiers of every existing locker, which the page renders on the
+// modal. They are compared as text, as the server does: a range makes the
+// lockers "1", "2", ..., so a locker named "01" or "A1" is not one of them.
+function existingSpecifiers(modal) {
+  return new Set(JSON.parse(modal.dataset.lockerSpecifiers || "[]"));
 }
 
-// Lists the specifiers as collapsed ranges in the list with this id, or hides
-// the list (keeping its old items) when there are none.
-function showLockerRanges(selector, specifiers) {
-  const list = document.querySelector(selector);
+// Lists the specifiers as collapsed ranges in the list, or empties and hides
+// the list when there are none.
+function showLockerRanges(list, specifiers) {
   if (!list) return;
 
+  list
+    .querySelector("ul")
+    .replaceChildren(...findContiguous(specifiers).map(rangeItem));
   list.hidden = specifiers.length === 0;
-  if (specifiers.length === 0) return;
-
-  const ul = list.querySelector("ul");
-  ul.replaceChildren();
-  for (const range of findContiguous(specifiers)) {
-    const li = document.createElement("li");
-    li.textContent = rangeLabel(range);
-    ul.appendChild(li);
-  }
 }
 
-function rangeLabel([first, last]) {
-  return first === last ? first : `Range from ${first} to ${last}`;
+function rangeItem([first, last]) {
+  const li = document.createElement("li");
+  li.textContent = first === last ? first : `Range from ${first} to ${last}`;
+  return li;
 }
 
 // Show a list of what's going to happen server-side when creating a range of lockers
