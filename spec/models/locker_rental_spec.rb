@@ -801,6 +801,38 @@ RSpec.describe LockerRental, type: :model do
       expect(mails).to be_empty
     end
 
+    it "never builds a moved mail for an active rental without a locker: clearing the locker is refused and nothing is sent" do
+      rental = create(:locker_rental, :active, owned_until: 2.months.from_now)
+      locker = rental.locker
+      mails.clear
+
+      perform_enqueued_jobs do
+        expect(rental.update(locker: nil)).to be(false)
+        expect(rental.errors[:locker]).to be_present
+      end
+
+      expect(mails).to be_empty
+      expect(rental.reload.locker).to eq(locker)
+    end
+
+    %w[en fr].each do |locale|
+      it "delivers the moved mail in #{locale} to a renter who saved #{locale}" do
+        rental = create(:locker_rental, :active, owned_until: 2.months.from_now)
+        rental.rented_by.update!(locale: locale)
+        other_locker = create(:locker)
+        mails.clear
+
+        perform_enqueued_jobs do
+          rental.update!(locker: other_locker)
+          rental.notify_after_commit
+        end
+
+        expected = locale == "fr" ? "Votre location du casier #{other_locker.specifier} a été modifiée" : "Your locker rental for Locker #{other_locker.specifier} has been modified"
+        expect(mails.map(&:subject)).to eq([expected])
+        expect(mails.first.body.encoded).to include(other_locker.specifier)
+      end
+    end
+
     it "does not send the moved mail in addition when state changes to active" do
       rental = create(:locker_rental, :await_payment)
       mails.clear

@@ -929,6 +929,20 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect(rental.reload.state).to eq("reviewing")
       end
 
+      it "refuses to clear the locker of an active rental: the locker stays and no mail is delivered" do
+        rental = create(:locker_rental, :active)
+        locker_id = rental.locker_id
+        ActionMailer::Base.deliveries.clear
+
+        perform_enqueued_jobs do
+          patch locker_rental_path(rental), params: { locker_rental: { state: "active", locker_id: "" } }
+        end
+
+        expect(flash[:alert]).to include("Locker This field is required.")
+        expect(rental.reload.locker_id).to eq(locker_id)
+        expect(ActionMailer::Base.deliveries).to be_empty
+      end
+
       it "drives the indeifnite toggle for an active rental: owned_until -> nil in one request" do
         rental = create(:locker_rental, :active, owned_until: 1.month.from_now)
         new_locker = create(:locker)
