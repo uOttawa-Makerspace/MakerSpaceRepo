@@ -845,10 +845,10 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(user.reload.authenticate_password(password)).to be(true)
     end
 
-    it "ends the blank-password alert with one full stop in French too" do
+    it "gives the blank-password alert in French, ending with one full stop" do
       p = reset_params(user, pw: "")
       patch reset_password_confirmation_users_path(locale: "fr"), params: p
-      expect(flash[:alert]).to eq("Your password was not changed: Mot de passe Ce champ est requis.")
+      expect(flash[:alert]).to eq("Votre mot de passe n'a pas été modifié : Mot de passe Ce champ est requis.")
     end
 
     it "an expired or used link sends no mail and keeps the password" do
