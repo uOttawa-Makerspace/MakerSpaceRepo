@@ -200,6 +200,43 @@ RSpec.describe "Search and explore", type: :request do
       expect(repos).to be_empty
     end
 
+    it "joins the legacy column, the category name and the category option link, listing each repo once" do
+      wearable = CategoryOption.find_or_create_by!(name: "Wearable")
+      third = create(:repository, title: "Glove Synth")
+      pub_robot.update_columns(category: "Wearables")
+      Category.create!(repository_id: pub_robot.id, name: "Wearable")
+      Category.create!(repository_id: pub_laser.id, name: "Renamed option", category_option_id: wearable.id)
+      Category.create!(repository_id: third.id, name: "Wearable", category_option_id: wearable.id)
+      Category.create!(repository_id: private_laser.id, name: "Renamed option", category_option_id: wearable.id)
+      pub_robot.update_columns(created_at: 3.days.ago)
+      pub_laser.update_columns(created_at: 2.days.ago)
+      third.update_columns(created_at: 1.day.ago)
+
+      get category_path(slug: "wearable")
+
+      expect(repos).to eq([third, pub_laser, pub_robot])
+    end
+
+    it "sorts a category page by the sort param" do
+      pub_robot.update_columns(category: "Mobile", like: 1)
+      pub_laser.update_columns(category: "Mobile", like: 7)
+
+      get category_path(slug: "mobile-development", sort: "most_likes")
+
+      expect(repos).to eq([pub_laser, pub_robot])
+    end
+
+    it "lists only featured repos, most recently updated first, when featured is asked for" do
+      third = create(:repository, title: "Glove Synth")
+      [pub_robot, pub_laser, third].each { |repo| repo.update_columns(category: "Mobile") }
+      pub_robot.update_columns(featured: true, updated_at: 2.days.ago)
+      third.update_columns(featured: true, updated_at: 1.day.ago)
+
+      get category_path(slug: "mobile-development", featured: "1")
+
+      expect(repos).to eq([third, pub_robot])
+    end
+
     it "lists only public repos using a given equipment name" do
       Equipment.create!(repository_id: pub_robot.id, name: "3d printer")
       Equipment.create!(repository_id: private_laser.id, name: "3d printer")

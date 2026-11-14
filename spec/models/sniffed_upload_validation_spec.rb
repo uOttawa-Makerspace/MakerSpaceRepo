@@ -63,6 +63,23 @@ RSpec.describe SniffedUploadValidation do
     expect(proposal.sniffed_upload_problems(:project_files, nil)).not_to be_empty
   end
 
+  it "sniffed_upload_problems ignores the file name for a rule without name fallback" do
+    text_named_png = content_named_upload("photo.png", content: "just some text", type: "image/png")
+    I18n.with_locale(:en) do
+      expect(create(:user).sniffed_upload_problems(:avatar, text_named_png))
+        .to eq(["photo.png has a file type that is not allowed (application/octet-stream)"])
+    end
+  end
+
+  it "sniffed_upload_problems accepts a fixed size limit as well as a callable one" do
+    rule = { allow: nil, deny: nil, max_size: 4, name_fallback: true, if: nil, unless: nil }
+    allow(proposal).to receive(:sniffed_upload_rules).and_return(project_files: [rule])
+    I18n.with_locale(:en) do
+      expect(proposal.sniffed_upload_problems(:project_files, content_named_upload("five.txt", content: "hello")))
+        .to eq(["five.txt is too large (maximum is 4 Bytes)"])
+    end
+  end
+
   it "words the problems of an incoming upload in the request language" do
     exe = content_named_upload("evil.exe", content: "MZ" + ("\x00" * 200))
     big = content_named_upload("big.txt", content: "hello")
