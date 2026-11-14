@@ -264,6 +264,20 @@ RSpec.describe "Search and explore", type: :request do
       expect(repos).to eq([])
     end
 
+    it "reads the category options once for a known slug and not at all for an unknown one" do
+      option_reads = lambda do |path|
+        sql = []
+        counter = ->(*, payload) { sql << payload[:sql] unless payload[:cached] }
+        ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { get path }
+        sql.grep(/FROM "category_options"/).size
+      end
+
+      expect(option_reads.call(category_path(slug: "wearable"))).to eq(1)
+      expect(option_reads.call(category_path(slug: "nope"))).to eq(0)
+      expect(response).to have_http_status(:ok)
+      expect(repos).to eq([])
+    end
+
     it "has no top-level likes or category featured routes" do
       expect(Rails.application.routes.recognize_path("/likes"))
         .to include(controller: "users", action: "show", username: "likes")
