@@ -2,6 +2,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Application } from "@hotwired/stimulus";
 
+import { textsAttribute } from "../calendars/calendar_texts_fixture.js";
+
 const created = [];
 vi.mock("@fullcalendar/core", () => ({
   Calendar: class {
@@ -48,10 +50,10 @@ vi.mock("bootstrap", () => ({
   },
 }));
 
-const PAGE = `
+const page = (lang) => `
 <div data-controller="my-calendar" data-my-calendar-feed-url-value="/staff/my_calendar/json/3">
   <div id="calendar_container" data-my-calendar-target="container" style="display:none">
-    <div id="calendar" data-my-calendar-target="calendar"><p id="stale">old</p></div>
+    <div id="calendar" data-my-calendar-target="calendar" ${textsAttribute(lang)}><p id="stale">old</p></div>
   </div>
   <div id="spinner_container" data-my-calendar-target="spinner"></div>
   <span class="fc-toggleOthersShifts-button"></span>
@@ -61,13 +63,21 @@ const PAGE = `
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-async function boot() {
-  document.body.innerHTML = PAGE;
+async function boot(lang = "en") {
+  document.body.innerHTML = page(lang);
   created.length = 0;
   application = Application.start();
   application.register("my-calendar", MyCalendar);
   await settle();
   return created[0];
+}
+
+// Presses a toolbar button, as FullCalendar does: the handler is given the
+// click and the button.
+function press(cal, name) {
+  const button = document.querySelector(`.fc-${name}-button`);
+  cal.options.customButtons[name].click(new Event("click"), button);
+  return button.innerHTML;
 }
 
 const shift = (id, hasCurrentUser) => {
@@ -173,14 +183,14 @@ describe("my calendar", () => {
 
   it("toggles event overlap, remembers it and relabels the button", async () => {
     const cal = await boot();
-    cal.options.customButtons.toggleEventOverlap.click();
+    press(cal, "toggleEventOverlap");
     expect(cal.options.slotEventOverlap).toBe(true);
     expect(localStorage.fullCalendarEventOverlap).toBe("true");
     expect(
       document.querySelector(".fc-toggleEventOverlap-button").innerHTML,
     ).toBe("Disable Event Overlap");
 
-    cal.options.customButtons.toggleEventOverlap.click();
+    press(cal, "toggleEventOverlap");
     expect(cal.options.slotEventOverlap).toBe(false);
     expect(
       document.querySelector(".fc-toggleEventOverlap-button").innerHTML,
@@ -193,7 +203,7 @@ describe("my calendar", () => {
     const theirs = shift("b", false);
     cal.eventList = [mine, theirs];
 
-    cal.options.customButtons.toggleOthersShifts.click();
+    press(cal, "toggleOthersShifts");
     expect(mine.props.display).toBe("auto");
     expect(theirs.props.display).toBe("none");
     expect(
@@ -201,11 +211,29 @@ describe("my calendar", () => {
     ).toBe("Show All Shifts");
     expect(document.getElementById("foreign").innerHTML).toBe("");
 
-    cal.options.customButtons.toggleOthersShifts.click();
+    press(cal, "toggleOthersShifts");
     expect(theirs.props.display).toBe("auto");
     expect(
       document.querySelector(".fc-toggleOthersShifts-button").innerHTML,
     ).toBe("Show My Shifts Only");
+  });
+
+  it("names its buttons in French on a French page", async () => {
+    const cal = await boot("fr");
+    const { toggleOthersShifts, toggleEventOverlap } =
+      cal.options.customButtons;
+    expect(toggleOthersShifts.text).toBe("Afficher seulement mes quarts");
+    expect(toggleEventOverlap.text).toBe(
+      "Activer le chevauchement des événements",
+    );
+
+    expect(press(cal, "toggleOthersShifts")).toBe("Afficher tous les quarts");
+    expect(press(cal, "toggleOthersShifts")).toBe(
+      "Afficher seulement mes quarts",
+    );
+    expect(press(cal, "toggleEventOverlap")).toBe(
+      "Désactiver le chevauchement des événements",
+    );
   });
 
   it("decorates a mounted event with a tooltip, fade in and user colour", async () => {

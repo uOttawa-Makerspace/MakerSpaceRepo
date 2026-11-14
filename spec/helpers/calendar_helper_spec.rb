@@ -403,4 +403,27 @@ RSpec.describe CalendarHelper, type: :helper do
       expect(date_formatted_recurrence_rule(event)).to eq("DTSTART:20270505T090000\nRRULE:FREQ=DAILY;COUNT=2")
     end
   end
+
+  describe "#calendar_texts_data" do
+    def texts(locale)
+      JSON.parse(I18n.with_locale(locale) { calendar_texts_data }.fetch(:calendar_texts))
+    end
+
+    it "gives the calendar its words in English, keyed by the names the script reads" do
+      english = texts(:en)
+
+      expect(english["hints"]).to eq("closeHint" => "Close", "timeHint" => "Time", "eventHint" => "Event", "navLinkHint" => "Go to $0")
+      expect(english["daysButtonHints"]).to eq("prev" => "Previous days", "next" => "Next days")
+      expect(english["publishDrafts"]).to eq("timeGridWeek" => "Publish This Week's Drafts", "dayGridMonth" => "Publish This Month's Drafts")
+      expect(english).to include("showMyShiftsOnly" => "Show My Shifts Only", "hours" => "{hours} hrs", "book" => "Book")
+    end
+
+    it "gives them in French on a French page, with the same names" do
+      french = texts(:fr)
+
+      expect(french.keys).to match_array(texts(:en).keys)
+      expect(french["hints"]).to include("closeHint" => "Fermer", "navLinkHint" => "Aller au $0")
+      expect(french).to include("showMyShiftsOnly" => "Afficher seulement mes quarts", "book" => "Réserver")
+    end
+  end
 end

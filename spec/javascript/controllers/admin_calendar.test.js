@@ -10,6 +10,8 @@ import {
 } from "vitest";
 import { Application } from "@hotwired/stimulus";
 
+import { textsAttribute } from "../calendars/calendar_texts_fixture.js";
+
 // A stand-in for FullCalendar that records its options and lets the test play
 // the calendar's part: ask each source for a range, refetch one source.
 const created = [];
@@ -34,8 +36,12 @@ vi.mock("@fullcalendar/core", () => ({
     }
     render() {
       this.rendered = true;
-      this.el.innerHTML =
-        '<button class="fc-toggleWeekends-button"></button><button class="fc-toggleEventOverlap-button"></button>';
+      this.el.innerHTML = Object.entries(this.options.customButtons)
+        .map(
+          ([name, { text }]) =>
+            `<button class="fc-${name}-button">${text}</button>`,
+        )
+        .join("");
     }
     destroy() {
       this.destroyed = true;
@@ -98,7 +104,7 @@ const { default: AdminCalendar } =
 const box = (target, id, value, action, { checked = true, color } = {}) =>
   `<input type="checkbox" id="${id}" value="${value}" ${checked ? "checked" : ""} ${color ? `data-color="${color}"` : ""} data-admin-calendar-target="${target}" data-action="admin-calendar#${action}">`;
 
-function page({ hidden = {} } = {}) {
+function page({ hidden = {}, lang = "en" } = {}) {
   const shown = (param, value) => !(hidden[param] || []).includes(value);
   return `
 <div data-controller="admin-calendar" data-admin-calendar-events-url-value="/admin/events/json/7" data-admin-calendar-unavailabilities-url-value="/admin/calendar/unavailabilities_json/7" data-admin-calendar-imported-url-value="/admin/calendar/imported_calendars_json/7">
@@ -119,7 +125,7 @@ function page({ hidden = {} } = {}) {
     <button id="publish" data-admin-calendar-target="publishDrafts"></button>
     <button id="delete" data-admin-calendar-target="deleteDrafts"></button>
     <input class="view_start_date" data-admin-calendar-target="viewStart"><input class="view_end_date" data-admin-calendar-target="viewEnd">
-    <div id="calendar" data-admin-calendar-target="calendar"><p id="stale">old</p></div>
+    <div id="calendar" data-admin-calendar-target="calendar" ${textsAttribute(lang)}><p id="stale">old</p></div>
   </section>
   <div id="spinner_container" data-admin-calendar-target="spinner"></div>
   <div id="eventModal" data-admin-calendar-target="dialog"></div>
@@ -239,9 +245,13 @@ const titles = (rows) => (rows || []).map((row) => row.title);
 const $ = (id) => /** @type {HTMLInputElement} */ (document.getElementById(id));
 let application;
 
-async function boot({ url = "http://localhost/admin/calendar", hidden } = {}) {
+async function boot({
+  url = "http://localhost/admin/calendar",
+  hidden,
+  lang,
+} = {}) {
   window.happyDOM.setURL(url);
-  document.body.innerHTML = page({ hidden });
+  document.body.innerHTML = page({ hidden, lang });
   created.length = 0;
   application = Application.start();
   application.register("admin-calendar", AdminCalendar);
@@ -251,6 +261,13 @@ async function boot({ url = "http://localhost/admin/calendar", hidden } = {}) {
   calendar.askAll(WEEK);
   await settle();
   return calendar;
+}
+
+// Presses a toolbar button the calendar drew, as FullCalendar does: the
+// handler is given the click and the button.
+function press(calendar, name) {
+  const button = calendar.el.querySelector(`.fc-${name}-button`);
+  calendar.options.customButtons[name].click(new Event("click"), button);
 }
 
 async function click(id) {
@@ -554,7 +571,7 @@ describe("calendar options", () => {
     const weekends = calendar.el.querySelector(".fc-toggleWeekends-button");
     expect(weekends.textContent).toBe("Hide Weekends");
 
-    calendar.options.customButtons.toggleWeekends.click();
+    press(calendar, "toggleWeekends");
     expect(calendar.options.weekends).toBe(false);
     expect(weekends.textContent).toBe("Show Weekends");
   });
@@ -564,10 +581,41 @@ describe("calendar options", () => {
     const overlap = calendar.el.querySelector(".fc-toggleEventOverlap-button");
     expect(overlap.textContent).toBe("Enable Event Overlap");
 
-    calendar.options.customButtons.toggleEventOverlap.click();
+    press(calendar, "toggleEventOverlap");
     expect(calendar.options.slotEventOverlap).toBe(true);
     expect(localStorage.fullCalendarEventOverlap).toBe("true");
     expect(overlap.textContent).toBe("Disable Event Overlap");
+  });
+
+  it("names its buttons, drafts and hours in French on a French page", async () => {
+    localStorage.fullCalendarEventOverlap = "true";
+    const calendar = await boot({ lang: "fr" });
+    const label = (name) =>
+      calendar.el.querySelector(`.fc-${name}-button`).textContent;
+    expect(label("toggleWeekends")).toBe("Masquer les fins de semaine");
+    expect(label("toggleEventOverlap")).toBe(
+      "Désactiver le chevauchement des événements",
+    );
+
+    press(calendar, "toggleWeekends");
+    press(calendar, "toggleEventOverlap");
+    expect(label("toggleWeekends")).toBe("Afficher les fins de semaine");
+    expect(label("toggleEventOverlap")).toBe(
+      "Activer le chevauchement des événements",
+    );
+
+    const view = (type) => ({ type, currentStart: new Date() });
+    calendar.options.datesSet({ view: view("timeGridWeek") });
+    expect($("publish").innerText).toBe(
+      "Publier les brouillons de cette semaine",
+    );
+    calendar.options.datesSet({ view: view("dayGridMonth") });
+    expect($("delete").innerText).toBe(
+      "Supprimer les brouillons de ce mois-ci",
+    );
+
+    calendar.options.eventsSet([]);
+    expect(document.querySelector("[data-user-id]").textContent).toBe("0 h");
   });
 
   it("starts with overlap on and the remembered date", async () => {

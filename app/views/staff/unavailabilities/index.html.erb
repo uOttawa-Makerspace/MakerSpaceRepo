@@ -13,7 +13,7 @@
 
         <div class="alert alert-warning" role="status" hidden data-unavailabilities-calendar-target="failures"></div>
 
-        <div id="calendar" data-unavailabilities-calendar-target="calendar"></div>
+        <div id="calendar" data-unavailabilities-calendar-target="calendar" <%= tag.attributes(data: calendar_texts_data) %>></div>
     </div>
 
     <div id="spinner_container" data-unavailabilities-calendar-target="spinner">

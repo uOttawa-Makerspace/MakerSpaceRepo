@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus";
 
-import { pageCalendar } from "../src/page_calendar.js";
+import { calendarTexts, pageCalendar } from "../src/page_calendar.js";
 import { rangeSource, unticked } from "../src/range_source.js";
 
 // Below this width the calendar shows fewer days.
@@ -81,6 +81,7 @@ export default class extends TypedController {
         timeGridSevenDay: { type: "timeGridWeek" },
       },
       headerToolbar: { left: "prev", center: "title", right: "next" },
+      buttonHints: calendarTexts(this.calendarTarget).daysButtonHints,
       eventSources: [this.hoursSource()],
       expandRows: true,
       contentHeight: "auto",

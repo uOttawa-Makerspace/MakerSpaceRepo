@@ -65,6 +65,19 @@ RSpec.describe "Staff calendar: toolbar and events", type: :system do
     expect(page).to have_css(".fc-toggleEventOverlap-button", text: "Disable Event Overlap")
   end
 
+  it "names its toolbar buttons in French on a French page", js: true, skip_bullet: true do
+    log_in_as(staff, to: staff_my_calendar_index_path(locale: :fr), local_storage: { fullCalendarDefaultDateStaffCalendar: CalendarJsHelpers::WEEK_MIDDAY })
+    shifts = ".fc-toggleOthersShifts-button"
+    overlap = ".fc-toggleEventOverlap-button"
+
+    expect(page).to have_css(shifts, exact_text: "Afficher seulement mes quarts")
+    expect(page).to have_css(overlap, exact_text: "Activer le chevauchement des événements")
+    find(shifts).click
+    expect(page).to have_css(shifts, exact_text: "Afficher tous les quarts")
+    find(overlap).click
+    expect(page).to have_css(overlap, exact_text: "Désactiver le chevauchement des événements")
+  end
+
   it "remembers the week shown", js: true, skip_bullet: true do
     open_calendar
     find(".fc-next-button").click

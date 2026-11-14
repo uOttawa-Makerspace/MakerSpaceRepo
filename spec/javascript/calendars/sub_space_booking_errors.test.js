@@ -2,6 +2,8 @@
 // What the booking page tells the user when a request or the calendar feed fails.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { textsAttribute } from "./calendar_texts_fixture.js";
+
 let calendarOptions;
 vi.mock("@fullcalendar/core", () => ({
   Calendar: class {
@@ -30,7 +32,7 @@ const PAGE = `
   data-unavailable-title="Booking unavailable" data-unavailable="Could not open it">
   <div class="toast-header"><strong id="toast_title"></strong></div><div id="toast_text"></div>
 </div>
-<div id="booked-calendar"></div>
+<div id="booked-calendar" ${textsAttribute()}></div>
 <div id="bookModal"></div>
 <input id="book-start"><input id="book-end"><input id="book-recurring-end">
 <input id="book-name"><input id="book-description"><input id="book-recurring" type="checkbox">

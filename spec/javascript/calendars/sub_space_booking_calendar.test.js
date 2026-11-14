@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { textsAttribute } from "./calendar_texts_fixture.js";
+
 // A stand-in for FullCalendar: records the options and counts refetches.
 const calendars = [];
 vi.mock("@fullcalendar/core", () => ({
@@ -55,7 +57,7 @@ HTMLElement.prototype.flatpickr = function () {
 };
 
 const PAGE = `
-<div id="booked-calendar"></div>
+<div id="booked-calendar" ${textsAttribute()}></div>
 <div id="booking_toast" data-failed-title="Booking failed"
   data-feed="The bookings could not be loaded."
   data-unavailable-title="Booking unavailable"
@@ -172,6 +174,13 @@ describe("calendar page", () => {
     await cal.options.eventSources[0].failure(new Error("feed down"));
     expect($("toast_title").innerText).toBe("Booking failed");
     expect($("toast_text").innerText).toBe("The bookings could not be loaded.");
+  });
+
+  it("names the Book button in the page's language", () => {
+    expect(boot().options.customButtons.book.text).toBe("Book");
+    const french = PAGE.replace(textsAttribute(), textsAttribute("fr"));
+    const cal = boot("http://localhost/sub_space_booking?room=4", french);
+    expect(cal.options.customButtons.book.text).toBe("Réserver");
   });
 
   it("does nothing more on a page without the calendar", () => {

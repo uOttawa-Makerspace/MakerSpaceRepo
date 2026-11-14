@@ -2,6 +2,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Application } from "@hotwired/stimulus";
 
+import { textsAttribute } from "../calendars/calendar_texts_fixture.js";
+
 // A stand-in for FullCalendar that records its options and lets the test play
 // the calendar's part: ask the source for a range, refetch it, resize.
 const created = [];
@@ -49,11 +51,12 @@ const filter = (id, color) =>
 
 function page({
   week = false,
+  lang = "en",
   filters = [filter("a", "#112233"), filter("b", "#445566")],
 } = {}) {
   return `
 <div data-controller="hours-calendar" data-hours-calendar-feed-url-value="/open_hours" ${week ? 'data-hours-calendar-week-value="true"' : ""}>
-  <div id="calendar" data-hours-calendar-target="calendar"><p id="stale">old</p></div>
+  <div id="calendar" data-hours-calendar-target="calendar" ${textsAttribute(lang)}><p id="stale">old</p></div>
   <div id="filters">${filters.join("")}</div>
 </div>`;
 }
@@ -114,6 +117,18 @@ describe("hours calendar", () => {
     expect(box.style.borderColor).not.toBe("");
     expect(calendar.options.plugins).toHaveLength(2);
     expect(calendar.options.timeZone).toBe("America/Toronto");
+  });
+
+  it("names its previous and next buttons after the days it steps by, in the page's language", async () => {
+    expect((await mount()).options.buttonHints).toEqual({
+      prev: "Previous days",
+      next: "Next days",
+    });
+    application.stop();
+    expect((await mount({ lang: "fr" })).options.buttonHints).toEqual({
+      prev: "Jours précédents",
+      next: "Jours suivants",
+    });
   });
 
   it("draws nothing when the server lists no calendar, leaving its message", async () => {

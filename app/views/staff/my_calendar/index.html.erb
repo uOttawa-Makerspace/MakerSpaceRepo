@@ -20,7 +20,7 @@
 
 <div data-controller="my-calendar" data-my-calendar-feed-url-value="<%= json_staff_my_calendar_index_path(@space_id) %>">
     <div id="calendar_container" data-my-calendar-target="container">
-        <div id="calendar" data-my-calendar-target="calendar"></div>
+        <div id="calendar" data-my-calendar-target="calendar" <%= tag.attributes(data: calendar_texts_data) %>></div>
     </div>
 
     <div id="spinner_container" data-my-calendar-target="spinner">

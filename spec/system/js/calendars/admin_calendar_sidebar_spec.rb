@@ -206,6 +206,22 @@ RSpec.describe "Admin calendar: sidebar and toolbar", type: :system do
       expect(page).to have_css(".fc-toggleEventOverlap-button", text: "Disable Event Overlap")
     end
 
+    it "names its toggles, draft buttons and hours in French on a French page", js: true, skip_bullet: true do
+      log_in_as(admin, to: admin_calendar_index_path(locale: :fr), local_storage: { fullCalendarDefaultDateAdmin: CalendarJsHelpers::WEEK_MIDDAY })
+      wait_for_admin_calendar_scripts
+
+      expect(page).to have_css(".fc-toggleWeekends-button", exact_text: "Masquer les fins de semaine")
+      expect(page).to have_css(".fc-toggleEventOverlap-button", exact_text: "Activer le chevauchement des événements")
+      expect(page).to have_css("#publish_drafts_button", exact_text: "Publier les brouillons de cette semaine")
+      expect(page).to have_css(".user-hours", exact_text: "0 h", count: 2)
+      find(".fc-toggleWeekends-button").click
+      expect(page).to have_css(".fc-toggleWeekends-button", exact_text: "Afficher les fins de semaine")
+      find(".fc-toggleEventOverlap-button").click
+      expect(page).to have_css(".fc-toggleEventOverlap-button", exact_text: "Désactiver le chevauchement des événements")
+      find(".fc-dayGridMonth-button").click
+      expect(page).to have_css("#delete_drafts_button", exact_text: "Supprimer les brouillons de ce mois-ci")
+    end
+
     it "remembers the week shown when the page is reloaded", js: true, skip_bullet: true do
       open_admin_calendar
       find(".fc-next-button").click

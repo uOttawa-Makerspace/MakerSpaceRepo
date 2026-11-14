@@ -31,7 +31,7 @@
             <div class="my-4">
                 <%= form_with url: "/admin/events/publish", method: :patch, local: false, html: { class: "useTurbo dropdown show mb-2" } do %>
                     <button id="publish_drafts_button" type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-admin-calendar-target="publishDrafts">
-                        Publish This Week's Drafts
+                        <%= t("calendar_texts.publish_drafts.time_grid_week") %>
                     </button>
                     <%= hidden_field_tag :space_id, @space_id %>
                     <%= hidden_field_tag :view_start_date, nil, class: "view_start_date", data: { admin_calendar_target: "viewStart" } %>
@@ -42,7 +42,7 @@
                 <% end %>
                 <%= form_with url: "/admin/events/delete_drafts", method: :delete, local: false, html: { class: "useTurbo dropdown show mb-2" } do %>
                     <button id="delete_drafts_button" type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-admin-calendar-target="deleteDrafts">
-                        Delete This Week's Drafts
+                        <%= t("calendar_texts.delete_drafts.time_grid_week") %>
                     </button>
                     <%= hidden_field_tag :space_id, @space_id %>
                     <%= hidden_field_tag :view_start_date, nil, class: "view_start_date", data: { admin_calendar_target: "viewStart" } %>
@@ -56,7 +56,7 @@
                 </button>
             </div>
         </div>
-        <div id="calendar" class="col-md-9 w-md-100" style="zoom: 1;" data-admin-calendar-target="calendar"></div>
+        <div id="calendar" class="col-md-9 w-md-100" style="zoom: 1;" data-admin-calendar-target="calendar" <%= tag.attributes(data: calendar_texts_data) %>></div>
     </div>
 </section>
 <% if @spaces.any? %>
