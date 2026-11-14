@@ -1,42 +1,52 @@
 # frozen_string_literal: true
 
 require "rails_helper"
+require "i18n/tasks"
 
-# Every translation key that app code names literally exists in English and French. Production
-# falls back to English when a French key is missing, so a missing key would show English to a
-# French reader instead of failing; this catches it before any page is rendered.
-# Keys built at runtime cannot be checked here: they are listed with SKIPPED=1.
+# Every translation key the app uses exists in English and French, and every English key has a
+# French twin (i18n-tasks, configured in config/i18n-tasks.yml). Production falls back to English
+# when a French key is missing, so a missing key would show English to a French reader instead of
+# failing; this catches it before any page is rendered. Keys built at runtime ("a.#{b}") cannot be
+# checked statically. Unused keys are reported by `bundle exec i18n-tasks unused`, not checked here.
 RSpec.describe "Translation keys used by the app" do
-  found, skipped = TranslationKeyScan.scan
-
-  # Keys used with an English default: until they are defined, French readers see that English.
-  # Take a key off once it is defined in both locales; never add one.
+  # Keys used today but defined in neither locale ("all"). Take a key off once it is defined, or its
+  # use is fixed; never add one.
   known_missing = %w[
-    en:job_orders.order.unnamed_task fr:job_orders.order.unnamed_task
-    en:settings.admin.title fr:settings.admin.title
+    all:job_orders.order.unnamed_task
+    all:settings.admin.title
+    all:users.tablist..about
   ]
 
-  it "finds the keys the app uses" do
-    expect(found.size).to be > 1000
+  before(:context) do
+    leaves = I18n::Tasks::BaseTask.new.missing_keys.leaves
+    @missing = leaves.map { |leaf| "#{leaf.data[:locale] || 'all'}:#{leaf.full_key(root: false)}" }.uniq
   end
 
-  missing = found.flat_map do |use|
-    absent = use.locales.reject { |locale| I18n.exists?(use.key, locale) }
-    absent.map { |locale| ["#{locale}:#{use.key}", use.location] }
-  end
+  it "defines every key the app uses in English and French" do
+    new_missing = @missing - known_missing
 
-  it "defines every literal key in English and French" do
-    new_missing = missing.reject { |key, _| known_missing.include?(key) }.map { |key, location| "#{key} (#{location})" }
-
-    expect(new_missing).to be_empty, "missing translations:\n#{new_missing.uniq.join("\n")}"
+    expect(new_missing).to be_empty,
+                           "missing translations (run `bundle exec i18n-tasks missing`):\n#{new_missing.join("\n")}"
   end
 
   it "lists only keys that are still missing" do
-    expect(known_missing - missing.map(&:first)).to eq([])
+    expect(known_missing - @missing).to eq([])
   end
 
-  it "lists the calls whose key is built at runtime", if: ENV["SKIPPED"] do
-    lines = skipped.map { |call| "  #{call.location}  #{call.call}" }
-    RSpec.configuration.reporter.message("\n#{skipped.size} translation calls with a runtime key:\n#{lines.join("\n")}")
+  # i18n-tasks does not read human_attribute_name. English humanizes an attribute it has no name for,
+  # so only French must define one. A call whose model or attribute is a variable cannot be checked.
+  it "names in French every attribute the app passes literally to human_attribute_name" do
+    calls = Rails.root.glob("app/**/*.{rb,erb}").flat_map do |path|
+      model = path.to_s[%r{/app/models/(?!concerns/)(.+)\.rb\z}, 1]&.camelize
+      literal_calls = path.read.scan(/(?:([A-Z][\w:]*)\.)?\bhuman_attribute_name\(\s*:(\w+)/)
+      literal_calls.map { |klass, attr| [klass || model, attr] }
+    end
+    unnamed = calls.filter_map do |klass, attr|
+      key = "activerecord.attributes.#{klass&.safe_constantize&.model_name&.i18n_key}.#{attr}"
+      key unless I18n.exists?(key, :fr)
+    end
+
+    expect(calls).not_to be_empty
+    expect(unnamed).to eq([])
   end
 end

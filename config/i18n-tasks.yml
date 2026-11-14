@@ -1,0 +1,30 @@
+# i18n-tasks (development and test only) checks that every translation key the app uses is defined in
+# English and French. spec/config/translation_keys_spec.rb runs the missing-key check in the suite;
+# `bundle exec i18n-tasks missing` and `bundle exec i18n-tasks unused` print the same reports.
+# Never run the write tasks (normalize, add-missing, remove-unused): they rewrite every locale file.
+base_locale: en
+locales: [en, fr]
+
+data:
+  # Rails merges every file per locale, and one file may hold both languages.
+  read:
+    - config/locales/*.yml
+
+search:
+  paths:
+    - app/
+  exclude:
+    - app/assets
+    - app/javascript
+
+ignore_missing:
+  # English for these comes from Rails itself and will_paginate; config/locales carries only the
+  # French half (defaults-fr.yml), the same exemption as spec/config/locale_files_spec.rb.
+  en:
+    - "{date,time,datetime,number,errors,helpers,support,will_paginate}.*"
+    - "activerecord.errors.messages.*"
+    # English humanizes an attribute name it has no translation for (attributes-fr.yml is French only).
+    - "activerecord.attributes.*"
+  # Defined in Ruby (config/locales/number.rb), which i18n-tasks does not read.
+  all:
+    - date.day_ordinal
