@@ -476,6 +476,21 @@ RSpec.describe "Static pages", type: :request do
       expect(response.body).not_to include('id="home-skills"')
     end
 
+    it "shows a guest the public cards only" do
+      get root_path
+      headings = Nokogiri::HTML(response.body).css("h2").map { |h| h.text.squish }
+      expect(headings).to eq(["Shortcuts", "General Resources", "Welcome to MakerRepo", "Explore", "Makerstore",
+                              "Want to know when our next big event is happening?", "Workshops this week"])
+      expect(response.body).not_to include('id="home-userinfo"', 'id="home-skills"', I18n.t("home.badges.header"))
+    end
+
+    it "runs no member queries for a guest" do
+      sqls = selects_on("certifications", "learning_modules", "learning_module_tracks", "volunteer_task_joins",
+                        "shadowing_hours") { get root_path }
+      expect(response).to have_http_status(:ok)
+      expect(sqls).to be_empty
+    end
+
     it "a signed-in member outside both programs sees the skills card but neither program card" do
       sign_in_as(:regular)
       get root_path
@@ -509,9 +524,7 @@ RSpec.describe "Static pages", type: :request do
       expect(response.body).not_to include(I18n.t("home.volunteer_program.no_shifts_scheduled"))
     end
 
-    it "shows each training's track progress against every module of that training" do
-      # The completed count reads the stored status label, while a track's status reads back as the
-      # enum key, so the count shows 0 even for a completed track.
+    it "shows each training's completed tracks against every module of that training" do
       user = sign_in_as(:regular)
       user.programs.create!(program_type: Program::DEV_PROGRAM)
       training = create(:training, name_en: "Laser Cutting Basics")
@@ -524,8 +537,8 @@ RSpec.describe "Static pages", type: :request do
       get root_path
 
       expect(controller.instance_variable_get(:@user_tracks))
-        .to contain_exactly(["Laser Cutting Basics", "0/3"], ["Soldering Basics", "0/1"])
-      expect(response.body).to include("Laser Cutting Basics", "0/3")
+        .to contain_exactly(["Laser Cutting Basics", "1/3"], ["Soldering Basics", "0/1"])
+      expect(response.body).to include("Laser Cutting Basics", "1/3")
       expect(response.body).not_to include(I18n.t("home.development_program.no_devs"))
     end
 

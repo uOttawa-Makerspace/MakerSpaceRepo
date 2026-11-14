@@ -841,9 +841,14 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       p = reset_params(user, pw: "")
       patch reset_password_confirmation_users_path, params: p
       expect(response).to redirect_to(reset_password_form_users_path(token: p[:token]))
-      # The blank message is a full sentence of its own, so the alert reads with the attribute name and two stops.
-      expect(flash[:alert]).to eq("Your password was not changed: Password This field is required..")
+      expect(flash[:alert]).to eq("Your password was not changed: Password This field is required.")
       expect(user.reload.authenticate_password(password)).to be(true)
+    end
+
+    it "ends the blank-password alert with one full stop in French too" do
+      p = reset_params(user, pw: "")
+      patch reset_password_confirmation_users_path(locale: "fr"), params: p
+      expect(flash[:alert]).to eq("Your password was not changed: Mot de passe Ce champ est requis.")
     end
 
     it "an expired or used link sends no mail and keeps the password" do

@@ -15,9 +15,9 @@ class StaticPagesController < SessionsController
     @volunteer_program_your_tasks = []
     @hours_calendars = StaffNeededCalendar.open_hours
 
-    # User-specific data (Only run when a user is signed in)
-    user = current_user || @user
-    load_member_sections(user) if user
+    # The member cards are shown only to a signed-in user (a guest is User.new), so
+    # their queries run only then.
+    load_member_sections(current_user) if signed_in?
 
     @recent_projects = cached_recent_projects
     @contact_info = cached_contact_info
@@ -144,12 +144,7 @@ class StaticPagesController < SessionsController
       .learning_module_tracks
       .includes(learning_module: :training)
       .group_by { |x| x.learning_module.training.name_en }
-      .transform_values { |x| x.map(&:status).tally }
-      .map { |key, value| [key, track_progress(value, total_tracks[key])] }
-  end
-
-  def track_progress(status_counts, total)
-    "#{status_counts['Completed'] || 0}/#{total || 0}"
+      .map { |key, tracks| [key, "#{tracks.count(&:completed?)}/#{total_tracks[key] || 0}"] }
   end
 
   # Cached total tracks count
