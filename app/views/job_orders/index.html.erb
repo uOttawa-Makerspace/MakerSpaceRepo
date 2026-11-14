@@ -37,7 +37,7 @@
                 <tbody>
                     <% @job_orders.each do |jo| %>
                         <tr id="job-order-row-<%= jo.id %>">
-                            <%= render 'client_row', jo: jo %>
+                            <%= render 'client_row', jo:, unread: @unread_counts.fetch(jo.id, 0) %>
                         </tr>
                     <% end %>
                 </tbody>

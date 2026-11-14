@@ -53,6 +53,7 @@ class JobOrdersController < SessionsController
       end
     end
     preload_list_rows
+    @unread_counts = ChatMessage.unread_counts(@job_orders, current_user)
   end
 
   def show
