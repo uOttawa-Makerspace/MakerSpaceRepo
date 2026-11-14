@@ -517,8 +517,6 @@ class UsersController < SessionsController
     (action_name == 'change_password' ? params.dig(:user, :old_password) : params[:current_password]).to_s
   end
 
-  # nil when the submitted current password is right (which clears the attempt
-  # count); the alert otherwise. The attempt was counted by limit_reauth_attempts.
   def render_password_settings
     render 'settings/admin', layout: 'setting'
   end
@@ -595,6 +593,8 @@ class UsersController < SessionsController
     end
   end
 
+  # nil when the submitted current password is right (which clears the attempt
+  # count); the alert otherwise. The attempt was counted by limit_reauth_attempts.
   def current_password_alert
     return 'Please enter your current password.' unless current_password_submitted?
 
