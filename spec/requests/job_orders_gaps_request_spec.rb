@@ -484,6 +484,40 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(JobTask.count).to eq(0)
     end
 
+    # The first task is saved with the order and its Draft status: a task that fails validation leaves no order and
+    # shows the form again with the task's reason.
+    it "re-renders new with the task's reason and leaves no order when the first task cannot be saved" do
+      allow_any_instance_of(JobTask).to receive(:valid?).and_wrap_original do |original, *args|
+        original.call(*args)
+        original.receiver.errors.add(:base, "The task cannot be saved")
+        false
+      end
+
+      post job_orders_path, params: { job_order: { user_comments: "first order" }, redirect_step: "1" }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(I18n.t("job_orders.new.title"))
+      expect(flash[:alert]).to start_with(I18n.t("errors.job_orders.create_failed"))
+      expect(flash[:alert]).to include("The task cannot be saved")
+      expect(JobOrder.where(user: owner).count).to eq(0)
+      expect(JobOrderStatus.count).to eq(0)
+      expect(JobTask.count).to eq(0)
+    end
+
+    # The database refuses every new task row (a check constraint, undone with the test transaction): the order, its
+    # Draft status and its first task are saved together, so the refused task leaves no order behind.
+    it "leaves no order behind when its first task row cannot be saved" do
+      ActiveRecord::Base.connection.execute(
+        "ALTER TABLE job_tasks ADD CONSTRAINT refuse_new_rows_in_spec CHECK (false) NOT VALID"
+      )
+
+      post job_orders_path, params: { job_order: { user_comments: "first order" }, redirect_step: "1" }
+
+      expect(response).to have_http_status(:internal_server_error)
+      expect(JobOrder.where(user: owner).count).to eq(0)
+      expect(JobOrderStatus.count).to eq(0)
+    end
+
     it "falls back to a nil job type when the Design Services row is missing" do
       JobType.where(name: "Design Services").destroy_all
       post job_orders_path, params: { job_order: { job_type_id: nil }, redirect_step: "2" }

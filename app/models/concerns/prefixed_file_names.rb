@@ -6,10 +6,13 @@ module PrefixedFileNames
 
   private
 
-  # Renames the blobs of the named attachments of this record to "<prefix><name>", unless the name already starts
-  # with +already+ (by default the prefix itself).
-  def prefix_blob_names(attachment_names, prefix, already: prefix)
-    ActiveStorage::Attachment.where(record: self, name: attachment_names).includes(:blob).each do |attachment|
+  # Renames the blobs of the named attachment associations of this record (such as :user_files_attachments) to
+  # "<prefix><name>", unless the name already starts with +already+ (by default the prefix itself). Attachments and
+  # blobs the caller preloaded are used as loaded; the others are read here in one query per association.
+  def prefix_blob_names(attachment_associations, prefix, already: prefix)
+    ActiveRecord::Associations::Preloader.new(records: [self],
+                                              associations: attachment_associations.index_with(:blob)).call
+    attachment_associations.flat_map { |association| Array(public_send(association)) }.each do |attachment|
       blob = attachment.blob
       next if blob.filename.to_s.start_with?(already)
 

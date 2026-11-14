@@ -46,8 +46,10 @@ module ErrorReporting
     I18n.t("errors.generic.unexpected", reference: error_reference)
   end
 
-  # The translated sentence at `key` followed by the record's validation messages (just the sentence when there are none).
-  def validation_message(record, key)
-    [I18n.t(key), record.errors.full_messages.to_sentence].compact_blank.join(" ")
+  # The translated sentence at `key` followed by the validation messages of the record and of any related records
+  # saved with it (just the sentence when there are none).
+  def validation_message(record, key, *related)
+    messages = [record, *related].flat_map { |each_record| each_record.errors.full_messages }
+    [I18n.t(key), messages.to_sentence].compact_blank.join(" ")
   end
 end

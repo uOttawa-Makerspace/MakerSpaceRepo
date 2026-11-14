@@ -303,6 +303,33 @@ RSpec.describe JobOrder, type: :model do
       order.prefix_file_names
       expect(order.reload.staff_files.first.filename.to_s).to eq("#{order.id}_test.stl")
     end
+
+    # Names already prefixed, so nothing is renamed (a rename is one write per file): only the reads are counted.
+    it "reads the files of three tasks and their options in as many queries as for one" do
+      option = create(:job_option)
+      orders = [1, 3].map do |count|
+        create(:job_order, user: create(:user, :regular_user)).tap do |job_order|
+          job_order.update!(user_files: [FilesTestHelper.stl])
+          count.times do |i|
+            task = job_order.job_tasks.create!(title: "Task #{i}", user_files: [FilesTestHelper.stl],
+                                               staff_files: [FilesTestHelper.png])
+            task.job_task_options.create!(job_option: option, option_file: FilesTestHelper.pdf)
+          end
+          job_order.prefix_file_names
+        end
+      end
+      queries = lambda do |job_order|
+        count = 0
+        counter = ->(*, payload) { count += 1 unless payload[:name] == "SCHEMA" || payload[:cached] }
+        fresh = JobOrder.find(job_order.id)
+        ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { fresh.prefix_file_names }
+        count
+      end
+
+      expect(queries.call(orders[1])).to eq(queries.call(orders[0]))
+      task_names = orders[1].job_tasks.map { |task| task.reload.user_files.map { |file| file.filename.to_s } }
+      expect(task_names).to eq([["#{orders[1].id}_#{FilesTestHelper.stl_name}"]] * 3)
+    end
   end
 
   describe "file content validations" do

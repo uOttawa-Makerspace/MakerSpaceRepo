@@ -86,20 +86,19 @@ class JobOrdersController < SessionsController
   def create
     @job_order = JobOrder.new(job_order_create_params)
     @job_order.user = @user
-    # Saved with the order, in its transaction: an order is never stored without its first status.
+    # Saved with the order, in its transaction: an order is never stored without its first status and its first task.
     @job_order.job_order_statuses.build(job_status: JobStatus.draft, user: @user)
+    @job_task = @job_order.job_tasks.build(
+      title: "Task #1",
+      # The "Need Design Help" flow starts its task as Design Services
+      job_type: params[:redirect_step].to_i == 2 ? JobType.design_services : nil
+    )
 
     if @job_order.save
       @job_order.prefix_file_names
-      @job_task = @job_order.job_tasks.create!(
-        title: "Task #1",
-        # Force job_type_id = 3 if it's the "Need Design Help" flow
-        job_type: params[:redirect_step].to_i == 2 ? JobType.design_services : nil
-      )
-
       redirect_to edit_job_order_job_task_path(@job_order, @job_task, step: 1)
     else
-      flash[:alert] = validation_message(@job_order, "errors.job_orders.create_failed")
+      flash[:alert] = validation_message(@job_order, "errors.job_orders.create_failed", @job_task)
       render "new"
     end
   end
