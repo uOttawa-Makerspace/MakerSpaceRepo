@@ -61,6 +61,19 @@ RSpec.describe "Volunteer directory search", type: :system, skip_bullet: true do
     expect(page).to have_css("[data-volunteer-search-target='activeEmpty']", visible: :hidden)
   end
 
+  it "counts the rows the list has now when the search is cleared" do
+    page.execute_script(<<~JS)
+      document.querySelector("tr[data-volunteer-search-target='activeRow']").remove();
+    JS
+    expect(page).to have_css("tr[data-volunteer-search-target='activeRow']", count: 1)
+    search_box.fill_in(with: "zzz")
+    expect(count_badge("active")).to have_text("0")
+    clear_button.click
+    expect(page).to have_css("tr[data-volunteer-search-target='activeRow']", count: 1, visible: :visible)
+    expect(count_badge("active")).to have_text("1")
+    expect(count_badge("inactive")).to have_text("1")
+  end
+
   it "resets the search from the button in the no-match message" do
     search_box.fill_in(with: "zzz")
     within("[data-volunteer-search-target='activeEmpty']") { find("button").click }
