@@ -82,17 +82,12 @@
   },
   "app/javascript/src/calendar_helper.js": {
     "complexity": {
-      "count": 5
+      "count": 4
     }
   },
   "app/javascript/src/effects.js": {
     "no-unused-vars": {
       "count": 6
-    }
-  },
-  "app/javascript/src/file_upload.js": {
-    "complexity": {
-      "count": 1
     }
   },
   "app/javascript/src/header.js": {
@@ -117,19 +112,6 @@
   },
   "app/javascript/src/settings.js": {
     "no-unused-vars": {
-      "count": 1
-    }
-  },
-  "app/javascript/src/sorting.js": {
-    "complexity": {
-      "count": 1
-    },
-    "max-depth": {
-      "count": 1
-    }
-  },
-  "app/javascript/src/validation.js": {
-    "complexity": {
       "count": 1
     }
   }

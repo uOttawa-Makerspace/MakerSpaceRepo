@@ -238,21 +238,19 @@ export function positionSaveButton(hasRecurrence, isEditing) {
 
   if (!saveButton) return;
 
-  if (hasRecurrence && isEditing) {
-    // Move to dropdown for recurring event edits
-    if (dropdownSaveContainer && !dropdownSaveContainer.contains(saveButton)) {
-      dropdownSaveContainer.appendChild(saveButton);
-    }
-    if (updateDropdown) updateDropdown.style.display = "block";
-    saveButton.value = "Update";
-  } else {
-    // Keep in main container
-    if (saveButtonContainer && !saveButtonContainer.contains(saveButton)) {
-      saveButtonContainer.appendChild(saveButton);
-    }
-    if (updateDropdown) updateDropdown.style.display = "none";
-    saveButton.value = isEditing ? "Update" : "Save Draft";
-  }
+  // Recurring event edits save from the dropdown; everything else from the main container
+  const inDropdown = hasRecurrence && isEditing;
+  moveInto(
+    inDropdown ? dropdownSaveContainer : saveButtonContainer,
+    saveButton,
+  );
+  if (updateDropdown)
+    updateDropdown.style.display = inDropdown ? "block" : "none";
+  saveButton.value = isEditing ? "Update" : "Save Draft";
+}
+
+function moveInto(container, element) {
+  if (container && !container.contains(element)) container.appendChild(element);
 }
 
 // -------------------
