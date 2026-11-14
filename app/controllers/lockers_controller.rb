@@ -182,10 +182,6 @@ class LockersController < AdminAreaController
     (first..last) if first && last && first <= last
   end
 
-  def locker_sizes_lineup
-    makerstore_sizes = @locker_product_info
-  end
-
   def locker_queries
     @locker_sizes = LockerSize.all
     @locker_product_link = LockerOption.locker_product_link
