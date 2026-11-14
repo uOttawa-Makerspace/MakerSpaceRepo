@@ -1,5 +1,10 @@
 <%# The Turbo-tracked head tags every layout shares. Turbo does a full page load when the tracked tags of the
     current and the next page differ, so every layout renders these, in this order, from this one partial: a visit
-    between pages of different layouts then stays in one document (unless a page adds tracked tags of its own). %>
+    between pages of different layouts then stays in one document (unless a page adds tracked tags of its own).
+    For staff and admins the marker is tracked too, so a Turbo visit from a page that loaded the accessibility
+    widget (one opened before they signed in) starts a fresh document and the widget script stops. %>
 <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
 <%= vite_stylesheet_tag 'application.scss', 'data-turbo-track': 'reload' %>
+<% unless accessibility_widget? %>
+<meta name="accessibility-widget" content="off" data-turbo-track="reload">
+<% end %>
