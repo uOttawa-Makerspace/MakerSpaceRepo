@@ -246,6 +246,18 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(page).to have_css("#bookModal.show", visible: :all)
     end
 
+    it "draws bookings at their Toronto wall times in the week daylight saving time starts", js: true, skip_bullet: true do
+      create(:sub_space_booking, sub_space: subspace, user: admin, name: "Change day", description: "Spring",
+                                 start_time: eastern.local(2027, 3, 14, 10), end_time: eastern.local(2027, 3, 14, 11))
+        .change_status!(@approved_status)
+      open_calendar(admin)
+
+      expect(page).to have_css(".fc-timegrid-col[data-date='2027-03-14'] .fc-timegrid-event", text: "10:00 - 11:00", visible: :all)
+      expect(page).to have_css(".fc-timegrid-col[data-date='2027-03-16'] .fc-timegrid-event", text: "10:00 - 11:00", visible: :all)
+      open_booking("Change day")
+      expect(page.evaluate_script("document.getElementById('book-start').value")).to eq("2027-03-14 10:00")
+    end
+
     it "opens an update modal filled from the booking for an admin", js: true, skip_bullet: true do
       open_calendar(admin)
       open_booking

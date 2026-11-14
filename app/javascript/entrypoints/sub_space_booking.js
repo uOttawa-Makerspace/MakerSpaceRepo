@@ -578,7 +578,6 @@ document.addEventListener("turbo:load", function () {
       },
     },
     allDaySlot: false,
-    timeZone: "America/New_York",
     initialView: "timeGridWeek",
     navLinks: true,
     slotEventOverlap: false,
