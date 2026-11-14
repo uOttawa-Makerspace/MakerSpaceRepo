@@ -99,14 +99,20 @@ module ConcurrentIndexBuilder
 
   def describe(index)
     columns = Array(index.columns).join(", ")
-    extras = []
-    extras << "where #{index.where}" if index.where
-    extras << "include (#{Array(index.include).join(', ')})" if index.include.present?
-    extras << "order #{index.orders}" if index.orders.present?
-    extras << "opclass #{index.opclasses}" if index.opclasses.present?
-    extras << "nulls not distinct" if index.nulls_not_distinct
-    extras << "expression" unless index.columns.is_a?(Array)
+    extras = describe_extras(index)
     "#{'unique ' if index.unique}#{index.using || :btree} (#{columns})#{" #{extras.join(' ')}" if extras.any?}"
+  end
+
+  # What makes the index other than plain, in a fixed order
+  def describe_extras(index)
+    [
+      ("where #{index.where}" if index.where),
+      ("include (#{Array(index.include).join(', ')})" if index.include.present?),
+      ("order #{index.orders}" if index.orders.present?),
+      ("opclass #{index.opclasses}" if index.opclasses.present?),
+      ("nulls not distinct" if index.nulls_not_distinct),
+      ("expression" unless index.columns.is_a?(Array))
+    ].compact
   end
 
   # Any relation of that name in the table's schema (the caller found no such
