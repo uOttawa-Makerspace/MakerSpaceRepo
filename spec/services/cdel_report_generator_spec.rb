@@ -63,6 +63,19 @@ RSpec.describe CdelReportGenerator do
       .to start_with("CEED_visitors_dump-2026-03-01T00:00:00")
   end
 
+  it "writes a text field that starts like a formula with a leading quote, and leaves other fields as they are" do
+    user = create(:user, :student, created_at: march_10)
+    user.update_columns(name: '=HYPERLINK("http://example.test","x")', how_heard_about_us: "+1+1",
+                        use: "-2", program: "@SUM(1)", email: "plain@example.test")
+    header, row = CSV.parse(described_class.generate_new_users_report(from, to)[:data])
+    field = header.zip(row).to_h
+    expect(field.values_at("users.name", "users.how_heard_about_us", "users.use", "users.program"))
+      .to eq(["'=HYPERLINK(\"http://example.test\",\"x\")", "'+1+1", "'-2", "'@SUM(1)"])
+    expect(field.values_at("users.id", "users.email", "users.confirmed"))
+      .to eq([user.id.to_s, "plain@example.test", user.confirmed.to_s])
+    expect(field["users.created_at"]).to eq(user.created_at.to_s)
+  end
+
   it "keeps the visits, certifications and sign-up of a soft-deleted user in the reports" do
     space = create(:space, name: "S1")
     user = create(:user, :student, name: "Deleted Visitor", created_at: march_10)
