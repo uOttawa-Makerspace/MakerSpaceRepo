@@ -218,6 +218,12 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
       expect(seen.first[:token] == "shpat_test_fake").to be(true)
     end
 
+    it "shows no homepage collections when the store answers with anything but 200" do
+      stub_request(:post, "https://uottawa-makerspace.myshopify.com/admin/api/2025-01/graphql.json")
+        .to_return(status: 202, headers: ShopifyHttpHelpers::JSON_HEADERS, body: { data: { collections: { nodes: [{ title: "Kits" }] } } }.to_json)
+      expect(StaticPagesController.new.send(:home_makerstore_links)).to eq([])
+    end
+
     it "reads an order's metafields with NodeMetafields" do
       seen = stub_shopify_graphql("query NodeMetafields", { "node" => nil })
       expect(Payments::ShopifyAdapter::Metafields.of("gid://shopify/DraftOrder/5")).to eq([])
