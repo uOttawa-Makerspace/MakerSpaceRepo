@@ -141,6 +141,12 @@ module ApplicationHelper
     role_flag(:dev_program?)
   end
 
+  # Whether the page loads the third-party accessibility widget: for visitors and members, never for
+  # staff or admins, who see member records.
+  def accessibility_widget?
+    !role_flag(:staff?)
+  end
+
   # The URL when it is an absolute http(s) link, else nil (for links that come from outside the app).
   def http_url(value)
     uri = URI.parse(value.to_s.strip)

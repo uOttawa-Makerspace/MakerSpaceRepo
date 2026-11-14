@@ -8,8 +8,7 @@
 
     <%# Vite Core %>
     <%= vite_client_tag %>
-    <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
-    <%= vite_stylesheet_tag 'application.scss', 'data-turbo-track': 'reload' %>
+    <%= render 'layouts/head_assets' %>
 
     <%= csrf_meta_tags %>
   </head>
@@ -30,5 +29,6 @@
       </div>
     </main>
     <%= render 'layouts/footer' %>
+    <%= render 'layouts/accessibility_widget' %>
   </body>
 </html>

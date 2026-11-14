@@ -6,8 +6,7 @@
 
     <%# Vite Core %>
     <%= vite_client_tag %>
-    <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
-    <%= vite_stylesheet_tag 'application.scss', 'data-turbo-track': 'reload' %>
+    <%= render 'layouts/head_assets' %>
     <%= vite_javascript_tag controller_name if Rails.root.join("app/javascript/entrypoints/#{controller_name}.js").exist? %>
 
     <%= csrf_meta_tags %>
