@@ -20,10 +20,7 @@ class SubSpaceBookingController < SessionsController
   before_action -> { @with_sub_space = true }
 
   def index
-    if params[:room].present?
-      @subspace = SubSpace.find(params[:room])
-      @rules = @subspace.booking_rules
-    end
+    @subspace = SubSpace.find(params[:room]) if params[:room].present?
     @bookings =
       SubSpaceBooking
         .where(user_id: current_user.id)
