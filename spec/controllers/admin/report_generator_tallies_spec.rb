@@ -153,6 +153,18 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller, skip_bullet:
       expect(ivar(:faculty_unique_count)).to eq("Engineering" => 1, "" => 1, "Arts" => 1)
     end
 
+    it "tallies a visitor with a uOEng record under their own faculty" do
+      vera = create(:user, :student, program: "Arts", faculty: "Arts")
+      UoengProfile.create!(user: vera, faculty_code: "GENIE", faculty: "Engineering", source: "email", checked_at: march_10)
+      uma = create(:user, :student, program: "Science", faculty: "Science")
+      UoengProfile.create!(user: uma, faculty_code: "XYZ", faculty: nil, source: "email", checked_at: march_10)
+      [vera, vera, uma].each { |user| create(:lab_session, space: alpha, user: user, created_at: march_10) }
+      report("visitors", range)
+      expect(ivar(:faculty_total_count)).to eq("Engineering" => 2, "" => 1, "Arts" => 3, "Science" => 1, "unknown" => 1)
+      expect(ivar(:faculty_unique_count)).to eq("Engineering" => 1, "" => 1, "Arts" => 2, "Science" => 1)
+      expect(ivar(:faculty_total_count).values.sum).to eq(8)
+    end
+
     it "without dates counts every visit" do
       report("visitors")
       expect(ivar(:space_total_count)).to eq("Space One" => 3, "Space Two" => 3)

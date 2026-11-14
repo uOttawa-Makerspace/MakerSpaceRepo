@@ -42,6 +42,12 @@ RSpec.describe ReportGenerator do
     create(:user, :student, name: name, created_at: march_10, **attrs)
   end
 
+  # The user's uOEng record, with the faculty code uOEng gave and the faculty it maps to (nil for a
+  # code the app does not know).
+  def uoeng_record(user, faculty_code, faculty)
+    UoengProfile.create!(user: user, faculty_code: faculty_code, faculty: faculty, source: "email", checked_at: march_10)
+  end
+
   describe ".generate_visitors_report" do
     let!(:alpha) { create(:space, name: "Alpha") }
     let!(:beta) { create(:space, name: "Beta") }
@@ -129,6 +135,29 @@ RSpec.describe ReportGenerator do
       expect(b[6].drop(1)).to contain_exactly(
         ["Other Departments", 1, nil, 1, nil, "Doctorate"], ["Other Departments", 1, nil, 1, nil, "Masters"]
       )
+    end
+
+    context "when some visitors have a uOEng record" do
+      before do
+        vera = student("Vera Verified", faculty: "Arts", gender: "Female")
+        uoeng_record(vera, "GENIE", "Engineering")
+        uma = student("Uma Unmapped", faculty: "Science", gender: "Female")
+        uoeng_record(uma, "XYZ", nil)
+        [vera, vera, uma].each { |user| create(:lab_session, space: beta, user: user, created_at: march_10) }
+      end
+
+      it "counts each visitor under their own faculty" do
+        b = blocks(sheets["Report"])
+        expect(sheets["Report"][5..6]).to eq([["CEED-Wide unique visitors", 6], ["CEED-Wide total visitors", 8]])
+        expect(b[4].drop(1)).to contain_exactly(
+          ["None", 1, nil, 1], ["Engineering", 1, nil, 2], ["Science", 2, nil, 2], ["Arts", 2, nil, 3]
+        )
+        expect(b[5].drop(1)).to contain_exactly(
+          ["Community member", 1, nil, 1, nil, "None"], ["Undergrad", 1, nil, 2, nil, "Engineering"],
+          ["Undergrad", 2, nil, 2, nil, "Science"], ["Undergrad", 2, nil, 3, nil, "Arts"]
+        )
+        expect(blocks(sheets["Beta"])[4].drop(1)).to contain_exactly(["Science", 2, nil, 2], ["Arts", 2, nil, 3])
+      end
     end
 
     it "Programs sheet strips leading non-word characters and files blank programs under None" do
@@ -342,6 +371,33 @@ RSpec.describe ReportGenerator do
       cam = body.find { |r| r.first == "Cam Community" }
       expect(cam).to eq(["Cam Community", "cam", "cam@example.test", "Male", "Community member", nil, nil,
                          nil, "2026-03-10 11:00"])
+    end
+
+    context "when some new users have a uOEng record" do
+      before do
+        uoeng_record(student("Vera Verified", faculty: "Arts", username: "vera"), "GENIE", "Engineering")
+        uoeng_record(student("Uma Unmapped", faculty: "Science", username: "uma"), "XYZ", nil)
+      end
+
+      let(:book) { grid(described_class.generate_new_users_report(from, to)) }
+
+      it "Faculties: counts each user under their own faculty, and the rows still add up to the total" do
+        faculty = blocks(book["Faculties"])[1]
+        expect(faculty[2..]).to contain_exactly(
+          ["Arts", 2], ["Science", 2], ["None", 1], ["Engineering", 1], ["Total", 6]
+        )
+        expect(book["Demographics"][4]).to eq(["Total new users", 6])
+      end
+
+      it "Report: the Faculty column shows each user's own faculty, under the same headers" do
+        rows = book["Report"]
+        header = rows.index(["Name", "Username", "Email", "Gender", "Identity", "Faculty", "Year of Study", "Student ID", "Joined on"])
+        body = rows[(header + 1)..]
+        expect(body.size).to eq(6)
+        expect(body.to_h { |r| [r[1], r[5]] }).to eq(
+          "gina" => "Génie", "cam" => nil, "mo" => "Arts", "phil" => "Science", "vera" => "Arts", "uma" => "Science"
+        )
+      end
     end
 
     it "counts users with a missing or blank identity in one None row on Demographics and Report" do

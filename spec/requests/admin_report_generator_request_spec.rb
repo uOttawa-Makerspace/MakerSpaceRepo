@@ -275,6 +275,34 @@ RSpec.describe "Admin report generator", type: :request do
     end
   end
 
+  describe "faculty charts on the report page" do
+    before do
+      c18_sign_in(:admin)
+      vera = create(:user, :student, faculty: "Arts", created_at: march_10)
+      UoengProfile.create!(user: vera, faculty_code: "GENIE", faculty: "Engineering", source: "email", checked_at: march_10)
+      uma = create(:user, :student, faculty: "Science", created_at: march_10)
+      UoengProfile.create!(user: uma, faculty_code: "XYZ", faculty: nil, source: "email", checked_at: march_10)
+      [vera, vera, uma].each { |user| create(:lab_session, space: world[:space], user: user, created_at: march_10) }
+    end
+
+    # The data of each pie chart on the page, in page order.
+    def pie_charts
+      response.body.scan(/Chartkick\["PieChart"\]\("chart-\d+", (.*?), \{\}\)/).flatten.map { |data| JSON.parse(data) }
+    end
+
+    it "new users: counts each user under their own faculty" do
+      get admin_report_generator_index_path, params: range.merge(report_type: "new_users")
+      expect(pie_charts.last).to eq([["Arts", 1], ["Engineering", 1], ["Science", 1]])
+    end
+
+    it "visitors: counts each visitor and visit under the visitor's own faculty" do
+      get admin_report_generator_index_path, params: range.merge(report_type: "visitors")
+      expect(pie_charts.last(2)).to eq(
+        [[["Arts", 1], ["Engineering", 1], ["Science", 1]], [["Arts", 2], ["Engineering", 1], ["Science", 1]]]
+      )
+    end
+  end
+
   describe "POST generate" do
     before { c18_sign_in(:admin) }
 
