@@ -154,6 +154,16 @@ RSpec.describe "Member mails in the recipient's language", type: :mailer do
                                     "No more actions are needed.")
     end
 
+    it "greets the staff member it goes to and names the trainee in the result, in each language" do
+      english_mail = text(deliver { MsrMailer.exam_results_staff(english, exam(english, "passed")) })
+      expect(english_mail).to include("Hello Grace Hopper,", "Ada Lovelace finished the exam")
+      expect(english_mail).not_to include("Hello ada lovelace,")
+      staff.update!(locale: "fr")
+      french_mail = text(deliver { MsrMailer.exam_results_staff(english, exam(english, "passed")) })
+      expect(french_mail).to include("Bonjour Grace Hopper,", "Ada Lovelace a terminé l'examen")
+      expect(french_mail).not_to include("Bonjour ada lovelace,")
+    end
+
     it "is written in French to a staff member who saved French" do
       staff.update!(locale: "fr")
       mail = deliver { MsrMailer.exam_results_staff(english, exam(english, "passed")) }
