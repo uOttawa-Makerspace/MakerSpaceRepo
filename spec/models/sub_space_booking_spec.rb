@@ -427,6 +427,99 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
     end
   end
 
+  describe "room checks" do
+    let(:room) { create(:sub_space) }
+    let(:owner) { create(:user, :regular_user) }
+
+    def booking_at(day, from, to, **attrs)
+      described_class.new({ sub_space: room, user: owner, name: "B", description: "D",
+                            start_time: Time.zone.parse("#{day} #{from}"),
+                            end_time: Time.zone.parse("#{day} #{to}") }.merge(attrs))
+    end
+
+    def saved_at(day, from, to, **attrs)
+      create(:sub_space_booking, { sub_space: room, user: owner,
+                                   start_time: Time.zone.parse("#{day} #{from}"),
+                                   end_time: Time.zone.parse("#{day} #{to}") }.merge(attrs))
+    end
+
+    describe "#overlaps_block?" do
+      it "is true only for a block of the same room that overlaps the times, not counting the booking itself" do
+        saved_at("2027-04-03", "12:00", "14:00", blocking: true)
+        saved_at("2027-04-03", "08:00", "09:00", blocking: false)
+        create(:sub_space_booking, sub_space: create(:sub_space), blocking: true,
+                                   start_time: Time.zone.parse("2027-04-03 08:00"),
+                                   end_time: Time.zone.parse("2027-04-03 09:00"))
+
+        expect(booking_at("2027-04-03", "13:00", "15:00").overlaps_block?).to be(true)
+        expect(booking_at("2027-04-03", "14:00", "15:00").overlaps_block?).to be(false)
+        expect(booking_at("2027-04-03", "08:30", "09:30").overlaps_block?).to be(false)
+        block = described_class.find_by!(blocking: true, sub_space: room)
+        expect(block.overlaps_block?).to be(false)
+      end
+    end
+
+    describe "#moving?" do
+      it "is true when the times or the room change, and false for a rename" do
+        booking = saved_at("2027-04-03", "10:00", "11:00")
+        booking.name = "Renamed"
+        expect(booking.moving?).to be(false)
+        booking.sub_space = create(:sub_space)
+        expect(booking.moving?).to be(true)
+        booking.reload.end_time += 1.hour
+        expect(booking.moving?).to be(true)
+      end
+    end
+
+    describe "#owner_hours_that_week" do
+      it "sums the owner's other hours in the room in the booking's week" do
+        saved_at("2027-04-05", "10:00", "12:00") # Monday, same week
+        saved_at("2027-04-11", "10:00", "11:00") # Sunday, same week
+        saved_at("2027-04-12", "10:00", "13:00") # next Monday
+        create(:sub_space_booking, sub_space: room, start_time: Time.zone.parse("2027-04-06 10:00"),
+                                   end_time: Time.zone.parse("2027-04-06 15:00")) # someone else
+        own = saved_at("2027-04-07", "10:00", "14:00")
+
+        expect(own.owner_hours_that_week).to eq(3)
+        expect(booking_at("2027-04-07", "10:00", "11:00").owner_hours_that_week).to eq(7)
+      end
+    end
+
+    describe "#room_limit_breach" do
+      it "is nil for a room without limits" do
+        expect(booking_at("2027-04-07", "10:00", "20:00").room_limit_breach).to be_nil
+      end
+
+      it "names the maximum duration first, then the weekly hours" do
+        room.update!(maximum_booking_duration: 2, maximum_booking_hours_per_week: 3)
+        saved_at("2027-04-06", "10:00", "12:00")
+
+        expect(booking_at("2027-04-07", "10:00", "13:00").room_limit_breach)
+          .to eq(["DurationHour", "You cannot book #{room.name} for more than 2 hours."])
+        expect(booking_at("2027-04-07", "10:00", "12:00").room_limit_breach)
+          .to eq(["DurationWeek", "You cannot book #{room.name} for more than 3 hours per week."])
+        expect(booking_at("2027-04-07", "10:00", "11:00").room_limit_breach).to be_nil
+      end
+    end
+
+    describe "#initial_status" do
+      it "is approved for an admin and in a room that needs no approval" do
+        room.update!(approval_required: true)
+        expect(booking_at("2027-04-07", "10:00", "11:00").initial_status(booked_by_admin: true)).to eq(@approved_status)
+        room.update!(approval_required: false)
+        expect(booking_at("2027-04-07", "10:00", "11:00").initial_status(booked_by_admin: false)).to eq(@approved_status)
+      end
+
+      it "is approved up to the room's automatic-approval hours and pending beyond them or without them" do
+        room.update!(approval_required: true, max_automatic_approval_hour: 2)
+        expect(booking_at("2027-04-07", "10:00", "12:00").initial_status(booked_by_admin: false)).to eq(@approved_status)
+        expect(booking_at("2027-04-07", "10:00", "12:01").initial_status(booked_by_admin: false)).to eq(@pending_status)
+        room.update!(max_automatic_approval_hour: nil)
+        expect(booking_at("2027-04-07", "10:00", "10:30").initial_status(booked_by_admin: false)).to eq(@pending_status)
+      end
+    end
+  end
+
   describe "COLOR_LEGEND constant" do
     it "pins the exact 5-entry legend in order" do
       expect(described_class.color_legend).to eq(
