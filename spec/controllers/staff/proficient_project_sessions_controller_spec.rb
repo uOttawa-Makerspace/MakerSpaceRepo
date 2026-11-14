@@ -37,6 +37,20 @@ RSpec.describe Staff::ProficientProjectSessionsController, type: :controller do
         expect(get(:show, params: { id: proficient_project_session.id })).to have_http_status(:success)
       end
     end
+
+    context "sort arrows" do
+      render_views
+
+      it "gives each column header the arrow that sorts that column" do
+        admin = create(:user, :admin)
+        session[:user_id] = admin.id
+        session[:expires_at] = Time.zone.now + 10_000
+        proficient_project_session = create(:proficient_project_session, level: "Beginner")
+        get :show, params: { id: proficient_project_session.id }
+        columns = response.body.scan(/sortTable\('training-session-users-table', (\d+)\)/).flatten.map(&:to_i)
+        expect(columns).to eq([0, 1, 2, 3, 4])
+      end
+    end
   end
 
 end

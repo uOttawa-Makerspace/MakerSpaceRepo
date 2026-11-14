@@ -120,8 +120,7 @@ describe("selectAll", () => {
   });
 });
 
-// Each example loads the script afresh, so the shared sort direction starts
-// at ascending.
+// Each example loads the script afresh.
 describe("sortTable (fresh page)", () => {
   beforeEach(async () => {
     vi.resetModules();
@@ -176,12 +175,35 @@ describe("sortTable (fresh page)", () => {
     expect(col(1)).toEqual(["a", "b", "c"]);
   });
 
-  it("compares numbers as text", () => {
-    document.body.innerHTML = table(["9", "10", "100", "2"]);
+  it("sorts a column of numbers by value", () => {
+    document.body.innerHTML = table(["9", "10", "100", "2", "-1.5", "2.25"]);
     window.sortTable("t", 0);
-    expect(column()).toEqual(["10", "100", "2", "9"]);
+    expect(column()).toEqual(["-1.5", "2", "2.25", "9", "10", "100"]);
     window.sortTable("t", 0);
-    expect(column()).toEqual(["9", "2", "100", "10"]);
+    expect(column()).toEqual(["100", "10", "9", "2.25", "2", "-1.5"]);
+  });
+
+  it("puts empty cells of a number column first going up and last going down", () => {
+    document.body.innerHTML = table(["10", "", "9"]);
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["", "9", "10"]);
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["10", "9", ""]);
+  });
+
+  it("sorts a column as text when any cell is not a number", () => {
+    document.body.innerHTML = table(["9", "10", "n/a", "2"]);
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["10", "2", "9", "n/a"]);
+  });
+
+  it("sorts numbers given as each cell's sort key", () => {
+    document.body.innerHTML = `<table class="t"><tbody><tr><th></th></tr>
+      <tr><td data-sort-as="12">12 Hours</td></tr>
+      <tr><td data-sort-as="3">3 Hours</td></tr>
+      <tr><td data-sort-as="0.5">0.5 Hours</td></tr></tbody></table>`;
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["0.5 Hours", "3 Hours", "12 Hours"]);
   });
 
   it("puts empty cells first going up and last going down", () => {
@@ -221,32 +243,41 @@ describe("sortTable (fresh page)", () => {
     expect(column()).toEqual(["Jan 1 - Feb 9", "Mar 1 - Mar 4"]);
   });
 
-  it("never picks a cell that is not a date, so it drifts to the end", () => {
-    document.body.innerHTML = table(["Jan 5, 2026", "soon", "Dec 1, 2025"]);
+  it("puts cells that are not dates first going up and last going down", () => {
+    document.body.innerHTML = table(["Jan 5, 2026", "soon", "Dec 1, 2025", ""]);
     window.sortTable("t", 0, true);
-    expect(column()).toEqual(["Dec 1, 2025", "Jan 5, 2026", "soon"]);
+    expect(column()).toEqual(["soon", "", "Dec 1, 2025", "Jan 5, 2026"]);
     window.sortTable("t", 0, true);
-    expect(column()).toEqual(["Jan 5, 2026", "Dec 1, 2025", "soon"]);
+    expect(column()).toEqual(["Jan 5, 2026", "Dec 1, 2025", "soon", ""]);
   });
 
-  it("does not sort a date column as text", () => {
+  it("keeps a date column of cells that are not dates in its order", () => {
     document.body.innerHTML = table(["b", "a", "c"]);
     window.sortTable("t", 0, true);
     expect(column()).toEqual(["b", "a", "c"]);
   });
 
-  it("shares one direction across every table and column on the page", () => {
+  it("keeps a direction for each table and each column", () => {
     document.body.innerHTML =
-      table(["b", "a"]) +
-      `<table class="u"><tbody><tr><th></th></tr><tr><td>a</td></tr><tr><td>b</td></tr></tbody></table>`;
+      grid([
+        ["b", "y"],
+        ["a", "z"],
+      ]) +
+      `<table class="u"><tbody><tr><th></th></tr><tr><td>b</td></tr><tr><td>a</td></tr></tbody></table>`;
+    const other = () =>
+      [...document.querySelectorAll(".u td")].map((d) => d.textContent);
     window.sortTable("t", 0);
-    expect(column()).toEqual(["a", "b"]);
+    expect(col(0)).toEqual(["a", "b"]);
     window.sortTable("u", 0);
-    expect(
-      [...document.querySelectorAll(".u td")].map((d) => d.textContent),
-    ).toEqual(["b", "a"]);
+    expect(other()).toEqual(["a", "b"]);
+    window.sortTable("t", 1);
+    expect(col(1)).toEqual(["y", "z"]);
     window.sortTable("t", 0);
-    expect(column()).toEqual(["a", "b"]);
+    expect(col(0)).toEqual(["b", "a"]);
+    window.sortTable("u", 0);
+    expect(other()).toEqual(["b", "a"]);
+    window.sortTable("t", 1);
+    expect(col(1)).toEqual(["z", "y"]);
   });
 
   it("sorts only the first table with the class", () => {
@@ -261,13 +292,24 @@ describe("sortTable (fresh page)", () => {
     ]);
   });
 
-  it("flips the direction even when there is nothing to sort", () => {
+  it("flips a column's direction even when there is nothing to sort", () => {
     document.body.innerHTML = table(["only"]);
     window.sortTable("t", 0);
     expect(column()).toEqual(["only"]);
-    document.body.innerHTML = table(["a", "b"]);
+    for (const text of ["a", "b"]) {
+      const row = document.querySelector(".t tbody").insertRow();
+      row.insertCell().textContent = text;
+    }
     window.sortTable("t", 0);
-    expect(column()).toEqual(["b", "a"]);
+    expect(column()).toEqual(["only", "b", "a"]);
+  });
+
+  it("starts a new table going up", () => {
+    document.body.innerHTML = table(["b", "a"]);
+    window.sortTable("t", 0);
+    document.body.innerHTML = table(["b", "a"]);
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["a", "b"]);
   });
 
   it("keeps the direction when the table is missing", () => {
@@ -278,8 +320,11 @@ describe("sortTable (fresh page)", () => {
     expect(column()).toEqual(["a", "b"]);
   });
 
-  it("throws when a row has no cell in that column", () => {
-    document.body.innerHTML = grid([["a", "1"], ["b"]]);
-    expect(() => window.sortTable("t", 1)).toThrow(TypeError);
+  it("sorts a row with no cell in that column as an empty cell", () => {
+    document.body.innerHTML = grid([["a", "2"], ["b"], ["c", "1"]]);
+    window.sortTable("t", 1);
+    expect(col(0)).toEqual(["b", "c", "a"]);
+    window.sortTable("t", 1);
+    expect(col(0)).toEqual(["a", "c", "b"]);
   });
 });

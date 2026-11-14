@@ -130,12 +130,12 @@ RSpec.describe "Volunteer area in French", type: :request do
       expect(text).to include("Heures de bénévolat de Val Volunteer", "Approuvée", "Traitée")
     end
 
-    it "gives the dates of my hours an ISO sort key" do
+    it "gives the dates of my hours an ISO sort key and the hours worked a number sort key" do
       create(:volunteer_hour, user: volunteer, volunteer_task: task, total_time: 2, approval: nil, date_of_task: Date.new(2026, 10, 30))
 
       get volunteer_hours_path(locale: "fr")
       keys = Nokogiri::HTML(response.body).css("td[data-sort-as]").map { |td| td["data-sort-as"] }
-      expect(keys).to eq([Time.zone.local(2026, 11, 3, 14, 30).iso8601, Time.zone.local(2026, 10, 30).iso8601])
+      expect(keys).to eq([Time.zone.local(2026, 11, 3, 14, 30).iso8601, Time.zone.local(2026, 10, 30).iso8601, "2.0"])
     end
 
     it "sends a task for review with the confirmation in French" do

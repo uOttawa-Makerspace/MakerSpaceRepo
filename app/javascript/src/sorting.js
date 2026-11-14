@@ -24,56 +24,76 @@ window.findSession = function (table_class, id = "query") {
   }
 };
 
-var sort_direction = 1;
+// The direction each column of each table sorts in next: 1 going up, -1
+// going down. A column sorts going up on its first click.
+const nextDirections = new WeakMap();
+
+function takeDirection(table, col) {
+  const directions = nextDirections.get(table) || {};
+  const direction = directions[col] || 1;
+  directions[col] = -direction;
+  nextDirections.set(table, directions);
+  return direction;
+}
 
 function cellAt(row, col) {
   return row.getElementsByTagName("td")[col];
 }
 
 // sub_space_booking has date ranges, we can't parse the whole thing as a date
-// So we specify the start date as the sort key
-function sortKey(cell) {
+// So we specify the start date as the sort key.
+// A row without a cell in the column sorts as an empty cell.
+function sortKey(row, col) {
+  const cell = cellAt(row, col);
+  if (!cell) return "";
   return cell.dataset.sortAs || cell.innerText;
 }
 
-function inSortDirection(a, b) {
-  return (sort_direction === 1 && a > b) || (sort_direction === 0 && a < b);
+// A column sorts as numbers when every cell that is not empty holds a number.
+const NUMBER = /^-?\d+(\.\d+)?$/;
+
+function isNumberColumn(keys) {
+  const filled = keys.filter((key) => key !== "");
+  return filled.length > 0 && filled.every((key) => NUMBER.test(key));
 }
 
-function outOfOrder(swapElStr, currElStr, isDateColumn) {
-  if (isDateColumn) {
-    return inSortDirection(Date.parse(swapElStr), Date.parse(currElStr));
-  }
-  return inSortDirection(swapElStr.toLowerCase(), currElStr.toLowerCase());
+// Empty cells, and cells that are not dates in a date column, come before
+// every value going up and after every value going down.
+function valueOrLowest(value) {
+  return Number.isNaN(value) ? -Infinity : value;
 }
 
-// The cell, from row i down, that belongs at row i in the sort direction.
-function cellForRow(rows, i, col, isDateColumn) {
-  let swapElement = cellAt(rows[i], col);
-  for (let j = i + 1; j < rows.length; j++) {
-    const currentElement = cellAt(rows[j], col);
-    if (
-      outOfOrder(sortKey(swapElement), sortKey(currentElement), isDateColumn)
-    ) {
-      swapElement = currentElement;
-    }
+function comparableKeys(keys, isDateColumn) {
+  if (isDateColumn) return keys.map((key) => valueOrLowest(Date.parse(key)));
+  if (isNumberColumn(keys)) {
+    return keys.map((key) => valueOrLowest(parseFloat(key)));
   }
-  return swapElement;
+  return keys.map((key) => key.toLowerCase());
 }
 
-function sortRows(rows, col, isDateColumn) {
-  for (let i = 1; i < rows.length - 1; i++) {
-    const swapElement = cellForRow(rows, i, col, isDateColumn);
-    rows[i].parentNode.insertBefore(swapElement.parentNode, rows[i]);
-  }
+function compareKeys(a, b) {
+  if (a < b) return -1;
+  return a > b ? 1 : 0;
+}
+
+// Rows with equal keys keep their order in both directions.
+function sortRows(rows, col, isDateColumn, direction) {
+  const keys = comparableKeys(
+    rows.map((row) => sortKey(row, col).trim()),
+    isDateColumn,
+  );
+  rows
+    .map((row, i) => ({ row, key: keys[i] }))
+    .sort((a, b) => direction * compareKeys(a.key, b.key))
+    .forEach(({ row }) => row.parentNode.appendChild(row));
 }
 
 window.sortTable = function (table_name, col, isDateColumn = false) {
   const table = document.getElementsByClassName(table_name)[0];
   if (!table) return;
 
-  sortRows(table.getElementsByTagName("tr"), col, isDateColumn);
-  sort_direction = sort_direction === 1 ? 0 : 1;
+  const rows = [...table.getElementsByTagName("tr")].slice(1);
+  sortRows(rows, col, isDateColumn, takeDirection(table, col));
 };
 
 var select_direction = 1;
