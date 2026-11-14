@@ -131,6 +131,7 @@ en:
         limit_not_whole_number: "The limit must be a whole number of hours, or -1 to remove it."
         confirmation_mismatch: "The text you typed does not match the space name, so nothing was deleted."
         not_deleted: "The space was not deleted."
+        deletion_not_requested: "The deletion request was not recorded."
         calendar_space_missing: "The calendar URLs were not saved because no space was chosen. Reload the page and try again."
       teams:
         not_created: "The team was not created."

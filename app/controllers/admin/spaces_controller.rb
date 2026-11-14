@@ -253,7 +253,8 @@ class Admin::SpacesController < AdminAreaController
   private
 
   # A second admin's confirmation deletes the space; otherwise this admin's request is recorded, unless the space
-  # has history it must not lose, which is said at once (so nobody waits for a second admin to be told).
+  # has history it must not lose, which is said at once (so nobody waits for a second admin to be told). A request
+  # that does not save says why.
   def advance_space_deletion(space)
     if space.destroy_admin_id.present? && space.destroy_admin_id != @user.id
       confirm_space_deletion(space)
@@ -261,6 +262,8 @@ class Admin::SpacesController < AdminAreaController
       refuse_space_deletion_request(space, refusals)
     elsif space.update(destroy_admin_id: @user.id)
       flash[:notice] = t("admin_area.spaces.flash.destroy_requested")
+    else
+      flash[:alert] = validation_message(space, "errors.admin.spaces.deletion_not_requested")
     end
   end
 
