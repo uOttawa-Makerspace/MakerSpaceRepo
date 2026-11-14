@@ -74,8 +74,7 @@ RSpec.describe "Printers", type: :request do
   describe "admin: index, add_printer, remove_printer" do
     before { sign_in_as(:admin) }
 
-    # The printer list in the remove form reads each printer's model.
-    it "renders index with printer models labelled with short forms", skip_bullet: true do
+    it "renders index with printer models labelled with short forms" do
       get printers_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Ultimaker 2+ (UM2P)")

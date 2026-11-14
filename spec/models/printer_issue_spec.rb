@@ -43,26 +43,31 @@ RSpec.describe PrinterIssue, type: :model do
   describe "Printer issue helpers" do
     let(:printer) { create(:printer, :UM2P_01) }
 
-    it "limits active_printer_issues to active ones" do
-      active = create(:printer_issue, printer: printer)
-      create(:printer_issue, :inactive, printer: printer)
-      expect(printer.active_printer_issues).to eq([active])
-    end
-
-    it "groups active issues by the canned summary they contain, else Other" do
+    it "counts each printer's active issues by the canned summary they contain, else Other" do
       create(:printer_issue, :nozzle_clogged, printer: printer)
       create(:printer_issue, :nozzle_clogged, printer: printer)
       create(:printer_issue, :bed_issue, printer: printer)
       create(:printer_issue, printer: printer, summary: "Something else")
       create(:printer_issue, :extrude_issue, :inactive, printer: printer)
-      expect(printer.count_printer_issues).to eq("Nozzle clogged" => 2, "Bed issue" => 1, "Other" => 1)
+      quiet = create(:printer, :UM3_01)
+      create(:printer_issue, :bed_issue, :inactive, printer: quiet)
+      expect(Printer.active_issue_counts([quiet, printer]))
+        .to eq(printer.id => { "Nozzle clogged" => 2, "Bed issue" => 1, "Other" => 1 })
+    end
+
+    it "keys the counts in the order of the printers it is given, in one query" do
+      other = create(:printer, :UM3_01)
+      create(:printer_issue, printer: printer)
+      create(:printer_issue, printer: other)
+      counts = nil
+      expect(count_queries { counts = Printer.active_issue_counts([other, printer]) }).to eq(1)
+      expect(counts.keys).to eq([other.id, printer.id])
     end
 
     it "leaves out the given issue when counting" do
-      kept = create(:printer_issue, :nozzle_clogged, printer: printer)
+      create(:printer_issue, :nozzle_clogged, printer: printer)
       left_out = create(:printer_issue, :bed_issue, printer: printer)
-      expect(printer.count_printer_issues(except: left_out.id)).to eq("Nozzle clogged" => 1)
-      expect(printer.group_printer_issues(except: left_out.id).values.flatten).to eq([kept])
+      expect(Printer.active_issue_counts([printer], except: left_out.id)).to eq(printer.id => { "Nozzle clogged" => 1 })
     end
 
     it "groups the loaded active issues the same way without another query" do
@@ -74,7 +79,7 @@ RSpec.describe PrinterIssue, type: :model do
 
       groups = nil
       expect(count_queries { groups = loaded.group_loaded_printer_issues }).to eq(0)
-      expect(groups.transform_values(&:size)).to eq(printer.count_printer_issues)
+      expect(groups.transform_values(&:size)).to eq("Nozzle clogged" => 1, "Bed issue" => 1, "Other" => 1)
     end
   end
 end

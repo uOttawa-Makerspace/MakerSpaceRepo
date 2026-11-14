@@ -20,6 +20,11 @@ class PrinterIssue < ApplicationRecord
     update!(active: false)
   end
 
+  # The issues grouped by the canned summary their summary contains, else "Other".
+  def self.group_by_summary(issues)
+    issues.group_by { |issue| summaries.values.detect { |s| issue.summary.include? s } || "Other" }
+  end
+
   def self.summaries
     {
       nozzle_clogged: "Nozzle clogged",
