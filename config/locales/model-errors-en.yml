@@ -40,8 +40,8 @@ en:
         coupon_code:
           attributes:
             cc_cost:
-              invalid_cc_cost: "must be a number of CC points (0 or more)"
-          claimed_cannot_delete: "A user has already claimed this coupon with CC points, so it cannot be deleted"
+              invalid_cc_cost: "must be a number of CCs (0 or more)"
+          claimed_cannot_delete: "A user has already claimed this coupon with CCs, so it cannot be deleted"
         program:
           attributes:
             user:

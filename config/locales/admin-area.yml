@@ -26,7 +26,7 @@ en:
       contact_info: "Contact Info"
       drop_off_locations: "Drop-Off Locations"
       deleted_repositories: "Deleted Repositories"
-      unclaimed_cc_money: "Unclaimed CC Money"
+      unclaimed_cc_money: "Unclaimed CCs"
       programs: "Programs"
     users:
       rfid_current: "%{card} (current)"

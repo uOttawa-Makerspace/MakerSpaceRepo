@@ -65,7 +65,7 @@ RSpec.describe CouponCode, type: :model do
   end
 
   it "refuses a blank, a non-numeric and a negative price with ONE message (a single numericality rule)" do
-    message = ["must be a number of CC points (0 or more)"]
+    message = ["must be a number of CCs (0 or more)"]
     [nil, "", "abc", -1, "2.9", 2.9].each do |price|
       expect(CouponCode.new(cc_cost: price).tap(&:valid?).errors[:cc_cost]).to eq(message), "for #{price.inspect}"
     end
@@ -98,7 +98,7 @@ RSpec.describe CouponCode, type: :model do
   it "cannot be destroyed once claimed" do
     coupon = create(:coupon_code, :claimed, user: user)
     expect(coupon.destroy).to be(false)
-    expect(coupon.errors.full_messages).to eq(["A user has already claimed this coupon with CC points, so it cannot be deleted"])
+    expect(coupon.errors.full_messages).to eq(["A user has already claimed this coupon with CCs, so it cannot be deleted"])
     expect(CouponCode.exists?(coupon.id)).to be(true)
   end
 

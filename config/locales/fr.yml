@@ -213,6 +213,8 @@ fr:
       title: "Mot de passe oublié"
       email: "Adresse courriel"
       submit: "Soumettre"
+  orders:
+    deleted: "La commande a été supprimée et ses CC ont été rendus à l'utilisateur."
   activerecord:
     attributes:
       space:
@@ -678,6 +680,22 @@ fr:
       all_day: "Toute la journée"
       explanation: "Il ne peut pas être modifié ni supprimé ici : modifiez-le dans ce calendrier, ou retirez le lien de vos calendriers importés ci-dessous."
   msr_mailer:
+    send_cc_money_email:
+      subject: "Votre commande de Crédits du CGEC (CC)"
+      preheader: "MakerRepo - Votre achat de CC est confirmé"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce que vous avez acheté des CC pour votre compte %{site_link}."
+      hello: "Bonjour,"
+      # %{site_link} = link to MakerRepo
+      bought_html: "Vous avez acheté des Crédits du CGEC (CC) sur %{site_link}!"
+      # %{cc} = number of CCs bought
+      amount_html: "Nombre de CC : <b>%{cc} CC</b>."
+      # %{link} = the claim link, text from link_text
+      link_html: "Vous pouvez les ajouter à votre compte MakerRepo en suivant ce %{link}."
+      link_text: "lien"
+      # %{url} = the claim address, shown as text
+      copy_link: "Si le lien ne fonctionne pas, copiez le lien suivant : %{url}"
+      button: "Échanger mes CC"
     sign_up_attempt:
       subject: "Quelqu'un a tenté de s'inscrire avec votre courriel"
       hello: "Bonjour %{name},"

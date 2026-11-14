@@ -183,6 +183,8 @@ en:
       title: "Forgot Password"
       email: "Email address"
       submit: "Submit"
+  orders:
+    deleted: "The order was deleted and its CCs were given back to the user."
   activerecord:
     attributes:
       space:
@@ -600,6 +602,22 @@ en:
       all_day: "All day"
       explanation: "It can't be edited or deleted here: change it in that calendar, or remove the link from your imported calendars below."
   msr_mailer:
+    send_cc_money_email:
+      subject: "Your CEED Credits (CC) order"
+      preheader: "MakerRepo - Your CC purchase was successful"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "You have received this email because you bought CCs for your %{site_link} account."
+      hello: "Hello,"
+      # %{site_link} = link to MakerRepo
+      bought_html: "You have successfully bought CEED Credits (CCs) on %{site_link}!"
+      # %{cc} = number of CCs bought
+      amount_html: "The amount of CCs is: <b>%{cc} CCs</b>."
+      # %{link} = the claim link, text from link_text
+      link_html: "You can add them to your MakerRepo account by going to this %{link}."
+      link_text: "link"
+      # %{url} = the claim address, shown as text
+      copy_link: "If the link doesn't work, you can copy the following link: %{url}"
+      button: "Redeem my CCs"
     sign_up_attempt:
       subject: "Someone tried to sign up with your email"
       hello: "Hello %{name},"

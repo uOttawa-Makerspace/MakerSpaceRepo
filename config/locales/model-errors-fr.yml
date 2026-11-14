@@ -40,8 +40,8 @@ fr:
         coupon_code:
           attributes:
             cc_cost:
-              invalid_cc_cost: "doit être un nombre de points CC (0 ou plus)"
-          claimed_cannot_delete: "Un utilisateur a déjà réclamé ce coupon avec des points CC, il ne peut donc pas être supprimé"
+              invalid_cc_cost: "doit être un nombre de CC (0 ou plus)"
+          claimed_cannot_delete: "Un utilisateur a déjà réclamé ce coupon avec des CC, il ne peut donc pas être supprimé"
         program:
           attributes:
             user:
@@ -211,7 +211,7 @@ fr:
           attributes:
             photos:
               too_many: "ne peut pas dépasser 5 photos"
-          awarded_cannot_delete: "Cette tâche a des heures approuvées ou des points CC attribués et ne peut pas être supprimée."
+          awarded_cannot_delete: "Cette tâche a des heures approuvées ou des CC attribués et ne peut pas être supprimée."
           edit_refused:
             training_missing: "Une formation requise n'existe pas."
             no_successor: "Au moins un membre du personnel doit être assigné à cette tâche."

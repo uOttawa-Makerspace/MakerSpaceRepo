@@ -305,6 +305,8 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       get transcript_volunteers_path
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include("<nav")
+      expect(response.body).to include("CCs Earned")
+      expect(response.body).not_to include("CC Points")
       expect(ivar(:@volunteer)).to eq(user)
     end
 

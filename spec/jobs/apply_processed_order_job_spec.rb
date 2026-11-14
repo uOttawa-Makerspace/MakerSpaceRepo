@@ -371,7 +371,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       expect(deliveries.size).to eq(1)
       mail = deliveries.first
       expect(mail.to).to eq(["buyer@example.com"])
-      expect(mail.subject).to eq("Your CC Money order")
+      expect(mail.subject).to eq("Your CEED Credits (CC) order")
       token = CGI.unescape(mail.body.encoded[/link_cc_to_user\?token=([^"&\s<]+)/, 1])
       expect(CcMoney.for_claim_token(token)).to eq(row)
     end

@@ -117,12 +117,16 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       end
     end
 
-    it "admin renders new and edit" do
+    it "admin renders new and edit, with the price labelled in CCs" do
       content_sign_in_as(:admin)
       get new_proficient_project_path
       expect(response).to have_http_status(:ok)
+      expect(response.body).to include(">Cost in CCs</label>")
+      expect(response.body).not_to include("Cc Points")
       get edit_proficient_project_path(project)
       expect(response).to have_http_status(:ok)
+      expect(response.body).to include(">Cost in CCs</label>")
+      expect(response.body).not_to include("Cc Points")
     end
 
     describe "create" do

@@ -4,7 +4,7 @@ class CouponCode < ApplicationRecord
   scope :unclaimed, -> { where(user_id: nil) }
   scope :claimed, -> { where.not(user_id: nil) }
 
-  # A coupon a user claimed was paid for in CC points and cannot be deleted (no refund exists). Unclaimed coupons
+  # A coupon a user claimed was paid for in CCs and cannot be deleted (no refund exists). Unclaimed coupons
   # can. Deleting the owning user still takes their coupons along.
   before_destroy :refuse_deletion_once_claimed, unless: :destroyed_by_association
 
@@ -23,7 +23,7 @@ class CouponCode < ApplicationRecord
   validates :code, presence: true, uniqueness: true, if: :checks_code?
   validates :dollar_cost, numericality: { only_integer: true, greater_than: 0 }, if: :checks_dollar_cost?
 
-  # Trades `user`'s CC points for one unclaimed coupon worth `dollar_cost` AT `cc_cost`, the
+  # Trades `user`'s CCs for one unclaimed coupon worth `dollar_cost` AT `cc_cost`, the
   # price the user confirmed (a same-dollar coupon at another price is never picked; a blank
   # cc_cost matches nothing). Atomic: the
   # wallet check, the debit and the assignment happen in ONE transaction, so a claim that loses

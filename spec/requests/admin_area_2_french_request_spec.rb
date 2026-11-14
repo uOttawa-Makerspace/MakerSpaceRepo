@@ -107,7 +107,7 @@ RSpec.describe "Admin area pages in French", type: :request do
       get admin_deleted_repositories_path
       expect(page_text).to include("Aucun dépôt n'a été supprimé.")
       get admin_cc_moneys_path
-      expect(page_text).to include("CC Money non réclamés")
+      expect(page_text).to include("CC non réclamés")
     end
 
     it "gives the action messages in French" do

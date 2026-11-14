@@ -74,7 +74,7 @@ en:
         updated: "Announcement updated"
         deleted: "Announcement Deleted"
     cc_moneys:
-      title: "Unclaimed CC Money"
+      title: "Unclaimed CCs"
       intro: "Purchases made without an account. Enter the buyer's email address to send the claim link again; earlier links then stop working. Only the account with the buyer's email can claim it."
       id: "ID"
       cc: "CC"
@@ -535,7 +535,7 @@ fr:
         updated: "Annonce mise à jour"
         deleted: "Annonce supprimée"
     cc_moneys:
-      title: "CC Money non réclamés"
+      title: "CC non réclamés"
       intro: "Achats faits sans compte. Entrez l'adresse courriel de l'acheteur pour renvoyer le lien de réclamation; les liens précédents cessent alors de fonctionner. Seul le compte associé au courriel de l'acheteur peut les réclamer."
       id: "ID"
       cc: "CC"

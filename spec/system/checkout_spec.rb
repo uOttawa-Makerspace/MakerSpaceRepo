@@ -92,7 +92,7 @@ RSpec.describe "Checkout", type: :system do
       find("#cart-button").click
       accept_confirm { click_button "Confirm order" }
 
-      expect(page).to have_text("Not enough Cc Points.")
+      expect(page).to have_text("Not enough CCs.")
       expect(user.orders.last.order_status.name).to eq("In progress")
       expect(user.orders.last.order_items.count).to eq(1)
       expect(user.get_total_cc).to eq(20) # a refusal writes no cache: the ledger balance is the truth

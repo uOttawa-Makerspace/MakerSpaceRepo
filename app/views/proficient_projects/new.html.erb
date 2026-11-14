@@ -18,7 +18,7 @@
             <div class="required"><%= f.label :level, 'Level', for: 'training_level_field', class: 'form-label' %></div>
             <%= f.select(:level, @training_levels, {}, { class: 'form-control form-select mb-5', id: 'training_level_field', aria: { label: t('common.names.level') } }) %>
 
-            <%= f.label :cc, 'Cc Points', class: 'form-label' %>
+            <%= f.label :cc, t('proficient_projects.form.cc'), class: 'form-label' %>
             <%= f.number_field(:cc, class: 'form-control mb-5') %>
 
             <span id="proficient_project_has_project_kit_label" class="form-label d-inline-block">Physical kit:</span>

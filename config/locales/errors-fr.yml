@@ -76,11 +76,11 @@ fr:
       still_in_use: "D'autres éléments l'utilisent encore, il a donc été laissé tel quel."
       record_missing: "Un élément auquel il fait référence n'existe plus. Rechargez la page et réessayez."
       cc_money_claim_email:
-        already_linked: "Ces CC Money ont déjà été ajoutés à un compte, aucun courriel n'a donc été envoyé."
+        already_linked: "Ces CC ont déjà été ajoutés à un compte, aucun courriel n'a donc été envoyé."
         email_invalid: "Saisissez l'adresse courriel de l'acheteur. Aucun courriel n'a été envoyé."
-        email_mismatch: "Ce Cc Money a été acheté avec une autre adresse courriel. Utilisez l'adresse de l'achat. Aucun courriel n'a été envoyé."
+        email_mismatch: "Ces CC ont été achetés avec une autre adresse courriel. Utilisez l'adresse de l'achat. Aucun courriel n'a été envoyé."
       cc_money_purchase_email:
-        already_linked: "Ces CC Money ont déjà été ajoutés à un compte, l'adresse n'a donc pas été changée et rien n'a été envoyé."
+        already_linked: "Ces CC ont déjà été ajoutés à un compte, l'adresse n'a donc pas été changée et rien n'a été envoyé."
         email_invalid: "Saisissez une adresse courriel valide. Rien n'a été changé et aucun courriel n'a été envoyé."
         email_unchanged: "C'est déjà l'adresse de l'achat. Utilisez Renvoyer pour envoyer le lien à nouveau. Rien n'a été changé."
       uni_programs:
@@ -192,7 +192,7 @@ fr:
     shop:
       cart_empty: "Votre panier est vide."
       cart_item_unavailable: "Un article de votre panier ne peut plus être acheté; retirez-le et réessayez."
-      not_enough_points: "Points Cc insuffisants."
+      not_enough_ccs: "Pas assez de CC."
       checkout_busy: "La boutique est occupée en ce moment. Rien n'a été débité. Veuillez réessayer dans un instant."
       checkout_item_removed: "Un article de votre panier a été retiré pendant le paiement. Rien n'a été débité. Vérifiez votre panier et réessayez."
       checkout_not_saved: "Votre commande n'a pas pu être enregistrée; rien n'a été débité."
@@ -205,10 +205,10 @@ fr:
       badge_not_revoked: "L'insigne n'a pas pu être révoqué :"
       cc_money:
         token_invalid: "Ce lien n'est pas valide. Ouvrez de nouveau le lien reçu par courriel ou écrivez à uottawa.makerepo@gmail.com."
-        not_found: "Cet enregistrement de Cc Money n'existe plus. Si vous pensez qu'il s'agit d'une erreur, écrivez à uottawa.makerepo@gmail.com."
-        already_linked: "Le Cc Money a déjà été ajouté à un compte"
-        not_purchaser: "Ce Cc Money a été acheté avec une autre adresse courriel et ne peut pas être ajouté à ce compte. Connectez-vous avec le compte qui a l'adresse courriel de l'achat ou écrivez à uottawa.makerepo@gmail.com."
-        not_linked: "Le Cc Money n'a pas pu être ajouté à ce compte :"
+        not_found: "Cet achat de CC n'existe plus. Si vous pensez qu'il s'agit d'une erreur, écrivez à uottawa.makerepo@gmail.com."
+        already_linked: "Ces CC ont déjà été ajoutés à un compte"
+        not_purchaser: "Ces CC ont été achetés avec une autre adresse courriel et ne peuvent pas être ajoutés à ce compte. Connectez-vous avec le compte qui a l'adresse courriel de l'achat ou écrivez à uottawa.makerepo@gmail.com."
+        not_linked: "Les CC n'ont pas pu être ajoutés à ce compte :"
       projects:
         create_invalid: "Le projet n'a pas pu être créé :"
         update_invalid: "Les modifications n'ont pas pu être enregistrées :"

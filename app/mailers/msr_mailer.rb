@@ -51,7 +51,7 @@ class MsrMailer < ApplicationMailer
   def send_cc_money_email(email, cc, hash)
     @cc = cc
     @hash = hash
-    mail(to: email, subject: "Your CC Money order")
+    mail(to: email) # subject from msr_mailer.send_cc_money_email.subject, in the recipient's language
   end
 
   def send_kit_email(user, pp)

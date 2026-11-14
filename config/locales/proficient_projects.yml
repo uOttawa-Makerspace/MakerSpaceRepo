@@ -1,7 +1,11 @@
 en:
   proficient_projects:
     free: Free
+    form:
+      cc: "Cost in CCs"
 
 fr:
   proficient_projects:
     free: Gratuit
+    form:
+      cc: "Coût en CC"
