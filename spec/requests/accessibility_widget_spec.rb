@@ -86,8 +86,9 @@ RSpec.describe "The accessibility widget by viewer", type: :request do
   end
 
   it "the kiosk page: staff get no widget and the marker" do
-    login!(create(:user, :staff))
-    get kiosk_path(create(:space))
+    space = create(:space)
+    login!(create(:user, :staff, space: space)) # staff use only the kiosk of a space they are assigned to
+    get kiosk_path(space)
 
     expect_no_widget
   end
