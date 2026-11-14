@@ -106,8 +106,7 @@ RSpec.describe "Job order quote params", type: :request do
       expect(stored_quote).to eq([BigDecimal("0"), BigDecimal("0"), nil])
     end
 
-    # A quote of several tasks loads each task's quote row on its own (an N+1 the pins leave as it is).
-    it "quotes every task of the order, each from its own keys", bullet: false do
+    it "quotes every task of the order, each from its own keys" do
       second = order.job_tasks.create!(title: "Task #2")
       quote("job_task_quote_price_#{task.id}" => "10", "job_task_quote_price_#{second.id}" => "20",
             "task_#{second.id}_service_qty" => "4", "task_#{second.id}_service_price" => "1.5")
@@ -116,12 +115,25 @@ RSpec.describe "Job order quote params", type: :request do
       expect(stored_quote(second)).to eq([BigDecimal("20"), BigDecimal("4"), BigDecimal("1.5")])
     end
 
-    it "refuses a quote when a later task's price is invalid, and writes nothing for the earlier task", bullet: false do
+    it "refuses a quote when a later task's price is invalid, and writes nothing for the earlier task" do
       second = order.job_tasks.create!(title: "Task #2")
       quote("job_task_quote_price_#{task.id}" => "10", "job_task_quote_price_#{second.id}" => "-1")
       expect_refused_invalid
       expect(stored_quote(task)).to be_nil
       expect(stored_quote(second)).to be_nil
+    end
+
+    it "reads the tasks' quote rows in as many queries for three tasks as for one" do
+      option = create(:job_option)
+      reads = ->(job_order) { selects_on("job_task_quotes") { patch_quote(job_order, { approved: "true" }) }.size }
+      orders = [1, 3].map do |count|
+        job_order = make_job_order!(owner: owner, status_key: :staff_approval)
+        count.times { |i| job_order.job_tasks.create!(title: "Task #{i}").job_task_options.create!(job_option: option) }
+        job_order
+      end
+
+      expect(reads.call(orders[1])).to eq(reads.call(orders[0]))
+      expect(orders.map { |o| o.job_tasks.map { |t| t.reload.job_task_quote&.price } }).to eq([[0], [0, 0, 0]])
     end
 
     it "refuses a task with a job service but no service price, with the missing service message" do
