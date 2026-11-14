@@ -38,42 +38,7 @@ class SearchController < SessionsController
   end
 
   def category
-    sort_arr = sort_order
-
-    repos1 =
-      if (category = SLUG_TO_OLD_CATEGORY[params[:slug]])
-        Repository.public_repos.with_card_data.where(category: category).distinct
-      else
-        []
-      end
-
-    repos2 =
-      if (name = SLUG_TO_CATEGORY_MODEL[params[:slug]])
-        Repository.public_repos.with_card_data.where(
-          id: Category.where(name: name).where.not(repository_id: nil).select(:repository_id)
-        ).to_a
-      else
-        []
-      end
-
-    repos3 =
-      if (category_option = CategoryOption.find_by(name: name))
-        Repository.public_repos.with_card_data.where(
-          id: Category.where(category_option_id: category_option.id).select(:repository_id)
-        ).to_a
-      else
-        []
-      end
-
-    all_repos = (repos1 + repos2 + repos3).compact.uniq
-
-    all_repos = if params["featured"]
-                  all_repos.select(&:featured?).sort_by(&:updated_at).reverse
-                else
-                  all_repos.sort_by { |s| -s[sort_arr.first].to_i }
-                end
-
-    @pagy, @repositories = pagy(all_repos, limit: 12)
+    @pagy, @repositories = pagy(order_category_repos(category_repos(params[:slug])), limit: 12)
     @photos = photo_hash
   end
 
@@ -110,6 +75,44 @@ class SearchController < SessionsController
     return scope.none if names.empty?
 
     scope.includes(:categories).where(categories: { name: names })
+  end
+
+  # The public repositories filed under a category slug: by the legacy category column, by a category of the
+  # slug's name, and by a category linked to the category option of that name; each repository once.
+  def category_repos(slug)
+    name = SLUG_TO_CATEGORY_MODEL[slug]
+    (legacy_category_repos(SLUG_TO_OLD_CATEGORY[slug]) + named_category_repos(name) +
+      category_option_repos(CategoryOption.find_by(name: name))).compact.uniq
+  end
+
+  def legacy_category_repos(category)
+    return [] unless category
+
+    Repository.public_repos.with_card_data.where(category: category).distinct
+  end
+
+  def named_category_repos(name)
+    return [] unless name
+
+    Repository.public_repos.with_card_data.where(
+      id: Category.where(name: name).where.not(repository_id: nil).select(:repository_id)
+    ).to_a
+  end
+
+  def category_option_repos(category_option)
+    return [] unless category_option
+
+    Repository.public_repos.with_card_data.where(
+      id: Category.where(category_option_id: category_option.id).select(:repository_id)
+    ).to_a
+  end
+
+  # Featured repositories only, most recently updated first, when asked; otherwise every one in the sort order.
+  def order_category_repos(repos)
+    return repos.select(&:featured?).sort_by(&:updated_at).reverse if params["featured"]
+
+    sort_column = sort_order.first
+    repos.sort_by { |s| -s[sort_column].to_i }
   end
 
   def sort_order
