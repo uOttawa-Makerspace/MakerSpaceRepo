@@ -40,22 +40,32 @@ module ConcurrentIndexBuilder
 
     columns = Array(columns).map(&:to_s)
     existing = indexes(table).find { |i| i.name == name }
-    raise_if_name_taken_by_other_relation(table, name) unless existing
-
-    if existing && !existing.valid?
-      remove_index table, name: name, algorithm: :concurrently
-    elsif existing && !plain_match?(existing, columns, unique)
-      raise IndexDefinitionMismatch,
-            "index #{name} on #{table} exists as #{describe(existing)}, " \
-            "not the requested #{'unique ' if unique}plain btree (#{columns.join(', ')})"
-    elsif existing && !own_collations?(table, name)
-      raise IndexDefinitionMismatch,
-            "index #{name} on #{table} exists with a non-default column collation; collation differs from the requested plain btree (#{columns.join(', ')})"
+    if existing
+      prepare_existing_index(table, existing, columns, unique)
+    else
+      raise_if_name_taken_by_other_relation(table, name)
     end
     add_index table, columns, name: name, unique: unique, algorithm: :concurrently, if_not_exists: true
   end
 
   private
+
+  # An INVALID leftover is dropped so it can be rebuilt; a valid index is kept
+  # only when it is exactly the requested plain one.
+  def prepare_existing_index(table, index, columns, unique)
+    name = index.name
+    return remove_index(table, name: name, algorithm: :concurrently) unless index.valid?
+
+    unless plain_match?(index, columns, unique)
+      raise IndexDefinitionMismatch,
+            "index #{name} on #{table} exists as #{describe(index)}, " \
+            "not the requested #{'unique ' if unique}plain btree (#{columns.join(', ')})"
+    end
+    return if own_collations?(table, name)
+
+    raise IndexDefinitionMismatch,
+          "index #{name} on #{table} exists with a non-default column collation; collation differs from the requested plain btree (#{columns.join(', ')})"
+  end
 
   def plain_match?(index, columns, unique)
     index.columns == columns && index.unique == unique && plain?(index)
