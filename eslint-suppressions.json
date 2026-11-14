@@ -47,11 +47,6 @@
       "count": 1
     }
   },
-  "app/javascript/entrypoints/repositories.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
   "app/javascript/entrypoints/staff_dashboard.js": {
     "complexity": {
       "count": 1

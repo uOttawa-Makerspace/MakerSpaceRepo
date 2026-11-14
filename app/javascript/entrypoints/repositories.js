@@ -21,140 +21,108 @@ window.togglePass = function () {
   }
 };
 
-document.addEventListener("turbo:load", () => {
-  if (document.getElementById("owner_select")) {
-    if (!document.getElementById("owner_select").tomselect) {
-      new TomSelect("#owner_select", {
-        searchField: ["username"],
-        valueField: "id",
-        labelField: "username",
-        maxOptions: 5,
-        searchPlaceholder: "Add Owner...",
-        searchOnKeyUp: true,
-        openOnFocus: false,
-        load: function (type, callback) {
-          if (type.length < 2) {
-            return;
-          } else {
-            let url = "/repositories/populate_users?search=" + type;
-            fetch(url)
-              .then((response) => response.json())
-              .then((data) => {
-                callback(
-                  data.users.map((user) => {
-                    return { id: user.id, username: user.username };
-                  }),
-                );
-              });
-          }
-        },
-        shouldLoad: function (type) {
-          return type.length > 2;
-        },
+// Asks the server for the users matching the typed text, from two
+// characters on (TomSelect itself only calls this past two, see shouldLoad).
+function loadUsers(type, callback) {
+  if (type.length < 2) {
+    return;
+  } else {
+    let url = "/repositories/populate_users?search=" + type;
+    fetch(url)
+      .then((response) => response.json())
+      .then((data) => {
+        callback(
+          data.users.map((user) => {
+            return { id: user.id, username: user.username };
+          }),
+        );
       });
-    }
   }
+}
 
-  if (document.getElementById("search_users_add")) {
-    if (!document.getElementById("search_users_add").tomselect) {
-      new TomSelect("#search_users_add", {
-        searchField: ["username"],
-        valueField: "id",
-        labelField: "username",
-        maxOptions: 5,
-        searchPlaceholder: "Add Owner...",
-        searchOnKeyUp: true,
-        load: function (type, callback) {
-          if (type.length < 2) {
-            return;
-          } else {
-            let url = "/repositories/populate_users?search=" + type;
-            fetch(url)
-              .then((response) => response.json())
-              .then((data) => {
-                callback(
-                  data.users.map((user) => {
-                    return { id: user.id, username: user.username };
-                  }),
-                );
-              });
-          }
-        },
-        shouldLoad: function (type) {
-          return type.length > 2;
-        },
-      });
-    }
-  }
-  if (document.getElementById("search_users_remove")) {
-    if (!document.getElementById("search_users_remove").tomselect) {
-      new TomSelect("#search_users_remove", {
-        searchField: ["username"],
-        valueField: "id",
-        labelField: "username",
-        maxOptions: null,
-        searchOnKeyUp: true,
-      });
-    }
-  }
-  if (document.getElementById("search_users_transfer")) {
-    if (!document.getElementById("search_users_transfer").tomselect) {
-      new TomSelect("#search_users_transfer", {
-        searchField: ["username"],
-        valueField: "id",
-        labelField: "username",
-        maxOptions: null,
-        searchOnKeyUp: true,
-      });
-    }
-  }
-  if (document.getElementById("search_project_proposals")) {
-    if (!document.getElementById("search_project_proposals").tomselect) {
-      new TomSelect("#search_project_proposals", {
-        render: {
-          option: function (data, escape) {
-            return `<div>
+function shouldLoadUsers(type) {
+  return type.length > 2;
+}
+
+function userSelectOptions(maxOptions, extra) {
+  return {
+    searchField: ["username"],
+    valueField: "id",
+    labelField: "username",
+    maxOptions: maxOptions,
+    ...extra,
+  };
+}
+
+function userSearchOptions(extra) {
+  return userSelectOptions(5, {
+    searchPlaceholder: "Add Owner...",
+    searchOnKeyUp: true,
+    ...extra,
+    load: loadUsers,
+    shouldLoad: shouldLoadUsers,
+  });
+}
+
+function projectProposalOptions() {
+  return {
+    render: {
+      option: function (data, escape) {
+        return `<div>
             <span>${escape(data.text)}</span>
             <br />
             <small class="text-muted">${escape(data.semester || "")}</small>
             </div>`;
-          },
-          item: function (data, escape) {
-            return `<span>
+      },
+      item: function (data, escape) {
+        return `<span>
             ${escape(data.text)}
             <br />
             <small class="text-muted">${escape(data.semester || "")}</small>
             </span>`;
-          },
-        },
-      });
-    }
-  }
-  if (document.getElementById("repository_categories")) {
-    if (!document.getElementById("repository_categories").tomselect) {
-      new TomSelect("#repository_categories", {
-        plugins: ["remove_button"],
-        maxItems: 5,
-        openOnFocus: true,
-      });
-    }
-  }
-  if (document.getElementById("repository_equipments")) {
-    if (!document.getElementById("repository_equipments").tomselect) {
-      new TomSelect("#repository_equipments", {
+      },
+    },
+  };
+}
+
+// The selects of the repository pages, in the order they are decorated, each
+// with a fresh options object for this page load.
+function repositorySelects() {
+  return [
+    ["owner_select", userSearchOptions({ openOnFocus: false })],
+    ["search_users_add", userSearchOptions({})],
+    ["search_users_remove", userSelectOptions(null, { searchOnKeyUp: true })],
+    ["search_users_transfer", userSelectOptions(null, { searchOnKeyUp: true })],
+    ["search_project_proposals", projectProposalOptions()],
+    [
+      "repository_categories",
+      { plugins: ["remove_button"], maxItems: 5, openOnFocus: true },
+    ],
+    [
+      "repository_equipments",
+      {
         plugins: ["remove_button"],
         maxItems: 5,
         openOnFocus: true,
         create: true,
-      });
-    }
+      },
+    ],
+    [
+      "repository_project_proposal_id",
+      { plugins: ["clear_button"], maxItems: 1 },
+    ],
+  ];
+}
+
+// Decorates the select with this id once: a select that already has its
+// TomSelect (an earlier load of the same page) is left alone.
+function decorateSelect(id, options) {
+  const select = document.getElementById(id);
+  if (select && !select.tomselect) {
+    new TomSelect("#" + id, options);
   }
-  if (document.getElementById("repository_project_proposal_id")) {
-    if (!document.getElementById("repository_project_proposal_id").tomselect) {
-      new TomSelect("#repository_project_proposal_id", {
-        plugins: ["clear_button"],
-        maxItems: 1,
-      });
-    }
-  }
+}
+
+document.addEventListener("turbo:load", () => {
+  repositorySelects().forEach(([id, options]) => decorateSelect(id, options));
 });
