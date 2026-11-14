@@ -171,6 +171,16 @@ describe("modal", () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
+  it("closes a saved dialog without asking", () => {
+    vi.stubGlobal("confirm", vi.fn());
+    const modal = $("unavailabilityModal");
+    modal.dataset.saved = "true";
+    const event = new Event("hide.bs.modal", { cancelable: true });
+    modal.dispatchEvent(event);
+    expect(confirm).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
+  });
+
   it("lets the close go ahead on 'yes'", () => {
     vi.stubGlobal(
       "confirm",

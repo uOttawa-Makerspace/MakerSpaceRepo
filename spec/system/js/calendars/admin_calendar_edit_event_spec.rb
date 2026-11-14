@@ -151,6 +151,8 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       click_button "Update"
 
       expect_flash("Event updated successfully.")
+      expect_saved_in_place
+      expect(page).to have_css(".fc-timegrid-event", text: "Team retro", visible: :all)
       single.reload
       expect(single.title).to eq("Team retro")
       expect(single.event_type).to eq("other")
@@ -187,6 +189,8 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       click_button "This event"
 
       expect_flash("Event deleted.")
+      expect_saved_in_place
+      expect(page).to have_no_css(".fc-timegrid-event", text: "Team sync", visible: :all)
       expect(Event.exists?(single.id)).to be(false)
     end
   end
@@ -286,6 +290,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       click_button "This event"
 
       expect_flash("This occurrence deleted.")
+      expect_saved_in_place
       # the excluded instant is the occurrence itself (14:00Z)
       expect(series.reload.recurrence_rule).to include("EXDATE:20270317T140000Z")
       expect(page).to have_css(".fc-timegrid-event", text: "Open lab", count: 1, visible: :all)
@@ -310,6 +315,8 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       click_button "All events"
 
       expect_flash("Event series deleted.")
+      expect_saved_in_place
+      expect(page).to have_no_css(".fc-timegrid-event", text: "Open lab", visible: :all)
       expect(Event.exists?(series.id)).to be(false)
     end
   end
@@ -403,6 +410,8 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       click_button "This event"
 
       expect_flash("Unavailability deleted.")
+      expect_saved_in_place
+      expect(page).to have_no_css(".fc-event", text: "Lecture", visible: :all)
       expect(StaffUnavailability.exists?(unavail.id)).to be(false)
     end
   end

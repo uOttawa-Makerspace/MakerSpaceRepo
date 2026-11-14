@@ -14,7 +14,7 @@
         </div>
     <% end %>
 </div>
-<div <%= tag.attributes(data: {
+<div <%= tag.attributes(id: "admin_calendar", data: {
     controller: "admin-calendar",
     admin_calendar_events_url_value: json_admin_events_path(id: @calendar_space_id),
     admin_calendar_unavailabilities_url_value: unavailabilities_json_admin_calendar_index_path(id: @calendar_space_id),
@@ -64,11 +64,11 @@
     <div id='spinner' class="spinner-border" role="status"></div>
 </div>
 <% end %>
+<%= render 'form' %>
 </div>
 
 <%= render 'colors' %>
 
-<%= render 'form' %>
 <%= render 'copy' %>
 
 <style>

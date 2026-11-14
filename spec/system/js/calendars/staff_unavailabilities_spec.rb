@@ -22,6 +22,13 @@ RSpec.describe "Staff unavailabilities page", type: :system do
   def open_page
     log_in_as(staff, to: staff_unavailabilities_path, local_storage: { fullCalendarDefaultDateStaffUnavailabilities: CalendarJsHelpers::WEEK_MIDDAY })
     expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
+    page.execute_script("window.sameDocument = true")
+  end
+
+  # A dialog save closes the dialog and redraws the calendar in the same document.
+  def expect_saved_in_place
+    expect(page).to have_no_css("#unavailabilityModal.show")
+    expect(page.evaluate_script("window.sameDocument")).to be(true)
   end
 
   def open_add_modal
@@ -94,7 +101,9 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       fill_datetime("end_time_field", "2027-03-17T12:00")
       click_button "Save"
 
-      eventually { StaffUnavailability.exists?(user_id: staff.id) }
+      expect_flash("Unavailability created.")
+      expect_saved_in_place
+      expect(page).to have_css(".fc-timegrid-event", text: "Unavailable", visible: :all)
       saved = StaffUnavailability.find_by!(user: staff)
       expect(saved.title).to eq("Unavailable")
       expect(saved.start_time).to eq(toronto_utc("2027-03-17T10:00"))
@@ -270,7 +279,9 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       fill_datetime("end_time_field", "2027-03-18T17:00")
       click_button "Update"
 
-      eventually { lecture.reload.title == "Lab" }
+      expect_flash("Unavailability updated successfully.")
+      expect_saved_in_place
+      expect(page).to have_css(".fc-timegrid-event", text: "Lab", visible: :all)
       lecture.reload
       expect(lecture.title).to eq("Lab")
       expect(lecture.start_time).to eq(toronto_utc("2027-03-18T16:00"))
@@ -282,7 +293,9 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       click_button "Delete"
       click_button "This event"
 
-      eventually { !StaffUnavailability.exists?(lecture.id) }
+      expect_flash("Unavailability deleted.")
+      expect_saved_in_place
+      expect(page).to have_no_css(".fc-timegrid-event", text: "Lecture", visible: :all)
       expect(StaffUnavailability.exists?(lecture.id)).to be(false)
     end
 

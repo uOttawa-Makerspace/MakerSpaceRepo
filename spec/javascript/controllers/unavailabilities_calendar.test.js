@@ -17,11 +17,19 @@ vi.mock("@fullcalendar/core", () => ({
     destroy() {
       this.destroyed = true;
     }
+    refetchEvents() {
+      this.refetched = true;
+    }
   },
 }));
 vi.mock("@fullcalendar/daygrid", () => ({ default: {} }));
 vi.mock("@fullcalendar/timegrid", () => ({ default: {} }));
 vi.mock("@fullcalendar/interaction", () => ({ default: {} }));
+
+const closeSaved = vi.fn();
+vi.mock("../../../app/javascript/src/calendar_dialog.js", () => ({
+  closeSaved,
+}));
 
 const accessible = vi.fn();
 vi.mock("../../../app/javascript/src/calendar_accessibility.js", () => ({
@@ -34,6 +42,8 @@ const form = {
   openForRange: vi.fn(),
 };
 
+const { default: CalendarSaved } =
+  await import("../../../app/javascript/controllers/calendar_saved_controller.js");
 const { default: UnavailabilitiesCalendar } =
   await import("../../../app/javascript/controllers/unavailabilities_calendar_controller.js");
 
@@ -77,6 +87,7 @@ async function boot(html = PAGE) {
   application.register("unavailability-form", FakeForm);
   application.register("imported-event-details", FakeDetails);
   application.register("unavailabilities-calendar", UnavailabilitiesCalendar);
+  application.register("calendar-saved", CalendarSaved);
   await settle();
   return created[0];
 }
@@ -112,6 +123,17 @@ describe("staff unavailabilities calendar", () => {
     expect(document.getElementById("spinner_container").style.display).toBe(
       "none",
     );
+  });
+
+  it("closes the dialog and fetches the entries again when it saved", async () => {
+    const cal = await boot();
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      `<span data-controller="calendar-saved" data-calendar-saved-unavailabilities-calendar-outlet="[data-controller~=unavailabilities-calendar]"></span>`,
+    );
+    await settle();
+    expect(closeSaved).toHaveBeenCalledWith(document.getElementById("modal"));
+    expect(cal.refetched).toBe(true);
   });
 
   it("destroys the calendar when the element leaves the page", async () => {

@@ -1,5 +1,13 @@
 // @vitest-environment happy-dom
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi,
+} from "vitest";
 import { Application } from "@hotwired/stimulus";
 
 // A stand-in for FullCalendar that records its options and lets the test play
@@ -46,6 +54,11 @@ vi.mock("@fullcalendar/core", () => ({
     askAll(info) {
       this.options.eventSources.forEach((source) => this.ask(source.id, info));
     }
+    refetchEvents() {
+      this.options.eventSources.forEach((source) =>
+        this.ask(source.id, this.info),
+      );
+    }
     getEventSourceById(id) {
       return { refetch: () => this.ask(id, this.info) };
     }
@@ -65,6 +78,11 @@ vi.mock("bootstrap", () => ({
   },
 }));
 
+const closeSaved = vi.fn();
+vi.mock("../../../app/javascript/src/calendar_dialog.js", () => ({
+  closeSaved,
+}));
+
 const eventClick = vi.fn();
 const eventCreate = vi.fn();
 vi.mock("../../../app/javascript/src/calendar_helper.js", () => ({
@@ -72,6 +90,8 @@ vi.mock("../../../app/javascript/src/calendar_helper.js", () => ({
   eventCreate,
 }));
 
+const { default: CalendarSaved } =
+  await import("../../../app/javascript/controllers/calendar_saved_controller.js");
 const { default: AdminCalendar } =
   await import("../../../app/javascript/controllers/admin_calendar_controller.js");
 
@@ -102,6 +122,7 @@ function page({ hidden = {} } = {}) {
     <div id="calendar" data-admin-calendar-target="calendar"><p id="stale">old</p></div>
   </section>
   <div id="spinner_container" data-admin-calendar-target="spinner"></div>
+  <div id="eventModal" data-admin-calendar-target="dialog"></div>
 </div>`;
 }
 
@@ -224,6 +245,7 @@ async function boot({ url = "http://localhost/admin/calendar", hidden } = {}) {
   created.length = 0;
   application = Application.start();
   application.register("admin-calendar", AdminCalendar);
+  application.register("calendar-saved", CalendarSaved);
   await settle();
   const calendar = created[0];
   calendar.askAll(WEEK);
@@ -251,6 +273,28 @@ afterEach(() => {
   application?.stop();
   document.body.innerHTML = "";
   vi.restoreAllMocks();
+});
+
+describe("a saved dialog", () => {
+  it("closes the dialog and asks the events and unavailabilities again, not the imported calendars", async () => {
+    const calendar = await boot();
+    fetchMock.mockClear();
+    events[0].events[0].title = "Opening (renamed)";
+    onTestFinished(() => (events[0].events[0].title = "Opening"));
+
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      `<span data-controller="calendar-saved" data-calendar-saved-admin-calendar-outlet="[data-controller~=admin-calendar]"></span>`,
+    );
+    await settle();
+
+    expect(closeSaved).toHaveBeenCalledWith($("eventModal"));
+    expect(fetchMock.mock.calls.map(([url]) => url.split("?")[0])).toEqual([
+      "/admin/events/json/7",
+      "/admin/calendar/unavailabilities_json/7",
+    ]);
+    expect(titles(calendar.drawn.events)).toContain("Opening (renamed)");
+  });
 });
 
 describe("loading the calendar", () => {

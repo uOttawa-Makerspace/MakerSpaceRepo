@@ -8,6 +8,7 @@ import { rrulestr } from "rrule";
 import { Tooltip } from "bootstrap";
 
 import { eventClick, eventCreate } from "../src/calendar_helper.js";
+import { closeSaved } from "../src/calendar_dialog.js";
 import { applyEventBackground } from "../src/calendar_background.js";
 import { rangeSource, unticked } from "../src/range_source.js";
 
@@ -38,6 +39,7 @@ function readRule(row) {
 const TypedController = /** @type {new () => Controller<HTMLElement> & {
   calendarTarget: HTMLElement,
   containerTarget: HTMLElement,
+  dialogTarget: HTMLElement,
   spinnerTarget: HTMLElement,
   publishDraftsTarget: HTMLElement,
   deleteDraftsTarget: HTMLElement,
@@ -62,6 +64,7 @@ export default class extends TypedController {
   static targets = [
     "calendar",
     "container",
+    "dialog",
     "spinner",
     "publishDrafts",
     "deleteDrafts",
@@ -85,6 +88,8 @@ export default class extends TypedController {
     this.paintFilters();
     // A page restored from Turbo's cache still holds the calendar drawn before.
     this.calendarTarget.replaceChildren();
+    // the feeds a saved dialog changes
+    this.edited = [this.eventsSource(), this.unavailabilitySource()];
     this.calendar = new Calendar(this.calendarTarget, this.calendarOptions());
 
     this.containerTarget.style.display = "block";
@@ -162,6 +167,13 @@ export default class extends TypedController {
           staff.has(String(user.id)),
         ),
     );
+  }
+
+  // The dialog saved or deleted: close it and ask the feeds again.
+  saved() {
+    closeSaved(this.dialogTarget);
+    this.edited.forEach((source) => source.forget());
+    this.calendar.refetchEvents();
   }
 
   toggleStaff({ target }) {
@@ -243,11 +255,7 @@ export default class extends TypedController {
       initialDate: localStorage.fullCalendarDefaultDateAdmin,
       datesSet: (info) => this.showRange(info),
       eventsSet: (events) => this.showHours(events),
-      eventSources: [
-        this.eventsSource(),
-        this.unavailabilitySource(),
-        this.importedSource(),
-      ],
+      eventSources: [...this.edited, this.importedSource()],
     };
   }
 

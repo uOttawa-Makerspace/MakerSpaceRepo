@@ -10,11 +10,13 @@ async function fetchRange(url, info) {
 
 // A calendar source that asks the feed once per range and draws the rows
 // `visible` keeps, so a filter checkbox redraws without asking again. A failed
-// request is forgotten, so the next redraw asks again.
+// request is forgotten, so the next redraw asks again; `forget` drops the rows
+// too, for when the feed has changed.
 export function rangeSource(id, url, rowsOf, visible) {
   let fetched = { range: null, rows: Promise.resolve([]) };
   return {
     id,
+    forget: () => (fetched.range = null),
     events: (info, success, failure) => {
       const range = `${info.startStr}/${info.endStr}`;
       if (fetched.range !== range) {
