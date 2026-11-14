@@ -120,8 +120,7 @@ describe("selectAll", () => {
   });
 });
 
-// Each example loads the script afresh, so the shared sort direction starts
-// at ascending.
+// Each example loads the script afresh.
 describe("sortTable (fresh page)", () => {
   beforeEach(async () => {
     vi.resetModules();
@@ -258,18 +257,27 @@ describe("sortTable (fresh page)", () => {
     expect(column()).toEqual(["b", "a", "c"]);
   });
 
-  it("shares one direction across every table and column on the page", () => {
+  it("keeps a direction for each table and each column", () => {
     document.body.innerHTML =
-      table(["b", "a"]) +
-      `<table class="u"><tbody><tr><th></th></tr><tr><td>a</td></tr><tr><td>b</td></tr></tbody></table>`;
+      grid([
+        ["b", "y"],
+        ["a", "z"],
+      ]) +
+      `<table class="u"><tbody><tr><th></th></tr><tr><td>b</td></tr><tr><td>a</td></tr></tbody></table>`;
+    const other = () =>
+      [...document.querySelectorAll(".u td")].map((d) => d.textContent);
     window.sortTable("t", 0);
-    expect(column()).toEqual(["a", "b"]);
+    expect(col(0)).toEqual(["a", "b"]);
     window.sortTable("u", 0);
-    expect(
-      [...document.querySelectorAll(".u td")].map((d) => d.textContent),
-    ).toEqual(["b", "a"]);
+    expect(other()).toEqual(["a", "b"]);
+    window.sortTable("t", 1);
+    expect(col(1)).toEqual(["y", "z"]);
     window.sortTable("t", 0);
-    expect(column()).toEqual(["a", "b"]);
+    expect(col(0)).toEqual(["b", "a"]);
+    window.sortTable("u", 0);
+    expect(other()).toEqual(["b", "a"]);
+    window.sortTable("t", 1);
+    expect(col(1)).toEqual(["z", "y"]);
   });
 
   it("sorts only the first table with the class", () => {
@@ -284,13 +292,24 @@ describe("sortTable (fresh page)", () => {
     ]);
   });
 
-  it("flips the direction even when there is nothing to sort", () => {
+  it("flips a column's direction even when there is nothing to sort", () => {
     document.body.innerHTML = table(["only"]);
     window.sortTable("t", 0);
     expect(column()).toEqual(["only"]);
-    document.body.innerHTML = table(["a", "b"]);
+    for (const text of ["a", "b"]) {
+      const row = document.querySelector(".t tbody").insertRow();
+      row.insertCell().textContent = text;
+    }
     window.sortTable("t", 0);
-    expect(column()).toEqual(["b", "a"]);
+    expect(column()).toEqual(["only", "b", "a"]);
+  });
+
+  it("starts a new table going up", () => {
+    document.body.innerHTML = table(["b", "a"]);
+    window.sortTable("t", 0);
+    document.body.innerHTML = table(["b", "a"]);
+    window.sortTable("t", 0);
+    expect(column()).toEqual(["a", "b"]);
   });
 
   it("keeps the direction when the table is missing", () => {

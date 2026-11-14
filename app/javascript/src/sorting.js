@@ -24,7 +24,17 @@ window.findSession = function (table_class, id = "query") {
   }
 };
 
-var sort_direction = 1;
+// The direction each column of each table sorts in next: 1 going up, -1
+// going down. A column sorts going up on its first click.
+const nextDirections = new WeakMap();
+
+function takeDirection(table, col) {
+  const directions = nextDirections.get(table) || {};
+  const direction = directions[col] || 1;
+  directions[col] = -direction;
+  nextDirections.set(table, directions);
+  return direction;
+}
 
 function cellAt(row, col) {
   return row.getElementsByTagName("td")[col];
@@ -83,8 +93,7 @@ window.sortTable = function (table_name, col, isDateColumn = false) {
   if (!table) return;
 
   const rows = [...table.getElementsByTagName("tr")].slice(1);
-  sortRows(rows, col, isDateColumn, sort_direction === 1 ? 1 : -1);
-  sort_direction = sort_direction === 1 ? 0 : 1;
+  sortRows(rows, col, isDateColumn, takeDirection(table, col));
 };
 
 var select_direction = 1;
