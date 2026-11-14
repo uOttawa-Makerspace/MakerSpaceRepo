@@ -124,87 +124,13 @@ class LockerRentalsController < SessionsController
 
   def update
     @locker_rental = LockerRental.find(params[:id])
-    if unknown_renter_username?
-      respond_to do |format|
-        format.html do
-          flash[:alert] = "#{t('errors.lockers.update_failed')}#{helpers.tag.br}#{renter_not_found_message}".html_safe
-          redirect_back fallback_location: :locker_rentals
-        end
-        format.json { render json: { base: [renter_not_found_message], error: renter_not_found_message }, status: :unprocessable_entity }
-      end
-      return
-    end
+    return renter_not_found_response if unknown_renter_username?
 
-    # Everything below runs on the row locked FOR UPDATE and reloaded: the guards, the save, the settlement of
-    # held payments and the mail all see the CURRENT state (a webhook payment may have activated or the other
-    # staff member cancelled it since this page was rendered), and a concurrent webhook waits for the commit.
-    outcome = nil
-    LockerRental.transaction do
-      @locker_rental.lock!
-
-      if stale_page?
-        outcome = :stale
-      else
-        # Assign new parameters but don't commit yet
-        @locker_rental.assign_attributes(locker_rental_params.except(:owned_until))
-        @locker_rental.decided_by = current_user
-        assign_requested_owned_until
-
-        if renter_state_change_refused?
-          outcome = :state_refused
-        elsif @locker_rental.save
-          # Assigning the rental active also settles one held payment, in the same transaction as the save.
-          if current_user.staff? && @locker_rental.saved_change_to_state? && @locker_rental.active?
-            @locker_rental.settle_held_payments!(by: current_user)
-          end
-          outcome = :saved
-        else
-          outcome = :invalid
-        end
-      end
-    end
-
-    case outcome
-    when :stale
-      stale_page_response
-    when :state_refused
-      message = state_refused_message
-      flash[:alert] = message
-      respond_to do |format|
-        format.html { render :show, status: :unprocessable_content }
-        format.json { render json: { error: message }, status: :unprocessable_entity }
-      end
-    when :saved
-      @locker_rental.notify_after_commit
-      # Committed; only now the Shopify call (no transaction, no row lock held)
-      draft_synced = @locker_rental.sync_shopify_draft_order_after_commit
-      warning = draft_synced ? nil : draft_not_removed_message
-      respond_to do |format|
-        format.html do
-          if warning
-            flash[:alert] = warning
-          else
-            flash[:notice] = t('lockers.flash.rental_updated')
-          end
-          redirect_back fallback_location: :locker_rentals
-        end
-        # 204 normally; 200 with { warning: ... } when the rental was updated but its Shopify checkout could not
-        # be removed, so a JSON client can tell the difference.
-        format.json { warning ? render(json: { warning: warning }, status: :ok) : head(:no_content) }
-      end
-    else
-      respond_to do |format|
-        format.html do
-          flash[:alert] = t('errors.lockers.update_failed') + helpers.tag.br +
-            @locker_rental.errors.full_messages.join(helpers.tag.br)
-          redirect_back fallback_location: :locker_rentals
-        end
-        # the field errors as before, plus the sentence to show
-        format.json do
-          render json: @locker_rental.errors.to_hash.merge(error: validation_message(@locker_rental, 'errors.lockers.update_failed')),
-                 status: :unprocessable_entity
-        end
-      end
+    case update_under_lock
+    when :stale then stale_page_response
+    when :state_refused then state_refused_response
+    when :saved then rental_updated_response
+    else update_failed_response
     end
   end
 
@@ -329,6 +255,88 @@ class LockerRentalsController < SessionsController
     # Don't allow new request if user already has an active or pending request
     @pending_locker_request = current_user.locker_rentals.pending.first
     @locker_product_info = LockerOption.locker_product_info || { variants: {} }
+  end
+
+  # Everything here runs on the row locked FOR UPDATE and reloaded: the guards, the save and the settlement of
+  # held payments all see the CURRENT state (a webhook payment may have activated or the other staff member
+  # cancelled it since this page was rendered), and a concurrent webhook waits for the commit. Returns the
+  # outcome: :stale, :state_refused, :saved or :invalid.
+  def update_under_lock
+    LockerRental.transaction do
+      @locker_rental.lock!
+      next :stale if stale_page?
+
+      # Assign new parameters but don't commit yet
+      @locker_rental.assign_attributes(locker_rental_params.except(:owned_until))
+      @locker_rental.decided_by = current_user
+      assign_requested_owned_until
+      next :state_refused if renter_state_change_refused?
+      next :invalid unless @locker_rental.save
+
+      settle_held_payments_on_activation
+      :saved
+    end
+  end
+
+  # Assigning the rental active also settles one held payment, in the same transaction as the save.
+  def settle_held_payments_on_activation
+    return unless current_user.staff? && @locker_rental.saved_change_to_state? && @locker_rental.active?
+
+    @locker_rental.settle_held_payments!(by: current_user)
+  end
+
+  def renter_not_found_response
+    respond_to do |format|
+      format.html do
+        flash[:alert] = "#{t('errors.lockers.update_failed')}#{helpers.tag.br}#{renter_not_found_message}".html_safe
+        redirect_back fallback_location: :locker_rentals
+      end
+      format.json { render json: { base: [renter_not_found_message], error: renter_not_found_message }, status: :unprocessable_entity }
+    end
+  end
+
+  def state_refused_response
+    message = state_refused_message
+    flash[:alert] = message
+    respond_to do |format|
+      format.html { render :show, status: :unprocessable_content }
+      format.json { render json: { error: message }, status: :unprocessable_entity }
+    end
+  end
+
+  # Committed: the mail, then the Shopify call (no transaction, no row lock held).
+  def rental_updated_response
+    @locker_rental.notify_after_commit
+    draft_synced = @locker_rental.sync_shopify_draft_order_after_commit
+    warning = draft_synced ? nil : draft_not_removed_message
+    respond_to do |format|
+      format.html do
+        if warning
+          flash[:alert] = warning
+        else
+          flash[:notice] = t('lockers.flash.rental_updated')
+        end
+        redirect_back fallback_location: :locker_rentals
+      end
+      # 204 normally; 200 with { warning: ... } when the rental was updated but its Shopify checkout could not
+      # be removed, so a JSON client can tell the difference.
+      format.json { warning ? render(json: { warning: warning }, status: :ok) : head(:no_content) }
+    end
+  end
+
+  def update_failed_response
+    respond_to do |format|
+      format.html do
+        flash[:alert] = t('errors.lockers.update_failed') + helpers.tag.br +
+          @locker_rental.errors.full_messages.join(helpers.tag.br)
+        redirect_back fallback_location: :locker_rentals
+      end
+      # the field errors as before, plus the sentence to show
+      format.json do
+        render json: @locker_rental.errors.to_hash.merge(error: validation_message(@locker_rental, 'errors.lockers.update_failed')),
+               status: :unprocessable_entity
+      end
+    end
   end
 
   def renter_not_found_message
