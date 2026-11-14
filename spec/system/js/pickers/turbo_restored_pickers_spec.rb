@@ -152,6 +152,17 @@ RSpec.describe "Pickers on a page restored from the Turbo cache", type: :system,
       expect(page).to have_no_css(".main_ul li")
     end
 
+    it "keeps working remove buttons on the file rows added before leaving the new project proposal form" do
+      log_in_as(admin, to: new_project_proposal_path)
+      expect(page).to have_css("#project_proposal_categories.tomselected", visible: :all)
+      click_button "new-file-input"
+      expect(page).to have_css("input.files_", count: 2, visible: :all)
+      leave_and_restore(new_project_proposal_path)
+      expect(page).to have_css("input.files_", count: 2, visible: :all)
+      find(".input-group .btn-danger").click
+      expect(page).to have_css("input.files_", count: 1, visible: :all)
+    end
+
     it "keeps one working printer picker and model code on the printers page" do
       create(:printer_type, :UM2P)
       create(:printer_type, :RPL2)

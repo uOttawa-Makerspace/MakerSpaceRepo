@@ -96,12 +96,23 @@ const bindAddInputRow = oncePerElement((cloneButton) =>
     clone.children[0].value = null;
     clone.children[1].className = "btn btn-danger";
     clone.children[1].children[0].className = "fa fa-trash";
-    clone.children[1].addEventListener("click", (el) => {
-      el.target.closest(".input-group").remove();
-    });
     parent.parentElement.appendChild(clone);
   }),
 );
+
+// The remove buttons of the added input rows, listened to on the rows' parent,
+// so the rows of a page Turbo restores from its cache can be removed too.
+const bindRemoveInputRow = oncePerElement((rows) =>
+  rows.addEventListener("click", (event) => {
+    const remove = event.target.closest(".input-group > .btn-danger");
+    if (remove && rows.contains(remove)) remove.parentElement.remove();
+  }),
+);
+
+function bindInputRows(addButton) {
+  bindAddInputRow(addButton);
+  bindRemoveInputRow(addButton?.parentElement.parentElement);
+}
 
 // The links saved with the proposal, shown as link fields. A page Turbo
 // restores from its cache already shows them, so they are added only to an
@@ -146,7 +157,7 @@ onEveryPageLoad(() => {
   bindRemoveLink(document.getElementById("remove-link-list"));
   bindSaveForLater(document.getElementById("waiting-save-button"));
   bindSubmitChecks(proposalForm());
-  bindAddInputRow(document.getElementById("new-file-input"));
-  bindAddInputRow(document.getElementById("new-photo-input"));
+  bindInputRows(document.getElementById("new-file-input"));
+  bindInputRows(document.getElementById("new-photo-input"));
   showSavedLinks(document.getElementById("ignore_past_experiences"));
 });

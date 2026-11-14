@@ -223,4 +223,25 @@ describe("attachments", () => {
       expect(document.querySelectorAll(".input-group")).toHaveLength(1);
     },
   );
+
+  it.each(["new-file-input", "new-photo-input"])(
+    "%s rows a page restored from the cache comes back with can be removed",
+    async (id) => {
+      await load(
+        `<div class="wrap"><div class="input-group"><input type="file"><button type="button" id="${id}" class="btn btn-success"><i class="fa fa-plus"></i></button></div><div class="input-group"><input type="file"><button type="button" class="btn btn-danger"><i class="fa fa-trash"></i></button></div></div>`,
+      );
+      document.querySelector(".btn-danger i").click();
+      expect(document.querySelectorAll(".input-group")).toHaveLength(1);
+    },
+  );
+
+  it("adds one row per click, also after a later load of the same page", async () => {
+    await load(
+      `<div class="wrap"><div class="input-group"><input type="file"><button type="button" id="new-file-input" class="btn btn-success"><i class="fa fa-plus"></i></button></div></div>`,
+    );
+    $("new-file-input").click();
+    document.dispatchEvent(new Event("turbo:load"));
+    $("new-file-input").click();
+    expect(document.querySelectorAll(".input-group")).toHaveLength(3);
+  });
 });
