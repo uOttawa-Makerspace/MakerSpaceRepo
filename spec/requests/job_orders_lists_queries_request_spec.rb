@@ -97,6 +97,95 @@ RSpec.describe "Job order lists: status queries", type: :request do
     end
   end
 
+  describe "owner list unread messages" do
+    let(:staff) { create(:user, :staff) }
+
+    def message!(order, sender, read: false)
+      ChatMessage.create!(job_order: order, sender: sender, message: "note", is_read: read)
+    end
+
+    # Per order, the unread badge's count, or nil without one.
+    def unread_badges
+      Nokogiri::HTML(response.body).css("tr[id^='job-order-row-']").to_h do |row|
+        [row["id"].delete_prefix("job-order-row-").to_i, row.at_css("td .badge")&.text&.squish]
+      end
+    end
+
+    # Each order with two unread staff messages, one read staff message and one of the owner's own.
+    def chatty_orders!(count)
+      orders!(count, owner: owner).each do |order|
+        2.times { message!(order, staff) }
+        message!(order, staff, read: true)
+        message!(order, owner)
+      end
+    end
+
+    it "badges each order with the messages from others the owner has not read" do
+      session_login!(owner)
+      read_all, unread = orders!(2, owner: owner)
+      message!(read_all, staff, read: true)
+      message!(read_all, owner)
+      2.times { message!(unread, staff) }
+
+      get job_orders_path
+
+      expect(unread_badges).to eq(read_all.id => nil, unread.id => "2 unread messages")
+    end
+
+    it "counts the unread messages in a number of queries that does not grow with the orders" do
+      session_login!(owner)
+      chatty_orders!(2)
+      get job_orders_path # warm up (caches, constants)
+      few = count_queries { get job_orders_path }
+      chatty_orders!(3)
+      get job_orders_path # warm up again: making orders reseeds the statuses and clears their cache
+      many = count_queries { get job_orders_path }
+
+      expect(unread_badges.values).to eq(["2 unread messages"] * 5)
+      expect(many).to eq(few)
+    end
+  end
+
+  describe "settings option list" do
+    let(:staff) { create(:user, :staff) }
+
+    # Each option of its own with the job types it applies to: every other one applies to two, the rest to none.
+    def options!(count)
+      types = JobType.order(:id).first(2)
+      Array.new(count) do |i|
+        JobOption.create!(name: "Setting option #{JobOption.count}", fee: 3, job_types: i.even? ? types : [])
+      end
+    end
+
+    # Per option row, its name and the job types it applies to.
+    def option_rows
+      table = Nokogiri::HTML(response.body).css("table.notDataTable").last
+      table.css("tbody tr").map { |row| row.css("td").first(3).map { |td| td.text.squish } }.map { |name, _, types| [name, types] }
+    end
+
+    it "shows each option with the job types it applies to, or that it is not assigned" do
+      session_login!(staff)
+      options!(2)
+
+      get settings_job_orders_path
+
+      expect(response).to have_http_status(:ok)
+      expect(option_rows).to eq([["Setting option 0", "3D Print Laser Cut"], ["Setting option 1", "Not assigned"]])
+    end
+
+    it "reads the options' job types in a number of queries that does not grow with the options" do
+      session_login!(staff)
+      options!(2)
+      get settings_job_orders_path # warm up (caches, constants)
+      few = count_queries { get settings_job_orders_path }
+      options!(3)
+      many = count_queries { get settings_job_orders_path }
+
+      expect(option_rows.size).to eq(5)
+      expect(many).to eq(few)
+    end
+  end
+
   it "does not load the services of the orders on admin, which the list never shows" do
     session_login!(admin)
     orders!(2, owner: owner)

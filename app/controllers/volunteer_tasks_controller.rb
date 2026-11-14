@@ -65,8 +65,6 @@ class VolunteerTasksController < SessionsController
     trainings_already_added = @volunteer_task.require_trainings.pluck(:training_id)
     @trainings = Training.where.not(id: trainings_already_added).pluck(:name, :id)
     @trainings_already_added = Training.where(id: trainings_already_added).pluck(:name, :id)
-    @user_trainings = user_trainings
-    @volunteer_task_trainings = volunteer_task_trainings
     @volunteer_task_request = @volunteer_task
                                 .volunteer_task_requests
                                 .where(user_id: current_user.id)

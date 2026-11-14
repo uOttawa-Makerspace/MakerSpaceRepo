@@ -5,10 +5,10 @@ class ProjectKitsController < DevelopmentProgramsController
   before_action :staff_admin_access, only: %i[new create destroy mark_delivered populate_kit_users]
 
   def index
-    @pagy, @kits = pagy(current_user.project_kits.order("delivered ASC"), limit: 20)
+    @pagy, @kits = pagy(current_user.project_kits.includes(:proficient_project).order("delivered ASC"), limit: 20)
 
     if current_user.admin?
-      @pagy_all, @all_kits = pagy(ProjectKit.order("delivered ASC"), page_key: "page_all", limit: 20)
+      @pagy_all, @all_kits = pagy(ProjectKit.includes(:proficient_project, :user).order("delivered ASC"), page_key: "page_all", limit: 20)
     end
   end
 

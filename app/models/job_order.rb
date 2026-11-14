@@ -281,6 +281,19 @@ class JobOrder < ApplicationRecord
     tasks.select(&:missing_information?)
   end
 
+  # The tasks as the staff quote form lists them, with the job type, service and group, options and quote each card
+  # reads loaded together.
+  def tasks_for_quote
+    job_tasks.includes(:job_type, :job_task_quote, { job_service: :job_service_group }, { job_task_options: :job_option }).to_a
+  end
+
+  # The price quoted for each task option, by [task id, job option id], in one query.
+  def quoted_option_prices
+    JobTaskQuoteOption.joins(:job_task_quote).where(job_task_quotes: { job_task_id: job_tasks.select(:id) })
+                      .pluck("job_task_quotes.job_task_id", :job_option_id, :price)
+                      .to_h { |task_id, option_id, price| [[task_id, option_id], price] }
+  end
+
   # Digest of what the order's tasks ask to be made, read fresh: per non-blank task (id order) its job type, service
   # (and the service's name: a custom service can be renamed), options with their files, and its user and staff
   # files. A blank task (no type, service, options or files) is left out: it neither bills nor asks for anything.

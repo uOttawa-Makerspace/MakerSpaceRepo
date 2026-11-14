@@ -22,6 +22,12 @@ class ChatMessage < ApplicationRecord
     ), '-infinity')
   SQL
 
+  # How many messages of each order +reader+ has not read and did not send, keyed by order id; an order with none
+  # is absent. One query however many orders.
+  def self.unread_counts(job_orders, reader)
+    where(job_order_id: job_orders.map(&:id)).unread(reader).group(:job_order_id).count
+  end
+
   # How many of each order's newest messages its owner wrote in a row (not yet answered), keyed by
   # order id; an order with none is absent. One query however many orders.
   def self.unread_by_admin_counts(job_orders)

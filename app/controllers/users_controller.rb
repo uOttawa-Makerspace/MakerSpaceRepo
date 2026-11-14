@@ -354,7 +354,7 @@ class UsersController < SessionsController
     makes_scope = makes_scope.public_repos unless sees_private_repos?(@repo_user)
     @pagy_makes, @makes = pagy(makes_scope, page_key: 'page_makes', limit: 18)
 
-    @joined_projects = @repo_user.project_joins
+    @joined_projects = joined_projects_of(@repo_user)
     @certifications = @repo_user.certifications.highest_level
     @skills = Skill.includes(trainings: %i[proficient_projects learning_modules])
     if @user.key_certification.nil? && @user.eql?(@repo_user) &&
@@ -396,6 +396,14 @@ class UsersController < SessionsController
   end
 
   private
+
+  # The user's project joins. The joined projects tab lists each one's proposal with its author and photos, read
+  # together; the other tabs do not list them.
+  def joined_projects_of(user)
+    return user.project_joins unless params[:show] == 'projects_assigned'
+
+    user.project_joins.includes(project_proposal: %i[user photos_attachments])
+  end
 
   # Each private section is loaded only for a viewer who may see it.
   def load_private_profile_sections

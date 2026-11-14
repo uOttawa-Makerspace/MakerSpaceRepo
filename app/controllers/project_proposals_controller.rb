@@ -59,9 +59,9 @@ class ProjectProposalsController < SessionsController
         .order(created_at: :desc)
         .where(approved: 1)
 
-    @pagy_joined, @project_proposals_joined = pagy(with_display_users(joined_scope), page_key: 'page_joined', limit: 15)
-    @pagy_pending, @user_pending_project_proposals = pagy(with_display_users(pending_scope), page_key: 'page_pending', limit: 15)
-    @pagy_approved, @approved_project_proposals = pagy(with_display_users(approved_scope), page_key: 'page_approved', limit: 15)
+    @pagy_joined, @project_proposals_joined = pagy(for_listing(joined_scope), page_key: 'page_joined', limit: 15)
+    @pagy_pending, @user_pending_project_proposals = pagy(for_listing(pending_scope), page_key: 'page_pending', limit: 15)
+    @pagy_approved, @approved_project_proposals = pagy(for_listing(approved_scope), page_key: 'page_approved', limit: 15)
   end
 
   # GET /project_proposals/1
@@ -100,7 +100,7 @@ class ProjectProposalsController < SessionsController
         .distinct
         .order(created_at: :desc)
 
-    @pagy, @assigned_project_proposals = pagy(with_display_users(scope), limit: 15)
+    @pagy, @assigned_project_proposals = pagy(for_listing(scope), limit: 15)
   end
 
   def projects_completed
@@ -111,7 +111,7 @@ class ProjectProposalsController < SessionsController
         .distinct
         .order(created_at: :desc)
 
-    @pagy, @completed_project_proposals = pagy(with_display_users(scope), limit: 15)
+    @pagy, @completed_project_proposals = pagy(for_listing(scope), limit: 15)
   end
 
   # POST /project_proposals
@@ -314,8 +314,10 @@ class ProjectProposalsController < SessionsController
   end
 
   # Admins see everything; everyone else sees approved proposals plus their own.
-  # The listing shows the proposer and reviewer to admins only, deleted accounts included.
-  def with_display_users(scope)
+  # A list as the listing partial shows it: every row's categories, and for admins only the proposer and reviewer,
+  # deleted accounts included.
+  def for_listing(scope)
+    scope = scope.includes(:categories)
     current_user.admin? ? scope.includes(:display_user, :display_admin) : scope
   end
 

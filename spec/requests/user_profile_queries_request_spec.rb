@@ -67,6 +67,50 @@ RSpec.describe "Profile page queries", type: :request do
     end
   end
 
+  describe "joined projects tab" do
+    let(:path) { user_path(member.username, show: "projects_assigned") }
+
+    # Each joined proposal has its own author, so no read of one is answered from the query cache.
+    def join_proposals!(count)
+      Array.new(count) do
+        create(:project_proposal, user: create(:user, :regular_user)).tap do |proposal|
+          ProjectJoin.create!(user: member, project_proposal: proposal)
+        end
+      end
+    end
+
+    def joined_rows
+      Nokogiri::HTML(response.body).css(".repository-container").map do |row|
+        [row.at_css(".title a").text, row.at_css(".title a")["href"], row.css(".start > div")[1].text.squish]
+      end
+    end
+
+    it "shows each joined proposal with its link and author, or the deleted-user label without one" do
+      with_author = join_proposals!(1).first
+      orphan = create(:project_proposal, user: nil, title: "No author")
+      ProjectJoin.create!(user: member, project_proposal: orphan)
+
+      get path
+
+      expect(response).to have_http_status(:ok)
+      expect(joined_rows).to contain_exactly(
+        [with_author.title, project_proposal_path(with_author), "by #{with_author.user.username}"],
+        ["No author", project_proposal_path(orphan), "by [Deleted User]"]
+      )
+    end
+
+    it "runs the same number of queries for two joined proposals as for five" do
+      join_proposals!(2)
+      two = queries_for(path)
+      join_proposals!(3)
+      five = queries_for(path)
+
+      expect(response).to have_http_status(:ok)
+      expect(joined_rows.size).to eq(5)
+      expect(five).to eq(two)
+    end
+  end
+
   it "runs the same number of queries for two makes as for five" do
     add_rows(2)
     two = queries_for(user_path(member.username, show: "makes"))

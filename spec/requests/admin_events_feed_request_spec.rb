@@ -21,8 +21,7 @@ RSpec.describe "Admin events feed and publish", type: :request do
 
   def pushed_ids = push_jobs.map { |job| job[:args].first }
 
-  # The feed reads each training event's training on its own (one query per event), which Bullet reports.
-  describe "GET json", skip_bullet: true do
+  describe "GET json" do
     let(:alice) { create(:user, :staff, name: "Alice Shift") }
     let(:bruno) { create(:user, :staff, name: "Bruno Shift") }
     let(:cara) { create(:user, :staff, name: "Cara Train") }
@@ -153,7 +152,7 @@ RSpec.describe "Admin events feed and publish", type: :request do
       expect(response.body).to eq('{"error":"Space ID is required"}')
     end
 
-    it "reads the feed in eight queries, one of them the training of the training event" do
+    it "reads the feed in eight queries, one of them the trainings of the training events, read together" do
       count = 0
       counter = lambda do |*, payload|
         count += 1 unless payload[:name] == "SCHEMA" || payload[:sql].match?(/\A\s*(BEGIN|COMMIT|SAVEPOINT|RELEASE)/i)
@@ -162,6 +161,29 @@ RSpec.describe "Admin events feed and publish", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(count).to eq(8)
+    end
+
+    # One training event per day after the 20th, each with its own training, so no read of one is answered from the
+    # query cache.
+    def titled_lessons!(*days)
+      days.map do |i|
+        create(:event, space: space, created_by: admin, event_type: "training", title: "Training",
+                       training: create(:training, name_en: "Extra #{i}"),
+                       start_time: zone.local(2027, 3, 20 + i, 9), end_time: zone.local(2027, 3, 20 + i, 11))
+          .tap { |event| create(:event_assignment, event: event, user: cara) }
+      end
+    end
+
+    it "names the trainings of the training events in a number of queries that does not grow with them", :aggregate_failures do
+      titled_lessons!(0)
+      get json_admin_events_path(id: space.id) # warm up (caches, constants)
+      few = count_queries { get json_admin_events_path(id: space.id) }
+      extra = titled_lessons!(1, 2, 3)
+      many = count_queries { get json_admin_events_path(id: space.id) }
+
+      expect(many).to eq(few)
+      titles = response.parsed_body.find { |group| group["id"] == "training" }["events"].to_h { |row| [row["id"], row["title"]] }
+      expect(extra.map { |event| titles["event-#{event.id}"] }).to eq(["Extra 1", "Extra 2", "Extra 3"].map { |name| "#{name} for Cara Train" })
     end
   end
 

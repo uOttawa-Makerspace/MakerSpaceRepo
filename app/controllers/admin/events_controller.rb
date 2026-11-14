@@ -57,7 +57,8 @@ class Admin::EventsController < AdminAreaController
     staff_colors = StaffSpace.colors_in(params[:id])
     # The events the window (CalendarWindow) keeps, with what their rows read, in one query each.
     events = CalendarWindow.from_params(params).records(Event.where(space_id: params[:id]))
-                           .includes(:course_name, event_assignments: :user)
+                           .includes(:course_name, event_assignments: :user).to_a
+    Event.preload_title_trainings(events)
     groups = events.group_by(&:event_type)
     render json: groups.map { |type, rows| { id: type, events: rows.map { |row| feed_row(row, staff_colors) } } }
   end

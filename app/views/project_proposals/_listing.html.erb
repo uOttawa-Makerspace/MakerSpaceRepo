@@ -45,7 +45,7 @@
                         <td><%= project_proposal.approval_status %></td>
                     <% end %>
                     <td><%= project_proposal.title %></td>
-                    <td><% project_proposal.categories.find_each do |c| %> <%= c.name %> <% end %></td>
+                    <td><% project_proposal.categories.sort_by(&:id).each do |c| %> <%= c.name %> <% end %></td>
                     <td><%= project_proposal.created_at.strftime('%Y/%m/%d - %H:%M') %></td>
                     <% if @user.admin? %>
                         <% if title == "Pending Project Proposals" %>

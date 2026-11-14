@@ -5,8 +5,8 @@ class VideosController < DevelopmentProgramsController
   before_action :set_video, only: %i[destroy]
 
   def index
-    @videos_pp = Video.joins(:proficient_project).order(created_at: :desc)
-    @videos_lm = Video.joins(:learning_module).order(created_at: :desc)
+    @videos_pp = Video.listed_under(:proficient_project)
+    @videos_lm = Video.listed_under(:learning_module)
   end
 
   def new

@@ -37,11 +37,23 @@ class Event < ApplicationRecord
     will_save_change_to_recurrence_rule? || will_save_change_to_draft?(from: true, to: false)
   end
 
+  # Loads, in one query for the list, the training of each event whose display_title names it.
+  def self.preload_title_trainings(events)
+    titled = events.select { |event| event.event_type == 'training' && event.titled_by_assignees? }
+    ActiveRecord::Associations::Preloader.new(records: titled, associations: :training).call
+  end
+
+  # Whether display_title names the assignees (and, for a training, the training) instead of the stored title: the
+  # title is the type's own name and someone is assigned.
+  def titled_by_assignees?
+    title == event_type.capitalize && event_assignments.any?
+  end
+
   # Single source of truth for event title formatting across the entire app
   def display_title(include_draft_indicator: true)
     prefix = (draft && include_draft_indicator) ? '✎ ' : ''
 
-    return "#{prefix}#{title}" unless title == event_type.capitalize && event_assignments.any?
+    return "#{prefix}#{title}" unless titled_by_assignees?
 
     if event_type == 'training'
       t_name = training&.name || 'Training'

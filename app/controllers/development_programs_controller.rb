@@ -26,7 +26,7 @@ class DevelopmentProgramsController < SessionsController
   end
 
   def all_badges
-    @certifications = current_user.certifications
+    @certifications = current_user.certifications_with_training
     @digital_certs = []
     @manu_certs = []
     @prof_certs = []
