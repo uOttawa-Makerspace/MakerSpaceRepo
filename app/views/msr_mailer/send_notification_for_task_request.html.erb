@@ -1,18 +1,18 @@
 <% content_for :preheader do %>
-  Makerepo - New Volunteer Task Request
+  <%= t(".preheader") %>
 <% end %>
 
 <% content_for :team_name do %>
-  The MakerRepo Team
+  <%= t("layouts.mailer.makerrepo_team") %>
 <% end %>
 
 <% content_for :why_received do %>
-  You have received this email because a new volunteer task request was made on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+  <%= t(".why_received") %> <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
 <% end %>
 
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello!</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t("msr_mailer.volunteer_task.hello") %></p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  A new request was made for the Task <b><%= @volunteer_task.title.capitalize %></b>. <br />
-  Check it <%= link_to 'here', 'https://makerepo.com/volunteer_task_requests/' %>.<br />
-  If you need more information, you can send an email to <%= @email_staff %>.
+  <%= t(".new_request_html", task: tag.b(@volunteer_task.title.capitalize)) %> <br />
+  <%= t("msr_mailer.volunteer_task.check_html", link: link_to(t("msr_mailer.volunteer_task.here"), "https://makerepo.com/volunteer_task_requests/")) %><br />
+  <%= t("msr_mailer.volunteer_task.more_info", email: @email_staff) %>
 </p>

@@ -91,6 +91,176 @@ en:
       # %{link} = link to the forgotten password page
       forgot_html: "If you have forgotten your password, you can reset it by clicking this link or copying it: %{link}"
       button: "Unlock your Account"
+    # Shared by the exam mails. %{training} = the training's name
+    exam:
+      in_training_html: "You are receiving this email because you were in the <b>%{training} at uOttawa.</b>"
+    exam_results_staff:
+      # %{name} = the trainee's first name
+      subject: "%{name} finished an exam"
+      preheader: "Makerepo - Exam completed"
+      # Followed by a link to makerepo.com
+      why_received: "You have received this email because you were responsible of a training session with an exam on"
+      # Followed by the training session, in bold
+      responsible: "You are receiving this email because you were the responsible staff for the"
+      # %{date} = the day the session was created
+      session: "%{training} at uOttawa (%{date})"
+      result:
+        passed: "%{name} finished the exam and his/her score was %{score}. Hence, He/she passed the exam."
+        failed: "%{name} finished the exam and his/her score was %{score}. Hence, He/she failed the exam."
+        # An exam that is not graded yet; %{status} = its status
+        other: "%{name} finished the exam and his/her score was %{score}. Hence, He/she %{status} the exam."
+      retry: "If this is his/her first try, he/she will be able to try one more time."
+      no_action: "No more actions are needed."
+    finishing_exam:
+      subject: "You finished your exam"
+      preheader: "Makerepo - You finished an exam"
+      # Followed by a link to makerepo.com
+      why_received: "You have received this email because you have completed an exam on"
+      result:
+        passed: "You finished your exam. Your score was %{score}. You passed the exam."
+        failed: "You finished your exam. Your score was %{score}. You failed the exam."
+        # An exam that is not graded yet; %{status} = its status
+        other: "You finished your exam. Your score was %{score}. You %{status} the exam."
+      congratulations: "Congratulations. Your certification is already available in your profile."
+      retry: "If this is your first try, you will be able to try one more time."
+      # %{link} = link to the exams page, text from exams_link
+      check_html: "Check %{link} for new exams."
+      exams_link: "Exams"
+    send_exam:
+      subject: "An exam was sent to you"
+      preheader: "Makerepo - Complete Your Exam"
+      # Followed by a link to makerepo.com
+      why_received: "You have received this email because you have an exam to complete on"
+      # Followed by the sign-in link, text from log_in
+      sign_in: "Sign in to your account:"
+      log_in: "Log In"
+      # %{link} = link to the exams page, text from exams_link
+      check_html: "and check all the exams available %{link}."
+      exams_link: "Exams"
+      deadline: "You have 3 days to complete the exam."
+      button: "Start exam"
+    issue_email:
+      # %{subject} = the subject the reporter typed
+      subject: "Issue Report | %{subject}"
+      preheader: "Makerepo - Issue Report Received"
+      # Followed by a link to makerepo.com
+      why_received: "You have received this email because you submitted an issue on"
+      received: "We have received the following help request from you:"
+      # %{name} = the name the reporter typed, in bold
+      reported_by_html: "New issue reported by %{name}:"
+      account: "Account:"
+      contact_email: "Contact email:"
+      # %{subject} = the subject the reporter typed, in bold
+      subject_line_html: "Subject: %{subject}"
+      app_version: "App Version: %{version}"
+    print_failed:
+      # %{printer} = the printer's number
+      subject: "Your 3D print on %{printer} has failed"
+      preheader: "Makerepo - New Message"
+      why_received: "You have received this email because you started a print job at the MakerSpace"
+    send_kit_email:
+      subject: "Your proficient project kit order"
+      preheader: "Makerepo - Your Kit is Ready"
+      # Followed by a link to makerepo.com
+      why_received: "You have received this email because you bought a Proficient Project Kit on"
+      # Followed by a link to the opening hours, text from opening_hours
+      received: "We received your kit order for your %{project} project. You can pick it up at the UOttawa Makerspace during the regular"
+      opening_hours: "opening hours"
+    send_results_pp:
+      subject: "Your Proficient Project Results"
+      preheader: "MakerRepo - Proficient Project Results"
+      # Followed by a link to makerepo.com
+      why_received: "You have received this email because you submitted a proficient project for evaluation on"
+      received: "We have received the results for the proficient project (%{project})."
+      passed_html: "We're excited to inform you that your proficient project has <b>passed</b>"
+      failed_html: "We regret to inform you that your proficient project has <b>failed</b>"
+      # %{link} = link to the skills page, text from here
+      progress_html: "You can see your progress %{link}"
+      here: "here"
+      admin_comments: "Admin Comments:"
+      none: "None"
+      button: "See my progress"
+    send_user_pp_evaluation:
+      subject: "Your Proficient Project Request"
+      preheader: "MakerRepo - Proficient Project Submitted"
+      # Followed by a link to makerepo.com
+      why_received: "You have received this email because you submitted a proficient project on"
+      submitted: "The proficient project (%{project}) has been submitted successfully."
+      # %{location} = the drop-off location's name
+      drop_off_html: "Please <b>drop off</b> your project <b>here</b>: %{location}"
+      no_drop_off: "This project has no drop-off locations. If you think this is an error or you have any questions about it,"
+      # %{email} = the address of the team that evaluates the project
+      contact: "please contact %{email}."
+      review: "After the drop-off (if your project needs to be dropped-off), we will review it and get back to you within 5 business days."
+      questions: "If you have any questions, feel free to contact us at %{email}."
+    # Shared by the volunteer task mails
+    volunteer_task:
+      hello: "Hello!"
+      # %{link} = link to the task or the requests page, text from here
+      check_html: "Check it %{link}."
+      here: "here"
+      # %{email} = the volunteer team's or the task's staff address
+      more_info: "If you need more information, you can send an email to %{email}."
+    send_notification_to_staff_for_joining_task:
+      # %{task} = the task's title
+      subject: "New join in task: %{task}"
+      preheader: "Makerepo - User Joined Volunteer Task"
+      # Followed by a link to makerepo.com
+      why_received: "You have received this email because a user joined a volunteer task on"
+      # %{volunteer} and %{task} in bold
+      joined_html: "The user %{volunteer} joined the task %{task}."
+    send_notification_to_volunteer_for_joining_task:
+      subject: "New join in task: %{task}"
+      preheader: "Makerepo - You Joined a Volunteer Task"
+      # Followed by a link to makerepo.com
+      why_received: "You have received this email because you joined a volunteer task on"
+      joined_html: "You just joined the task %{task}."
+    send_notification_for_task_request:
+      subject: "New Request for task: %{task}"
+      preheader: "Makerepo - New Volunteer Task Request"
+      # Followed by a link to makerepo.com
+      why_received: "You have received this email because a new volunteer task request was made on"
+      new_request_html: "A new request was made for the Task %{task}."
+    send_notification_for_task_request_update:
+      subject: "Your request was updated: %{task}"
+      preheader: "Makerepo - Volunteer Task Update"
+      # Followed by a link to makerepo.com
+      why_received_html: "You have received this email because a volunteer task you're interested in was updated on"
+      update_html: "An update was made for the Task %{task}."
+  task_mailer:
+    hello: "Hello,"
+    renamed_user:
+      subject: "Makerepo | Your account username was renamed"
+      preheader: "Makerepo - Username changed"
+      # Followed by a link to makerepo.com
+      why_received: "You have received this email because you have an account on"
+      changed: "Due to database maintenance reasons, we have changed your account username."
+      # %{previous} and %{new} = the usernames, in bold
+      from_to_html: "Your username was changed from %{previous} to %{new}."
+      use_new: "You should use your new username to login to your account."
+      email_login: "You can also login using your email as well."
+      password: "Your password has not been changed."
+      contact: "If you would like to change your username or if you have another account you would like us to merge, please contact us for assistance or visit one of the CEED spaces at STEM."
+    merged_user:
+      subject: "Makerepo | Duplicate accounts merged"
+      preheader: "Makerepo - Accounts merged"
+      # Followed by a link to makerepo.com
+      why_received: "You have received this email because you have duplicated accounts on"
+      # %{email} = the address, in bold
+      found_html: "During database maintenance, we have found multiple accounts registered to this email address: %{email}."
+      merged: "We have merged all your accounts into the one we detected to be the most active."
+      # %{username} in bold
+      username_html: "Your username is %{username}."
+      verify: "You can still login with your email to verify the data appended to your account."
+      no_action: "If your stored login details still work, there is no action needed from you."
+      # %{link} = link to the forgotten password page, text from reset_link
+      reset_html: "If you cannot remember your password, or your password no longer works, you can reset it via the %{link}."
+      reset_link: "forgot password form"
+      assistance: "If you need assistance, or if you have any questions, feel free to reach out to us or visit one of the CEED spaces in STEM."
+  time:
+    formats:
+      # Day a training session was created, in the exam results mail to staff
+      exam_session_mail: "%b %e %Y"
 fr:
   layouts:
     mailer:
@@ -184,3 +354,173 @@ fr:
       # %{link} = link to the forgotten password page
       forgot_html: "Si vous avez oublié votre mot de passe, vous pouvez le réinitialiser en cliquant sur ce lien ou en le copiant : %{link}"
       button: "Déverrouiller mon compte"
+    # Shared by the exam mails. %{training} = the training's name
+    exam:
+      in_training_html: "Vous recevez ce courriel parce que vous avez participé à la séance <b>%{training} à uOttawa.</b>"
+    exam_results_staff:
+      # %{name} = the trainee's first name
+      subject: "%{name} a terminé un examen"
+      preheader: "MakerRepo - Examen terminé"
+      # Followed by a link to makerepo.com
+      why_received: "Vous avez reçu ce courriel parce que vous étiez responsable d'une séance de formation avec examen sur"
+      # Followed by the training session, in bold
+      responsible: "Vous recevez ce courriel parce que vous étiez le membre du personnel responsable de la séance"
+      # %{date} = the day the session was created
+      session: "%{training} à uOttawa (%{date})"
+      result:
+        passed: "%{name} a terminé l'examen avec une note de %{score}. Cette personne a donc réussi l'examen."
+        failed: "%{name} a terminé l'examen avec une note de %{score}. Cette personne a donc échoué à l'examen."
+        # An exam that is not graded yet; %{status} = its status
+        other: "%{name} a terminé l'examen avec une note de %{score}. Statut de l'examen : %{status}."
+      retry: "S'il s'agit de sa première tentative, cette personne pourra essayer une autre fois."
+      no_action: "Vous n'avez rien d'autre à faire."
+    finishing_exam:
+      subject: "Vous avez terminé votre examen"
+      preheader: "MakerRepo - Vous avez terminé un examen"
+      # Followed by a link to makerepo.com
+      why_received: "Vous avez reçu ce courriel parce que vous avez terminé un examen sur"
+      result:
+        passed: "Vous avez terminé votre examen. Votre note est de %{score}. Vous avez réussi l'examen."
+        failed: "Vous avez terminé votre examen. Votre note est de %{score}. Vous avez échoué à l'examen."
+        # An exam that is not graded yet; %{status} = its status
+        other: "Vous avez terminé votre examen. Votre note est de %{score}. Statut de l'examen : %{status}."
+      congratulations: "Félicitations! Votre certification est déjà disponible dans votre profil."
+      retry: "S'il s'agit de votre première tentative, vous pourrez essayer une autre fois."
+      # %{link} = link to the exams page, text from exams_link
+      check_html: "Consultez la page %{link} pour voir les nouveaux examens."
+      exams_link: "Examens"
+    send_exam:
+      subject: "Un examen vous a été envoyé"
+      preheader: "MakerRepo - Faites votre examen"
+      # Followed by a link to makerepo.com
+      why_received: "Vous avez reçu ce courriel parce que vous avez un examen à faire sur"
+      # Followed by the sign-in link, text from log_in
+      sign_in: "Connectez-vous à votre compte :"
+      log_in: "Connexion"
+      # %{link} = link to the exams page, text from exams_link
+      check_html: "et consultez tous les examens disponibles sur la page %{link}."
+      exams_link: "Examens"
+      deadline: "Vous avez 3 jours pour faire l'examen."
+      button: "Commencer l'examen"
+    issue_email:
+      # %{subject} = the subject the reporter typed
+      subject: "Signalement de problème | %{subject}"
+      preheader: "MakerRepo - Signalement de problème reçu"
+      # Followed by a link to makerepo.com
+      why_received: "Vous avez reçu ce courriel parce que vous avez signalé un problème sur"
+      received: "Nous avons reçu la demande d'aide suivante de votre part :"
+      # %{name} = the name the reporter typed, in bold
+      reported_by_html: "Nouveau problème signalé par %{name} :"
+      account: "Compte :"
+      contact_email: "Courriel de contact :"
+      # %{subject} = the subject the reporter typed, in bold
+      subject_line_html: "Objet : %{subject}"
+      app_version: "Version de l'application : %{version}"
+    print_failed:
+      # %{printer} = the printer's number
+      subject: "Votre impression 3D sur l'imprimante %{printer} a échoué"
+      preheader: "MakerRepo - Nouveau message"
+      why_received: "Vous avez reçu ce courriel parce que vous avez lancé une impression au Makerspace"
+    send_kit_email:
+      subject: "Votre commande de trousse de projet de compétence"
+      preheader: "MakerRepo - Votre trousse est prête"
+      # Followed by a link to makerepo.com
+      why_received: "Vous avez reçu ce courriel parce que vous avez acheté une trousse de projet de compétence sur"
+      # Followed by a link to the opening hours, text from opening_hours
+      received: "Nous avons reçu votre commande de trousse pour votre projet %{project}. Vous pouvez venir la chercher au Makerspace de uOttawa pendant les"
+      opening_hours: "heures d'ouverture"
+    send_results_pp:
+      subject: "Résultats de votre projet de compétence"
+      preheader: "MakerRepo - Résultats du projet de compétence"
+      # Followed by a link to makerepo.com
+      why_received: "Vous avez reçu ce courriel parce que vous avez soumis un projet de compétence pour évaluation sur"
+      received: "Nous avons reçu les résultats du projet de compétence (%{project})."
+      passed_html: "Nous avons le plaisir de vous annoncer que votre projet de compétence a été <b>réussi</b>"
+      failed_html: "Nous avons le regret de vous annoncer que votre projet de compétence n'a <b>pas été réussi</b>"
+      # %{link} = link to the skills page, text from here
+      progress_html: "Vous pouvez voir votre progression %{link}"
+      here: "ici"
+      admin_comments: "Commentaires de l'administration :"
+      none: "Aucun"
+      button: "Voir ma progression"
+    send_user_pp_evaluation:
+      subject: "Votre demande de projet de compétence"
+      preheader: "MakerRepo - Projet de compétence soumis"
+      # Followed by a link to makerepo.com
+      why_received: "Vous avez reçu ce courriel parce que vous avez soumis un projet de compétence sur"
+      submitted: "Le projet de compétence (%{project}) a bien été soumis."
+      # %{location} = the drop-off location's name
+      drop_off_html: "Veuillez <b>déposer</b> votre projet à cet <b>endroit</b> : %{location}"
+      no_drop_off: "Ce projet n'a aucun lieu de remise. Si vous pensez qu'il s'agit d'une erreur ou si vous avez des questions à ce sujet,"
+      # %{email} = the address of the team that evaluates the project
+      contact: "écrivez à %{email}."
+      review: "Après la remise (si votre projet doit être remis), nous l'examinerons et vous répondrons dans un délai de 5 jours ouvrables."
+      questions: "Si vous avez des questions, n'hésitez pas à nous écrire à %{email}."
+    # Shared by the volunteer task mails
+    volunteer_task:
+      hello: "Bonjour!"
+      # %{link} = link to the task or the requests page, text from here
+      check_html: "Consultez-la %{link}."
+      here: "ici"
+      # %{email} = the volunteer team's or the task's staff address
+      more_info: "Pour plus d'information, vous pouvez écrire à %{email}."
+    send_notification_to_staff_for_joining_task:
+      # %{task} = the task's title
+      subject: "Nouvelle inscription à la tâche : %{task}"
+      preheader: "MakerRepo - Une personne a rejoint une tâche de bénévolat"
+      # Followed by a link to makerepo.com
+      why_received: "Vous avez reçu ce courriel parce qu'une personne a rejoint une tâche de bénévolat sur"
+      # %{volunteer} and %{task} in bold
+      joined_html: "%{volunteer} a rejoint la tâche %{task}."
+    send_notification_to_volunteer_for_joining_task:
+      subject: "Nouvelle inscription à la tâche : %{task}"
+      preheader: "MakerRepo - Vous avez rejoint une tâche de bénévolat"
+      # Followed by a link to makerepo.com
+      why_received: "Vous avez reçu ce courriel parce que vous avez rejoint une tâche de bénévolat sur"
+      joined_html: "Vous venez de rejoindre la tâche %{task}."
+    send_notification_for_task_request:
+      subject: "Nouvelle demande pour la tâche : %{task}"
+      preheader: "MakerRepo - Nouvelle demande de tâche de bénévolat"
+      # Followed by a link to makerepo.com
+      why_received: "Vous avez reçu ce courriel parce qu'une nouvelle demande de tâche de bénévolat a été faite sur"
+      new_request_html: "Une nouvelle demande a été faite pour la tâche %{task}."
+    send_notification_for_task_request_update:
+      subject: "Votre demande a été mise à jour : %{task}"
+      preheader: "MakerRepo - Mise à jour d'une tâche de bénévolat"
+      # Followed by a link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'une tâche de bénévolat qui vous intéresse a été mise à jour sur"
+      update_html: "Une mise à jour a été faite pour la tâche %{task}."
+  task_mailer:
+    hello: "Bonjour,"
+    renamed_user:
+      subject: "MakerRepo | Votre nom d'utilisateur a été changé"
+      preheader: "MakerRepo - Nom d'utilisateur changé"
+      # Followed by a link to makerepo.com
+      why_received: "Vous avez reçu ce courriel parce que vous avez un compte sur"
+      changed: "Pour des raisons de maintenance de la base de données, nous avons changé le nom d'utilisateur de votre compte."
+      # %{previous} and %{new} = the usernames, in bold
+      from_to_html: "Votre nom d'utilisateur %{previous} a été remplacé par %{new}."
+      use_new: "Utilisez votre nouveau nom d'utilisateur pour vous connecter à votre compte."
+      email_login: "Vous pouvez aussi vous connecter avec votre courriel."
+      password: "Votre mot de passe n'a pas changé."
+      contact: "Si vous souhaitez changer de nom d'utilisateur, ou si vous avez un autre compte que vous aimeriez fusionner, écrivez-nous ou passez dans l'un des espaces du CGEC au STEM."
+    merged_user:
+      subject: "MakerRepo | Comptes en double fusionnés"
+      preheader: "MakerRepo - Comptes fusionnés"
+      # Followed by a link to makerepo.com
+      why_received: "Vous avez reçu ce courriel parce que vous aviez des comptes en double sur"
+      # %{email} = the address, in bold
+      found_html: "Lors d'une maintenance de la base de données, nous avons trouvé plusieurs comptes inscrits avec cette adresse courriel : %{email}."
+      merged: "Nous avons fusionné tous vos comptes dans celui qui nous a semblé le plus actif."
+      # %{username} in bold
+      username_html: "Votre nom d'utilisateur est %{username}."
+      verify: "Vous pouvez toujours vous connecter avec votre courriel pour vérifier les données ajoutées à votre compte."
+      no_action: "Si vos identifiants de connexion fonctionnent toujours, vous n'avez rien à faire."
+      # %{link} = link to the forgotten password page, text from reset_link
+      reset_html: "Si vous ne vous souvenez plus de votre mot de passe, ou s'il ne fonctionne plus, vous pouvez le réinitialiser avec le %{link}."
+      reset_link: "formulaire de mot de passe oublié"
+      assistance: "Si vous avez besoin d'aide ou si vous avez des questions, n'hésitez pas à nous écrire ou à passer dans l'un des espaces du CGEC au STEM."
+  time:
+    formats:
+      # Day a training session was created, in the exam results mail to staff
+      exam_session_mail: "%-d %b %Y"
