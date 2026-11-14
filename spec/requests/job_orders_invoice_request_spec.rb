@@ -45,4 +45,27 @@ RSpec.describe "Job order invoice", type: :request do
     expect(listed_amounts(response.body).sum).to eq(shown_total(response.body))
     expect(shown_total(response.body)).to eq(BigDecimal("58.5"))
   end
+
+  describe "the date" do
+    it "is the day of the order's latest status" do
+      order = add_quoted_tasks!(make_job_order!(owner: owner, status_key: :paid))
+      order.job_order_statuses.last.update!(created_at: Time.zone.local(2026, 5, 6, 12))
+      session_login!(owner)
+
+      get job_order_invoice_path(order)
+
+      expect(response.body).to include("Date : 2026/05/06")
+    end
+
+    it "is the day the order was created for an order without any status row" do
+      order = create(:job_order, user: owner, created_at: Time.zone.local(2026, 3, 4, 12))
+      order.job_tasks.create!(title: "Task #1", job_type: JobType.find_by!(name: "3D Print"))
+      session_login!(owner)
+
+      get job_order_invoice_path(order)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Date : 2026/03/04")
+    end
+  end
 end

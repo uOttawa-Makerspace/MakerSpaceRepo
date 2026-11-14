@@ -81,10 +81,10 @@ class JobTask < ApplicationRecord
   validate :job_service_belongs_to_task, if: :job_service_id_changed?
 
   # Prefixes the stored names of this task's files, and of its options' files, as set by the actions that attach
-  # them, once the save has committed.
+  # them, once the save has committed. Preloaded options are used as loaded.
   def prefix_file_names
     prefix_blob_names(%w[user_files staff_files], "#{job_order_id}_")
-    JobTaskOption.where(job_task_id: id).each(&:prefix_file_names)
+    job_task_options.each(&:prefix_file_names)
   end
 
   # For each of the given options, the lowest-id other task of the order that has it selected, as
