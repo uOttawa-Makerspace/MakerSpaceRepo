@@ -384,26 +384,6 @@ RSpec.describe CalendarHelper, type: :helper do
     end
   end
 
-  describe "#date_formatted_recurrence_rule" do
-    let(:start_time) { Time.utc(2027, 5, 5, 13, 0) }
-
-    it "is nil without a recurrence rule" do
-      expect(date_formatted_recurrence_rule(OpenStruct.new(recurrence_rule: nil))).to be_nil
-      expect(date_formatted_recurrence_rule(OpenStruct.new(recurrence_rule: ""))).to be_nil
-    end
-
-    it "rebuilds DTSTART in Toronto time and puts each EXDATE on its own line" do
-      event = OpenStruct.new(start_time: start_time,
-                             recurrence_rule: "DTSTART:20270505T130000Z\nRRULE:FREQ=WEEKLY;BYDAY=WE\nEXDATE:20270512T130000Z")
-      expect(date_formatted_recurrence_rule(event)).to eq("DTSTART:20270505T090000\nRRULE:FREQ=WEEKLY;BYDAY=WE\nEXDATE:20270512T090000")
-    end
-
-    it "keeps a rule without exdates as it is after the new DTSTART" do
-      event = OpenStruct.new(start_time: start_time, recurrence_rule: "RRULE:FREQ=DAILY;COUNT=2")
-      expect(date_formatted_recurrence_rule(event)).to eq("DTSTART:20270505T090000\nRRULE:FREQ=DAILY;COUNT=2")
-    end
-  end
-
   describe "#calendar_texts_data" do
     def texts(locale)
       JSON.parse(I18n.with_locale(locale) { calendar_texts_data }.fetch(:calendar_texts))

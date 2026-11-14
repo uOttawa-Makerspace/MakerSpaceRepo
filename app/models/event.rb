@@ -2,6 +2,8 @@ class Event < ApplicationRecord
   include Reschedulable
   # The longest span a calendar feed answers in one request (the staff calendar and the shifts API).
   MAX_FEED_RANGE = 100.days
+  # The feed colour of an assignee with no colour in the space, and of an event nobody is assigned to.
+  UNASSIGNED_COLOR = "#bbb"
 
   # Whether a feed range is longer than the limit. An hour of slack lets a range counted in local days across a
   # clock change (an hour longer in seconds) through.
@@ -37,6 +39,20 @@ class Event < ApplicationRecord
     will_save_change_to_recurrence_rule? || will_save_change_to_draft?(from: true, to: false)
   end
 
+  # Publishes the space's drafts that start in the range, as `by`, and yields each one once it is saved (the caller
+  # pushes it to Google). Returns the published events and the ones that could not be saved, with their errors.
+  def self.publish_drafts(space_id, range, by:)
+    published = []
+    failed = []
+    where(space_id: space_id, start_time: range, draft: true).find_each do |event|
+      next failed << event unless event.publish(by: by)
+
+      published << event
+      yield event
+    end
+    [published, failed]
+  end
+
   # Loads, in one query for the list, the training of each event whose display_title names it.
   def self.preload_title_trainings(events)
     titled = events.select { |event| event.event_type == 'training' && event.titled_by_assignees? }
@@ -68,6 +84,16 @@ class Event < ApplicationRecord
     end
   end
 
+  # The event as the admin calendar draws it; staff_colors holds each staff member's colour in the space, by user id.
+  def feed_row(staff_colors)
+    { id: "event-#{id}", title: display_title(include_draft_indicator: true),
+      start: start_time.iso8601, end: end_time.iso8601, **feed_recurrence,
+      allDay: CalendarTime.all_day?(start_time, end_time),
+      extendedProps: { name: event_type.capitalize, draft: draft, description: description, eventType: event_type,
+                       trainingId: training_id, language: language, course_name: course_name,
+                       assignedUsers: feed_assignees, background: feed_background(staff_colors) } }
+  end
+
   # Asks for the push of this event to Google Calendar and queues it, to be called once the change is committed.
   # The ask is recorded first (GoogleCalendar::PendingChange), so a push that could not be queued is queued again
   # later. Drafts are never
@@ -93,6 +119,12 @@ class Event < ApplicationRecord
     update(draft: true, updated_by: by, google_event_id: nil, google_calendar_id: nil)
   end
 
+  # Makes the event live, as `by`. Returns false when the event cannot be saved. The caller pushes it to Google once
+  # this has committed (push_to_google_later).
+  def publish(by:)
+    update(draft: false, updated_by: by)
+  end
+
   # Queues the removal of a destroyed event's copy in Google Calendar. Takes what was read from the event
   # (id, google_event_id and google_calendar) before it was destroyed.
   def self.remove_from_google_later(google_event_id, calendar_id, event_id)
@@ -102,6 +134,29 @@ class Event < ApplicationRecord
   end
 
   private
+
+  # A series' rule and its length in milliseconds (the browser repeats it); nothing for a one-off.
+  def feed_recurrence
+    return {} if recurrence_rule.blank?
+
+    { rrule: RecurrenceRule.new(recurrence_rule, start_time).in_toronto_time,
+      duration: (end_time.to_time - start_time.to_time) * 1000 }
+  end
+
+  def feed_assignees
+    return [{ id: 0, name: "Unassigned" }] if event_assignments.empty?
+
+    event_assignments.map { |assignment| { id: assignment.user&.id, name: assignment.user&.name } }
+  end
+
+  # Equal stripes in each assignee's colour; a draft is faded.
+  def feed_background(staff_colors)
+    colors = event_assignments.map { |assignment| staff_colors[assignment.user_id] || UNASSIGNED_COLOR }
+    colors = [UNASSIGNED_COLOR] if colors.empty?
+    width = 100.0 / colors.size
+    stops = colors.map.with_index { |color, i| "#{color} #{width * i}%, #{color} #{width * (i + 1)}%" }
+    "linear-gradient(to right, #{stops.join(', ')});#{' opacity: 0.8;' if draft}"
+  end
 
   def assign_google_event_id
     return if google_event_id.present?

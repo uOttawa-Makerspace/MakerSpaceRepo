@@ -79,13 +79,6 @@ module CalendarHelper
     { calendar_texts: t("calendar_texts").deep_transform_keys { |key| key.to_s.camelize(:lower) }.to_json }
   end
 
-  # The repeat rule as the calendar views read it (see RecurrenceRule#in_toronto_time).
-  def date_formatted_recurrence_rule(event)
-    return if event.recurrence_rule.blank?
-
-    RecurrenceRule.new(event.recurrence_rule, event.start_time).in_toronto_time
-  end
-
   private
 
   def ics_row(entry, calendar)
