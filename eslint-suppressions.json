@@ -65,11 +65,6 @@
       "count": 3
     }
   },
-  "app/javascript/entrypoints/volunteer_tasks.js": {
-    "complexity": {
-      "count": 2
-    }
-  },
   "app/javascript/src/accordion-load.js": {
     "no-unused-vars": {
       "count": 1
