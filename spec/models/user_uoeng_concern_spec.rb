@@ -358,6 +358,13 @@ RSpec.describe User::UoengConcern, type: :model do
       expect(logs.map(&:event_type)).to include(TapBoxLog::WARNING)
     end
 
+    it "logs no name mismatch when the account name holds the uOEng first name" do
+      eng.update_columns(name: "Ann Tester")
+      stub_api(body: { "first_name" => "Ann", "last_name" => "B", "student_this_semester" => true, "faculty" => "GENIE" })
+      eng.validate_uoeng_membership
+      expect(logs.map { |l| l.details&.dig("reason") }).not_to include("name_mismatch")
+    end
+
     it "stores only the differing field in the student-id mismatch row" do
       stub_api(body: { "emplid" => 999_999_999, "student_this_semester" => true, "faculty" => "GENIE" })
       eng.validate_uoeng_membership
