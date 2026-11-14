@@ -4,7 +4,8 @@
       <%= hidden_field_tag :approved, true %>
       <%= hidden_field_tag :status_row_id, @job_order.latest_status&.id %>
 
-      <% @job_order.job_tasks.each do |task| %>
+      <% option_prices = @job_order.quoted_option_prices %>
+      <% @job_order.tasks_for_quote.each do |task| %>
         <% job_task_quote = task.job_task_quote || task.build_job_task_quote %>
 
         <div class="card mb-4">
@@ -67,7 +68,6 @@
 
             <!-- Options -->
             <% task.job_task_options.each do |option| %>
-              <% qt_option = job_task_quote.job_task_quote_options.find_or_initialize_by(job_option_id: option.job_option_id) %>
               <div class="form-group">
                 <%= label_tag "task_#{task.id}_option_price_#{option.job_option_id}", "#{option.job_option.name} (CAD)" %>
                 <div class="input-group mb-3">
@@ -75,7 +75,7 @@
                     <span class="input-group-text">$</span>
                   </div>
                   <%= number_field_tag "task_#{task.id}_option_price_#{option.job_option_id}",
-                        (qt_option.price.presence || money_input_value(option.job_option.fee)),
+                        (option_prices[[task.id, option.job_option_id]].presence || money_input_value(option.job_option.fee)),
                         placeholder: 'value',
                         step: '0.01', class: 'form-control money-input option-price' %>
                 </div>
