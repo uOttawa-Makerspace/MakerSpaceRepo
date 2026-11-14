@@ -14,7 +14,7 @@
     <% end %>
   </div>
 
-  <% memberships = @repo_user.memberships.where(status: ['paid', 'revoked']).order(created_at: :desc) %>
+  <% memberships = @repo_user.memberships.includes(:membership_tier).where(status: ['paid', 'revoked']).order(created_at: :desc) %>
  
   <% if memberships.any? %>
     <div class="row mt-4">

@@ -405,18 +405,17 @@ class UsersController < SessionsController
     @programs = @repo_user.programs.pluck(:program_type)
 
     # Get repositories owned by user
-    repo_scope = @repo_user.repositories.where(make_id: nil).order(created_at: :desc)
+    repo_scope = @repo_user.repositories.with_card_data.where(make_id: nil).order(created_at: :desc)
     repo_scope = repo_scope.public_repos unless sees_private_repos?(@repo_user)
     @pagy, @repositories = pagy(repo_scope, limit: 18)
 
     @acclaim_data = @repo_user.certifications_with_training
     
-    makes_scope = @repo_user.repositories.includes(:owner, :photos).where.not(make_id: nil).order(created_at: :desc)
+    makes_scope = @repo_user.repositories.with_card_data.where.not(make_id: nil).order(created_at: :desc)
     makes_scope = makes_scope.public_repos unless sees_private_repos?(@repo_user)
     @pagy_makes, @makes = pagy(makes_scope, page_key: 'page_makes', limit: 18)
 
     @joined_projects = @repo_user.project_joins
-    @photos = photo_hash
     @certifications = @repo_user.certifications.highest_level
     @skills = Skill.includes(trainings: %i[proficient_projects learning_modules])
     if @user.key_certification.nil? && @user.eql?(@repo_user) &&
@@ -455,7 +454,6 @@ class UsersController < SessionsController
     @category_slug = params[:category] if SLUG_TO_CATEGORY_MODEL.key?(params[:category])
 
     @pagy, @repositories = pagy(like_scope, limit: 12)
-    @photos = photo_hash
   end
 
   private
@@ -675,18 +673,4 @@ class UsersController < SessionsController
     'other-projects' => 'Other Projects',
     'uottawa-team-projects' => 'uOttawa Team Projects'
   }.freeze
-
-  def photo_hash
-    repo = params[:show].eql?('makes') ? @makes : @repositories
-    return {} if repo.blank?
-
-    repository_ids = repo.map(&:id)
-    photo_ids =
-      Photo
-        .where(repository_id: repository_ids)
-        .group(:repository_id)
-        .minimum(:id)
-    photos = Photo.find(photo_ids.values)
-    photos.inject({}) { |h, e| h.merge!(e.repository_id => e) }
-  end
 end

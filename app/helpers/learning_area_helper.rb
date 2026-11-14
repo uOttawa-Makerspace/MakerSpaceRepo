@@ -1,34 +1,19 @@
 module LearningAreaHelper
-  def get_lower_level_lm(training_id)
-    lm =
-      LearningModule
-        .where.not(
-          id:
-            current_user.learning_module_tracks.completed.pluck(
-              :learning_module_id
-            )
-        )
-        .where(training_id: training_id)
-    if lm.where(level: "Beginner").present?
-      "<span style='color: green'>#{t('learning_module_track.level_short.beginner')}</span>"
-    elsif lm.where(level: "Intermediate").present?
-      "<span style='color: #969600'>#{t('learning_module_track.level_short.intermediate')}</span>"
-    elsif lm.where(level: "Advanced").present?
-      "<span style='color: red'>#{t('learning_module_track.level_short.advanced')}</span>"
-    else
-      "<span style='color: blue'>#{t('learning_module_track.level_short.master')}</span>"
-    end
+  # The colour of each level in the skills overview, lowest level first.
+  LOWEST_OPEN_LEVEL_COLORS = { "beginner" => "green", "intermediate" => "#969600", "advanced" => "red" }.freeze
+
+  # The lowest level of the training at which the signed-in user still has a module to do ("Master" once none is left).
+  # Reads the training's loaded learning_modules.
+  def get_lower_level_lm(training)
+    open_levels = get_next_lm(training).map(&:level)
+    level = LOWEST_OPEN_LEVEL_COLORS.keys.find { |key| open_levels.include?(key) }
+    color = LOWEST_OPEN_LEVEL_COLORS.fetch(level, "blue")
+    "<span style='color: #{color}'>#{t("learning_module_track.level_short.#{level || 'master'}")}</span>"
   end
 
-  def get_next_lm(training_id)
-    completed_ids = current_user.learning_module_tracks
-                      .completed
-                      .pluck(:learning_module_id)
-
-    LearningModule
-      .where(training_id: training_id)
-      .where.not(id: completed_ids)
-      .order(:order)
+  # The training's modules the signed-in user has not completed yet, in their set order.
+  def get_next_lm(training)
+    training.learning_modules_remaining(current_user)
   end
 
   def return_text_color(level)
