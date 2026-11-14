@@ -159,7 +159,7 @@ module PageCrawl
         [%r{\A/getting-started/[\w-]+\z}, "getting-started guides"],
         [%r{\A/project_proposals(/projects_assigned|/projects_completed|/new)?\z},
          "public proposals; a visitor may submit one with a captcha"],
-        [%r{\A/(cc_moneys|memberships|volunteers|development_programs|job_orders/landing)\z},
+        [%r{\A/(rewards|memberships|volunteers|development_programs|job_orders/landing)\z},
          "landing and index pages that ask a visitor to sign in"],
         [%r{\A/badges/:id\z}, "public badge page"],
         [%r{\A/:username\z}, "public profile"],

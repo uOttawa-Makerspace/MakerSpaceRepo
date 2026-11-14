@@ -49,7 +49,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       it "shows the empty state when the user has none" do
         shop_log_in!(user)
         get discount_codes_path
-        expect(response.body).to include("You don't have any coupons.")
+        expect(response.body).to include("You don&#39;t have any coupons.")
       end
 
       it "gives staff and admin the same own-codes-only view" do
@@ -79,10 +79,27 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(response.body).not_to include("$99 off")
       end
 
+      it "keeps each coupon's price and Redeem button outside its title heading" do
+        create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 50)
+        shop_log_in!(user)
+        get new_discount_code_path
+        card = Nokogiri::HTML5(response.body).at_css(".card-body")
+        expect(card.at_css("h5.card-title").text.strip).to eq("$5 off our MakerStore")
+        expect(card.css("h5.card-title p, h5.card-title form")).to be_empty
+      end
+
+      it "is written in French when the locale is fr" do
+        create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 50)
+        shop_log_in!(user)
+        get new_discount_code_path(locale: "fr")
+        expect(response.body).to include("Échangez vos CC!", "Prix du coupon: 50 CC")
+        expect(response.body).not_to include("Coupon price")
+      end
+
       it "shows the sold-out message when nothing is unclaimed" do
         shop_log_in!(user)
         get new_discount_code_path
-        expect(response.body).to include("we don't have any coupons to offer")
+        expect(response.body).to include("there are no coupons available right now")
       end
     end
 
@@ -395,15 +412,23 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
     let(:no_purchaser_message) { I18n.t("errors.shop.cc_money.not_purchaser") }
     let(:invalid_message) { "This link is not valid. Open the link from your email again, or contact uottawa.makerepo@gmail.com." }
 
-    describe "GET /cc_moneys" do
+    describe "GET /rewards" do
       it "is public: guests see the explainer and a sign-in prompt, with no balance card" do
         get cc_moneys_path
         expect(response).to have_http_status(:ok)
-        expect(response.body).to include("What Are CC Points?")
+        expect(response.body).to include("What Are CEED Credits?")
         expect(response.body).not_to include("Your CC Balance")
-        expect(response.body).not_to include("Redeem Points")
+        expect(response.body).not_to include(%(href="#{new_discount_code_path}" class="btn btn-primary mt-2"))
         expect(response.body).to include("Ready to Start Earning?")
         expect(response.body).to include(%(href="#{login_path}"))
+      end
+
+      it "is written in French when the locale is fr, with no points wording in either language" do
+        get cc_moneys_path(locale: "fr")
+        expect(response.body).to include("Que sont les Crédits du CGEC?", "Prêt à commencer à gagner?")
+        expect(response.body).not_to include("What Are CEED Credits?")
+        get cc_moneys_path
+        expect(response.body).not_to match(/points/i)
       end
 
       it "shows signed-in users their ledger balance (not the stale cache) and last 10 activities, without locking or writing" do
@@ -416,7 +441,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         ActiveSupport::Notifications.unsubscribe(sub)
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("Your CC Balance")
-        expect(response.body).to match(/30\s*<small/)
+        expect(Nokogiri::HTML5(response.body).at_css(".card h2.text-primary").text.strip).to eq("30")
         expect(sqls.grep(/FOR (NO KEY )?UPDATE/)).to be_empty
         expect(sqls.grep(/\AUPDATE "users"/).grep(/wallet/)).to be_empty
         expect(user.reload.wallet).to eq(0) # the cache is not written by a page view
@@ -431,7 +456,42 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       end
     end
 
-    describe "GET /cc_moneys/link_cc_to_user" do
+    describe "the old /cc_moneys address" do
+      it "sends bookmarks of the page to /rewards for good" do
+        get "/cc_moneys"
+        expect(response).to have_http_status(:moved_permanently)
+        expect(response).to redirect_to("/rewards")
+        get "/rewards"
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "keeps the query string, so a claim link from an old mail still reaches its confirm page" do
+        get "/cc_moneys?from=shopify_invoice"
+        expect(response).to redirect_to("/rewards?from=shopify_invoice")
+        get "/cc_moneys/link_cc_to_user", params: { token: token }
+        expect(response).to redirect_to("/rewards/link_cc_to_user?token=#{CGI.escape(token)}")
+      end
+
+      it "keeps an encoded segment encoded in the target" do
+        get "/cc_moneys/a%20b"
+        expect(response).to have_http_status(:moved_permanently)
+        expect(response.headers["Location"]).to end_with("/rewards/a%20b")
+      end
+
+      it "answers a line break in a segment with a redirect or a 404, never an error, and sets no extra header" do
+        get "/cc_moneys/x%0d%0aSet-Cookie:%20a=b"
+        expect(response.status).to be_in([301, 404])
+        expect(response.headers["Location"].to_s).not_to match(/[\r\n]/)
+        expect(response.headers["Set-Cookie"].to_s).not_to include("a=b")
+      end
+
+      it "names the new path in every route helper" do
+        expect([cc_moneys_path, link_cc_to_user_cc_moneys_path, redeem_cc_moneys_path])
+          .to eq(["/rewards", "/rewards/link_cc_to_user", "/rewards/redeem"])
+      end
+    end
+
+    describe "GET /rewards/link_cc_to_user" do
       it "redirects guests to login with the token preserved in back_to" do
         get link_cc_to_user_cc_moneys_path, params: { token: token }
         expect(response).to have_http_status(:found)
@@ -510,10 +570,10 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       end
     end
 
-    describe "POST /cc_moneys/redeem" do
+    describe "POST /rewards/redeem" do
       it "does not link on a plain GET (the mailed link only opens the confirm page)" do
         shop_log_in!(user)
-        get "/cc_moneys/redeem", params: { token: token }
+        get "/rewards/redeem", params: { token: token }
         expect(unlinked.reload.linked).to be(false)
         expect(user.cc_moneys.sum(:cc)).to eq(0)
       end
