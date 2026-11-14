@@ -60,6 +60,14 @@ RSpec.describe "Locale files" do
     expect(blank).to be_empty, "blank values:\n#{blank.join("\n")}"
   end
 
+  it "ends no sentence with a doubled full stop (an ellipsis is fine)" do
+    doubled = definitions.flat_map do |locale, keys|
+      keys.filter_map { |key, by_file| "#{locale} #{key}" if by_file.values.any? { |v| v.to_s.match?(/(?<!\.)\.\.\z/) } }
+    end
+
+    expect(doubled).to be_empty, "doubled full stops:\n#{doubled.join("\n")}"
+  end
+
   it "keeps one text per key: no key is defined twice with different text" do
     conflicts = definitions.flat_map do |locale, keys|
       keys.filter_map do |key, by_file|

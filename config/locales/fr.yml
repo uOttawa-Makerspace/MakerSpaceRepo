@@ -148,7 +148,7 @@ fr:
         email_address: "Adresse courriel"
         username: "Nom d'utilisateur"
         password: "Mot de passe"
-        password_hint: "Votre mot de passe doit comporter 10 caractères, 5 caractères uniques, et ne pas être un mot de passe couramment utilisé.."
+        password_hint: "Votre mot de passe doit comporter 10 caractères, 5 caractères uniques, et ne pas être un mot de passe couramment utilisé."
         password_confirmation: "Confirmation de mot de passe"
         gender: "Genre"
         male: "Homme"
@@ -238,7 +238,7 @@ fr:
               invalid: "Votre nom d'utilisateur peut seulement contenir des caractères alphanumériques."
               too_long: "Votre nom doit comporter moins de %{count} caractères."
             password:
-              invalid: "Votre mot de passe doit comporter 10 caractères, 5 caractères uniques, et ne pas être un mot de passe couramment utilisé.."
+              invalid: "Votre mot de passe doit comporter 10 caractères, 5 caractères uniques, et ne pas être un mot de passe couramment utilisé."
             password_confirmation:
               confirmation: "Les mots de passe ne correspondent pas."
             email:
