@@ -907,19 +907,26 @@ class JobOrder < ApplicationRecord
     preload_quote_options(snapshot)
     snapshot.tasks.flat_map do |task|
       quote = task.job_task_quote
-      next [] if quote.nil?
-
-      lines = [{ key: [task.id, "service"], amount: quote.price, title: titles && "#{task.title} Service Fee" }]
-      if (quote.service_price || 0).positive? && (quote.service_quantity || 0).positive?
-        lines << { key: [task.id, "parts"], amount: quote.service_price * quote.service_quantity,
-                   title: titles && "#{task.title} Parts Fee" }
-      end
-      quote.job_task_quote_options.sort_by(&:job_option_id).each do |opt|
-        lines << { key: [task.id, "option:#{opt.job_option_id}"], amount: opt.price,
-                   title: titles && "#{task.title} #{opt.job_option.name}" }
-      end
-      lines
+      quote.nil? ? [] : task_quote_lines(task, quote, titles)
     end
+  end
+
+  # One task's lines of #quote_lines: the service fee, the parts fee when parts are charged, then each option.
+  def task_quote_lines(task, quote, titles)
+    lines = [{ key: [task.id, "service"], amount: quote.price, title: titles && "#{task.title} Service Fee" }]
+    if parts_charged?(quote)
+      lines << { key: [task.id, "parts"], amount: quote.service_price * quote.service_quantity,
+                 title: titles && "#{task.title} Parts Fee" }
+    end
+    quote.job_task_quote_options.sort_by(&:job_option_id).each do |opt|
+      lines << { key: [task.id, "option:#{opt.job_option_id}"], amount: opt.price,
+                 title: titles && "#{task.title} #{opt.job_option.name}" }
+    end
+    lines
+  end
+
+  def parts_charged?(quote)
+    (quote.service_price || 0).positive? && (quote.service_quantity || 0).positive?
   end
 
   # checkout_link's decision under the row lock: [invoice_url or nil, whether the order was sent back to staff].
