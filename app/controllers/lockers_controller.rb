@@ -1,7 +1,7 @@
 class LockersController < AdminAreaController
   # Guests are sent to the login page before the admin check can send them away.
   prepend_before_action :signed_in
-  before_action :locker_queries, only: %i[show create_multiple update]
+  before_action :locker_queries, only: %i[show update]
 
   helper_method :rental_state_icon
 
