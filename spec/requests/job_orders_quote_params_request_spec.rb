@@ -136,6 +136,38 @@ RSpec.describe "Job order quote params", type: :request do
       expect(orders.map { |o| o.job_tasks.map { |t| t.reload.job_task_quote&.price } }).to eq([[0], [0, 0, 0]])
     end
 
+    # Renaming a file also reads the record it is attached to (Active Storage touches it), so this order's files
+    # are left out here; the names are asserted in the next example.
+    it "reads the tasks' options in as many queries for three tasks as for one" do
+      option = create(:job_option)
+      reads = ->(job_order) { selects_on("job_task_options") { patch_quote(job_order, { approved: "true" }) }.size }
+      orders = [1, 3].map do |count|
+        job_order = make_job_order!(owner: owner, status_key: :staff_approval)
+        count.times { |i| job_order.job_tasks.create!(title: "Task #{i}").job_task_options.create!(job_option: option) }
+        job_order
+      end
+
+      expect(reads.call(orders[1])).to eq(reads.call(orders[0]))
+    end
+
+    it "prefixes every task's files with the order id and every option file with JMTS" do
+      option = create(:job_option)
+      tasks = Array.new(3) do |i|
+        order.job_tasks.create!(title: "Extra #{i}").tap do |job_task|
+          job_task.user_files.attach(FilesTestHelper.stl)
+          job_task.job_task_options.create!(job_option: option, option_file: FilesTestHelper.pdf)
+        end
+      end
+
+      quote({})
+
+      expect_quoted
+      tasks.each do |job_task|
+        expect(job_task.reload.user_files.map { |f| f.filename.to_s }).to eq(["#{order.id}_#{FilesTestHelper.stl_name}"])
+        expect(job_task.job_task_options.map { |o| o.option_file.filename.to_s }).to eq(["JMTS_#{FilesTestHelper.pdf_name}"])
+      end
+    end
+
     it "refuses a task with a job service but no service price, with the missing service message" do
       job_type = JobType.find_by!(name: "3D Print")
       group = create(:job_service_group, job_type: job_type)
