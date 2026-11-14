@@ -236,7 +236,6 @@ RSpec.describe Payments::ShopifyAdapter do
   end
 
   describe "#create_checkout" do
-
     it "raises on an HTTP answer that is not 200, and on an answer without the draft" do
       answer("mutation draftOrderCreate", {}, status: 202)
       reference = Payments::Reference.new(kind: "membership", record_id: 1)
