@@ -83,9 +83,9 @@
                     <td class="text-end pe-3">
                       <% if bookings.length > 1 %>
                         <div class="btn-group btn-group-sm">
-                          <%= button_to bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'approve', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-outline-success', title: 'Approve All' do %><i class="fa-solid fa-check-double"></i><% end %>
-                          <%= button_tag type: 'button', class: 'btn btn-outline-primary', title: 'Select Specific', data: { bs_toggle: 'modal', bs_target: '#approveRecurringModal', dates: bookings.map { |b| [b.id, "#{b.start_time.strftime("%b %e")} (#{b.start_time.strftime("%l:%M%P")}-#{b.end_time.strftime("%l:%M%P")})"] } } do %><i class="fa-solid fa-list"></i><% end %>
-                          <%= button_to bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'decline', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-outline-danger', title: 'Reject All' do %><i class="fa-solid fa-xmark"></i><% end %>
+                          <%= button_to bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'approve', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-outline-success', title: t('sub_space_booking.series_actions.approve_all') do %><i class="fa-solid fa-check-double"></i><% end %>
+                          <%= button_tag type: 'button', class: 'btn btn-outline-primary', title: t('sub_space_booking.series_actions.select_specific'), data: { bs_toggle: 'modal', bs_target: '#approveRecurringModal', dates: bookings.map { |b| [b.id, "#{b.start_time.strftime("%b %e")} (#{b.start_time.strftime("%l:%M%P")}-#{b.end_time.strftime("%l:%M%P")})"] } } do %><i class="fa-solid fa-list"></i><% end %>
+                          <%= button_to bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'decline', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-outline-danger', title: t('sub_space_booking.series_actions.reject_all') do %><i class="fa-solid fa-xmark"></i><% end %>
                         </div>
                       <% else %>
                         <div class="d-flex gap-2 justify-content-end">

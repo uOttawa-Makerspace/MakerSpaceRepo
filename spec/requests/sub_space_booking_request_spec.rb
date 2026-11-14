@@ -915,6 +915,22 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       )
     end
 
+    it "titles the pending series buttons in the page's language" do
+      log_in!(create(:user, :admin, booking_approval: true))
+      owner = create(:user, :regular_user, booking_approval: true)
+      recurring = RecurringBooking.create!
+      booking_by(owner, recurring_booking: recurring)
+      booking_by(owner, recurring_booking: recurring,
+                        start_time: DateTime.parse("2027-04-10 10:00"), end_time: DateTime.parse("2027-04-10 11:00"))
+
+      titles = %w[en fr].map do |locale|
+        get sub_space_booking_index_path(locale: locale)
+        Capybara.string(response.body).all("#pendingBody .btn-group [title]", visible: :all).map { |b| b["title"] }
+      end
+      expect(titles).to eq([["Approve All", "Select Specific", "Reject All"],
+                            ["Tout approuver", "Choisir les dates", "Tout refuser"]])
+    end
+
     it "user gate on approve/decline" do
       log_in!(create(:user, :regular_user, booking_approval: true))
       booking = booking_by(create(:user, :regular_user, booking_approval: true))
