@@ -92,15 +92,19 @@ RSpec.describe "Job order show page", type: :request do
       end
     end
 
-    # The page's timeline cannot draw an order that has no status row, so that page answers with a server error;
-    # the notice is still decided first.
-    it "is not set for an order without any status row" do
-      order = create(:job_order, user: owner)
-      typed_task!(order, "Task #1")
-      session_login!(owner)
-      get job_order_path(order)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(flash[:notice]).to be_nil
+    # An order without any status row has no current step: its timeline shows the eight usual steps, all still to
+    # come, with none marked done or current.
+    %i[owner staff].each do |role|
+      it "is not set for an order without any status row, whose page #{role} can still open" do
+        order = create(:job_order, user: owner)
+        typed_task!(order, "Task #1")
+        session_login!(public_send(role))
+        get job_order_path(order)
+        expect(response).to have_http_status(:ok)
+        expect(flash[:notice]).to be_nil
+        expect(response.body.scan("fa-solid fa-circle me-2 text-muted").size).to eq(8)
+        expect(response.body).not_to include("fa-solid fa-check me-2 text-success", "fa-solid fa-dot_circle me-2")
+      end
     end
   end
 

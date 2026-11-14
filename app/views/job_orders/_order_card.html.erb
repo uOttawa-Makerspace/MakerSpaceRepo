@@ -25,7 +25,8 @@
       [JobStatus.declined, JobStatus.sent_reminder].include?(status) && !completed_status_ids.include?(status.id)
     end %>
 
-    <% current_index = filtered_statuses.find_index(current_status) %>
+    <%# An order with no status row has no current step: every step is still to come. %>
+    <% current_index = filtered_statuses.find_index(current_status) || filtered_statuses.size %>
 
     <ul class="list-group list-group-flush">
       <% filtered_statuses.each_with_index do |status, index| %>
