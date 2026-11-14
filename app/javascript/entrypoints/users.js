@@ -170,24 +170,6 @@ function bindKeyCertUploads() {
   });
 }
 
-function decorateRoleSpaceSelects() {
-  // For the select boxes in admin/users/manage_roles
-  document.querySelectorAll(".role-space-select").forEach((i) => {
-    new TomSelect(
-      i,
-      tomSelectOptions(i, {
-        plugins: {
-          checkbox_options: {
-            checkedClassNames: ["ts-checked"],
-            uncheckedClassNames: ["ts-unchecked"],
-          },
-          remove_button: { title: "Remove space" },
-        },
-      }),
-    );
-  });
-}
-
 function bindUserSpaceButtons() {
   document.querySelectorAll("input.set-user-space-button").forEach((i) => {
     i.addEventListener("change", (event) => {
@@ -221,6 +203,5 @@ document.addEventListener("turbo:load", function () {
   initProgramSelect();
   bindRoleButtons();
   bindKeyCertUploads();
-  decorateRoleSpaceSelects();
   bindUserSpaceButtons();
 });

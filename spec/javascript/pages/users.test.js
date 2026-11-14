@@ -358,10 +358,9 @@ describe("key certificate upload", () => {
 });
 
 describe("role spaces", () => {
-  it("decorates the role space selects again on every load", () => {
+  it("leaves a role space select as it is, as no page has one", () => {
     load(`${BASE}<select class="role-space-select"></select>`);
-    document.dispatchEvent(new Event("turbo:load"));
-    expect(selects).toHaveLength(2);
+    expect(selects).toHaveLength(0);
   });
 
   it("counts only the space boxes beside the changed one", () => {
@@ -382,14 +381,6 @@ describe("role spaces", () => {
       "Content-Type": "application/json",
       "X-CSRF-Token": "tok",
     });
-  });
-
-  it("decorates each role space select with checkboxes", () => {
-    load(
-      `${BASE}<select class="role-space-select"></select><select class="role-space-select"></select>`,
-    );
-    expect(selects).toHaveLength(2);
-    expect(selects[0].config.plugins.remove_button.title).toBe("Remove space");
   });
 
   it("saves the checked spaces of a user as they change", () => {
