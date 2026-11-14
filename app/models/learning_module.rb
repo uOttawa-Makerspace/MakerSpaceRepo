@@ -61,9 +61,14 @@ class LearningModule < ApplicationRecord
   # scorm package changes
   has_many_attached :scorm_package_files
 
-  # Value to receive from the edit form
-  attribute :scorm_enabled, :boolean, default: false
-  after_initialize -> { self.scorm_enabled = scorm_package.attached? }
+  # The form's SCORM switch. It shows the submitted value after a failed save, and otherwise whether a
+  # package is attached, looked up only when the switch is read.
+  attribute :scorm_enabled, :boolean
+
+  def scorm_enabled
+    value = super
+    value.nil? ? scorm_package.attached? : value
+  end
 
   enum :scorm_status,
        { pending: 0, processing: 1, ready: 2, failed: 3 },
