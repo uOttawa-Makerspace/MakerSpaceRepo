@@ -1,9 +1,4 @@
 {
-  "app/javascript/controllers/volunteer_search_controller.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
   "app/javascript/entrypoints/add_new_staff.js": {
     "no-unused-vars": {
       "count": 1
@@ -26,16 +21,6 @@
   },
   "app/javascript/entrypoints/job_orders_wizard.js": {
     "no-unused-vars": {
-      "count": 1
-    }
-  },
-  "app/javascript/entrypoints/keys.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "app/javascript/entrypoints/lockers.js": {
-    "complexity": {
       "count": 1
     }
   },

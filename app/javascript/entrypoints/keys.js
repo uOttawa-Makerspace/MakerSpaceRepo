@@ -3,27 +3,40 @@ import { flatpickrOptions, tomSelectOptions } from "../src/page_locale.js";
 import "flatpickr";
 
 document.addEventListener("DOMContentLoaded", () => {
+  setUpDepositDatePicker();
+  setUpNameSearch("supervisor-select");
+  setUpNotesToggle();
+  setUpNameSearch("space-select");
+  setUpNameSearch("key-request-select");
+  setUpKeyTypeToggle();
+  setUpPrintButton();
+});
+
+function setUpDepositDatePicker() {
   const depositDateInput = document.getElementById("deposit-return-date");
-  if (depositDateInput) {
-    const depositDatePicker = depositDateInput.flatpickr(
-      flatpickrOptions(depositDateInput, {
-        enableTime: false,
-        noCalendar: false,
-        dateFormat: "Y-m-d",
-      }),
-    );
+  if (!depositDateInput) return;
 
-    document
-      .getElementById("deposit-return-date-clear")
-      .addEventListener("click", () => {
-        depositDatePicker.clear();
-      });
-  }
+  const depositDatePicker = depositDateInput.flatpickr(
+    flatpickrOptions(depositDateInput, {
+      enableTime: false,
+      noCalendar: false,
+      dateFormat: "Y-m-d",
+    }),
+  );
 
-  let supervisorSelect = document.getElementById("supervisor-select");
-  if (supervisorSelect && !supervisorSelect.tomselect) {
+  document
+    .getElementById("deposit-return-date-clear")
+    .addEventListener("click", () => {
+      depositDatePicker.clear();
+    });
+}
+
+// A select whose options are searched by name, unless it already has a widget
+function setUpNameSearch(id) {
+  const select = document.getElementById(id);
+  if (select && !select.tomselect) {
     new TomSelect(
-      "#supervisor-select",
+      `#${id}`,
       tomSelectOptions(document, {
         searchField: ["name"],
         valueField: "id",
@@ -33,61 +46,37 @@ document.addEventListener("DOMContentLoaded", () => {
       }),
     );
   }
+}
 
+// The notes are hidden for a key in inventory
+function setUpNotesToggle() {
   const statusSelect = document.getElementById("status-select");
   const notesField = document.getElementById("notes-container");
-  if (statusSelect && notesField) {
-    statusSelect.addEventListener("change", (e) => {
-      if (e.target.value === "inventory") {
-        notesField.style.display = "none";
-      } else {
-        notesField.style.display = "block";
-      }
-    });
-  }
+  if (!statusSelect || !notesField) return;
 
-  let spaceSelect = document.getElementById("space-select");
-  if (spaceSelect && !spaceSelect.tomselect) {
-    new TomSelect(
-      "#space-select",
-      tomSelectOptions(document, {
-        searchField: ["name"],
-        valueField: "id",
-        labelField: "name",
-        maxOptions: null,
-        searchOnKeyUp: true,
-      }),
-    );
-  }
+  statusSelect.addEventListener("change", (e) => {
+    notesField.style.display =
+      e.target.value === "inventory" ? "none" : "block";
+  });
+}
 
-  let keyRequestSelect = document.getElementById("key-request-select");
-  if (keyRequestSelect && !keyRequestSelect.tomselect) {
-    new TomSelect(
-      "#key-request-select",
-      tomSelectOptions(document, {
-        searchField: ["name"],
-        valueField: "id",
-        labelField: "name",
-        maxOptions: null,
-        searchOnKeyUp: true,
-      }),
-    );
-  }
-
+// A regular key belongs to a space; any other key type has its own keycode
+function setUpKeyTypeToggle() {
+  const spaceSelect = document.getElementById("space-select");
   const customKeycode = document.getElementById("custom-keycode");
   const keyTypeSelect = document.getElementById("key-type-select");
-  if (keyTypeSelect) {
-    keyTypeSelect.addEventListener("change", (e) => {
-      if (e.target.value === "regular") {
-        spaceSelect.parentElement.style.display = "block";
-        customKeycode.parentElement.style.display = "none";
-      } else {
-        spaceSelect.parentElement.style.display = "none";
-        customKeycode.parentElement.style.display = "block";
-      }
-    });
-  }
+  if (!keyTypeSelect) return;
 
+  keyTypeSelect.addEventListener("change", (e) => {
+    const regular = e.target.value === "regular";
+    spaceSelect.parentElement.style.display = regular ? "block" : "none";
+    customKeycode.parentElement.style.display = regular ? "none" : "block";
+  });
+}
+
+// Printing reloads the certificate frames first and prints one second after
+// the last of them has loaded again.
+function setUpPrintButton() {
   const printButton = document.getElementById("print-button");
   const keyCertIframes = document.querySelectorAll(".key-cert-iframe");
   let loadedIframes = 0;
@@ -118,4 +107,4 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-});
+}

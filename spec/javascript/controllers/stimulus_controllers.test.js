@@ -295,6 +295,87 @@ describe("volunteer-search", () => {
       true,
     );
   });
+
+  it("matches without regard to case or surrounding spaces", async () => {
+    await mount(page);
+    search("  BOB ");
+    expect(hidden('[data-volunteer-search-target="activeRow"]')).toEqual([
+      true,
+      false,
+    ]);
+    expect($("ac").textContent).toBe("1");
+    expect($("clear").classList.contains("d-none")).toBe(false);
+  });
+
+  it("treats a search of only spaces as empty", async () => {
+    await mount(page);
+    search("   ");
+    expect(hidden("tr").some(Boolean)).toBe(false);
+    expect($("ac").textContent).toBe("2");
+    expect($("clear").classList.contains("d-none")).toBe(true);
+  });
+
+  it("shows both empty messages when nothing matches", async () => {
+    await mount(page);
+    search("zzz");
+    expect($("ae").classList.contains("d-none")).toBe(false);
+    expect($("at").classList.contains("d-none")).toBe(true);
+    expect($("ie").classList.contains("d-none")).toBe(false);
+    expect($("it").classList.contains("d-none")).toBe(true);
+  });
+
+  it("keeps the counts taken when the page loaded for an empty search", async () => {
+    await mount(page);
+    const added = document.createElement("tr");
+    added.dataset.volunteerSearchTarget = "activeRow";
+    added.textContent = "Dee New";
+    $("at").querySelector("tr").after(added);
+    search("");
+    expect($("ac").textContent).toBe("2");
+    search("dee");
+    expect($("ac").textContent).toBe("1");
+  });
+
+  it("never shows the empty message for a list that had no volunteers", async () => {
+    await mount(`
+      <div data-controller="volunteer-search">
+        <input data-volunteer-search-target="input" id="q">
+        <div data-volunteer-search-target="activeTableContainer" id="at"></div>
+        <div data-volunteer-search-target="activeEmpty" class="d-none" id="ae"></div>
+        <div data-volunteer-search-target="inactiveTableContainer" id="it"></div>
+        <div data-volunteer-search-target="inactiveEmpty" class="d-none" id="ie"></div>
+      </div>`);
+    search("ann");
+    expect($("ae").classList.contains("d-none")).toBe(true);
+    expect($("at").classList.contains("d-none")).toBe(false);
+    expect($("ie").classList.contains("d-none")).toBe(true);
+    expect($("it").classList.contains("d-none")).toBe(false);
+  });
+
+  it("leaves an empty message alone when its table container is missing", async () => {
+    await mount(`
+      <div data-controller="volunteer-search">
+        <input data-volunteer-search-target="input" id="q">
+        <table>${rows("active", ["Ann"])}${rows("inactive", ["Cy"])}</table>
+        <div data-volunteer-search-target="activeEmpty" class="d-none" id="ae"></div>
+        <div data-volunteer-search-target="inactiveEmpty" class="d-none" id="ie"></div>
+      </div>`);
+    search("zzz");
+    expect($("ae").classList.contains("d-none")).toBe(true);
+    expect($("ie").classList.contains("d-none")).toBe(true);
+  });
+
+  it("leaves a table container alone when its empty message is missing", async () => {
+    await mount(`
+      <div data-controller="volunteer-search">
+        <input data-volunteer-search-target="input" id="q">
+        <div data-volunteer-search-target="activeTableContainer" id="at"><table>${rows("active", ["Ann"])}</table></div>
+        <div data-volunteer-search-target="inactiveTableContainer" id="it"><table>${rows("inactive", ["Cy"])}</table></div>
+      </div>`);
+    search("zzz");
+    expect($("at").classList.contains("d-none")).toBe(false);
+    expect($("it").classList.contains("d-none")).toBe(false);
+  });
 });
 
 describe("confirmation", () => {
