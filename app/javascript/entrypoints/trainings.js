@@ -1,5 +1,6 @@
 import DataTable from "datatables.net-bs5";
 import { dataTableOptions } from "../src/page_locale.js";
+import { onEveryPageLoad } from "../src/on_page.js";
 import { tomSelectFor } from "../src/tom_select.js";
 
 // The skill pickers of the training form, in English and in French; each
@@ -15,7 +16,7 @@ function skillPicker(id) {
   });
 }
 
-document.addEventListener("turbo:load", () => {
+onEveryPageLoad(() => {
   skillPicker("training_list_of_skills_en");
   skillPicker("training_list_of_skills_fr");
 });

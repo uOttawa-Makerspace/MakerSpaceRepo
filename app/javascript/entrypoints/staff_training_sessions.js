@@ -1,5 +1,7 @@
+import { onEveryPageLoad } from "../src/on_page.js";
 import { newTomSelect } from "../src/tom_select.js";
-document.addEventListener("turbo:load", function () {
+
+onEveryPageLoad(() => {
   if (document.getElementById("user_id")) {
     if (!document.getElementById("user_id").tomselect) {
       const instructor = /** @type {HTMLSelectElement} */ (

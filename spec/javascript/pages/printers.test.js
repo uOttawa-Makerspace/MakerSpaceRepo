@@ -62,6 +62,34 @@ describe("printers page script", () => {
     expect(instances.map((i) => i.el.id)).toEqual(["remove_printer"]);
   });
 
+  it("shows no code when there are no printer models", () => {
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(() =>
+      load(
+        '<select id="model_id"></select><span id="newPrinterCode">PrinterCode</span>',
+      ),
+    ).not.toThrow();
+    expect($("newPrinterCode").innerText).toBe("");
+    expect(errors).not.toHaveBeenCalled();
+    errors.mockRestore();
+  });
+
+  it("shows no code for a model without a short form", () => {
+    load(page);
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    $("model_id").insertAdjacentHTML(
+      "beforeend",
+      '<option value="3">Prusa</option>',
+    );
+    $("model_id").value = "3";
+    expect(() =>
+      $("model_id").dispatchEvent(new Event("change")),
+    ).not.toThrow();
+    expect($("newPrinterCode").innerText).toBe("");
+    expect(errors).not.toHaveBeenCalled();
+    errors.mockRestore();
+  });
+
   it("does nothing on a page without its fields", () => {
     expect(() => load("<p>elsewhere</p>")).not.toThrow();
     expect(instances).toEqual([]);
