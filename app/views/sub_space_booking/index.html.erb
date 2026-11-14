@@ -59,7 +59,7 @@
                   <% end %>
                 </div>
                 <div class="col-md-10">
-                  <div id="booked-calendar" class="bg-body p-2 rounded"></div>
+                  <div id="booked-calendar" class="bg-body p-2 rounded" <%= tag.attributes(data: calendar_texts_data) %>></div>
                 </div>
               </div>
               <%= render partial: 'book_modal' %>

@@ -4,7 +4,7 @@ import TomSelect from "tom-select";
 import "flatpickr";
 import { Toast } from "bootstrap";
 import { csrfHeaders } from "../src/csrf";
-import { pageCalendar } from "../src/page_calendar.js";
+import { calendarTexts, pageCalendar } from "../src/page_calendar.js";
 import {
   failureText,
   parseBody,
@@ -559,6 +559,7 @@ document.addEventListener("turbo:load", function () {
     );
   }
 
+  const bookText = calendarTexts(bookedCalendarEl).book;
   const calendarOptions = {
     initialDate: window.location.href.includes("start")
       ? new Date(new URLSearchParams(window.location.search).get("start"))
@@ -570,7 +571,7 @@ document.addEventListener("turbo:load", function () {
       right: "book,timeGridWeek",
     },
     customButtons: {
-      book: { text: "Book", click: () => createEvent() },
+      book: { text: bookText, click: () => createEvent() },
     },
     views: {
       timeGridWeek: {

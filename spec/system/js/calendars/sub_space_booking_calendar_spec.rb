@@ -69,6 +69,13 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(page).to have_css("#book-recurring-end", visible: :hidden)
     end
 
+    it "names the Book button and the day links in French on a French page", js: true, skip_bullet: true do
+      log_in_as(user, to: sub_space_booking_index_path(room: subspace.id, start: "2027-03-16", locale: "fr"))
+
+      expect(page).to have_css("#booked-calendar .fc-book-button", exact_text: "Réserver")
+      expect(find(".fc-col-header-cell[data-date='2027-03-16'] [data-navlink]")[:title]).to eq("Aller au 16 mars 2027")
+    end
+
     it "fills the dates from a range dragged on the calendar", js: true, skip_bullet: true do
       open_calendar
       slot = find(".fc-timegrid-col[data-date='2027-03-17'] .fc-timegrid-col-frame")

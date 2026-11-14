@@ -2,6 +2,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Application, Controller } from "@hotwired/stimulus";
 
+import { textsAttribute } from "../calendars/calendar_texts_fixture.js";
+
 const created = [];
 vi.mock("@fullcalendar/core", () => ({
   Calendar: class {
@@ -51,7 +53,7 @@ const PAGE = `
 <div data-controller="unavailabilities-calendar" data-unavailabilities-calendar-feed-url-value="/staff/unavailabilities/json" data-unavailabilities-calendar-failure-template-value="{host} could not be loaded" data-unavailabilities-calendar-unknown-host-value="a linked calendar" data-unavailabilities-calendar-feed-failure-value="Your calendar could not be loaded" data-unavailabilities-calendar-unavailability-form-outlet="#modal" data-unavailabilities-calendar-imported-event-details-outlet="#details">
   <div id="calendar_container" data-unavailabilities-calendar-target="container" style="display:none">
     <button id="addUnavailabilityButton" data-action="click->unavailabilities-calendar#addUnavailability"></button>
-    <div id="calendar" data-unavailabilities-calendar-target="calendar"><p id="stale">old</p></div>
+    <div id="calendar" data-unavailabilities-calendar-target="calendar" ${textsAttribute()}><p id="stale">old</p></div>
   </div>
   <div id="spinner_container" data-unavailabilities-calendar-target="spinner"></div>
   <div id="failures" data-unavailabilities-calendar-target="failures" hidden></div>

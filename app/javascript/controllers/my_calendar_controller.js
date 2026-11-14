@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus";
 import { Tooltip } from "bootstrap";
 
 import { applyEventBackground } from "../src/calendar_background.js";
-import { pageCalendar } from "../src/page_calendar.js";
+import { calendarTexts, pageCalendar } from "../src/page_calendar.js";
 
 // The title and description are free text, so they go in as text nodes and
 // never as markup.
@@ -35,7 +35,7 @@ export default class extends TypedController {
 
   connect() {
     this.onlyShowMyShifts = false;
-
+    this.texts = calendarTexts(this.calendarTarget);
     this.calendar = pageCalendar(this.calendarTarget, this.calendarOptions());
     this.containerTarget.style.display = "block";
     this.spinnerTarget.style.display = "none";
@@ -48,6 +48,7 @@ export default class extends TypedController {
   }
 
   calendarOptions() {
+    const overlap = localStorage.fullCalendarEventOverlap === "true";
     return {
       initialView: "timeGridWeek",
       headerToolbar: {
@@ -55,17 +56,15 @@ export default class extends TypedController {
         center: "title",
         right: "timeGridWeek,dayGridMonth",
       },
-      slotEventOverlap: localStorage.fullCalendarEventOverlap === "true",
+      slotEventOverlap: overlap,
       customButtons: {
         toggleOthersShifts: {
-          text: "Show My Shifts Only",
-          click: () => this.toggleOthersShifts(),
+          text: this.texts.showMyShiftsOnly,
+          click: (_event, button) => this.toggleOthersShifts(button),
         },
         toggleEventOverlap: {
-          text: this.overlapLabel(
-            localStorage.fullCalendarEventOverlap === "true",
-          ),
-          click: () => this.toggleEventOverlap(),
+          text: this.overlapLabel(overlap),
+          click: (_event, button) => this.toggleEventOverlap(button),
         },
       },
       events: this.feedUrlValue,
@@ -80,7 +79,7 @@ export default class extends TypedController {
     };
   }
 
-  toggleOthersShifts() {
+  toggleOthersShifts(button) {
     this.onlyShowMyShifts = !this.onlyShowMyShifts;
 
     this.calendar.getEvents().forEach((event) => {
@@ -91,25 +90,20 @@ export default class extends TypedController {
       );
     });
 
-    this.buttonNamed("toggleOthersShifts").textContent = this.onlyShowMyShifts
-      ? "Show All Shifts"
-      : "Show My Shifts Only";
+    button.textContent = this.onlyShowMyShifts
+      ? this.texts.showAllShifts
+      : this.texts.showMyShiftsOnly;
   }
 
-  toggleEventOverlap() {
+  toggleEventOverlap(button) {
     const overlap = !this.calendar.getOption("slotEventOverlap");
     localStorage.fullCalendarEventOverlap = overlap;
     this.calendar.setOption("slotEventOverlap", overlap);
-    this.buttonNamed("toggleEventOverlap").textContent =
-      this.overlapLabel(overlap);
+    button.textContent = this.overlapLabel(overlap);
   }
 
   overlapLabel(overlap) {
-    return overlap ? "Disable Event Overlap" : "Enable Event Overlap";
-  }
-
-  buttonNamed(name) {
-    return this.element.querySelector(`.fc-${name}-button`);
+    return overlap ? this.texts.disableOverlap : this.texts.enableOverlap;
   }
 
   decorateEvent(info) {

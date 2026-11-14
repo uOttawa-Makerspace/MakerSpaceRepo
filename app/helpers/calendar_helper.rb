@@ -73,6 +73,12 @@ module CalendarHelper
     (l1 + 0.05) / (l2 + 0.05)
   end
 
+  # The data attribute of a calendar element: the calendar's words in the page's language, as JSON keyed by the
+  # names app/javascript/src/page_calendar.js reads.
+  def calendar_texts_data
+    { calendar_texts: t("calendar_texts").deep_transform_keys { |key| key.to_s.camelize(:lower) }.to_json }
+  end
+
   # The repeat rule as the calendar views read it (see RecurrenceRule#in_toronto_time).
   def date_formatted_recurrence_rule(event)
     return if event.recurrence_rule.blank?

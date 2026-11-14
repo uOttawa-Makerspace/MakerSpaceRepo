@@ -2,12 +2,19 @@
 import { afterEach, describe, expect, it } from "vitest";
 import listPlugin from "@fullcalendar/list";
 
-import { pageCalendar } from "../../app/javascript/src/page_calendar.js";
+import {
+  calendarTexts,
+  pageCalendar,
+} from "../../app/javascript/src/page_calendar.js";
+import {
+  CALENDAR_TEXTS,
+  textsAttribute,
+} from "./calendars/calendar_texts_fixture.js";
 
 // The real FullCalendar, drawn on a page of the given language with the
 // toolbar the staff calendars use.
 function draw(lang, options = {}, ...plugins) {
-  document.body.innerHTML = `<div id="cal"><p id="stale">old</p></div>`;
+  document.body.innerHTML = `<div id="cal" ${textsAttribute(lang)}><p id="stale">old</p></div>`;
   document.documentElement.setAttribute("lang", lang);
   const target = document.getElementById("cal");
   const calendar = pageCalendar(
@@ -51,6 +58,52 @@ describe("pageCalendar", () => {
     expect(drawn.target.querySelector(".fc-today-button").textContent).toBe(
       "Aujourd'hui",
     );
+  });
+
+  it("reads the words the page gives its calendar element", () => {
+    drawn = draw("fr");
+
+    expect(calendarTexts(drawn.target)).toEqual(CALENDAR_TEXTS.fr);
+  });
+
+  it("gives FullCalendar the page's hints, in English and in French", () => {
+    for (const [lang, close, link] of [
+      ["en", "Close", "Go to March 17, 2027"],
+      ["fr", "Fermer", "Aller au 17 mars 2027"],
+    ]) {
+      drawn?.calendar.destroy();
+      drawn = draw(lang, { initialDate: "2027-03-17", navLinks: true });
+      const header = drawn.target.querySelector(
+        ".fc-col-header-cell[data-date='2027-03-17'] [data-navlink]",
+      );
+
+      expect(header.title).toBe(link);
+      expect(drawn.calendar.getOption("closeHint")).toBe(close);
+      expect(drawn.calendar.getOption("timeHint")).toBe(
+        CALENDAR_TEXTS[lang].hints.timeHint,
+      );
+      expect(drawn.calendar.getOption("eventHint")).toBe(
+        CALENDAR_TEXTS[lang].hints.eventHint,
+      );
+    }
+  });
+
+  it("names the buttons of a view of a few days only with the hints given", () => {
+    const options = {
+      initialView: "timeGridTwoDay",
+      views: { timeGridTwoDay: { type: "timeGrid", duration: { days: 2 } } },
+      headerToolbar: { left: "prev", center: "title", right: "next" },
+    };
+    drawn = draw("en", options);
+    expect(drawn.name("prev")).toBe("Previous ");
+    drawn.calendar.destroy();
+
+    drawn = draw("en", {
+      ...options,
+      buttonHints: CALENDAR_TEXTS.en.daysButtonHints,
+    });
+    expect(drawn.name("prev")).toBe("Previous days");
+    expect(drawn.name("next")).toBe("Next days");
   });
 
   it("keeps Sunday as the first day of the week in French", () => {
