@@ -4,3 +4,5 @@ coverage
 node_modules
 public
 tmp
+# Written by eslint --prune-suppressions; formatting it would make the pruning check see a change
+eslint-suppressions.json
