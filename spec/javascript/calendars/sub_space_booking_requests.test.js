@@ -26,8 +26,10 @@ vi.mock("@fullcalendar/list", () => ({ default: { name: "list" } }));
 const pickersMade = [];
 vi.mock("tom-select", () => ({
   default: class {
+    // like Tom Select, the select keeps its picker
     constructor(select) {
       pickersMade.push(select.id);
+      select.tomselect = this;
     }
     hook() {}
   },

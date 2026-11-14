@@ -39,7 +39,6 @@
 2	app/javascript/entrypoints/application.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
 1	app/javascript/entrypoints/application.js	TS2551	Property 'dragover' does not exist on type 'Window & typeof globalThis'. Did you mean 'ondragover'?
 1	app/javascript/entrypoints/application.js	TS2551	Property 'examResponse' does not exist on type 'Window & typeof globalThis'. Did you mean 'Response'?
-1	app/javascript/entrypoints/assign_staff_to_job.js	TS2353	Object literal may only specify known properties, and 'searchPlaceholder' does not exist in type 'RecursivePartial<TomSettings>'.
 1	app/javascript/entrypoints/badges.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
 2	app/javascript/entrypoints/badges.js	TS2345	Argument of type 'number' is not assignable to parameter of type 'string'.
 2	app/javascript/entrypoints/calendar.js	TS2304	Cannot find name 'flatpickr'.
@@ -83,11 +82,9 @@
 2	app/javascript/entrypoints/key_requests.js	TS2353	Object literal may only specify known properties, and 'searchOnKeyUp' does not exist in type 'RecursivePartial<TomSettings>'.
 2	app/javascript/entrypoints/key_requests.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 1	app/javascript/entrypoints/key_transactions.js	TS2339	Property 'flatpickr' does not exist on type 'HTMLElement'.
-1	app/javascript/entrypoints/keys.js	TS2339	Property 'flatpickr' does not exist on type 'HTMLElement'.
 1	app/javascript/entrypoints/keys.js	TS2339	Property 'src' does not exist on type 'Element'.
 2	app/javascript/entrypoints/keys.js	TS2339	Property 'value' does not exist on type 'EventTarget'.
-3	app/javascript/entrypoints/keys.js	TS2353	Object literal may only specify known properties, and 'searchOnKeyUp' does not exist in type 'RecursivePartial<TomSettings>'.
-3	app/javascript/entrypoints/keys.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
+1	app/javascript/entrypoints/keys.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 1	app/javascript/entrypoints/learning_modules_scorm.js	TS2339	Property 'API_1484_11' does not exist on type 'Window & typeof globalThis'.
 1	app/javascript/entrypoints/learning_modules_scorm.js	TS2339	Property 'API' does not exist on type 'Window & typeof globalThis'.
 5	app/javascript/entrypoints/learning_modules_scorm.js	TS2339	Property 'dataset' does not exist on type 'Element'.
@@ -103,7 +100,6 @@
 2	app/javascript/entrypoints/learning_modules.js	TS2339	Property 'querySelector' does not exist on type 'Node'.
 1	app/javascript/entrypoints/learning_modules.js	TS2339	Property 'remove' does not exist on type 'Node'.
 2	app/javascript/entrypoints/learning_modules.js	TS2339	Property 'style' does not exist on type 'Element'.
-1	app/javascript/entrypoints/learning_modules.js	TS2345	Argument of type 'Element' is not assignable to parameter of type 'string | TomInput'.
 1	app/javascript/entrypoints/locker_admin.js	TS2339	Property 'checked' does not exist on type 'Element'.
 1	app/javascript/entrypoints/locker_admin.js	TS2339	Property 'checked' does not exist on type 'HTMLElement'.
 1	app/javascript/entrypoints/locker_admin.js	TS2339	Property 'dataset' does not exist on type 'Element'.
@@ -168,11 +164,8 @@
 1	app/javascript/entrypoints/space_staff_needed_calendar.js	TS2339	Property 'querySelectorAll' does not exist on type 'Node'.
 1	app/javascript/entrypoints/space_staff_needed_calendar.js	TS2339	Property 'removeAttribute' does not exist on type 'Node'.
 1	app/javascript/entrypoints/space_staff_needed_calendar.js	TS2339	Property 'style' does not exist on type 'Node'.
-1	app/javascript/entrypoints/staff_dashboard_search.js	TS2339	Property 'clearOptions' does not exist on type 'RecursivePartial<TomSettings>'.
 1	app/javascript/entrypoints/staff_dashboard_search.js	TS2339	Property 'multiple' does not exist on type 'Element'.
-1	app/javascript/entrypoints/staff_dashboard_search.js	TS2339	Property 'tomsselect' does not exist on type 'Element'.
 2	app/javascript/entrypoints/staff_dashboard_search.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
-1	app/javascript/entrypoints/staff_dashboard_search.js	TS2345	Argument of type 'Element' is not assignable to parameter of type 'string | TomInput'.
 1	app/javascript/entrypoints/staff_dashboard.js	TS2339	Property 'checked' does not exist on type 'Element'.
 2	app/javascript/entrypoints/staff_dashboard.js	TS2339	Property 'detail' does not exist on type 'Event'.
 2	app/javascript/entrypoints/staff_dashboard.js	TS2339	Property 'files' does not exist on type 'HTMLElement'.
@@ -194,8 +187,6 @@
 5	app/javascript/entrypoints/sub_space_booking.js	TS2339	Property 'style' does not exist on type 'Element'.
 1	app/javascript/entrypoints/sub_space_booking.js	TS2339	Property 'value' does not exist on type 'EventTarget'.
 15	app/javascript/entrypoints/sub_space_booking.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
-1	app/javascript/entrypoints/sub_space_booking.js	TS2345	Argument of type 'HTMLElement' is not assignable to parameter of type 'string | TomInput'.
-2	app/javascript/entrypoints/sub_space_booking.js	TS2551	Property 'tomSelect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 2	app/javascript/entrypoints/tap_box_console.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
 1	app/javascript/entrypoints/teams.js	TS2353	Object literal may only specify known properties, and 'searchOnKeyUp' does not exist in type 'RecursivePartial<TomSettings>'.
 1	app/javascript/entrypoints/teams.js	TS2353	Object literal may only specify known properties, and 'searchPlaceholder' does not exist in type 'RecursivePartial<TomSettings>'.
@@ -211,10 +202,6 @@
 1	app/javascript/entrypoints/users.js	TS2339	Property 'files' does not exist on type 'Element'.
 4	app/javascript/entrypoints/users.js	TS2339	Property 'id' does not exist on type 'EventTarget'.
 1	app/javascript/entrypoints/users.js	TS2339	Property 'value' does not exist on type 'EventTarget'.
-1	app/javascript/entrypoints/users.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
-1	app/javascript/entrypoints/users.js	TS2345	Argument of type 'Element' is not assignable to parameter of type 'string | TomInput'.
-1	app/javascript/entrypoints/users.js	TS2345	Argument of type 'HTMLElement' is not assignable to parameter of type 'string | TomInput'.
-4	app/javascript/entrypoints/users.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 1	app/javascript/entrypoints/videos.js	TS2304	Cannot find name 'check_learning_module'.
 1	app/javascript/entrypoints/videos.js	TS2339	Property 'check_learning_module' does not exist on type 'Window & typeof globalThis'.
 1	app/javascript/entrypoints/videos.js	TS2339	Property 'check_proficient_project' does not exist on type 'Window & typeof globalThis'.
@@ -233,8 +220,6 @@
 3	app/javascript/entrypoints/volunteer_tasks.js	TS2345	Argument of type 'HTMLElement' is not assignable to parameter of type 'string | TomInput'.
 6	app/javascript/entrypoints/volunteer_tasks.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 2	app/javascript/entrypoints/volunteers.js	TS2304	Cannot find name 'flatpickr'.
-1	app/javascript/entrypoints/volunteers.js	TS2345	Argument of type 'HTMLElement' is not assignable to parameter of type 'string | TomInput'.
-1	app/javascript/entrypoints/volunteers.js	TS2353	Object literal may only specify known properties, and 'searchPlaceholder' does not exist in type 'RecursivePartial<TomSettings>'.
 2	app/javascript/entrypoints/volunteers.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 2	app/javascript/src/accordion-load.js	TS2339	Property 'id' does not exist on type 'EventTarget'.
 7	app/javascript/src/calendar_helper.js	TS2339	Property 'action' does not exist on type 'Element'.

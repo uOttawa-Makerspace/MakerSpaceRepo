@@ -251,4 +251,76 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       expect(page).to have_field("custom-keycode", visible: :visible)
     end
   end
+
+  describe "moving between key pages with Turbo" do
+    def pickers = %w[supervisor-select space-select]
+
+    # Marks the next Turbo page load, after the page scripts' own handlers ran.
+    def mark_next_load
+      page.execute_script(<<~JS)
+        document.addEventListener("turbo:load", () => {
+          document.documentElement.dataset.markedLoad = "done";
+        }, { once: true });
+      JS
+    end
+
+    def wait_for_marked_load
+      expect(page).to have_css("html[data-marked-load='done']", visible: :all)
+      page.execute_script("delete document.documentElement.dataset.markedLoad")
+    end
+
+    def turbo_visit(path)
+      wait_for_app_js
+      mark_next_load
+      page.execute_script("Turbo.visit(#{path.to_json})")
+      wait_for_marked_load
+    end
+
+    def expect_one_working_picker(id)
+      expect(page).to have_css("##{id} ~ .ts-wrapper", count: 1, visible: :all)
+      expect(page.evaluate_script("Boolean(document.getElementById(#{id.to_json}).tomselect)")).to be(true)
+    end
+
+    def expect_working_form
+      pickers.each { |id| expect_one_working_picker(id) }
+      select "Keycard", from: "key-type-select"
+      expect(page).to have_field("custom-keycode", visible: :visible)
+      select "Regular", from: "key-type-select"
+      expect(page).to have_no_field("custom-keycode", visible: :visible)
+    end
+
+    let!(:key) { create(:key, :regular_key_type, :unknown_status, number: 5, space: space) }
+
+    before do
+      log_in_as(admin, to: edit_admin_key_path(key))
+      expect(page).to have_css("#space-select.tomselected", visible: :all)
+      turbo_visit(new_admin_key_path)
+      expect(page).to have_current_path(new_admin_key_path)
+    end
+
+    it "sets up the new key form reached by a Turbo visit from another key page" do
+      expect_working_form
+      fill_in "key_number", with: "31"
+      tom_select "Wood Shop (WS-2)", from: "space-select", search: "Wood"
+      select "Inventory", from: "status-select"
+      click_button "Create Key"
+      expect_flash("Successfully created key.")
+      expect(Key.find_by(number: 31)).to have_attributes(space_id: other_space.id, status: "inventory")
+    end
+
+    it "keeps one working picker per select on the key pages restored by going back and forward" do
+      mark_next_load
+      page.go_back
+      wait_for_marked_load
+      expect(page).to have_current_path(edit_admin_key_path(key))
+      expect_working_form
+      mark_next_load
+      page.go_forward
+      wait_for_marked_load
+      expect(page).to have_current_path(new_admin_key_path)
+      expect_working_form
+      tom_select "Wood Shop (WS-2)", from: "space-select", search: "Wood"
+      expect(page).to have_css("#space-select + .ts-wrapper .item", text: "Wood Shop")
+    end
+  end
 end

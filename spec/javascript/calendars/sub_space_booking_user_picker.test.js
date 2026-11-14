@@ -47,7 +47,7 @@ beforeEach(async () => {
   vi.resetModules();
   await import("../../../app/javascript/entrypoints/sub_space_booking.js");
   document.dispatchEvent(new Event("turbo:load"));
-  picker = document.getElementById("user_booking_select").tomSelect;
+  picker = document.getElementById("user_booking_select").tomselect;
 });
 
 afterEach(() => vi.useRealTimers());

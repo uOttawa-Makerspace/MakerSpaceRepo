@@ -4,9 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const selects = [];
 vi.mock("tom-select", () => ({
   default: class {
-    constructor(selector, config) {
-      this.selector = selector;
+    constructor(el, config) {
+      this.el = el;
       this.config = config;
+      el.tomselect = this;
       selects.push(this);
     }
   },
@@ -33,7 +34,12 @@ describe("preferred locker picker", () => {
 
   it("decorates the select", () => {
     expect(selects).toHaveLength(1);
-    expect(selects[0].selector).toBe("#locker_rental_preferred_locker_id");
+    expect(selects[0].el).toBe($("locker_rental_preferred_locker_id"));
+  });
+
+  it("decorates it once when the same page loads again", () => {
+    load();
+    expect(selects).toHaveLength(1);
   });
 
   it.each(["option", "item"])("renders %s with the number and size", (kind) => {
@@ -50,6 +56,16 @@ describe("preferred locker picker", () => {
       escape,
     );
     expect(html).toBe("<div>Locker 3 - Size &lt;S> - Staff only</div>");
+  });
+
+  it("replaces the copied picker markup of a page restored from the cache", () => {
+    selects.length = 0;
+    document.body.innerHTML = `
+      <select id="locker_rental_preferred_locker_id" class="tomselected ts-hidden-accessible" tabindex="-1"></select>
+      <div class="ts-wrapper"></div>`;
+    load();
+    expect(selects).toHaveLength(1);
+    expect(document.querySelectorAll(".ts-wrapper")).toHaveLength(0);
   });
 
   it("does nothing on a page without the select", () => {

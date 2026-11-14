@@ -1,28 +1,21 @@
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
-import TomSelect from "tom-select";
-import { tomSelectOptions } from "../src/page_locale.js";
+import { tomSelectFor } from "../src/tom_select.js";
+
+function lockerText(data, escape) {
+  let size = escape(data.size);
+  let text = escape(data.text);
+  let staffOnly = data.staffOnly == "true" ? " - Staff only" : "";
+  return `<div>Locker ${text} - Size ${size}${staffOnly}</div>`;
+}
 
 document.addEventListener("turbo:load", () => {
-  if (document.querySelector("#locker_rental_preferred_locker_id")) {
-    new TomSelect(
-      "#locker_rental_preferred_locker_id",
-      tomSelectOptions(document, {
-        render: {
-          option: function (data, escape) {
-            let size = escape(data.size);
-            let text = escape(data.text);
-            let staffOnly = data.staffOnly == "true" ? " - Staff only" : "";
-            return `<div>Locker ${text} - Size ${size}${staffOnly}</div>`;
-          },
-          item: function (data, escape) {
-            let size = escape(data.size);
-            let text = escape(data.text);
-            let staffOnly = data.staffOnly == "true" ? " - Staff only" : "";
-            return `<div>Locker ${text} - Size ${size}${staffOnly}</div>`;
-          },
-        },
-      }),
-    );
+  const preferredLocker = document.getElementById(
+    "locker_rental_preferred_locker_id",
+  );
+  if (preferredLocker) {
+    tomSelectFor(preferredLocker, {
+      render: { option: lockerText, item: lockerText },
+    });
   }
 });
 

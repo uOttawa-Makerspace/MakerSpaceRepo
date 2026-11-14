@@ -1,8 +1,21 @@
-import TomSelect from "tom-select";
-import { flatpickrOptions, tomSelectOptions } from "../src/page_locale.js";
+import { flatpickrOptions } from "../src/page_locale.js";
+import { newTomSelect } from "../src/tom_select.js";
 import "flatpickr";
 
-document.addEventListener("DOMContentLoaded", () => {
+// The elements this script has already bound: a second load over the same
+// page binds nothing twice. A page Turbo restores from its cache is a copy made
+// of new elements, which are bound again.
+const boundElements = new WeakSet();
+
+function bindOnce(el, bind) {
+  if (!el || boundElements.has(el)) return;
+  boundElements.add(el);
+  bind(el);
+}
+
+// Every visit to an admin key page, the first one and each Turbo visit or
+// restore after it.
+document.addEventListener("turbo:load", () => {
   setUpDepositDatePicker();
   setUpNameSearch("supervisor-select");
   setUpNotesToggle();
@@ -13,9 +26,10 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function setUpDepositDatePicker() {
-  const depositDateInput = document.getElementById("deposit-return-date");
-  if (!depositDateInput) return;
+  bindOnce(document.getElementById("deposit-return-date"), bindDepositDate);
+}
 
+function bindDepositDate(depositDateInput) {
   const depositDatePicker = depositDateInput.flatpickr(
     flatpickrOptions(depositDateInput, {
       enableTime: false,
@@ -35,16 +49,13 @@ function setUpDepositDatePicker() {
 function setUpNameSearch(id) {
   const select = document.getElementById(id);
   if (select && !select.tomselect) {
-    new TomSelect(
-      `#${id}`,
-      tomSelectOptions(document, {
-        searchField: ["name"],
-        valueField: "id",
-        labelField: "name",
-        maxOptions: null,
-        searchOnKeyUp: true,
-      }),
-    );
+    newTomSelect(select, {
+      searchField: ["name"],
+      valueField: "id",
+      labelField: "name",
+      maxOptions: null,
+      searchOnKeyUp: true,
+    });
   }
 }
 
@@ -52,12 +63,14 @@ function setUpNameSearch(id) {
 function setUpNotesToggle() {
   const statusSelect = document.getElementById("status-select");
   const notesField = document.getElementById("notes-container");
-  if (!statusSelect || !notesField) return;
+  if (!notesField) return;
 
-  statusSelect.addEventListener("change", (e) => {
-    notesField.style.display =
-      e.target.value === "inventory" ? "none" : "block";
-  });
+  bindOnce(statusSelect, () =>
+    statusSelect.addEventListener("change", (e) => {
+      notesField.style.display =
+        e.target.value === "inventory" ? "none" : "block";
+    }),
+  );
 }
 
 // Shows or hides the box around a field, when the page has that field.
@@ -70,19 +83,23 @@ function setUpKeyTypeToggle() {
   const spaceSelect = document.getElementById("space-select");
   const customKeycode = document.getElementById("custom-keycode");
   const keyTypeSelect = document.getElementById("key-type-select");
-  if (!keyTypeSelect) return;
 
-  keyTypeSelect.addEventListener("change", (e) => {
-    const regular = e.target.value === "regular";
-    showFieldBox(spaceSelect, regular);
-    showFieldBox(customKeycode, !regular);
-  });
+  bindOnce(keyTypeSelect, () =>
+    keyTypeSelect.addEventListener("change", (e) => {
+      const regular = e.target.value === "regular";
+      showFieldBox(spaceSelect, regular);
+      showFieldBox(customKeycode, !regular);
+    }),
+  );
 }
 
 // Printing reloads the certificate frames first and prints one second after
 // the last of them has loaded again.
 function setUpPrintButton() {
-  const printButton = document.getElementById("print-button");
+  bindOnce(document.getElementById("print-button"), bindPrintButton);
+}
+
+function bindPrintButton(printButton) {
   const keyCertIframes = document.querySelectorAll(".key-cert-iframe");
   let loadedIframes = 0;
   let shouldPrint = false;
@@ -99,17 +116,15 @@ function setUpPrintButton() {
     });
   });
 
-  if (printButton) {
-    printButton.addEventListener("click", () => {
-      if (keyCertIframes.length === 0) {
-        window.print();
-      } else {
-        loadedIframes = 0;
-        shouldPrint = true;
-        keyCertIframes.forEach((iframe) => {
-          iframe.src = iframe.getAttribute("src");
-        });
-      }
-    });
-  }
+  printButton.addEventListener("click", () => {
+    if (keyCertIframes.length === 0) {
+      window.print();
+    } else {
+      loadedIframes = 0;
+      shouldPrint = true;
+      keyCertIframes.forEach((iframe) => {
+        iframe.src = iframe.getAttribute("src");
+      });
+    }
+  });
 }

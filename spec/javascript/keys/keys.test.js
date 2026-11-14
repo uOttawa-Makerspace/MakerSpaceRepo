@@ -4,9 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const instances = [];
 vi.mock("tom-select", () => ({
   default: class {
-    constructor(selector, options) {
-      this.selector = selector;
+    constructor(el, options) {
+      this.el = el;
       this.options = options;
+      el.tomselect = this;
       instances.push(this);
     }
   },
@@ -25,11 +26,15 @@ await import("../../../app/javascript/entrypoints/keys.js");
 
 const $ = (id) => document.getElementById(id);
 
-// The page script runs once per full page load, on DOMContentLoaded.
+const loadAgain = () => document.dispatchEvent(new Event("turbo:load"));
+
+// The page script runs on every Turbo page load.
 function load(html) {
   document.body.innerHTML = html;
-  document.dispatchEvent(new Event("DOMContentLoaded"));
+  loadAgain();
 }
+
+const pickerIds = () => instances.map((i) => i.el.id);
 
 function change(id, value) {
   $(id).value = value;
@@ -69,6 +74,14 @@ describe("keys page script", () => {
       });
     });
 
+    it("builds one picker and clears it once when the same page loads again", () => {
+      load(html);
+      loadAgain();
+      expect(pickers).toHaveLength(1);
+      $("deposit-return-date-clear").click();
+      expect(pickers[0].clear).toHaveBeenCalledTimes(1);
+    });
+
     it("clears the picker when the clear button is clicked", () => {
       load(html);
       expect(pickers[0].clear).not.toHaveBeenCalled();
@@ -81,7 +94,7 @@ describe("keys page script", () => {
         `<input id="deposit-return-date"><select id="space-select"></select>`,
       );
       expect(pickers).toHaveLength(1);
-      expect(instances.map((i) => i.selector)).toEqual(["#space-select"]);
+      expect(pickerIds()).toEqual(["space-select"]);
     });
   });
 
@@ -93,10 +106,10 @@ describe("keys page script", () => {
 
     it("builds a name-searchable widget for supervisor, space and key request", () => {
       load(html);
-      expect(instances.map((i) => i.selector)).toEqual([
-        "#supervisor-select",
-        "#space-select",
-        "#key-request-select",
+      expect(pickerIds()).toEqual([
+        "supervisor-select",
+        "space-select",
+        "key-request-select",
       ]);
       for (const instance of instances) {
         expect(instance.options).toEqual({
@@ -113,8 +126,24 @@ describe("keys page script", () => {
       document.body.innerHTML = html;
       $("supervisor-select").tomselect = {};
       $("key-request-select").tomselect = {};
-      document.dispatchEvent(new Event("DOMContentLoaded"));
-      expect(instances.map((i) => i.selector)).toEqual(["#space-select"]);
+      loadAgain();
+      expect(pickerIds()).toEqual(["space-select"]);
+    });
+
+    it("builds nothing twice when the same page loads again", () => {
+      load(html);
+      loadAgain();
+      expect(instances).toHaveLength(3);
+    });
+
+    it("replaces the copied picker markup of a page restored from the cache", () => {
+      document.body.innerHTML = `
+        <select id="space-select" class="tomselected ts-hidden-accessible" tabindex="-1"></select>
+        <div class="ts-wrapper"></div>`;
+      loadAgain();
+      expect(pickerIds()).toEqual(["space-select"]);
+      expect(document.querySelectorAll(".ts-wrapper")).toHaveLength(0);
+      expect($("space-select").classList.contains("tomselected")).toBe(false);
     });
   });
 
@@ -191,6 +220,13 @@ describe("keys page script", () => {
 
     it("prints straight away when there are no certificate frames", () => {
       load(`<button id="print-button"></button>`);
+      $("print-button").click();
+      expect(window.print).toHaveBeenCalledTimes(1);
+    });
+
+    it("prints once per click when the same page loads again", () => {
+      load(`<button id="print-button"></button>`);
+      loadAgain();
       $("print-button").click();
       expect(window.print).toHaveBeenCalledTimes(1);
     });
