@@ -19,6 +19,16 @@ class ApplicationMailer < ActionMailer::Base
 
   private
 
+  # A subject built before mail() is called, in the recipient's saved language, from <mailer>.<action>.<key>.
+  def subject_for(address, key = "subject", **values)
+    I18n.t("#{mailer_name}.#{action_name}.#{key}", locale: recipient_locale(address), **values)
+  end
+
+  # A subject in French, then English ("<French> // <English>"), from <mailer>.<action>.<key>.
+  def bilingual_subject(key, **values)
+    %i[fr en].map { |locale| I18n.t("#{mailer_name}.#{action_name}.#{key}", locale:, **values) }.join(" // ")
+  end
+
   def recipient_locale(to)
     address = Array(to).one? ? Array(to).first.to_s : nil
     saved = User.find_by(email: address.strip)&.locale if address

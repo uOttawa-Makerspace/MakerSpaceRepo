@@ -37,3 +37,116 @@ fr:
       text: "Les tarifs internes et externes varient selon le service. Les matériaux sont vendus séparément. Une consultation d’une heure est offerte gratuitement."
   job_order_mailer:
     quote_notes: "Note du personnel :"
+    hello: "Bonjour,"
+    see_order: "Voir la commande"
+    # Subject of a mail to staff about an expedited order; %{subject} = the usual subject
+    expedited_subject: "PRIORITAIRE : %{subject}"
+    send_job_submitted:
+      subject: "Une nouvelle commande a été soumise"
+      preheader: "MakerRepo - Commande créée"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'une nouvelle commande a été créée sur %{site_link}."
+      # %{link} = link to the job order admin page, text from page_link
+      body_html: "Un utilisateur a créé la commande numéro %{id}. Consultez la %{link} pour les détails."
+      page_link: "page des commandes"
+    send_job_requote_needed:
+      subject: "La commande #%{id} a besoin d'un nouveau devis"
+      preheader: "MakerRepo - Une commande a besoin d'un nouveau devis"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'une commande ayant reçu un devis sur %{site_link} a besoin d'un nouveau devis."
+      body: "La commande %{id} est revenue à l'état « En attente de l'approbation du personnel ». Son devis précédent ne peut plus être approuvé et son lien de paiement précédent ne fonctionne plus. Veuillez examiner la commande et envoyer un nouveau devis."
+    send_job_quote:
+      # The quote mail is in French, then English; subject: "<French> // <English>"
+      subject_approved: "Votre commande #%{id} a été approuvée"
+      subject_reapproved: "Votre commande #%{id} a été réapprouvée"
+      preheader: "MakerRepo - Approbation de la commande"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'une commande a été approuvée sur %{site_link}."
+      reminder: "Ceci est un rappel que les administrateurs ont approuvé une commande. Veuillez consulter le devis et l'approuver ou le refuser."
+      # %{link} = link to the approval page, text from page_link
+      approved_html: "Votre commande numéro #%{id} a été approuvée. Consultez la %{link} pour approuver ou refuser le devis."
+      page_link: "page de la commande"
+      pricing: "Prix :"
+      # %{amount} = an amount of money
+      amount: "CAD %{amount}"
+      # Start of the price breakdown of a task, followed by "<quantity> <unit> × <unit price>"
+      base_fee: "frais de base de %{amount} plus"
+      # Shown when the service has no unit of its own
+      unit: "unité"
+      pending: "Prix en attente"
+      line_items: "Articles détaillés :"
+      grand_total: "Total général :"
+      # Button text: "<French> / <English>"
+      button: "Voir"
+    send_job_declined:
+      subject: "Votre commande #%{id} a été refusée"
+      preheader: "MakerRepo - Commande refusée"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'une commande a été refusée sur %{site_link}."
+      body: "Les administrateurs ont refusé la commande numéro #%{id}."
+      comments: "Veuillez consulter les commentaires suivants des administrateurs pour plus de détails :"
+      # %{contact} = the makerspace address, as a mail link
+      contact_html: "Si vous avez besoin d'aide ou avez des questions au sujet de cette commande refusée, écrivez-nous à %{contact}. Veuillez indiquer le numéro de commande #%{id} dans votre courriel."
+    send_job_user_approval:
+      subject: "Un utilisateur a approuvé une commande"
+      preheader: "MakerRepo - Approbation d'une commande par l'utilisateur"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'un utilisateur a approuvé une commande sur %{site_link}."
+      # %{link} = link to the job order admin page, text from page_link
+      body_html: "Un utilisateur a approuvé la commande numéro %{id}. Consultez la %{link} pour les détails."
+      page_link: "page des commandes"
+    send_job_user_declined:
+      subject: "Un utilisateur a refusé une commande"
+      preheader: "MakerRepo - Refus d'une commande par l'utilisateur"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'un utilisateur a refusé une commande sur %{site_link}."
+      # %{link} = link to the job order admin page, text from page_link
+      body_html: "Un utilisateur a refusé la commande numéro %{id}. Consultez la %{link} pour les détails."
+      page_link: "page des commandes"
+    send_job_decision_confirmation:
+      # The confirmation is in French, then English; subject: "<French> // <English>"
+      subject_approved: "Votre approbation de la commande #%{id} est enregistrée"
+      subject_declined: "Votre refus de la commande #%{id} est enregistré"
+      # Preheader: "MakerRepo - <French> // <English>"
+      confirmation: "Confirmation"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce que vous avez répondu au devis de votre commande de travail sur %{site_link}."
+      approved: "Nous avons bien enregistré votre approbation du devis de la commande de travail #%{id}. Le personnel du MakerRepo va maintenant s'en occuper."
+      declined: "Nous avons bien enregistré votre refus du devis de la commande de travail #%{id}."
+      # %{contact} = the makerspace address, as a mail link
+      questions_html: "Pour toute question, écrivez à %{contact} en indiquant le numéro de la commande."
+    send_job_completed:
+      subject: "Votre commande #%{id} est terminée"
+      preheader: "MakerRepo - Commande terminée"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'une commande a été approuvée sur %{site_link}."
+      button: "Payer par carte de crédit"
+    payment_succeeded:
+      subject: "Votre commande #%{id} est prête à être ramassée"
+      preheader: "MakerRepo - Paiement de la commande réussi"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce que le paiement de votre commande a été effectué sur %{site_link}."
+      body: "Nous avons le plaisir de vous informer que le paiement de la commande #%{id} a bien été effectué ! Veuillez écrire à makerspace@uottawa.ca pour convenir du ramassage de votre pièce ou pour toute question."
+      button: "Voir la commande"
+    staff_assigned:
+      subject: "Vous avez été assigné(e) à la commande #%{id}"
+      preheader: "MakerRepo - Avis d'assignation"
+      # The mail is in French, then English. %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'un administrateur vous a assigné à une commande de travail sur %{site_link}."
+      hello: "Bonjour %{name},"
+      body: "Vous avez été assigné(e) à la commande de travail #%{id} par un administrateur."
+      details: "Détails de la commande :"
+      client: "Client : %{name}"
+      expedited: "(COMMANDE PRIORITAIRE)"
+      button: "Voir la commande"
+  chat_message_mailer:
+    new_message:
+      # The mail is in French, then English; subject: "MakerRepo - <French> // <English>"
+      subject: "Nouveau message"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'un nouveau message a été posté sur votre commande de travail sur %{site_link}."
+      hello: "Bonjour,"
+      # %{sender} = the sender's name
+      body: "Vous avez reçu un nouveau message concernant votre commande de travail #%{id} de la part de %{sender}."
+      message: "Message :"
+      button: "Voir la commande"

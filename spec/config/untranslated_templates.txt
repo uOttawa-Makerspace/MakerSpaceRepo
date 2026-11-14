@@ -29,7 +29,6 @@ app/views/carts/_cart_row.html.erb
 app/views/carts/_shopping_cart.html.erb
 app/views/carts/index.html.erb
 app/views/changelog/index.html.erb
-app/views/chat_message_mailer/new_message.html.erb
 app/views/chat_messages/_chat.html.erb
 app/views/chat_messages/_message.html.erb
 app/views/coupon_codes/edit.html.erb
@@ -42,16 +41,6 @@ app/views/faqs/new.html.erb
 app/views/help/create.html.erb
 app/views/help/show.html.erb
 app/views/job_alert_mailer/alert.html.erb
-app/views/job_order_mailer/payment_succeeded.html.erb
-app/views/job_order_mailer/send_job_completed.html.erb
-app/views/job_order_mailer/send_job_decision_confirmation.html.erb
-app/views/job_order_mailer/send_job_declined.html.erb
-app/views/job_order_mailer/send_job_quote.html.erb
-app/views/job_order_mailer/send_job_requote_needed.html.erb
-app/views/job_order_mailer/send_job_submitted.html.erb
-app/views/job_order_mailer/send_job_user_approval.html.erb
-app/views/job_order_mailer/send_job_user_declined.html.erb
-app/views/job_order_mailer/staff_assigned.html.erb
 app/views/job_orders/_admin_row.html.erb
 app/views/job_orders/_assign_staff.html.erb
 app/views/job_orders/_client_row.html.erb
