@@ -18,11 +18,12 @@
 else
 (current_user.student? ? 'gng' : 'general')
 end %>
+        <% available_counts = Locker.available(audience).group(:locker_size_id).count %>
         <% LockerSize.find_each do |size| %>
             <tr>
                 <td>
                     <!-- Show available count based on the determined audience -->
-                    <%= size.lockers.available(audience).count %>
+                    <%= available_counts.fetch(size.id, 0) %>
                 </td>
                 <td><%= size.size %></td>
                 <td><%= t('lockers.request_form.cost_per_semester', price: @locker_product_info&.dig(:variants, size.shopify_gid, :price)) %></td>
