@@ -83,11 +83,9 @@
 2	app/javascript/entrypoints/key_requests.js	TS2353	Object literal may only specify known properties, and 'searchOnKeyUp' does not exist in type 'RecursivePartial<TomSettings>'.
 2	app/javascript/entrypoints/key_requests.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 1	app/javascript/entrypoints/key_transactions.js	TS2339	Property 'flatpickr' does not exist on type 'HTMLElement'.
-1	app/javascript/entrypoints/keys.js	TS2339	Property 'flatpickr' does not exist on type 'HTMLElement'.
 1	app/javascript/entrypoints/keys.js	TS2339	Property 'src' does not exist on type 'Element'.
 2	app/javascript/entrypoints/keys.js	TS2339	Property 'value' does not exist on type 'EventTarget'.
-3	app/javascript/entrypoints/keys.js	TS2353	Object literal may only specify known properties, and 'searchOnKeyUp' does not exist in type 'RecursivePartial<TomSettings>'.
-3	app/javascript/entrypoints/keys.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
+1	app/javascript/entrypoints/keys.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 1	app/javascript/entrypoints/learning_modules_scorm.js	TS2339	Property 'API_1484_11' does not exist on type 'Window & typeof globalThis'.
 1	app/javascript/entrypoints/learning_modules_scorm.js	TS2339	Property 'API' does not exist on type 'Window & typeof globalThis'.
 5	app/javascript/entrypoints/learning_modules_scorm.js	TS2339	Property 'dataset' does not exist on type 'Element'.
