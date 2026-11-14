@@ -17,70 +17,12 @@ class StaticPagesController < SessionsController
 
     # User-specific data (Only run when a user is signed in)
     user = current_user || @user
-    if user
-      @volunteer_program_shadowing_scheduled = shadowing_shift_entries(user)
+    load_member_sections(user) if user
 
-      @volunteer_program_your_tasks =
-        user
-          .volunteer_task_joins
-          .joined
-          .joins(:volunteer_task)
-          .where(volunteer_tasks: { status: 'open' })
-          .order(updated_at: :desc)
-          .limit(5)
-          .pluck('volunteer_tasks.title', :volunteer_task_id)
-
-      @user_skills =
-        Certification
-          .where(user_id: user.id)
-          .joins(training_session: :training)
-          .limit(5)
-          .pluck('trainings.name_en', 'training_sessions.level')
-
-      # Cached total tracks count
-      total_tracks = Rails.cache.fetch('LearningModuleTotalTracks', expires_in: 1.hour) do
-        LearningModule.unscope(:order).joins(:training).group('trainings.name_en').count
-      end
-
-      @user_tracks =
-        user
-          .learning_module_tracks
-          .includes(learning_module: :training)
-          .group_by { |x| x.learning_module.training.name_en }
-          .transform_values { |x| x.map(&:status).tally }
-          .map do |key, value|
-            [key, "#{value['Completed'] || 0}/#{total_tracks[key] || 0}"]
-          end
-    end
-
-    # Cached Recent Repositories
-    @recent_projects =
-      Rails.cache.fetch('StaticPagesRecentRepos', expires_in: 10.minutes) do
-        Repository
-          .public_repos
-          .with_card_data
-          .order(created_at: :desc)
-          .limit(15)
-          .to_a
-      end
-
-    # Cached Contact Info
-    @contact_info =
-      Rails.cache.fetch('StaticPagesContactInfo', expires_in: 30.minutes) do
-        ContactInfo.where(show_hours: true).order(name: :asc).to_a
-      end
-
-    # Cached Workshops (SimpliEvents)
-    @workshops =
-      Rails.cache.fetch('SimpliEventsRecentEvents', expires_in: 15.minutes, race_condition_ttl: 15.seconds) do
-        fetch_simpli_events
-      end
-
-    # Cached MakerStore Links
-    @makerstore_links =
-      Rails.cache.fetch('ShopifyMakerstoreLinks', expires_in: 1.hour, race_condition_ttl: 15.seconds) do
-        home_makerstore_links
-      end
+    @recent_projects = cached_recent_projects
+    @contact_info = cached_contact_info
+    @workshops = cached_workshops
+    @makerstore_links = cached_makerstore_links
   end
 
   def about; end
@@ -168,6 +110,87 @@ class StaticPagesController < SessionsController
   end
 
   private
+
+  def load_member_sections(user)
+    @volunteer_program_shadowing_scheduled = shadowing_shift_entries(user)
+    @volunteer_program_your_tasks = open_task_entries(user)
+    @user_skills = skill_entries(user)
+    @user_tracks = track_progress_entries(user)
+  end
+
+  def open_task_entries(user)
+    user
+      .volunteer_task_joins
+      .joined
+      .joins(:volunteer_task)
+      .where(volunteer_tasks: { status: 'open' })
+      .order(updated_at: :desc)
+      .limit(5)
+      .pluck('volunteer_tasks.title', :volunteer_task_id)
+  end
+
+  def skill_entries(user)
+    Certification
+      .where(user_id: user.id)
+      .joins(training_session: :training)
+      .limit(5)
+      .pluck('trainings.name_en', 'training_sessions.level')
+  end
+
+  # [training name, "completed/total"] per training the user has a track in.
+  def track_progress_entries(user)
+    total_tracks = cached_total_tracks
+    user
+      .learning_module_tracks
+      .includes(learning_module: :training)
+      .group_by { |x| x.learning_module.training.name_en }
+      .transform_values { |x| x.map(&:status).tally }
+      .map { |key, value| [key, track_progress(value, total_tracks[key])] }
+  end
+
+  def track_progress(status_counts, total)
+    "#{status_counts['Completed'] || 0}/#{total || 0}"
+  end
+
+  # Cached total tracks count
+  def cached_total_tracks
+    Rails.cache.fetch('LearningModuleTotalTracks', expires_in: 1.hour) do
+      LearningModule.unscope(:order).joins(:training).group('trainings.name_en').count
+    end
+  end
+
+  # Cached Recent Repositories
+  def cached_recent_projects
+    Rails.cache.fetch('StaticPagesRecentRepos', expires_in: 10.minutes) do
+      Repository
+        .public_repos
+        .with_card_data
+        .order(created_at: :desc)
+        .limit(15)
+        .to_a
+    end
+  end
+
+  # Cached Contact Info
+  def cached_contact_info
+    Rails.cache.fetch('StaticPagesContactInfo', expires_in: 30.minutes) do
+      ContactInfo.where(show_hours: true).order(name: :asc).to_a
+    end
+  end
+
+  # Cached Workshops (SimpliEvents)
+  def cached_workshops
+    Rails.cache.fetch('SimpliEventsRecentEvents', expires_in: 15.minutes, race_condition_ttl: 15.seconds) do
+      fetch_simpli_events
+    end
+  end
+
+  # Cached MakerStore Links
+  def cached_makerstore_links
+    Rails.cache.fetch('ShopifyMakerstoreLinks', expires_in: 1.hour, race_condition_ttl: 15.seconds) do
+      home_makerstore_links
+    end
+  end
 
   # [space name or nil, "Monday 10:00 - 13:00"] per shadowing shift; a shift
   # without a space has no name, and a stored shift missing a time is left out.
