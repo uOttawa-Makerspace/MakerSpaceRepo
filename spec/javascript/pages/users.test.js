@@ -133,13 +133,13 @@ describe("profile tabs", () => {
     expect(window.location.hash).toBe("");
   });
 
-  it("opens the admin tab once for each outer tab on an admin address", () => {
+  it("opens the admin tab once on an admin address", () => {
     const clicked = [];
     document.addEventListener("click", (e) => clicked.push(e.target.id), {
       capture: true,
     });
     load(tabs(true), "#admin-roles");
-    expect(clicked).toEqual(["a-roles", "admin-tab", "admin-tab", "admin-tab"]);
+    expect(clicked).toEqual(["a-roles", "admin-tab"]);
     expect(window.location.hash).toBe("#admin-roles");
   });
 

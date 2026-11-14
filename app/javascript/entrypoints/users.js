@@ -33,36 +33,36 @@ function bindAdminSubTabs() {
   });
 }
 
+// Opens the outer admin tab and keeps the admin sub tab in the address.
+function openAdminTab(adminTab) {
+  const subTabHash = window.location.hash;
+  adminTab.click();
+  window.location.hash = subTabHash;
+}
+
 function bindProfileTabs() {
   // Find hash and manually click on load
   // this only finds links within the #myTab element
   // because having random links be clicked via a hash is a security nightmare
   const profileTablist = document.getElementById("myTab");
-  if (profileTablist) {
-    // Find admin tab, exists if user is an admin
-    const adminTab = profileTablist.querySelector("#admin-tab");
+  if (!profileTablist) return;
 
-    if (adminTab) bindAdminSubTabs();
+  // Find admin tab, exists if user is an admin
+  const adminTab = profileTablist.querySelector("#admin-tab");
+  if (adminTab) bindAdminSubTabs();
 
-    profileTablist.querySelectorAll(".nav-link").forEach((el) => {
-      // Add the hash on click on any outer tab
-      el.addEventListener("click", (ev) => {
-        window.location.hash = el.getAttribute("href");
-      });
-      // special case for admin.
-      if (window.location.hash.startsWith("#admin-")) {
-        // This is an admin pane
-        if (adminTab) {
-          // preserve this hash
-          let this_hash = window.location.hash;
-          adminTab.click();
-          window.location.hash = this_hash;
-        }
-      } else if (el.getAttribute("href") == window.location.hash) {
-        el.click();
-      }
+  // An "#admin-..." address names an admin sub tab, inside the admin tab.
+  const adminAddress = window.location.hash.startsWith("#admin-");
+  profileTablist.querySelectorAll(".nav-link").forEach((el) => {
+    // Add the hash on click on any outer tab
+    el.addEventListener("click", (ev) => {
+      window.location.hash = el.getAttribute("href");
     });
-  }
+    if (!adminAddress && el.getAttribute("href") == window.location.hash) {
+      el.click();
+    }
+  });
+  if (adminAddress && adminTab) openAdminTab(adminTab);
 }
 
 function bindShowHideControls() {
