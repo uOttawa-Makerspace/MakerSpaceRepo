@@ -57,11 +57,6 @@
       "count": 1
     }
   },
-  "app/javascript/entrypoints/sub_space_booking.js": {
-    "complexity": {
-      "count": 2
-    }
-  },
   "app/javascript/entrypoints/users.js": {
     "complexity": {
       "count": 1
