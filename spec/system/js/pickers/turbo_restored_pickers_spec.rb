@@ -120,4 +120,38 @@ RSpec.describe "Pickers on a page restored from the Turbo cache", type: :system,
   it "keeps one working training picker on the new question form" do
     restore_with_picker(create(:user, :admin), new_question_path, "questions_trainings")
   end
+
+  describe "on admin forms" do
+    let(:admin) { create(:user, :admin) }
+
+    it "keeps one working skill picker per language on the new training form" do
+      log_in_as(admin, to: new_admin_training_path)
+      expect(page).to have_css("#training_list_of_skills_fr.tomselected", visible: :all)
+      leave_and_restore(new_admin_training_path)
+      # The two skill selects share a parent, so each is checked by its own next sibling.
+      %w[training_list_of_skills_en training_list_of_skills_fr].each do |id|
+        expect(page).to have_css("##{id} + .ts-wrapper", count: 1, visible: :all)
+        expect(page).to have_no_css("##{id} + .ts-wrapper + .ts-wrapper", visible: :all)
+        expect(page.evaluate_script("Boolean(document.getElementById(#{id.to_json}).tomselect)")).to be(true)
+      end
+    end
+
+    it "keeps one working job type picker on the new job option form" do
+      create(:job_type)
+      restore_with_picker(admin, new_admin_job_option_path, "job_type_ids_option")
+    end
+
+    it "keeps one working space picker on the new contact info form" do
+      create(:space)
+      restore_with_picker(admin, new_admin_contact_info_path, "contact_info_space_id")
+    end
+
+    it "keeps one working manager picker on the space settings page" do
+      restore_with_picker(admin, edit_admin_space_path(create(:space)), "space-manager-select")
+    end
+
+    it "keeps one working captain search on the new team form" do
+      restore_with_picker(admin, new_admin_team_path, "search_users_add")
+    end
+  end
 end
