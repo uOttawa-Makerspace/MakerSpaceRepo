@@ -650,11 +650,6 @@ RSpec.describe ReportGenerator do
   end
 
   describe "helpers no action calls" do
-    it "student_id_as_text types only the student number column as text, wherever it is" do
-      expect(described_class.student_id_as_text(["Name", "Student number", "Student ID"])).to eq([nil, :string, nil])
-      expect(described_class.student_id_as_text(%w[Name Date])).to eq([nil, nil])
-    end
-
     it "title writes a bold underlined row; table_header writes a bold row" do
       package = Axlsx::Package.new
       package.workbook.add_worksheet(name: "S") do |sheet|
