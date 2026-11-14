@@ -55,7 +55,7 @@ function bindImageRemoval(el) {
     e.stopPropagation();
     const deleteImagesInput = document.getElementById("deleteimages");
     if (deleteImagesInput) {
-      deleteImagesInput.value += el.id + ",";
+      deleteImagesInput.value += el.dataset.photoId + ",";
     }
     // The whole image card goes, not only the footer that holds the button.
     el.closest(".image-item")?.remove();

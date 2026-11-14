@@ -194,22 +194,18 @@ class VolunteerTasksController < SessionsController
   end
 
   # New photos (at most five) are added before any ticked one is removed, so a refused photo
-  # leaves the existing photos untouched. The ticked photos are chosen first, so a new photo with
-  # the same file name is not removed with them. Removing a photo deletes only its row here; Active
-  # Storage deletes the stored file after the surrounding transaction has committed.
+  # leaves the existing photos untouched. Only this task's photos with a ticked id are removed;
+  # removing a photo deletes only its row here, and Active Storage deletes the stored file after
+  # the surrounding transaction has committed.
   def update_photos
-    ticked = ticked_photos
     uploads = Array(params[:images]).first(5).reject(&:blank?)
     Photo.create_from_uploads!(uploads, volunteer_task_id: @volunteer_task.id)
-    ticked.each(&:destroy)
+    @volunteer_task.photos.where(id: ticked_photo_ids).find_each(&:destroy)
   end
 
-  # The photos whose file names the edit form sent: a comma-separated list, matched name for name.
-  def ticked_photos
-    names = Array(params[:deleteimages]).flat_map { |value| value.to_s.split(",") }
-    return [] if names.empty?
-
-    @volunteer_task.photos.select { |img| names.include?(img.image.filename.to_s) }
+  # The photo ids the edit form ticked for removal: a comma-joined string (or a list).
+  def ticked_photo_ids
+    Array(params[:deleteimages]).flat_map { |v| v.to_s.split(",") }.map(&:strip).reject(&:blank?).map(&:to_i)
   end
 
   def volunteer_task_params
