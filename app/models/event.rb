@@ -41,10 +41,16 @@ class Event < ApplicationRecord
 
   # Publishes the space's drafts that start in the range, as `by`, and yields each one once it is saved (the caller
   # pushes it to Google). Returns the published events and the ones that could not be saved, with their errors.
-  def self.publish_range(space_id, range, by:)
-    where(space_id: space_id, start_time: range, draft: true).find_each.partition do |event|
-      event.update(draft: false, updated_by: by).tap { |saved| yield event if saved }
+  def self.publish_drafts(space_id, range, by:)
+    published = []
+    failed = []
+    where(space_id: space_id, start_time: range, draft: true).find_each do |event|
+      next failed << event unless event.publish(by: by)
+
+      published << event
+      yield event
     end
+    [published, failed]
   end
 
   # Loads, in one query for the list, the training of each event whose display_title names it.
@@ -111,6 +117,12 @@ class Event < ApplicationRecord
   # Google copy with Event.remove_from_google_later.
   def unpublish(by:)
     update(draft: true, updated_by: by, google_event_id: nil, google_calendar_id: nil)
+  end
+
+  # Makes the event live, as `by`. Returns false when the event cannot be saved. The caller pushes it to Google once
+  # this has committed (push_to_google_later).
+  def publish(by:)
+    update(draft: false, updated_by: by)
   end
 
   # Queues the removal of a destroyed event's copy in Google Calendar. Takes what was read from the event

@@ -107,7 +107,7 @@ class Admin::EventsController < AdminAreaController
     space_id = params[:space_id]
     return redirect_back(fallback_location: admin_calendar_index_path, alert: "Space ID is required.") if space_id.blank?
 
-    published, failed = Event.publish_range(space_id, @view_start..@view_end, by: current_user, &:push_to_google_later)
+    published, failed = Event.publish_drafts(space_id, @view_start..@view_end, by: current_user, &:push_to_google_later)
     failures = failed.map { |event| publish_failure(event) }
     flash[:alert] = "Failed to publish #{failures.size} event(s): #{failures.to_sentence}" if failures.any?
     redirect_back(fallback_location: admin_calendar_index_path, notice: "#{published.size} event(s) published.")
@@ -115,7 +115,7 @@ class Admin::EventsController < AdminAreaController
 
   def publish_one
     @event = Event.find(params[:id])
-    unless @event.update(draft: false, updated_by: current_user)
+    unless @event.publish(by: current_user)
       return dialog_done(alert: validation_message(@event, "failed_saves.event_publish"))
     end
 

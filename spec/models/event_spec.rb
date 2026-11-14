@@ -46,6 +46,23 @@ RSpec.describe Event, type: :model do
     end
   end
 
+  describe "#publish" do
+    let(:admin) { create(:user, :admin) }
+
+    it "makes a draft live, records who did it, keeps its creator and queues nothing" do
+      event = create(:event, :draft, space: space, created_by: creator)
+      expect { expect(event.publish(by: admin)).to be(true) }.not_to have_enqueued_job
+      expect(event.reload).to have_attributes(draft: false, updated_by: admin, created_by: creator)
+    end
+
+    it "returns false and keeps the draft when its stored rule no longer validates" do
+      event = create(:event, :draft, space: space, created_by: creator)
+      event.update_column(:recurrence_rule, "DTSTART:20270401T140000Z\nRRULE:FREQ=MINUTELY")
+      expect(event.reload.publish(by: admin)).to be(false)
+      expect(event.reload.draft).to be(true)
+    end
+  end
+
   describe "validations" do
     it "is valid with the factory defaults" do
       expect(build_event).to be_valid
@@ -266,7 +283,7 @@ RSpec.describe Event, type: :model do
     end
   end
 
-  describe ".publish_range" do
+  describe ".publish_drafts" do
     let(:editor) { create(:user, :admin) }
     let(:range) { Time.utc(2027, 4, 1)..Time.utc(2027, 4, 3) }
 
@@ -284,7 +301,7 @@ RSpec.describe Event, type: :model do
                                          end_time: Time.utc(2027, 4, 2, 15))
       yielded = []
 
-      published, failed = described_class.publish_range(space.id, range, by: editor) { |event| yielded << event }
+      published, failed = described_class.publish_drafts(space.id, range, by: editor) { |event| yielded << event }
 
       expect(published).to eq([first])
       expect(yielded).to eq([first])
