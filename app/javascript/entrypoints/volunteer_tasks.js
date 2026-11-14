@@ -2,11 +2,25 @@
 import TomSelect from "tom-select";
 import { tomSelectOptions } from "../src/page_locale.js";
 
+// A page Turbo restores from its cache is a copy of the page as it was left: a
+// select on it still carries the markup of its TomSelect, but no TomSelect.
+// That markup is removed first, so the new TomSelect replaces it rather than
+// adding a second one beside it.
+function clearCachedTomSelect(el) {
+  if (!el.classList.contains("tomselected")) return;
+  const wrapper = el.nextElementSibling;
+  if (wrapper && wrapper.classList.contains("ts-wrapper")) wrapper.remove();
+  el.classList.remove("tomselected", "ts-hidden-accessible");
+}
+
+function newTomSelect(el, options) {
+  clearCachedTomSelect(el);
+  return new TomSelect(el, tomSelectOptions(el, options));
+}
+
 function initTomSelect(selector, options) {
   const el = document.querySelector(selector);
-  if (el && !el.tomselect) {
-    new TomSelect(el, tomSelectOptions(el, options));
-  }
+  if (el && !el.tomselect) newTomSelect(el, options);
 }
 
 // The elements this script has already bound: a second load over the same
@@ -42,7 +56,7 @@ function bindImageRemovals() {
 // made, or a new one. Null when the page has no such select.
 function filterSelect(el, options) {
   if (!el) return null;
-  return el.tomselect || new TomSelect(el, tomSelectOptions(el, options));
+  return el.tomselect || newTomSelect(el, options);
 }
 
 function selectedValue(tom) {

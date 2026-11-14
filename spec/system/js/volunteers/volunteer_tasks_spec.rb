@@ -28,6 +28,29 @@ RSpec.describe "Volunteer task pages", type: :system, skip_bullet: true do
       fill_in "taskSearchInput", with: ""
       expect(page).to have_css(".task-item-card-col", count: 2)
     end
+
+    it "keeps one working picker per filter select on a page restored from the Turbo cache" do
+      page.execute_script("Turbo.visit(#{volunteer_tasks_path(revisit: 1).to_json})")
+      expect(page).to have_current_path(/revisit=1/)
+      expect(page).to have_css(".task-item-card-col", count: 2)
+      # Set only after the forward visit has loaded, so it marks the load of
+      # the restored page; it runs after the page script's own handler.
+      page.execute_script(<<~JS)
+        document.addEventListener("turbo:load", () => {
+          document.documentElement.dataset.restoredLoad = "done";
+        }, { once: true });
+      JS
+      page.go_back
+      expect(page).to have_css("html[data-restored-load='done']", visible: :all)
+
+      %w[spaceFilter categoryFilter certFilter].each do |id|
+        expect(page).to have_css("##{id} ~ .ts-wrapper", count: 1, visible: :all)
+      end
+      find("#categoryFilter + .ts-wrapper .ts-control").click
+      find(".ts-dropdown .option", text: I18n.t("volunteer_area.tasks.categories.workshops")).click
+      # both tasks are events, so a workshop filter hides them
+      expect(page).to have_no_css(".task-item-card-col")
+    end
   end
 
   describe "task edit form" do

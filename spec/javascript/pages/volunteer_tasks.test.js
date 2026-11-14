@@ -111,6 +111,24 @@ describe("task form", () => {
     expect($("deleteimages").value).toBe("11,");
   });
 
+  it("replaces the copied picker of a form select on a page restored from the cache", () => {
+    load(
+      `<select id="user_id" class="form-select tomselected ts-hidden-accessible"></select><div class="ts-wrapper" id="copy"></div><div id="next"></div>`,
+    );
+    expect(selects.map((s) => s.el.id)).toEqual(["user_id"]);
+    expect($("copy")).toBeNull();
+    expect($("next")).not.toBeNull();
+    expect($("user_id").className).toBe("form-select");
+  });
+
+  it("keeps the element after a copied select when it is not a picker", () => {
+    load(
+      `<select id="user_id" class="tomselected"></select><div id="next"></div>`,
+    );
+    expect($("next")).not.toBeNull();
+    expect($("user_id").className).toBe("");
+  });
+
   it("does nothing on a page without the task controls", () => {
     load("<p>nothing here</p>");
     expect(selects).toHaveLength(0);
@@ -174,6 +192,17 @@ describe("task index filters", () => {
     expect(selects).toHaveLength(0);
     space.set("Studio");
     expect(visible()).toEqual(["paint"]);
+  });
+
+  it("replaces the copied pickers of the filter selects on a page restored from the cache", () => {
+    load(`<div id="volunteerTasksIndex">
+      <select id="spaceFilter" class="tomselected ts-hidden-accessible"></select><div class="ts-wrapper"></div>
+      <select id="categoryFilter" class="tomselected ts-hidden-accessible"></select><div class="ts-wrapper"></div>
+      <select id="certFilter" class="tomselected ts-hidden-accessible" multiple></select><div class="ts-wrapper"></div>
+    </div>`);
+    expect(selects).toHaveLength(3);
+    expect(document.querySelectorAll(".ts-wrapper")).toHaveLength(0);
+    expect(document.querySelectorAll(".tomselected")).toHaveLength(0);
   });
 
   it("works without any of the filter controls", () => {
