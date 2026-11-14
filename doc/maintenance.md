@@ -86,6 +86,10 @@ Post-deploy step for this release (Google Calendar webhook): run `bin/rails runn
 
 The release that adds `key_requests.denial_reason` (migration `20261110120000`) adds one nullable text column and changes no row. Key requests gain a fourth status, `denied`, stored as the integer 3; the existing statuses keep 0, 1 and 2. Code from before the release cannot read a denied request (it fails on the unknown status), so deploy `web` and `worker` together, as usual, and do not roll back to the old code once a request has been denied. Rolling the migration back refuses while any request is denied or has a stored reason, naming the counts; export those rows and clear them first.
 
+### Deploy step: one price per quote option
+
+The release that adds `index_job_task_quote_options_on_quote_and_option` (unique over job task quote and job option) needs no manual step; `web` runs the migration on boot. It first looks for a quote with more than one row for the same option; if any exist it changes nothing and stops with a message listing the key and the row ids. Settle those rows by hand (decide with the maintainers which price stands), then deploy again. The latest audited backup held 75 rows and no duplicates. The index is built concurrently, and `down` only drops the index and keeps every row. The quote form already looks the row up before saving, and the model refuses a second row with a validation error.
+
 ### Deploy step: booking status column
 
 The release that adds `sub_space_bookings.booking_status_id` copies each booking's status into it when the migration runs, and from then on the app reads only that column, and the release that follows stops writing the old status rows (they stay as history, and deleting a booking still removes its own). Old code writes a status only to the old status table (the `worker` container, which is separate from `web`, may still run the old code; so may the old `web` container until compose has replaced it), which would leave the column empty or stale. So deploy in this order:
