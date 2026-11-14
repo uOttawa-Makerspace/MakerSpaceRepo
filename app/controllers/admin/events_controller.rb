@@ -54,93 +54,16 @@ class Admin::EventsController < AdminAreaController
   def json
     return render json: { error: "Space ID is required" }, status: :bad_request if params[:id].blank?
 
-    # Pre-load all staff space colors in ONE query
     staff_colors = StaffSpace.colors_in(params[:id])
-    # Pre-load associations in ONE query; the events the window (CalendarWindow) keeps.
-    event_sources = CalendarWindow.from_params(params).records(Event.where(space_id: params[:id]))
-      .includes(:course_name, event_assignments: :user)
-      .group_by(&:event_type)
-      .map do |event_type, events|        
-      {
-        id: event_type,
-        events: events.map do |event|
-          # seconds to milliseconds because javascript
-          duration = (event.end_time.to_time - event.start_time.to_time) * 1000
-
-          rrule_data = helpers.date_formatted_recurrence_rule(event)
-
-          background = if event.event_assignments.empty?
-            "linear-gradient(to right, #bbb 0.0%, #bbb 100.0%);#{' opacity: 0.8;' if event.draft}"
-          else
-            total = event.event_assignments.size
-            stops = event.event_assignments.map.with_index do |ea, i|
-              c = staff_colors[ea.user_id] || '#bbb' # Fallback to '#bbb' if color is missing
-              s = (100.0 / total) * i
-              e = (100.0 / total) * (i + 1)
-              "#{c} #{s}%, #{c} #{e}%"
-            end.join(', ')
-
-            "linear-gradient(to right, #{stops});#{' opacity: 0.8;' if event.draft}"
-          end
-
-          {
-            id: "event-#{event.id}",
-            title: event.display_title(include_draft_indicator: true),
-            start: event.start_time.iso8601,
-            end: event.end_time.iso8601,
-            **(event.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
-            allDay: CalendarTime.all_day?(event.start_time, event.end_time),
-            extendedProps: {
-              name: event.event_type.capitalize,
-              draft: event.draft,
-              description: event.description,
-              eventType: event.event_type,
-              trainingId: event.training_id,
-              language: event.language,
-              course_name: event.course_name,
-              assignedUsers: if event.event_assignments.empty?
-                [{id: 0, name: 'Unassigned'}]
-              else
-                event.event_assignments.map { |ea| { id: ea.user&.id, name: ea.user&.name } }
-              end,
-              background: background
-            },
-          }
-        end
-      }
-    end
-
-    render json: event_sources
+    # The events the window (CalendarWindow) keeps, with what their rows read, in one query each.
+    events = CalendarWindow.from_params(params).records(Event.where(space_id: params[:id]))
+                           .includes(:course_name, event_assignments: :user)
+    groups = events.group_by(&:event_type)
+    render json: groups.map { |type, rows| { id: type, events: rows.map { |row| feed_row(row, staff_colors) } } }
   end
 
   def publish
-    if params[:id].blank?
-      space_id = params[:space_id]
-      return redirect_back(fallback_location: admin_calendar_index_path, alert: "Space ID is required.") if space_id.blank?
-
-      updated_count = 0
-      failures = []
-
-      Event.where(space_id: space_id, start_time: @view_start..@view_end, draft: true).find_each do |event|
-        if event.update(draft: false, updated_by: current_user)
-          event.push_to_google_later
-          updated_count += 1
-        else
-          failures << "#{event.title.presence || "Event ##{event.id}"} (#{event.errors.full_messages.to_sentence})"
-        end
-      end
-
-      flash[:alert] = "Failed to publish #{failures.size} event(s): #{failures.to_sentence}" if failures.any?
-      return redirect_back(fallback_location: admin_calendar_index_path, notice: "#{updated_count} event(s) published.")
-    else
-      @event = Event.find(params[:id])
-      if @event.update(draft: false, updated_by: current_user)
-        @event.push_to_google_later
-        dialog_done(notice: "Event published successfully.")
-      else
-        dialog_done(alert: validation_message(@event, "failed_saves.event_publish"))
-      end
-    end
+    params[:id].blank? ? publish_range : publish_one
   end
 
   def delete_drafts
@@ -177,6 +100,72 @@ class Admin::EventsController < AdminAreaController
   end
 
   private
+
+  # One event as the admin calendar draws it.
+  def feed_row(event, staff_colors)
+    { id: "event-#{event.id}", title: event.display_title(include_draft_indicator: true),
+      start: event.start_time.iso8601, end: event.end_time.iso8601, **feed_recurrence(event),
+      allDay: CalendarTime.all_day?(event.start_time, event.end_time),
+      extendedProps: { name: event.event_type.capitalize, draft: event.draft, description: event.description,
+                       eventType: event.event_type, trainingId: event.training_id, language: event.language,
+                       course_name: event.course_name, assignedUsers: feed_assignees(event),
+                       background: feed_background(event, staff_colors) } }
+  end
+
+  # A series' rule and its length in milliseconds (the browser repeats it); nothing for a one-off.
+  def feed_recurrence(event)
+    return {} if event.recurrence_rule.blank?
+
+    { rrule: helpers.date_formatted_recurrence_rule(event),
+      duration: (event.end_time.to_time - event.start_time.to_time) * 1000 }
+  end
+
+  def feed_assignees(event)
+    return [{ id: 0, name: "Unassigned" }] if event.event_assignments.empty?
+
+    event.event_assignments.map { |assignment| { id: assignment.user&.id, name: assignment.user&.name } }
+  end
+
+  # Equal stripes in each assignee's colour in the space (grey when they have none, or when nobody is
+  # assigned); a draft is faded.
+  def feed_background(event, staff_colors)
+    colors = event.event_assignments.map { |assignment| staff_colors[assignment.user_id] || "#bbb" }
+    colors = ["#bbb"] if colors.empty?
+    width = 100.0 / colors.size
+    stops = colors.map.with_index { |color, i| "#{color} #{width * i}%, #{color} #{width * (i + 1)}%" }
+    "linear-gradient(to right, #{stops.join(', ')});#{' opacity: 0.8;' if event.draft}"
+  end
+
+  # Publishes the space's drafts that start in the shown range; each one that cannot be saved is named in an alert.
+  def publish_range
+    space_id = params[:space_id]
+    return redirect_back(fallback_location: admin_calendar_index_path, alert: "Space ID is required.") if space_id.blank?
+
+    published = 0
+    failures = []
+    Event.where(space_id: space_id, start_time: @view_start..@view_end, draft: true).find_each do |event|
+      next failures << publish_failure(event) unless event.update(draft: false, updated_by: current_user)
+
+      event.push_to_google_later
+      published += 1
+    end
+    flash[:alert] = "Failed to publish #{failures.size} event(s): #{failures.to_sentence}" if failures.any?
+    redirect_back(fallback_location: admin_calendar_index_path, notice: "#{published} event(s) published.")
+  end
+
+  def publish_one
+    @event = Event.find(params[:id])
+    unless @event.update(draft: false, updated_by: current_user)
+      return dialog_done(alert: validation_message(@event, "failed_saves.event_publish"))
+    end
+
+    @event.push_to_google_later
+    dialog_done(notice: "Event published successfully.")
+  end
+
+  def publish_failure(event)
+    "#{event.title.presence || "Event ##{event.id}"} (#{event.errors.full_messages.to_sentence})"
+  end
 
   # Copies the published, non-recurring events of the space in the range to drafts starting on the new date;
   # returns how many were copied.
