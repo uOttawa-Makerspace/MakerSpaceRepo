@@ -211,10 +211,6 @@
 1	app/javascript/entrypoints/users.js	TS2339	Property 'files' does not exist on type 'Element'.
 4	app/javascript/entrypoints/users.js	TS2339	Property 'id' does not exist on type 'EventTarget'.
 1	app/javascript/entrypoints/users.js	TS2339	Property 'value' does not exist on type 'EventTarget'.
-1	app/javascript/entrypoints/users.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
-1	app/javascript/entrypoints/users.js	TS2345	Argument of type 'Element' is not assignable to parameter of type 'string | TomInput'.
-1	app/javascript/entrypoints/users.js	TS2345	Argument of type 'HTMLElement' is not assignable to parameter of type 'string | TomInput'.
-4	app/javascript/entrypoints/users.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 1	app/javascript/entrypoints/videos.js	TS2304	Cannot find name 'check_learning_module'.
 1	app/javascript/entrypoints/videos.js	TS2339	Property 'check_learning_module' does not exist on type 'Window & typeof globalThis'.
 1	app/javascript/entrypoints/videos.js	TS2339	Property 'check_proficient_project' does not exist on type 'Window & typeof globalThis'.

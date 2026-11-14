@@ -145,8 +145,9 @@ describe("profile tabs", () => {
 
   it("sets up the rest of the page when the admin tab has no admin pane", () => {
     load(`<ul id="myTab"><a class="nav-link" id="admin-tab" href="#admin"></a></ul>
-      ${BASE}<select id="user_program"></select>`);
-    expect(selects.map((s) => s.el.id)).toEqual(["user_program"]);
+      <button class="role-button" id="r" value="staff"></button>${BASE}`);
+    $("r").click();
+    expect($("staff-space-changer").style.display).toBe("block");
   });
 
   it("opens the outer admin tab itself for its own address", () => {
@@ -226,66 +227,14 @@ describe("show and hide controls", () => {
   });
 });
 
-describe("faculty and program", () => {
-  const page = `${BASE}
-    <select id="user_faculty"><option value="Eng">Eng</option><option value="Sci">Sci</option></select>
-    <select id="user_program">
-      <optgroup label="Eng"><option>Civil</option></optgroup>
-      <optgroup label="Sci"><option>Physics</option></optgroup>
-    </select>`;
-
-  it("decorates the program select once", () => {
-    load(page);
-    expect(selects).toHaveLength(1);
-    document.dispatchEvent(new Event("turbo:load"));
-    expect(selects).toHaveLength(1);
-  });
-
-  it("offers only the programs of the chosen faculty", () => {
-    load(page);
-    $("user_faculty").value = "Sci";
-    $("user_faculty").dispatchEvent(new Event("change"));
-    const groups = [...$("user_program").querySelectorAll("optgroup")];
-    expect(groups.map((g) => g.label)).toEqual(["Sci"]);
-    expect(selects[0].cleared).toBe(1);
-    expect(selects[0].optionsCleared).toBe(1);
-    expect(selects[0].synced).toBe(1);
-  });
-
-  it("offers no programs for a faculty without any", () => {
-    load(page);
-    $("user_faculty").insertAdjacentHTML(
-      "beforeend",
-      '<option value="Art">Art</option>',
-    );
-    $("user_faculty").value = "Art";
-    $("user_faculty").dispatchEvent(new Event("change"));
-    expect($("user_program").querySelectorAll("optgroup")).toHaveLength(0);
-  });
-
-  it("leaves a program select decorated before the page loaded", () => {
-    document.body.innerHTML = page;
-    $("user_program").tomselect = "existing";
-    selects.length = 0;
-    document.dispatchEvent(new Event("turbo:load"));
+describe("program select", () => {
+  // src/settings.js, which every page loads before this script, builds the
+  // program picker and narrows it to the chosen faculty.
+  it("builds no picker of its own for the program select", () => {
+    load(`${BASE}
+      <select id="user_faculty"><option value="Eng">Eng</option></select>
+      <select id="user_program"><optgroup label="Eng"><option>Civil</option></optgroup></select>`);
     expect(selects).toHaveLength(0);
-    $("user_faculty").value = "Sci";
-    $("user_faculty").dispatchEvent(new Event("change"));
-    expect($("user_program").querySelectorAll("optgroup")).toHaveLength(2);
-  });
-
-  it("gives the program select its options", () => {
-    load(page);
-    expect(selects[0].config).toEqual({
-      maxItems: 1,
-      maxOptions: null,
-      searchOnKeyUp: true,
-    });
-  });
-
-  it("works without a faculty select", () => {
-    load(`${BASE}<select id="user_program"></select>`);
-    expect(selects).toHaveLength(1);
   });
 });
 

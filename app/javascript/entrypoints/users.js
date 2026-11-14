@@ -1,5 +1,3 @@
-import TomSelect from "tom-select";
-import { tomSelectOptions } from "../src/page_locale.js";
 import { csrfHeaders } from "../src/csrf";
 import { reportFailure, requestJson } from "../src/request_error";
 
@@ -87,40 +85,6 @@ function bindShowHideControls() {
   }
 }
 
-function initProgramSelect() {
-  const programSelect = document.getElementById("user_program");
-  if (programSelect && !programSelect.tomselect) {
-    new TomSelect(
-      programSelect,
-      tomSelectOptions(programSelect, {
-        maxItems: 1,
-        maxOptions: null,
-        searchOnKeyUp: true,
-      }),
-    );
-    // this is a non-live NodeList, we store it for later use
-    const optgroups = Array.from(programSelect.querySelectorAll("optgroup"));
-    const facultySelect = document.getElementById("user_faculty");
-    if (facultySelect) {
-      facultySelect.addEventListener("change", function () {
-        // https://tom-select.js.org/docs/api/
-        programSelect.querySelectorAll("optgroup").forEach((e) => e.remove());
-        // Add allowed programs
-        let target_label = facultySelect.value;
-        for (let i = 0; i < optgroups.length; i++) {
-          let option = optgroups[i];
-          if (option.getAttribute("label") == target_label)
-            programSelect.appendChild(option);
-        }
-
-        programSelect.tomselect.clear();
-        programSelect.tomselect.clearOptions();
-        programSelect.tomselect.sync();
-      });
-    }
-  }
-}
-
 function bindRoleButtons() {
   const staffSpaceChanger = document.getElementById("staff-space-changer");
   if (!staffSpaceChanger) return;
@@ -197,7 +161,6 @@ document.addEventListener("turbo:load", function () {
   restorePreviousAnchor();
   bindProfileTabs();
   bindShowHideControls();
-  initProgramSelect();
   bindRoleButtons();
   bindKeyCertUploads();
   bindUserSpaceButtons();
