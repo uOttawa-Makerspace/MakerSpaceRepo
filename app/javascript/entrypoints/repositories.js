@@ -1,4 +1,5 @@
 import TomSelect from "tom-select";
+import { tomSelectOptions } from "../src/page_locale.js";
 import "../src/file_upload.js";
 
 window.showPass = function () {
@@ -24,137 +25,161 @@ window.togglePass = function () {
 document.addEventListener("turbo:load", () => {
   if (document.getElementById("owner_select")) {
     if (!document.getElementById("owner_select").tomselect) {
-      new TomSelect("#owner_select", {
-        searchField: ["username"],
-        valueField: "id",
-        labelField: "username",
-        maxOptions: 5,
-        searchPlaceholder: "Add Owner...",
-        searchOnKeyUp: true,
-        openOnFocus: false,
-        load: function (type, callback) {
-          if (type.length < 2) {
-            return;
-          } else {
-            let url = "/repositories/populate_users?search=" + type;
-            fetch(url)
-              .then((response) => response.json())
-              .then((data) => {
-                callback(
-                  data.users.map((user) => {
-                    return { id: user.id, username: user.username };
-                  }),
-                );
-              });
-          }
-        },
-        shouldLoad: function (type) {
-          return type.length > 2;
-        },
-      });
+      new TomSelect(
+        "#owner_select",
+        tomSelectOptions(document, {
+          searchField: ["username"],
+          valueField: "id",
+          labelField: "username",
+          maxOptions: 5,
+          searchPlaceholder: "Add Owner...",
+          searchOnKeyUp: true,
+          openOnFocus: false,
+          load: function (type, callback) {
+            if (type.length < 2) {
+              return;
+            } else {
+              let url = "/repositories/populate_users?search=" + type;
+              fetch(url)
+                .then((response) => response.json())
+                .then((data) => {
+                  callback(
+                    data.users.map((user) => {
+                      return { id: user.id, username: user.username };
+                    }),
+                  );
+                });
+            }
+          },
+          shouldLoad: function (type) {
+            return type.length > 2;
+          },
+        }),
+      );
     }
   }
 
   if (document.getElementById("search_users_add")) {
     if (!document.getElementById("search_users_add").tomselect) {
-      new TomSelect("#search_users_add", {
-        searchField: ["username"],
-        valueField: "id",
-        labelField: "username",
-        maxOptions: 5,
-        searchPlaceholder: "Add Owner...",
-        searchOnKeyUp: true,
-        load: function (type, callback) {
-          if (type.length < 2) {
-            return;
-          } else {
-            let url = "/repositories/populate_users?search=" + type;
-            fetch(url)
-              .then((response) => response.json())
-              .then((data) => {
-                callback(
-                  data.users.map((user) => {
-                    return { id: user.id, username: user.username };
-                  }),
-                );
-              });
-          }
-        },
-        shouldLoad: function (type) {
-          return type.length > 2;
-        },
-      });
+      new TomSelect(
+        "#search_users_add",
+        tomSelectOptions(document, {
+          searchField: ["username"],
+          valueField: "id",
+          labelField: "username",
+          maxOptions: 5,
+          searchPlaceholder: "Add Owner...",
+          searchOnKeyUp: true,
+          load: function (type, callback) {
+            if (type.length < 2) {
+              return;
+            } else {
+              let url = "/repositories/populate_users?search=" + type;
+              fetch(url)
+                .then((response) => response.json())
+                .then((data) => {
+                  callback(
+                    data.users.map((user) => {
+                      return { id: user.id, username: user.username };
+                    }),
+                  );
+                });
+            }
+          },
+          shouldLoad: function (type) {
+            return type.length > 2;
+          },
+        }),
+      );
     }
   }
   if (document.getElementById("search_users_remove")) {
     if (!document.getElementById("search_users_remove").tomselect) {
-      new TomSelect("#search_users_remove", {
-        searchField: ["username"],
-        valueField: "id",
-        labelField: "username",
-        maxOptions: null,
-        searchOnKeyUp: true,
-      });
+      new TomSelect(
+        "#search_users_remove",
+        tomSelectOptions(document, {
+          searchField: ["username"],
+          valueField: "id",
+          labelField: "username",
+          maxOptions: null,
+          searchOnKeyUp: true,
+        }),
+      );
     }
   }
   if (document.getElementById("search_users_transfer")) {
     if (!document.getElementById("search_users_transfer").tomselect) {
-      new TomSelect("#search_users_transfer", {
-        searchField: ["username"],
-        valueField: "id",
-        labelField: "username",
-        maxOptions: null,
-        searchOnKeyUp: true,
-      });
+      new TomSelect(
+        "#search_users_transfer",
+        tomSelectOptions(document, {
+          searchField: ["username"],
+          valueField: "id",
+          labelField: "username",
+          maxOptions: null,
+          searchOnKeyUp: true,
+        }),
+      );
     }
   }
   if (document.getElementById("search_project_proposals")) {
     if (!document.getElementById("search_project_proposals").tomselect) {
-      new TomSelect("#search_project_proposals", {
-        render: {
-          option: function (data, escape) {
-            return `<div>
+      new TomSelect(
+        "#search_project_proposals",
+        tomSelectOptions(document, {
+          render: {
+            option: function (data, escape) {
+              return `<div>
             <span>${escape(data.text)}</span>
             <br />
             <small class="text-muted">${escape(data.semester || "")}</small>
             </div>`;
-          },
-          item: function (data, escape) {
-            return `<span>
+            },
+            item: function (data, escape) {
+              return `<span>
             ${escape(data.text)}
             <br />
             <small class="text-muted">${escape(data.semester || "")}</small>
             </span>`;
+            },
           },
-        },
-      });
+        }),
+      );
     }
   }
   if (document.getElementById("repository_categories")) {
     if (!document.getElementById("repository_categories").tomselect) {
-      new TomSelect("#repository_categories", {
-        plugins: ["remove_button"],
-        maxItems: 5,
-        openOnFocus: true,
-      });
+      new TomSelect(
+        "#repository_categories",
+        tomSelectOptions(document, {
+          plugins: ["remove_button"],
+          maxItems: 5,
+          openOnFocus: true,
+        }),
+      );
     }
   }
   if (document.getElementById("repository_equipments")) {
     if (!document.getElementById("repository_equipments").tomselect) {
-      new TomSelect("#repository_equipments", {
-        plugins: ["remove_button"],
-        maxItems: 5,
-        openOnFocus: true,
-        create: true,
-      });
+      new TomSelect(
+        "#repository_equipments",
+        tomSelectOptions(document, {
+          plugins: ["remove_button"],
+          maxItems: 5,
+          openOnFocus: true,
+          create: true,
+        }),
+      );
     }
   }
   if (document.getElementById("repository_project_proposal_id")) {
     if (!document.getElementById("repository_project_proposal_id").tomselect) {
-      new TomSelect("#repository_project_proposal_id", {
-        plugins: ["clear_button"],
-        maxItems: 1,
-      });
+      new TomSelect(
+        "#repository_project_proposal_id",
+        tomSelectOptions(document, {
+          plugins: ["clear_button"],
+          maxItems: 1,
+        }),
+      );
     }
   }
 });

@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus";
 import flatpickr from "flatpickr";
+import { flatpickrOptions } from "../src/page_locale.js";
 
 // A flatpickr calendar on the input target; the clear action empties it.
 export default class extends Controller {
@@ -8,14 +9,20 @@ export default class extends Controller {
   connect() {
     // Stimulus defines inputTarget at runtime; the cast tells the type checker.
     const input = /** @type {any} */ (this).inputTarget;
-    this.picker = flatpickr(input, {
-      enableTime: false,
-      dateFormat: "Y-m-d",
-      minDate: "today",
-      altInput: true,
-      altFormat: "F j, Y",
-      allowInput: false,
-    });
+    this.picker = flatpickr(
+      input,
+      flatpickrOptions(
+        input,
+        {
+          enableTime: false,
+          dateFormat: "Y-m-d",
+          minDate: "today",
+          altInput: true,
+          allowInput: false,
+        },
+        "date",
+      ),
+    );
     this.labelVisibleInput(input);
   }
 

@@ -1,12 +1,16 @@
 import TomSelect from "tom-select";
+import { tomSelectOptions } from "../src/page_locale.js";
 document.addEventListener("turbo:load", function () {
   if (document.getElementById("contact_info_space_id")) {
     if (!document.getElementById("contact_info_space_id").tomselect) {
-      new TomSelect("#contact_info_space_id", {
-        plugins: ["remove_button", "restore_on_backspace", "clear_button"],
-        create: true,
-        persist: false,
-      });
+      new TomSelect(
+        "#contact_info_space_id",
+        tomSelectOptions(document, {
+          plugins: ["remove_button", "restore_on_backspace", "clear_button"],
+          create: true,
+          persist: false,
+        }),
+      );
     }
   }
 
@@ -42,7 +46,7 @@ document.addEventListener("turbo:load", function () {
       // Replace the array index
       template.innerHTML = template.innerHTML.replaceAll(
         "CHILDINDEX",
-        next_index
+        next_index,
       );
       // Clear cloned form
       template.querySelectorAll("input").forEach((i) => {
@@ -53,7 +57,7 @@ document.addEventListener("turbo:load", function () {
       document.querySelector("#openingHours").appendChild(template);
       // Attach events to the new form
       attachToggleEvents(
-        template.querySelectorAll("fieldset[data-toggled-by]")
+        template.querySelectorAll("fieldset[data-toggled-by]"),
       );
     });
   }

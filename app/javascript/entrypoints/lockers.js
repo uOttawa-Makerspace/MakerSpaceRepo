@@ -1,5 +1,6 @@
 import { Tooltip } from "bootstrap";
 import TomSelect from "tom-select";
+import { dataTableOptions, tomSelectOptions } from "../src/page_locale.js";
 import DataTable from "datatables.net-bs5";
 import "datatables.net-select-bs5";
 import { csrfHeaders } from "../src/csrf";
@@ -126,23 +127,26 @@ document.addEventListener("turbo:load", function () {
 document.addEventListener("turbo:load", function () {
   document.querySelectorAll("select.locker-variant-select").forEach((el) => {
     if (!el.tomselect) {
-      new TomSelect(el, {
-        render: {
-          option: function (data, escape) {
-            let itemtitle = escape(data.text);
-            let jsondata = (data.data && JSON.parse(data.data)) || {};
-            let title = escape(jsondata.displayName || "");
-            let sku = escape(jsondata.sku || "");
-            let price = escape(jsondata.price || "");
-            return `<div>
+      new TomSelect(
+        el,
+        tomSelectOptions(el, {
+          render: {
+            option: function (data, escape) {
+              let itemtitle = escape(data.text);
+              let jsondata = (data.data && JSON.parse(data.data)) || {};
+              let title = escape(jsondata.displayName || "");
+              let sku = escape(jsondata.sku || "");
+              let price = escape(jsondata.price || "");
+              return `<div>
                     <span>${itemtitle}</span> <br />
                     <span><b>Display Name:</b> ${title}</span> <br />
                     <span><b>SKU:</b> <code>${sku}</code></span> <br />
                     <span><b>Price:</b> <code>${price}</code></span>
                   </div>`;
+            },
           },
-        },
-      });
+        }),
+      );
       // Match initial disabled state
       if (el.disabled && el.tomselect) {
         el.tomselect.disable();
@@ -289,31 +293,34 @@ document.addEventListener("turbo:load", function () {
 
 // Initialize DataTable with select plugin
 document.addEventListener("turbo:load", function () {
-  const locker_inventory_table = document.querySelector(
-    "#locker_inventory_table",
+  const locker_inventory_table = /** @type {HTMLTableElement} */ (
+    document.querySelector("#locker_inventory_table")
   );
   if (
     locker_inventory_table &&
     !DataTable.isDataTable(locker_inventory_table)
   ) {
-    new DataTable(locker_inventory_table, {
-      language: {
-        search: "_INPUT_",
-        searchPlaceholder: "Search lockers, users, notes, status...",
-      },
-      columnDefs: [
-        {
-          orderable: false,
-          render: DataTable.render.select(),
-          targets: 0,
+    new DataTable(
+      locker_inventory_table,
+      dataTableOptions(locker_inventory_table, {
+        language: {
+          search: "_INPUT_",
+          searchPlaceholder: locker_inventory_table.dataset.searchPlaceholder,
         },
-      ],
-      select: {
-        style: "os",
-        selector: "td:first-child",
-      },
-      order: [[1, "asc"]],
-    });
+        columnDefs: [
+          {
+            orderable: false,
+            render: DataTable.render.select(),
+            targets: 0,
+          },
+        ],
+        select: {
+          style: "os",
+          selector: "td:first-child",
+        },
+        order: [[1, "asc"]],
+      }),
+    );
   }
 
   const lockerBulkEditList = document.querySelector("#lockerBulkEditList");

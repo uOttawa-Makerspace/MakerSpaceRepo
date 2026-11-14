@@ -4,13 +4,15 @@ require Rails.root.join("lib/jwt_authenticator")
 
 module ApplicationHelper
   # The translated texts the page's JavaScript shows when a request fails and the server gave no reason
-  # (see app/javascript/src/request_error.js). Rendered as data attributes of the layout's <html> element.
+  # (see app/javascript/src/request_error.js), and the texts of the page widgets (tables, pickers, date
+  # pickers; see app/javascript/src/page_locale.js). Rendered as data attributes of the layout's <html> element.
   def request_text_attributes
     {
       data: {
         request_failed: t("errors.generic.request_failed"),
         request_network: t("errors.generic.network"),
-        request_copy_failed: t("errors.generic.copy_failed")
+        request_copy_failed: t("errors.generic.copy_failed"),
+        widget_texts: t("widgets")
       }
     }
   end

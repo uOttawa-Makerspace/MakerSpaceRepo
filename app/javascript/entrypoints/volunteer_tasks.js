@@ -1,10 +1,11 @@
 // app/javascript/entrypoints/volunteer_tasks.js
 import TomSelect from "tom-select";
+import { tomSelectOptions } from "../src/page_locale.js";
 
 function initTomSelect(selector, options) {
   const el = document.querySelector(selector);
   if (el && !el.tomselect) {
-    new TomSelect(el, options);
+    new TomSelect(el, tomSelectOptions(el, options));
   }
 }
 
@@ -91,31 +92,39 @@ document.addEventListener("turbo:load", function () {
     let certTom = null;
 
     if (spaceEl && !spaceEl.tomselect) {
-      spaceTom = new TomSelect(spaceEl, {
-        allowEmptyOption: true,
-        create: false,
-        controlInput: null,
-      });
+      spaceTom = new TomSelect(
+        spaceEl,
+        tomSelectOptions(spaceEl, {
+          allowEmptyOption: true,
+          create: false,
+          controlInput: null,
+        }),
+      );
     } else if (spaceEl) {
       spaceTom = spaceEl.tomselect;
     }
 
     if (categoryEl && !categoryEl.tomselect) {
-      categoryTom = new TomSelect(categoryEl, {
-        allowEmptyOption: true,
-        create: false,
-        controlInput: null,
-      });
+      categoryTom = new TomSelect(
+        categoryEl,
+        tomSelectOptions(categoryEl, {
+          allowEmptyOption: true,
+          create: false,
+          controlInput: null,
+        }),
+      );
     } else if (categoryEl) {
       categoryTom = categoryEl.tomselect;
     }
 
     if (certEl && !certEl.tomselect) {
-      certTom = new TomSelect(certEl, {
-        plugins: ["remove_button"],
-        create: false,
-        placeholder: "Filter by Certifications...",
-      });
+      certTom = new TomSelect(
+        certEl,
+        tomSelectOptions(certEl, {
+          plugins: ["remove_button"],
+          create: false,
+        }),
+      );
     } else if (certEl) {
       certTom = certEl.tomselect;
     }

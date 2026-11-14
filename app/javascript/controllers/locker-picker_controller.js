@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus";
 import TomSelect from "tom-select";
+import { tomSelectOptions } from "../src/page_locale.js";
 
 // Tell TomSelect to use Bootstrap's classes
 const bootstrapClasses = {
@@ -29,25 +30,31 @@ export default class extends Controller {
 
   lockerTargetConnected(select) {
     if (select.tomselect) return;
-    new TomSelect(select, {
-      create: false,
-      maxItems: 1,
-      ...bootstrapClasses,
-      render: { option: lockerLine, item: lockerLine },
-    });
+    new TomSelect(
+      select,
+      tomSelectOptions(select, {
+        create: false,
+        maxItems: 1,
+        ...bootstrapClasses,
+        render: { option: lockerLine, item: lockerLine },
+      }),
+    );
   }
 
   userTargetConnected(select) {
     if (select.tomselect) return;
     // Search by name or username
-    new TomSelect(select, {
-      maxItems: 1,
-      valueField: "value",
-      labelField: "text",
-      searchField: ["text"],
-      ...bootstrapClasses,
-      render: { option: userLine, item: userLine },
-    });
+    new TomSelect(
+      select,
+      tomSelectOptions(select, {
+        maxItems: 1,
+        valueField: "value",
+        labelField: "text",
+        searchField: ["text"],
+        ...bootstrapClasses,
+        render: { option: userLine, item: userLine },
+      }),
+    );
   }
 
   lockerTargetDisconnected(select) {

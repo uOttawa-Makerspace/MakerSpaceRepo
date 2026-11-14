@@ -83,6 +83,7 @@ en:
       provide_description: "Please provide the question description."
       provide_answers: "Please provide Answers"
       categories: "Categories:"
+      clear_categories: "Clear"
     flash:
       created: "You've successfully created a new question!"
       answer_added: "Answer added. Please update its content!"
@@ -175,6 +176,7 @@ fr:
       provide_description: "Veuillez entrer la description de la question."
       provide_answers: "Veuillez entrer les réponses"
       categories: "Catégories :"
+      clear_categories: "Effacer"
     flash:
       created: "La nouvelle question a été créée!"
       answer_added: "Réponse ajoutée. Veuillez en rédiger le contenu!"

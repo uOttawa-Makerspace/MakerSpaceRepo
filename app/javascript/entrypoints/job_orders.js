@@ -1,5 +1,6 @@
 import DataTable from "datatables.net-bs5";
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
+import { dataTableOptions } from "../src/page_locale.js";
 
 // Hides rows submitted more than the computed number of days ago. Registered
 // once per admin page visit; it reads the current value on every redraw.
@@ -24,10 +25,13 @@ function removeDateFilter() {
 
 document.addEventListener("turbo:load", () => {
   removeDateFilter();
-  const dt = new DataTable(".table:not(.notDataTable)", {
-    order: [[3, "desc"]], // sorts by id on /admin and submitted date on client view
-    pageLength: 25,
-  });
+  const dt = new DataTable(
+    ".table:not(.notDataTable)",
+    dataTableOptions(document, {
+      order: [[3, "desc"]], // sorts by id on /admin and submitted date on client view
+      pageLength: 25,
+    }),
+  );
 
   if (window.location.pathname !== "/job_orders/admin") return; // only filter on admin page
 

@@ -23,7 +23,7 @@
       </div>
       <% if @user.admin? %>
         <% label_tag 'user_id', class: 'form-label' %>
-        <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: %w[staff admin]).order('name ASC'), 'id', 'name'), prompt: 'Select instructor', class: 'form-control form-select', aria: { label: t('common.names.instructor') }, required: true %><br>
+        <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: %w[staff admin]).order('name ASC'), 'id', 'name'), prompt: 'Select instructor', class: 'form-control form-select', aria: { label: t('common.names.instructor') }, data: { placeholder: t('common.names.select_user') }, required: true %><br>
       <% end %>
     <br />
       <table class="staff-table table text-center table-striped" id="staff-users-table">

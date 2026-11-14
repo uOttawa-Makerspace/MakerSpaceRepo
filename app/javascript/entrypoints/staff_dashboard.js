@@ -1,6 +1,7 @@
 import DataTable from "datatables.net-bs5";
 import { Modal } from "bootstrap";
 import { staffDashboardChannelConnection } from "../channels/staff_dashboard_channel";
+import { dataTableOptions } from "../src/page_locale.js";
 
 let notifyModal = null;
 let modalClicked = false;
@@ -159,7 +160,7 @@ document.addEventListener("turbo:before-stream-render", (event) => {
     originalRender(streamElement);
 
     tables.forEach((t) => {
-      new DataTable(t);
+      new DataTable(t, dataTableOptions(t));
     });
   };
 });

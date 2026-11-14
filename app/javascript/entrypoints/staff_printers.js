@@ -1,4 +1,5 @@
 import TomSelect from "tom-select";
+import { tomSelectOptions } from "../src/page_locale.js";
 
 document.addEventListener("turbo:load", function () {
   // For "Send Print Failed Emails" form
@@ -18,28 +19,31 @@ document.addEventListener("turbo:load", function () {
       console.error("Could not load the last user of each printer", error),
     );
 
-  new TomSelect("#printerNumberSelect", {
-    items: [], // To clear default value
-    onChange: function (printerId) {
-      let userSelect = document.querySelector(
-        "#user_dashboard_select",
-      ).tomselect;
+  new TomSelect(
+    "#printerNumberSelect",
+    tomSelectOptions(document, {
+      items: [], // To clear default value
+      onChange: function (printerId) {
+        let userSelect = document.querySelector(
+          "#user_dashboard_select",
+        ).tomselect;
 
-      // If a user is already typed in, don't replace
-      if (userSelect.getValue()) {
-        return;
-      }
-      // Find previous owner of this printer
-      if (printerAssigns[printerId] && printerAssigns[printerId].username) {
-        // and place into user dashboard select if it exists
-        // NOTE the user dashboard script uses usernames
-        userSelect.addOption({
-          id: printerAssigns[printerId].username,
-          name: printerAssigns[printerId].name,
-        });
-        userSelect.refreshOptions();
-        userSelect.setValue(printerAssigns[printerId].username);
-      }
-    },
-  });
+        // If a user is already typed in, don't replace
+        if (userSelect.getValue()) {
+          return;
+        }
+        // Find previous owner of this printer
+        if (printerAssigns[printerId] && printerAssigns[printerId].username) {
+          // and place into user dashboard select if it exists
+          // NOTE the user dashboard script uses usernames
+          userSelect.addOption({
+            id: printerAssigns[printerId].username,
+            name: printerAssigns[printerId].name,
+          });
+          userSelect.refreshOptions();
+          userSelect.setValue(printerAssigns[printerId].username);
+        }
+      },
+    }),
+  );
 });

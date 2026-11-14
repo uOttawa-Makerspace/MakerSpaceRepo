@@ -1,12 +1,16 @@
 import TomSelect from "tom-select";
+import { tomSelectOptions } from "../src/page_locale.js";
 import "../src/file_upload.js";
 
 if (document.getElementById("project_proposal_categories")) {
   if (!document.getElementById("project_proposal_categories").tomselect) {
-    new TomSelect("#project_proposal_categories", {
-      plugins: ["remove_button"],
-      maxItems: 5,
-    });
+    new TomSelect(
+      "#project_proposal_categories",
+      tomSelectOptions(document, {
+        plugins: ["remove_button"],
+        maxItems: 5,
+      }),
+    );
   }
 }
 if (document.getElementById("link-list")) {

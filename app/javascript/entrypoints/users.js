@@ -1,4 +1,5 @@
 import TomSelect from "tom-select";
+import { tomSelectOptions } from "../src/page_locale.js";
 import { csrfHeaders } from "../src/csrf";
 import { reportFailure, requestJson } from "../src/request_error";
 
@@ -82,11 +83,14 @@ document.addEventListener("turbo:load", function () {
 
   const programSelect = document.getElementById("user_program");
   if (programSelect && !programSelect.tomselect) {
-    new TomSelect(programSelect, {
-      maxItems: 1,
-      maxOptions: null,
-      searchOnKeyUp: true,
-    });
+    new TomSelect(
+      programSelect,
+      tomSelectOptions(programSelect, {
+        maxItems: 1,
+        maxOptions: null,
+        searchOnKeyUp: true,
+      }),
+    );
     // this is a non-live NodeList, we store it for later use
     const optgroups = Array.from(programSelect.querySelectorAll("optgroup"));
     const facultySelect = document.getElementById("user_faculty");
@@ -154,15 +158,18 @@ document.addEventListener("turbo:load", function () {
 
   // For the select boxes in admin/users/manage_roles
   document.querySelectorAll(".role-space-select").forEach((i) => {
-    new TomSelect(i, {
-      plugins: {
-        checkbox_options: {
-          checkedClassNames: ["ts-checked"],
-          uncheckedClassNames: ["ts-unchecked"],
+    new TomSelect(
+      i,
+      tomSelectOptions(i, {
+        plugins: {
+          checkbox_options: {
+            checkedClassNames: ["ts-checked"],
+            uncheckedClassNames: ["ts-unchecked"],
+          },
+          remove_button: { title: "Remove space" },
         },
-        remove_button: { title: "Remove space" },
-      },
-    });
+      }),
+    );
   });
 
   document.querySelectorAll("input.set-user-space-button").forEach((i) => {
