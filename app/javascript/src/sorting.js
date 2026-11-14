@@ -25,52 +25,55 @@ window.findSession = function (table_class, id = "query") {
 };
 
 var sort_direction = 1;
-window.sortTable = function (table_name, col, isDateColumn = false) {
-  //console.log(`sortTable(${table_name}, ${col}, ${isDateColumn})`);
-  const table = document.getElementsByClassName(table_name)[0];
-  let rows;
-  let swapElement, currentElement;
 
-  if (table) {
-    rows = table.getElementsByTagName("tr");
+function cellAt(row, col) {
+  return row.getElementsByTagName("td")[col];
+}
 
-    if (rows) {
-      for (let i = 1; i < rows.length - 1; i++) {
-        swapElement = rows[i].getElementsByTagName("td")[col];
+// sub_space_booking has date ranges, we can't parse the whole thing as a date
+// So we specify the start date as the sort key
+function sortKey(cell) {
+  return cell.dataset.sortAs || cell.innerText;
+}
 
-        for (let j = i + 1; j < rows.length; j++) {
-          currentElement = rows[j].getElementsByTagName("td")[col];
-          // sub_space_booking has date ranges, we can't parse the whole thing as a date
-          // So we specify the start date as the sort key
-          const swapElStr = swapElement.dataset.sortAs || swapElement.innerText;
-          const currElStr =
-            currentElement.dataset.sortAs || currentElement.innerText;
+function inSortDirection(a, b) {
+  return (sort_direction === 1 && a > b) || (sort_direction === 0 && a < b);
+}
 
-          if (
-            !isDateColumn &&
-            ((sort_direction === 1 &&
-              swapElStr.toLowerCase() > currElStr.toLowerCase()) ||
-              (sort_direction === 0 &&
-                swapElStr.toLowerCase() < currElStr.toLowerCase()))
-          ) {
-            swapElement = currentElement;
-          } else if (
-            isDateColumn &&
-            ((sort_direction === 1 &&
-              Date.parse(swapElStr) > Date.parse(currElStr)) ||
-              (sort_direction === 0 &&
-                Date.parse(swapElStr) < Date.parse(currElStr)))
-          ) {
-            swapElement = currentElement;
-          }
-        }
+function outOfOrder(swapElStr, currElStr, isDateColumn) {
+  if (isDateColumn) {
+    return inSortDirection(Date.parse(swapElStr), Date.parse(currElStr));
+  }
+  return inSortDirection(swapElStr.toLowerCase(), currElStr.toLowerCase());
+}
 
-        rows[i].parentNode.insertBefore(swapElement.parentNode, rows[i]);
-      }
-
-      sort_direction = sort_direction === 1 ? 0 : 1;
+// The cell, from row i down, that belongs at row i in the sort direction.
+function cellForRow(rows, i, col, isDateColumn) {
+  let swapElement = cellAt(rows[i], col);
+  for (let j = i + 1; j < rows.length; j++) {
+    const currentElement = cellAt(rows[j], col);
+    if (
+      outOfOrder(sortKey(swapElement), sortKey(currentElement), isDateColumn)
+    ) {
+      swapElement = currentElement;
     }
   }
+  return swapElement;
+}
+
+function sortRows(rows, col, isDateColumn) {
+  for (let i = 1; i < rows.length - 1; i++) {
+    const swapElement = cellForRow(rows, i, col, isDateColumn);
+    rows[i].parentNode.insertBefore(swapElement.parentNode, rows[i]);
+  }
+}
+
+window.sortTable = function (table_name, col, isDateColumn = false) {
+  const table = document.getElementsByClassName(table_name)[0];
+  if (!table) return;
+
+  sortRows(table.getElementsByTagName("tr"), col, isDateColumn);
+  sort_direction = sort_direction === 1 ? 0 : 1;
 };
 
 var select_direction = 1;

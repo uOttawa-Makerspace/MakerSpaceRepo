@@ -232,29 +232,52 @@ function setupDropZone(dropZone, fileInput) {
 //
 // BOOTSTRAP
 //
+// Fallback to name if data-file-upload-prefix is missing
+function fieldPrefix(target) {
+  return (
+    target.dataset.fileUploadPrefix ||
+    (target.name ? target.name.replace(/\[\]$/, "") : null)
+  );
+}
+
+// Infer default suffix for nested attributes if not specified
+function applyDefaultSuffix(target, prefix) {
+  if (target.dataset.fileUploadSuffix) return;
+  if (prefix.includes("photos_attributes")) {
+    target.dataset.fileUploadSuffix = "image";
+  } else if (prefix.includes("repo_files_attributes")) {
+    target.dataset.fileUploadSuffix = "file";
+  }
+}
+
+// Pre-existing items: hook up delete buttons
+function setupExistingDeletes(preview) {
+  preview.querySelectorAll(".file-upload-item-preview").forEach((box) => {
+    const deleteBtn = box.querySelector("[data-file-upload-item-delete]");
+    const destroyInput = box.querySelector("[data-file-upload-hidden-destroy]");
+    if (deleteBtn && destroyInput) {
+      deleteBtn.addEventListener("click", () => {
+        box.hidden = true;
+        destroyInput.value = true;
+        if (preview.hasAttribute("data-file-upload-sortable")) {
+          updatePositions(preview);
+        }
+      });
+    }
+  });
+}
+
 function createFileInput(target) {
   if (target.dataset.fileUploadInitialized) return;
   target.dataset.fileUploadInitialized = "true";
 
-  // Fallback to name if data-file-upload-prefix is missing
-  const prefix =
-    target.dataset.fileUploadPrefix ||
-    (target.name ? target.name.replace(/\[\]$/, "") : null);
-
+  const prefix = fieldPrefix(target);
   if (!prefix) {
     console.warn("file_upload: data-file-upload-prefix is required on", target);
     return;
   }
   target.dataset.fileUploadPrefix = prefix;
-
-  // Infer default suffix for nested attributes if not specified
-  if (!target.dataset.fileUploadSuffix) {
-    if (prefix.includes("photos_attributes")) {
-      target.dataset.fileUploadSuffix = "image";
-    } else if (prefix.includes("repo_files_attributes")) {
-      target.dataset.fileUploadSuffix = "file";
-    }
-  }
+  applyDefaultSuffix(target, prefix);
 
   target.removeAttribute("name");
   target.addEventListener("change", onFileUpload);
@@ -270,20 +293,7 @@ function createFileInput(target) {
     return;
   }
 
-  // Pre-existing items: hook up delete buttons
-  preview.querySelectorAll(".file-upload-item-preview").forEach((box) => {
-    const deleteBtn = box.querySelector("[data-file-upload-item-delete]");
-    const destroyInput = box.querySelector("[data-file-upload-hidden-destroy]");
-    if (deleteBtn && destroyInput) {
-      deleteBtn.addEventListener("click", () => {
-        box.hidden = true;
-        destroyInput.value = true;
-        if (preview.hasAttribute("data-file-upload-sortable")) {
-          updatePositions(preview);
-        }
-      });
-    }
-  });
+  setupExistingDeletes(preview);
 
   // Sortable reordering (gallery images)
   if (preview.hasAttribute("data-file-upload-sortable")) {

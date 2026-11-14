@@ -154,4 +154,134 @@ describe("validation_proposal", () => {
   it("passes on a page with none of the fields", () => {
     expect(validation_proposal()).toBe(true);
   });
+
+  it.each([
+    ["username", "project_proposal_username"],
+    ["email", "project_proposal_email"],
+    ["client", "project_proposal_client"],
+    ["title", "project_proposal_title"],
+    ["description", "trix_editor"],
+  ])(
+    "puts the %s message just before the field and scrolls to it",
+    (field, id) => {
+      page({ [field]: "" });
+      const target = document.getElementById(id);
+      target.getBoundingClientRect = () => ({ top: 400 });
+      validation_proposal();
+      expect(target.previousElementSibling.textContent).not.toBe("");
+      expect(target.previousElementSibling.className).toBe(
+        "form-error repo-form",
+      );
+      expect(window.scrollTo).toHaveBeenCalledTimes(1);
+      expect(window.scrollTo).toHaveBeenCalledWith({
+        top: 230,
+        behavior: "smooth",
+      });
+    },
+  );
+
+  it("does not scroll for a missing client background, as its scroll target has another id", () => {
+    page({ background: "" });
+    expect(validation_proposal()).toBe(false);
+    const field = document.getElementById(
+      "client_background_trix_input_project_proposal",
+    );
+    expect(field.previousElementSibling.textContent).toBe(
+      "Client background is required.",
+    );
+    expect(window.scrollTo).not.toHaveBeenCalled();
+  });
+
+  it("scrolls for a missing client background when an element has the scroll id", () => {
+    page({ background: "" });
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<div id="project_proposal_client_background"></div>',
+    );
+    validation_proposal();
+    expect(window.scrollTo).toHaveBeenCalledTimes(1);
+  });
+
+  it("scrolls to the title when it has punctuation", () => {
+    page({ title: "Bad!" });
+    validation_proposal();
+    expect(
+      document.getElementById("project_proposal_title").previousElementSibling
+        .textContent,
+    ).toBe("Project title may only contain letters and numbers.");
+    expect(window.scrollTo).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows letters, digits, spaces and hyphens in the title, after trimming", () => {
+    page({ title: "  Robot-Arm 2  " });
+    expect(validation_proposal()).toBe(true);
+    expect(window.scrollTo).not.toHaveBeenCalled();
+  });
+
+  it("checks the fields in order: name, email, client, title, background, description", () => {
+    const order = [
+      ["username", "Your name is required"],
+      ["email", "Your email is required"],
+      ["client", "Client is required"],
+      ["title", "Project title is required."],
+      ["background", "Client background is required."],
+      ["description", "Description is required."],
+    ];
+    order.forEach(([, message], i) => {
+      const blanks = Object.fromEntries(order.slice(i).map(([f]) => [f, ""]));
+      page(blanks);
+      expect(validation_proposal()).toBe(false);
+      expect(errors()).toEqual([message]);
+    });
+  });
+
+  it.each([
+    ["username", "#project_proposal_username"],
+    ["email", "#project_proposal_email"],
+    ["client", "#project_proposal_client"],
+    ["title", "#project_proposal_title"],
+    ["background", "#client_background_trix_input_project_proposal"],
+    ["description", "#trix_editor"],
+  ])(
+    "skips the %s check when the field is not on the page",
+    (field, selector) => {
+      page({ [field]: "" });
+      document.querySelector(selector).remove();
+      expect(validation_proposal()).toBe(true);
+      expect(errors()).toEqual([]);
+    },
+  );
+
+  it("only checks the name, email, client and title when they are inputs", () => {
+    page({ username: "", email: "", client: "", title: "" });
+    for (const id of [
+      "project_proposal_username",
+      "project_proposal_email",
+      "project_proposal_client",
+      "project_proposal_title",
+    ]) {
+      document.getElementById(id).outerHTML =
+        `<textarea id="${id}"></textarea>`;
+    }
+    expect(validation_proposal()).toBe(true);
+  });
+
+  it("reads the description from the editor's text, ignoring markup", () => {
+    page({ description: "<div><br></div>" });
+    expect(validation_proposal()).toBe(false);
+    expect(errors()).toEqual(["Description is required."]);
+    page({ description: "<div><strong>Hi</strong></div>" });
+    expect(validation_proposal()).toBe(true);
+  });
+
+  it("clears every earlier form message, including the repository form's", () => {
+    page();
+    document.body.insertAdjacentHTML(
+      "afterbegin",
+      '<span class="form-error repo-form">old</span><span class="form-error">kept</span>',
+    );
+    expect(validation_proposal()).toBe(true);
+    expect(errors()).toEqual([]);
+    expect(document.querySelector("span.form-error").textContent).toBe("kept");
+  });
 });

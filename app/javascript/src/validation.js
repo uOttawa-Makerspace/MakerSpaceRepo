@@ -53,66 +53,79 @@ export function validation() {
   return isValid;
 }
 
+const PROPOSAL_TITLE_CHARS = /^[-a-zA-Z\d\s]*$/;
+
+function isBlank(text) {
+  return text.trim().length === 0;
+}
+
+function requiredValue(message) {
+  return (field) => (isBlank(field.value) ? message : null);
+}
+
+function proposalTitleProblem(title) {
+  const titleVal = title.value.trim();
+  if (titleVal.length === 0) return "Project title is required.";
+  if (!PROPOSAL_TITLE_CHARS.test(titleVal)) {
+    return "Project title may only contain letters and numbers.";
+  }
+  return null;
+}
+
+// The proposal form's checks, in order. A field that is not on the page is
+// not checked.
+const PROPOSAL_CHECKS = [
+  {
+    selector: "input#project_proposal_username",
+    scrollId: "project_proposal_username",
+    problemOf: requiredValue("Your name is required"),
+  },
+  {
+    selector: "input#project_proposal_email",
+    scrollId: "project_proposal_email",
+    problemOf: requiredValue("Your email is required"),
+  },
+  {
+    selector: "input#project_proposal_client",
+    scrollId: "project_proposal_client",
+    problemOf: requiredValue("Client is required"),
+  },
+  {
+    selector: "input#project_proposal_title",
+    scrollId: "project_proposal_title",
+    problemOf: proposalTitleProblem,
+  },
+  {
+    selector: "input#client_background_trix_input_project_proposal",
+    scrollId: "project_proposal_client_background",
+    problemOf: requiredValue("Client background is required."),
+  },
+  {
+    selector: "#trix_editor",
+    scrollId: "trix_editor",
+    problemOf: (field) =>
+      isBlank(field.textContent) ? "Description is required." : null,
+  },
+];
+
+// Shows the first problem only, before its field, and scrolls to it.
 export function validation_proposal() {
-  const name = document.querySelector("input#project_proposal_username");
-  const email = document.querySelector("input#project_proposal_email");
-  const client = document.querySelector("input#project_proposal_client");
-  const title = document.querySelector("input#project_proposal_title");
-  const clientBackground = document.querySelector(
-    "input#client_background_trix_input_project_proposal",
-  );
-  const description = document.querySelector("#trix_editor");
+  const checks = PROPOSAL_CHECKS.map((check) => ({
+    ...check,
+    field: document.querySelector(check.selector),
+  }));
 
   document
     .querySelectorAll("span.form-error.repo-form")
     .forEach((el) => el.remove());
-  const regex = /^[-a-zA-Z\d\s]*$/;
 
-  if (name && name.value.trim().length === 0) {
-    name.before(createErrorSpan("Your name is required"));
-    scrollToError("project_proposal_username");
-    return false;
-  }
-
-  if (email && email.value.trim().length === 0) {
-    email.before(createErrorSpan("Your email is required"));
-    scrollToError("project_proposal_email");
-    return false;
-  }
-
-  if (client && client.value.trim().length === 0) {
-    client.before(createErrorSpan("Client is required"));
-    scrollToError("project_proposal_client");
-    return false;
-  }
-
-  if (title) {
-    const titleVal = title.value.trim();
-    if (titleVal.length === 0) {
-      title.before(createErrorSpan("Project title is required."));
-      scrollToError("project_proposal_title");
+  for (const { field, scrollId, problemOf } of checks) {
+    const message = field && problemOf(field);
+    if (message) {
+      field.before(createErrorSpan(message));
+      scrollToError(scrollId);
       return false;
     }
-
-    if (!regex.test(titleVal)) {
-      title.before(
-        createErrorSpan("Project title may only contain letters and numbers."),
-      );
-      scrollToError("project_proposal_title");
-      return false;
-    }
-  }
-
-  if (clientBackground && clientBackground.value.trim().length === 0) {
-    clientBackground.before(createErrorSpan("Client background is required."));
-    scrollToError("project_proposal_client_background");
-    return false;
-  }
-
-  if (description && description.textContent.trim().length === 0) {
-    description.before(createErrorSpan("Description is required."));
-    scrollToError("trix_editor");
-    return false;
   }
 
   return true;
