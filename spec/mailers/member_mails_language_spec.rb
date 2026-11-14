@@ -164,6 +164,24 @@ RSpec.describe "Member mails in the recipient's language", type: :mailer do
     end
   end
 
+  describe "volunteer task request mails" do
+    def request_update(user) = MsrMailer.send_notification_for_task_request_update(
+      create(:volunteer_task_request, user: user, volunteer_task: task).id
+    )
+
+    it "name the volunteer team's address to write to, in English" do
+      expect(text(deliver { MsrMailer.send_notification_for_task_request(task.id, english.id) }))
+        .to include("you can send an email to volunteer@makerepo.com.")
+      expect(text(deliver { request_update(english) })).to include("you can send an email to volunteer@makerepo.com.")
+    end
+
+    it "name the volunteer team's address to write to, in French" do
+      expect(text(deliver { MsrMailer.send_notification_for_task_request(task.id, french.id) }))
+        .to include("vous pouvez écrire à volunteer@makerepo.com.")
+      expect(text(deliver { request_update(french) })).to include("vous pouvez écrire à volunteer@makerepo.com.")
+    end
+  end
+
   describe "a user joining a task, to the task's staff" do
     it "is written in the staff member's language" do
       expect(deliver { MsrMailer.send_notification_to_staff_for_joining_task(task.id, french.id, staff.id) }.subject)

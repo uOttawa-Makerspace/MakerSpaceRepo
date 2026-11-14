@@ -353,6 +353,7 @@ class MsrMailer < ApplicationMailer
   end
 
   def send_notification_for_task_request_update(volunteer_task_request_id)
+    @email_staff = "volunteer@makerepo.com"
     volunteer_task_request =
       VolunteerTaskRequest.find(volunteer_task_request_id)
     @volunteer_task = volunteer_task_request.volunteer_task
