@@ -7,17 +7,25 @@ vi.mock("tom-select", () => ({
     constructor(selector, options) {
       this.selector = selector;
       this.options = options;
+      selector.tomselect = this;
       instances.push(this);
     }
   },
 }));
 vi.mock("flatpickr", () => ({ default: {} }));
 
+// Each load imports the page script afresh, and removes the turbo:load
+// listener of the one before, so a later page load runs only the newest.
+let pageLoad;
 async function load(file, html) {
   document.body.innerHTML = html;
   instances.length = 0;
   vi.resetModules();
+  if (pageLoad) document.removeEventListener("turbo:load", pageLoad);
+  const listen = vi.spyOn(document, "addEventListener");
   await import(`../../../app/javascript/entrypoints/${file}.js`);
+  pageLoad = listen.mock.calls.find(([type]) => type === "turbo:load")[1];
+  listen.mockRestore();
 }
 
 describe("key_requests entry", () => {
@@ -27,19 +35,30 @@ describe("key_requests entry", () => {
 
   it("builds tom-select widgets for supervisor and space", async () => {
     await load("key_requests", html);
-    expect(instances.map((i) => i.selector)).toEqual([
-      "#supervisor-select",
-      "#space-select",
+    expect(instances.map((i) => i.selector.id)).toEqual([
+      "supervisor-select",
+      "space-select",
     ]);
     expect(instances[0].options.searchField).toEqual(["name"]);
   });
 
   it("skips a select that already has a widget", async () => {
+    await load("key_requests", "");
     document.body.innerHTML = html;
     document.getElementById("space-select").tomselect = {};
-    instances.length = 0;
-    vi.resetModules();
-    await import("../../../app/javascript/entrypoints/key_requests.js");
-    expect(instances.map((i) => i.selector)).toEqual(["#supervisor-select"]);
+    document.dispatchEvent(new Event("turbo:load"));
+    expect(instances.map((i) => i.selector.id)).toEqual(["supervisor-select"]);
+  });
+
+  it("builds the pickers of a page restored from the cache on its load", async () => {
+    await load("key_requests", html);
+    document.body.innerHTML = html;
+    document.dispatchEvent(new Event("turbo:load"));
+    expect(instances.map((i) => i.selector.id)).toEqual([
+      "supervisor-select",
+      "space-select",
+      "supervisor-select",
+      "space-select",
+    ]);
   });
 });

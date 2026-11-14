@@ -1,9 +1,4 @@
 {
-  "app/javascript/entrypoints/add_new_staff.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "app/javascript/entrypoints/cdel_reports.js": {
     "no-unused-vars": {
       "count": 2

@@ -1,66 +1,46 @@
-import TomSelect from "tom-select";
-import { tomSelectOptions } from "../src/page_locale.js";
+import { oncePerElement, onEveryPageLoad } from "../src/on_page.js";
+import { tomSelectFor } from "../src/tom_select.js";
 import "../src/file_upload.js";
 
-if (document.getElementById("project_proposal_categories")) {
-  if (!document.getElementById("project_proposal_categories").tomselect) {
-    new TomSelect(
-      "#project_proposal_categories",
-      tomSelectOptions(document, {
-        plugins: ["remove_button"],
-        maxItems: 5,
-      }),
-    );
-  }
-}
-if (document.getElementById("link-list")) {
-  document
-    .getElementById("link-list")
-    .addEventListener("click", function (event) {
-      let listItem = document.createElement("li");
-      let listDiv = document.createElement("div");
-      let listInput = document.createElement("input");
-      listDiv.classList.add("mb-3");
-      listInput.classList.add("form-control");
-      listInput.setAttribute("type", "text");
-      listInput.placeholder = "https://...";
-      listDiv.appendChild(listInput);
-      listItem.appendChild(listDiv);
-      document.getElementsByClassName("main_ul")[0].appendChild(listItem);
-    });
-}
-if (document.getElementById("remove-link-list")) {
-  document
-    .getElementById("remove-link-list")
-    .addEventListener("click", function (event) {
-      let listItem = document.getElementsByClassName("main_ul")[0].lastChild;
-      document.getElementsByClassName("main_ul")[0].removeChild(listItem);
-    });
-}
+const bindAddLink = oncePerElement((button) =>
+  button.addEventListener("click", function (event) {
+    let listItem = document.createElement("li");
+    let listDiv = document.createElement("div");
+    let listInput = document.createElement("input");
+    listDiv.classList.add("mb-3");
+    listInput.classList.add("form-control");
+    listInput.setAttribute("type", "text");
+    listInput.placeholder = "https://...";
+    listDiv.appendChild(listInput);
+    listItem.appendChild(listDiv);
+    document.getElementsByClassName("main_ul")[0].appendChild(listItem);
+  }),
+);
 
-if (document.getElementById("waiting-save-button")) {
-  document
-    .getElementById("waiting-save-button")
-    .addEventListener("click", function (event) {
-      let past_exp = document.getElementById(
-        "project_proposal_past_experiences",
-      );
-      let past_exp_add = past_exp.value + "|";
-      while (document.getElementsByClassName("main_ul")[0].lastChild) {
-        past_exp_add +=
-          document.getElementsByClassName("main_ul")[0].lastChild.lastChild
-            .lastChild.value + ",";
-        document
-          .getElementsByClassName("main_ul")[0]
-          .removeChild(document.getElementsByClassName("main_ul")[0].lastChild);
-      }
-      past_exp.value = past_exp_add;
-    });
-}
-let form =
-  document.getElementById("new_project_proposal") ||
-  document.getElementsByClassName("edit_project_proposal")[0];
-if (form) {
+const bindRemoveLink = oncePerElement((button) =>
+  button.addEventListener("click", function (event) {
+    let listItem = document.getElementsByClassName("main_ul")[0].lastChild;
+    document.getElementsByClassName("main_ul")[0].removeChild(listItem);
+  }),
+);
+
+const bindSaveForLater = oncePerElement((button) =>
+  button.addEventListener("click", function (event) {
+    let past_exp = document.getElementById("project_proposal_past_experiences");
+    let past_exp_add = past_exp.value + "|";
+    while (document.getElementsByClassName("main_ul")[0].lastChild) {
+      past_exp_add +=
+        document.getElementsByClassName("main_ul")[0].lastChild.lastChild
+          .lastChild.value + ",";
+      document
+        .getElementsByClassName("main_ul")[0]
+        .removeChild(document.getElementsByClassName("main_ul")[0].lastChild);
+    }
+    past_exp.value = past_exp_add;
+  }),
+);
+
+const bindSubmitChecks = oncePerElement((form) =>
   form.addEventListener("submit", (e) => {
     let clientBackground = document.querySelector(
       "trix-editor[input='project_proposal_client_background']",
@@ -103,10 +83,12 @@ if (form) {
         );
       }
     }
-  });
-}
-if (document.getElementById("new-file-input")) {
-  let cloneButton = document.getElementById("new-file-input");
+  }),
+);
+
+// The add buttons of the file and photo inputs: each adds another input row
+// with a button that removes it.
+const bindAddInputRow = oncePerElement((cloneButton) =>
   cloneButton.addEventListener("click", () => {
     let parent = cloneButton.parentElement;
     let clone = parent.cloneNode(true);
@@ -118,27 +100,16 @@ if (document.getElementById("new-file-input")) {
       el.target.closest(".input-group").remove();
     });
     parent.parentElement.appendChild(clone);
-  });
-}
-if (document.getElementById("new-photo-input")) {
-  let cloneButton = document.getElementById("new-photo-input");
-  cloneButton.addEventListener("click", () => {
-    let parent = cloneButton.parentElement;
-    let clone = parent.cloneNode(true);
-    clone.removeAttribute("id");
-    clone.children[0].value = null;
-    clone.children[1].className = "btn btn-danger";
-    clone.children[1].children[0].className = "fa fa-trash";
-    clone.children[1].addEventListener("click", (el) => {
-      el.target.closest(".input-group").remove();
-    });
-    parent.parentElement.appendChild(clone);
-  });
-}
-if (document.getElementById("ignore_past_experiences")) {
-  let urls = document
-    .getElementById("ignore_past_experiences")
-    .value.split(/[\|,]/);
+  }),
+);
+
+// The links saved with the proposal, shown as link fields. A page Turbo
+// restores from its cache already shows them, so they are added only to an
+// empty list.
+const showSavedLinks = oncePerElement((savedLinks) => {
+  const list = document.getElementsByClassName("main_ul")[0];
+  if (list.children.length > 0) return;
+  let urls = savedLinks.value.split(/[\|,]/);
   console.log(urls);
   if (urls[0] != "") {
     for (let i = 1; i < urls.length; i++) {
@@ -154,7 +125,28 @@ if (document.getElementById("ignore_past_experiences")) {
       listInput.value = urls[i];
       listDiv.appendChild(listInput);
       listItem.appendChild(listDiv);
-      document.getElementsByClassName("main_ul")[0].appendChild(listItem);
+      list.appendChild(listItem);
     }
   }
+});
+
+function proposalForm() {
+  return (
+    document.getElementById("new_project_proposal") ||
+    document.getElementsByClassName("edit_project_proposal")[0]
+  );
 }
+
+onEveryPageLoad(() => {
+  const categories = document.getElementById("project_proposal_categories");
+  if (categories) {
+    tomSelectFor(categories, { plugins: ["remove_button"], maxItems: 5 });
+  }
+  bindAddLink(document.getElementById("link-list"));
+  bindRemoveLink(document.getElementById("remove-link-list"));
+  bindSaveForLater(document.getElementById("waiting-save-button"));
+  bindSubmitChecks(proposalForm());
+  bindAddInputRow(document.getElementById("new-file-input"));
+  bindAddInputRow(document.getElementById("new-photo-input"));
+  showSavedLinks(document.getElementById("ignore_past_experiences"));
+});

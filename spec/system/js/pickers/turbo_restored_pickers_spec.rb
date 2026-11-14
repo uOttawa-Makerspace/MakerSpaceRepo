@@ -154,4 +154,49 @@ RSpec.describe "Pickers on a page restored from the Turbo cache", type: :system,
       restore_with_picker(admin, new_admin_team_path, "search_users_add")
     end
   end
+
+  describe "on pages whose script once ran only when first loaded" do
+    let(:admin) { create(:user, :admin) }
+
+    it "keeps one working user picker on the new project kit form" do
+      restore_with_picker(admin, new_project_kit_path, "kit_user_select")
+    end
+
+    it "keeps one working category picker and link buttons on the new project proposal form" do
+      restore_with_picker(admin, new_project_proposal_path, "project_proposal_categories")
+      click_button "link-list"
+      expect(page).to have_css(".main_ul li input", count: 1)
+      click_button "remove-link-list"
+      expect(page).to have_no_css(".main_ul li")
+    end
+
+    it "keeps one working printer picker and model code on the printers page" do
+      create(:printer_type, :UM2P)
+      create(:printer_type, :RPL2)
+      restore_with_picker(admin, printers_path, "remove_printer")
+      select "Ultimaker 2+ (UM2P)", from: "model_id"
+      expect(page).to have_css("#newPrinterCode", exact_text: "UM2P")
+      select "Replicator 2 (RPL2)", from: "model_id"
+      expect(page).to have_css("#newPrinterCode", exact_text: "RPL2")
+    end
+
+    it "keeps one working staff picker on the add new staff page" do
+      restore_with_picker(admin, admin_add_new_staff_index_path, "new_staff_select")
+    end
+
+    it "sets up the staff picker on the add new staff page reached by a Turbo visit" do
+      log_in_as(admin, to: admin_users_path)
+      wait_for_app_js
+      page.execute_script("Turbo.visit(#{admin_add_new_staff_index_path.to_json})")
+      expect(page).to have_current_path(admin_add_new_staff_index_path)
+      expect(page).to have_css("#new_staff_select.tomselected", visible: :all)
+      expect_one_working_picker("new_staff_select")
+    end
+
+    it "keeps one working supervisor and department picker on the new key request form" do
+      create(:space)
+      restore_with_picker(create(:user, :staff), new_key_request_path, "supervisor-select")
+      expect_one_working_picker("space-select")
+    end
+  end
 end
