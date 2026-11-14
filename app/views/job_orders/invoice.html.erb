@@ -142,7 +142,8 @@
             <td>
               Client : <%= @job_order.user.name %>
               <br>
-              Date : <%= @job_order.latest_status.created_at.strftime('%Y/%m/%d') %>
+              <%# The day of the latest status; an order without any status row has only its own creation day. %>
+              Date : <%= (@job_order.latest_status || @job_order).created_at.strftime('%Y/%m/%d') %>
             </td>
           </tr>
         </table>
