@@ -29,7 +29,9 @@ RSpec.describe "Volunteer task pages", type: :system, skip_bullet: true do
       expect(page).to have_css(".task-item-card-col", count: 2)
     end
 
-    it "keeps one working picker per filter select on a page restored from the Turbo cache" do
+    # Visits the index again with Turbo, then goes back to the cached copy and
+    # waits until the page script has run over it.
+    def leave_and_restore
       page.execute_script("Turbo.visit(#{volunteer_tasks_path(revisit: 1).to_json})")
       expect(page).to have_current_path(/revisit=1/)
       expect(page).to have_css(".task-item-card-col", count: 2)
@@ -42,16 +44,43 @@ RSpec.describe "Volunteer task pages", type: :system, skip_bullet: true do
       JS
       page.go_back
       expect(page).to have_css("html[data-restored-load='done']", visible: :all)
+    end
+
+    def pick_category(text)
+      find("#categoryFilter + .ts-wrapper .ts-control").click
+      find(".ts-dropdown .option", text: text, exact_text: true).click
+    end
+
+    it "keeps one working picker per filter select on a page restored from the Turbo cache" do
+      leave_and_restore
 
       %w[spaceFilter categoryFilter certFilter].each do |id|
         expect(page).to have_css("##{id} ~ .ts-wrapper", count: 1, visible: :all)
       end
       # the picker of a restored page can be reached with Tab, as on a fresh visit
       expect(page.evaluate_script("document.querySelector('#spaceFilter + .ts-wrapper .ts-control').tabIndex")).to eq(0)
-      find("#categoryFilter + .ts-wrapper .ts-control").click
-      find(".ts-dropdown .option", text: I18n.t("volunteer_area.tasks.categories.workshops")).click
+      pick_category(I18n.t("volunteer_area.tasks.categories.workshops"))
       # both tasks are events, so a workshop filter hides them
       expect(page).to have_no_css(".task-item-card-col")
+    end
+
+    it "shows the filters a page restored from the Turbo cache was left with, matching its cards" do
+      fill_in "taskSearchInput", with: "MURAL"
+      pick_category(I18n.t("volunteer_area.tasks.categories.events"))
+      expect(page).to have_css(".task-item-card-col", count: 1)
+      leave_and_restore
+
+      expect(page).to have_field("taskSearchInput", with: "MURAL")
+      expect(page).to have_css("#categoryFilter + .ts-wrapper .ts-control .item",
+                               text: I18n.t("volunteer_area.tasks.categories.events"), exact_text: true)
+      expect(page).to have_css(".task-item-card-col", text: "Paint the mural", count: 1)
+      # the restored filters work from what they show
+      fill_in "taskSearchInput", with: ""
+      expect(page).to have_css(".task-item-card-col", count: 2)
+      pick_category(I18n.t("volunteer_area.tasks.categories.workshops"))
+      expect(page).to have_no_css(".task-item-card-col")
+      pick_category(I18n.t("volunteer_area.tasks.index.all_categories"))
+      expect(page).to have_css(".task-item-card-col", count: 2)
     end
   end
 
