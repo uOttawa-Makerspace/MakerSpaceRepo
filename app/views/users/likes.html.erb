@@ -7,7 +7,7 @@
         <div id="sort-header" class="dropdown">
           <button class="btn btn-outline-primary dropdown-toggle" type="button" id="sort-dropdown-menu" data-bs-toggle="dropdown">
             <%= t('home.sort.by') %>
-            <%= t("home.sort.#{params[:sort]}") if params[:sort].present? %>
+            <%= t("home.sort.#{sort_key}") if params[:sort].present? %>
           </button>
           <ul id="sort-filter" class="dropdown-menu">
             <li><%= link_to t('home.sort.newest'), likes_user_path(sort: :newest, category: @category_slug), class: 'dropdown-item' %></li>
@@ -16,7 +16,6 @@
             <li><%= link_to t('home.sort.recently_updated'), likes_user_path(sort: :recently_updated, category: @category_slug), class: 'dropdown-item' %></li>
           </ul>
         </div>
-        <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
       </section>
     </div>
     <div class="col my-2">

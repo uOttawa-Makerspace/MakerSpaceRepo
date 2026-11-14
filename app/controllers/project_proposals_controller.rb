@@ -2,6 +2,7 @@
 
 class ProjectProposalsController < SessionsController
   include TurnstileHelper
+  include RepositorySorting
 
   before_action :set_project_proposal, only: %i[show edit update destroy]
   before_action :current_user
@@ -602,20 +603,5 @@ class ProjectProposalsController < SessionsController
     unlocked_private_ids =
       linked.where(share_type: 'private').select { |repo| repository_unlocked?(repo) }.map(&:id)
     linked.where(share_type: 'public').or(linked.where(id: unlocked_private_ids))
-  end
-
-  def sort_order
-    case params[:sort]
-    when 'newest'
-      %i[created_at desc]
-    when 'most_likes'
-      %i[like desc]
-    when 'most_makes'
-      %i[make desc]
-    when 'recently_updated'
-      %i[updated_at desc]
-    else
-      %i[created_at desc]
-    end
   end
 end

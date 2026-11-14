@@ -17,36 +17,7 @@ class ShadowingHour < ApplicationRecord
   # Rows with both times stored; the only ones that can be shown as a shift.
   scope :complete, -> { where.not(start_time: nil).where.not(end_time: nil) }
 
-  def self.authorizer
-    scope = "https://www.googleapis.com/auth/calendar"
-
-    @config = {
-      private_key:
-        Rails.application.credentials[Rails.env.to_sym][:google][:private_key],
-      client_email:
-        Rails.application.credentials[Rails.env.to_sym][:google][:client_email],
-      project_id:
-        Rails.application.credentials[Rails.env.to_sym][:google][:project_id],
-      private_key_id:
-        Rails.application.credentials[Rails.env.to_sym][:google][
-          :private_key_id
-        ],
-      type: Rails.application.credentials[Rails.env.to_sym][:google][:type]
-    }
-
-    authorizer =
-      Google::Auth::ServiceAccountCredentials.make_creds(
-        json_key_io: StringIO.new(@config.to_json, "r"),
-        scope: scope,
-        default_connection: GoogleApiTimeouts.token_connection
-      )
-
-    authorizer.sub = "volunteer@makerepo.com"
-
-    authorizer.fetch_access_token!
-
-    return authorizer
-  end
+  def self.authorizer = GoogleCalendar::ServiceAccount.authorizer
 
   # Creates the shift's Google event under the shift's own event_id, so doing it again cannot make a second one.
   # Google keeps the id of a deleted event reserved, so an id that already exists (409) is either the event

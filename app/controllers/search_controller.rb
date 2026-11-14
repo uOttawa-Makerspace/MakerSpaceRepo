@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class SearchController < SessionsController
+  include RepositorySorting
+
   before_action :current_user
   before_action :no_container
   before_action :set_query
@@ -110,21 +112,6 @@ class SearchController < SessionsController
     return scope.none if names.empty?
 
     scope.includes(:categories).where(categories: { name: names })
-  end
-
-  def sort_order
-    case params[:sort]
-    when "newest"
-      %i[created_at desc]
-    when "most_likes"
-      %i[like desc]
-    when "most_makes"
-      %i[make desc]
-    when "recently_updated"
-      %i[updated_at desc]
-    else
-      %i[created_at desc]
-    end
   end
 
   def photo_hash

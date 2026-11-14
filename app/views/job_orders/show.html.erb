@@ -62,7 +62,7 @@
                 <div class="d-flex justify-content-between">
                   <h6 class="d-flex align-items-center">
                     <span class="badge bg-primary me-2"><%= index + 1 %></span>
-                    <%= task.title.presence || t("job_orders.order.unnamed_task", default: "Unnamed Task") %>
+                    <%= task.title.presence || t("job_orders.order.unnamed_task") %>
                   </h6>
 
                   <% if @job_order.task_edits_offered_to?(current_user) %>
