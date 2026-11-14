@@ -439,9 +439,9 @@ class Admin::UsersController < AdminAreaController
     flash[:notice] = t("admin_area.users.flash.spaces_changed")
   end
 
+  # The ids of the spaces each user is assigned to, keyed by user id; one query however many users.
   def build_user_spaces_hash(users)
-    users.each_with_object({}) do |user, hash|
-      hash[user.id] = user.staff_spaces.pluck(:space_id)
-    end
+    space_ids = StaffSpace.where(user_id: users.map(&:id)).pluck(:user_id, :space_id).group_by(&:first)
+    users.to_h { |user| [user.id, space_ids.fetch(user.id, []).map(&:last)] }
   end
 end
