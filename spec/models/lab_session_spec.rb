@@ -164,4 +164,17 @@ RSpec.describe LabSession, type: :model do
       expect(elsewhere.reload.sign_out_time).to be > Time.zone.now
     end
   end
+
+  describe ".count_by_shown_faculty" do
+    it "counts each visit under the visitor's shown faculty, a deleted visitor's too, and a visit with no user as unknown" do
+      space = create(:space)
+      verified = create(:user, :regular_user, faculty: "Arts")
+      UoengProfile.create!(user: verified, faculty_code: "GENIE", faculty: "Engineering", source: "email", checked_at: Time.current)
+      gone = create(:user, :regular_user, faculty: "Science")
+      [verified, verified, gone].each { |user| create(:lab_session, space: space, user: user) }
+      gone.soft_delete!
+      create(:lab_session, space: space, user: gone).update_columns(user_id: nil)
+      expect(LabSession.count_by_shown_faculty).to eq("Engineering" => 2, "Science" => 1, "unknown" => 1)
+    end
+  end
 end

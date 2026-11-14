@@ -502,4 +502,31 @@ RSpec.describe User::UoengConcern, type: :model do
       end
     end
   end
+
+  describe "shown faculty" do
+    def uoeng_record(user, faculty_code, faculty)
+      UoengProfile.create!(user: user, faculty_code: faculty_code, faculty: faculty, source: "email", checked_at: Time.current)
+    end
+
+    let!(:verified) { art.tap { |user| uoeng_record(user, "GENIE", "Engineering") } }
+    let!(:unmapped) { create(:user, :regular_user, faculty: "Science").tap { |user| uoeng_record(user, "XYZ", nil) } }
+    let!(:blank) { create(:user, :regular_user, faculty: "Arts").tap { |user| uoeng_record(user, "GENIE", "") } }
+    let!(:unchecked) { eng }
+    let(:users) { User.where(id: [verified, unmapped, blank, unchecked].map(&:id)) }
+
+    it "is the uOEng faculty when the record has one, otherwise the user's own" do
+      expect([verified, unmapped, blank, unchecked].map { |user| User.find(user.id).shown_faculty })
+        .to eq(%w[Engineering Science Arts Engineering])
+    end
+
+    it ".with_shown_faculty reads the same faculty in the one query, without loading the uOEng record" do
+      loaded = users.with_shown_faculty.order(:id).to_a
+      expect(loaded.map(&:shown_faculty)).to eq(users.order(:id).map { |user| user.reload.shown_faculty })
+      expect(loaded.map { |user| user.association(:uoeng_profile).loaded? }).to all(be(false))
+    end
+
+    it ".count_by_shown_faculty counts every user once, under the shown faculty" do
+      expect(users.count_by_shown_faculty).to eq("Engineering" => 2, "Science" => 1, "Arts" => 1)
+    end
+  end
 end

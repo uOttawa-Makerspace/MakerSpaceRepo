@@ -36,7 +36,7 @@
             </div>
             <div class="w-100">
                 <h4 class="text-center">Users by Faculty</h4>
-                <%= pie_chart @users.group(:faculty).count.slice('Arts', 'Civil Law', 'Common Law', 'Education', 'Engineering', 'Health Sciences', 'Medicine', 'Science', 'Social Sciences', 'Telfer School of Management') %>
+                <%= pie_chart @users.count_by_shown_faculty.slice('Arts', 'Civil Law', 'Common Law', 'Education', 'Engineering', 'Health Sciences', 'Medicine', 'Science', 'Social Sciences', 'Telfer School of Management') %>
             </div>
         </div>
     <% end %>
