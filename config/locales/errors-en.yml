@@ -176,6 +176,7 @@ en:
       js:
         failed_title: "Booking failed"
         updated_title: "Booking updated"
+        partly_done_title: "Booking partly done"
         updated: "The booking was saved."
         feed: "The bookings could not be loaded. Reload the page to try again."
         unavailable_title: "Booking unavailable"

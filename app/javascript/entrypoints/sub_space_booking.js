@@ -499,7 +499,7 @@ function setUpBookingCalendar(bookedCalendarEl) {
     if (parsed.booked > 0) {
       closeModal();
       bookedCalendar.refetchEvents();
-      showToast("Booking partly done", parsed.summary);
+      showToast(bookingText("partlyDoneTitle"), parsed.summary);
       window.scrollTo(0, 0);
       return;
     }

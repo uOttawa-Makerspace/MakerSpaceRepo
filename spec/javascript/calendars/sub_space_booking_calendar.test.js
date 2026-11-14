@@ -59,6 +59,7 @@ HTMLElement.prototype.flatpickr = function () {
 const PAGE = `
 <div id="booked-calendar" ${textsAttribute()}></div>
 <div id="booking_toast" data-failed-title="Booking failed"
+  data-partly-done-title="Booking partly done"
   data-feed="The bookings could not be loaded."
   data-unavailable-title="Booking unavailable"
   data-unavailable="This booking could not be opened."></div><span id="toast_title"></span><span id="toast_text"></span>
@@ -341,6 +342,31 @@ describe("new booking", () => {
     expect($("toast_text").innerText).toBe("2 of 4 booked");
     expect(cal.refetched).toBe(1);
     expect($("bookModal").classList.contains("show")).toBe(false);
+  });
+
+  it("titles the partly booked toast with the page's own text", async () => {
+    const cal = boot();
+    $("booking_toast").dataset.partlyDoneTitle = "Réservation en partie faite";
+    stubFetch(() =>
+      reply(
+        JSON.stringify({
+          errors: ["TimeSlot taken"],
+          booked: 1,
+          summary: "1 sur 3",
+        }),
+        {
+          ok: false,
+          status: 422,
+        },
+      ),
+    );
+    cal.options.customButtons.book.click();
+    pickDates("2026-11-02T10:00", "2026-11-02T11:00");
+
+    $("bookSave").click();
+    await flush();
+
+    expect($("toast_title").innerText).toBe("Réservation en partie faite");
   });
 
   it("enables the button again when the request fails", async () => {

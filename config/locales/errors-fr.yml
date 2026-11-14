@@ -176,6 +176,7 @@ fr:
       js:
         failed_title: "Échec de la réservation"
         updated_title: "Réservation modifiée"
+        partly_done_title: "Réservation en partie faite"
         updated: "La réservation a été enregistrée."
         feed: "Les réservations n'ont pas pu être chargées. Rechargez la page pour réessayer."
         unavailable_title: "Réservation indisponible"

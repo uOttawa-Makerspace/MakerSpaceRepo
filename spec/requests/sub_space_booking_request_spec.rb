@@ -104,6 +104,16 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(SubSpaceBooking.where(name: "N")).to be_empty
     end
 
+    it "gives the page's booking messages in the page's language" do
+      log_in!(create(:user, :regular_user, booking_approval: true))
+
+      titles = %w[en fr].map do |locale|
+        get sub_space_booking_index_path(locale: locale)
+        Capybara.string(response.body).find("#booking_toast", visible: :all)["data-partly-done-title"]
+      end
+      expect(titles).to eq(["Booking partly done", "Réservation en partie faite"])
+    end
+
     it "lets an unapproved user still hit the bookings feed + request access" do
       user = create(:user, :regular_user, booking_approval: false)
       log_in!(user)
