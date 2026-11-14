@@ -227,31 +227,12 @@ class LockerRental < ApplicationRecord
     payment = nil
     transaction do
       lock!
-      status, reason =
-        if cancelled? then ['held', 'rental_cancelled']
-        elsif !renter_eligible? then ['held', 'renter_ineligible']
-        # already active and already paid for: this one is a duplicate charge (a renewal goes through await_payment)
-        elsif already_paid? then ['held', 'already_paid']
-        else ['applied', nil]
-        end
-      inserted = LockerPayment.insert(
-        { locker_rental_id: id, shopify_order_id: shopify_order_id.to_s, paid_at: paid_at, amount: amount,
-          currency: currency, order_total: order_total, status: status, hold_reason: reason,
-          resolved_at: (Time.current if status == 'applied') },
-        unique_by: :shopify_order_id, returning: %w[id]
+      status, reason = new_payment_status
+      payment = insert_payment(
+        shopify_order_id: shopify_order_id.to_s, paid_at: paid_at, amount: amount,
+        currency: currency, order_total: order_total, status: status, hold_reason: reason
       )
-      if inserted.rows.any?
-        payment = LockerPayment.find(inserted.rows.first.first)
-        if status == 'applied' && !active?
-          payment = activate_for_payment(payment)
-          notify_after_commit if payment.applied?
-        end
-        # Display-only "latest payment", moved only by an APPLIED payment: a held one (cancelled rental,
-        # ineligible renter) must not show the renter "Paid on".
-        stamp_paid_at(paid_at) if payment.applied?
-        report_held_payment(payment) if payment.held?
-        report_malformed_amounts(payment, malformed_amounts)
-      end
+      payment = apply_new_payment(payment, status, paid_at, malformed_amounts) if payment
     end
     payment
   end
@@ -289,19 +270,10 @@ class LockerRental < ApplicationRecord
   # same discount is never counted twice.
   # Raises ArgumentError for a malformed amount (the webhook stores nil and reports it).
   def locker_line_amount(line_items)
-    return nil unless line_items.is_a?(Array)
-
-    matcher = locker_line_matcher
-    return nil unless matcher
-
-    lines = line_items.select { |line| line.is_a?(Hash) && matcher.call(line) }
+    lines = locker_lines(line_items)
     return nil if lines.empty?
 
-    total = lines.sum do |line|
-      quantity = line['quantity'].presence ? Integer(line['quantity'].to_s) : 1
-      (LockerPayment.money(line['price']) || 0) * quantity - line_discount(line)
-    end
-    LockerPayment.money(total)
+    LockerPayment.money(lines.sum { |line| line_amount(line) })
   rescue TypeError
     raise ArgumentError, 'malformed line item'
   end
@@ -366,25 +338,9 @@ class LockerRental < ApplicationRecord
   # moved mail for a locker/date change of an already active rental. Built (not sent) from the
   # saved changes, so they are captured before another save overwrites them.
   def notification_mails
-    mailer = LockerMailer.with(locker_rental: self)
-    if saved_change_to_state?
-      case state.to_sym
-      when :await_payment then [mailer.locker_checkout]
-      when :active then [mailer.locker_assigned]
-      when :cancelled then [mailer.locker_cancelled]
-      when :reviewing then [mailer.locker_requested]
-      else raise "Unknown state #{state.to_sym}"
-      end
-    elsif active? && (saved_change_to_locker_id? || saved_change_to_owned_until?)
-      [
-        LockerMailer.with(
-          locker_rental: self,
-          moved_locker: Locker.find_by(id: saved_change_to_locker_id&.first),
-          moved_date: saved_change_to_owned_until
-        ).locker_moved
-      ]
-    else
-      []
+    if saved_change_to_state? then [state_change_mail]
+    elsif saved_move_of_active_rental? then [moved_mail]
+    else []
     end
   end
 
@@ -416,14 +372,7 @@ class LockerRental < ApplicationRecord
     gid = shopify_draft_order_id
     return true if gid.blank?
 
-    result = ShopifyConcern::DraftRemoval.call(gid)
-    case result.outcome
-    when :deleted, :gone then forget_draft_order_id(gid)
-    when :completed then forget_draft_order_id(gid) if new_term
-    else
-      raise DraftOrderNotDeleted,
-            "Shopify did not delete the open draft order #{gid}: #{result.user_errors.map { |e| e['message'] }.join(', ')}"
-    end
+    settle_removed_draft(gid, ShopifyConcern::DraftRemoval.call(gid), new_term: new_term)
     true
   rescue StandardError => e
     report_checkout_failure(e, 'delete_shopify_draft_order')
@@ -583,6 +532,97 @@ class LockerRental < ApplicationRecord
   def owned_until_moved_later?
     persisted? && will_save_change_to_owned_until? &&
       (owned_until.nil? || owned_until_was.nil? || owned_until > owned_until_was)
+  end
+
+  # The status and hold reason a newly paid order gets, read under the row lock (#record_payment).
+  def new_payment_status
+    return %w[held rental_cancelled] if cancelled?
+    return %w[held renter_ineligible] unless renter_eligible?
+    # already active and already paid for: this one is a duplicate charge (a renewal goes through await_payment)
+    return %w[held already_paid] if already_paid?
+
+    ['applied', nil]
+  end
+
+  # Inserts the payment row unless the order id is already recorded (ON CONFLICT DO NOTHING). The new
+  # LockerPayment, or nil for a duplicate.
+  def insert_payment(**attributes)
+    inserted = LockerPayment.insert(
+      { locker_rental_id: id, **attributes, resolved_at: (Time.current if attributes[:status] == 'applied') },
+      unique_by: :shopify_order_id, returning: %w[id]
+    )
+    LockerPayment.find(inserted.rows.first.first) if inserted.rows.any?
+  end
+
+  # What a NEW payment row does to the rental, in #record_payment's transaction. Returns the payment, which is
+  # held as not_activatable when the rental could not be activated.
+  def apply_new_payment(payment, status, paid_at, malformed_amounts)
+    payment = activate_and_notify(payment) if status == 'applied' && !active?
+    # Display-only "latest payment", moved only by an APPLIED payment: a held one (cancelled rental,
+    # ineligible renter) must not show the renter "Paid on".
+    stamp_paid_at(paid_at) if payment.applied?
+    report_held_payment(payment) if payment.held?
+    report_malformed_amounts(payment, malformed_amounts)
+    payment
+  end
+
+  def activate_and_notify(payment)
+    payment = activate_for_payment(payment)
+    notify_after_commit if payment.applied?
+    payment
+  end
+
+  # This rental's locker lines among a paid order's line_items: none when line_items is not an Array or the
+  # rental has no locker.
+  def locker_lines(line_items)
+    return [] unless line_items.is_a?(Array)
+
+    matcher = locker_line_matcher
+    return [] unless matcher
+
+    line_items.select { |line| line.is_a?(Hash) && matcher.call(line) }
+  end
+
+  # price x quantity - discount of one line; a missing quantity is 1 and a missing price 0.
+  def line_amount(line)
+    quantity = line['quantity'].presence ? Integer(line['quantity'].to_s) : 1
+    (LockerPayment.money(line['price']) || 0) * quantity - line_discount(line)
+  end
+
+  # The mail for the state the last save moved to.
+  def state_change_mail
+    mailer = LockerMailer.with(locker_rental: self)
+    case state.to_sym
+    when :await_payment then mailer.locker_checkout
+    when :active then mailer.locker_assigned
+    when :cancelled then mailer.locker_cancelled
+    when :reviewing then mailer.locker_requested
+    else raise "Unknown state #{state.to_sym}"
+    end
+  end
+
+  # The last save moved the locker or the end date of a rental that is active.
+  def saved_move_of_active_rental?
+    active? && (saved_change_to_locker_id? || saved_change_to_owned_until?)
+  end
+
+  def moved_mail
+    LockerMailer.with(
+      locker_rental: self,
+      moved_locker: Locker.find_by(id: saved_change_to_locker_id&.first),
+      moved_date: saved_change_to_owned_until
+    ).locker_moved
+  end
+
+  # What the stored draft id becomes after Shopify's answer to the delete (see #sync_shopify_draft_order_after_commit).
+  def settle_removed_draft(gid, result, new_term:)
+    case result.outcome
+    when :deleted, :gone then forget_draft_order_id(gid)
+    when :completed then forget_draft_order_id(gid) if new_term
+    else
+      raise DraftOrderNotDeleted,
+            "Shopify did not delete the open draft order #{gid}: #{result.user_errors.map { |e| e['message'] }.join(', ')}"
+    end
   end
 
   # THE place a link is served from: fetch the stored draft, classify it, serve it only when payable. The url, nil
