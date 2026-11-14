@@ -184,7 +184,8 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       get search_admin_users_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Enter a name or email to search")
-      expect(response.body).not_to include("No results")
+      # visible text only: every page carries the widget texts (such as "No results found") in a data attribute
+      expect(Nokogiri::HTML(response.body).text).not_to include("No results")
     end
 
     it "search labels the filter select for assistive technology" do
