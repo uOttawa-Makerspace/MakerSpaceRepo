@@ -24,18 +24,7 @@ module GoogleCalendar
       CALENDARS.fetch(space.name, SHARED_CALENDAR)
     end
 
-    def self.authorizer
-      credentials = Rails.application.credentials[Rails.env.to_sym][:google]
-      key = credentials.slice(:private_key, :client_email, :project_id, :private_key_id, :type)
-      authorizer = Google::Auth::ServiceAccountCredentials.make_creds(
-        json_key_io: StringIO.new(key.to_json, "r"),
-        scope: "https://www.googleapis.com/auth/calendar",
-        default_connection: GoogleApiTimeouts.token_connection
-      )
-      authorizer.sub = "volunteer@makerepo.com"
-      authorizer.fetch_access_token!
-      authorizer
-    end
+    def self.authorizer = ServiceAccount.authorizer
 
     def self.service
       Google::Apis::CalendarV3::CalendarService.new.tap { |service| service.authorization = authorizer }
