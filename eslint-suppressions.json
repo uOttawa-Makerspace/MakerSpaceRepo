@@ -58,9 +58,6 @@
     }
   },
   "app/javascript/entrypoints/users.js": {
-    "complexity": {
-      "count": 1
-    },
     "no-unused-vars": {
       "count": 3
     }
