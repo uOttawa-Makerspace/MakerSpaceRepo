@@ -20,13 +20,9 @@ module AnnouncementsHelper
            Announcement.all.cache_key_with_version, dismissed.cache_key_with_version]
     Rails.cache.fetch(key, expires_in: 10.minutes) do
       visible = Announcement.active.where.not(id: dismissed.select(:announcement_id))
-      groups = []
-      groups << [:admins, visible.admins] if admin
-      groups << [:staff, visible.staff] if staff
-      groups << [:all_users, visible.regular_user] if signed_in?
-      groups << [:all_visitors, visible.all_users]
-      groups << [:volunteers, visible.volunteers] if volunteer || staff
-      groups.flat_map { |group, scope| scope.order(:id).pluck(:id, :description).map { |id, text| [group, id, text] } }
+      announcement_groups(visible, admin:, staff:, volunteer:).flat_map do |group, scope|
+        scope.order(:id).pluck(:id, :description).map { |id, text| [group, id, text] }
+      end
     end
   end
 
@@ -53,5 +49,18 @@ module AnnouncementsHelper
   # The label of an announcement's audience, or nil for an unknown one.
   def return_public(public)
     t(public, scope: "admin_pages.announcements.audiences") if Announcement::PUBLIC_GOALS.include?(public)
+  end
+
+  private
+
+  # The bar's [group, scope of visible announcements] pairs for these roles, in display order.
+  def announcement_groups(visible, admin:, staff:, volunteer:)
+    groups = []
+    groups << [:admins, visible.admins] if admin
+    groups << [:staff, visible.staff] if staff
+    groups << [:all_users, visible.regular_user] if signed_in?
+    groups << [:all_visitors, visible.all_users]
+    groups << [:volunteers, visible.volunteers] if volunteer || staff
+    groups
   end
 end

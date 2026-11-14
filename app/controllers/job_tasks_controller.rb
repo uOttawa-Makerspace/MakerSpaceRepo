@@ -153,34 +153,40 @@ class JobTasksController < SessionsController
   def apply_task_update!
     use_custom_service! if params[:job_task] && params[:job_task][:job_service_id] == "custom"
 
-    submitted_options = if job_task_params.present? && job_task_params[:job_task_options_attributes].present?
-      Array(job_task_params[:job_task_options_attributes]).each_with_object({}) do |opt, hash|
-        next if opt[:_destroy] == "1"
-        hash[opt[:job_option_id].to_i] = opt
-      end
-    else
-      {}
-    end
+    submitted_options = submitted_task_options
+    save_task_options!(submitted_options)
+    # Remove options that weren't submitted (if on that step of form)
+    remove_unsubmitted_options!(submitted_options.keys) if params[:step].to_i == 3
 
-    # Update or create options
+    @job_task.update!(job_task_params.except(:job_task_options_attributes)) if job_task_params.present?
+    @job_task = create_next_task! if params[:add_another] == "true"
+  end
+
+  # The submitted task options by job option id, leaving out those flagged _destroy.
+  def submitted_task_options
+    attributes = job_task_params[:job_task_options_attributes]
+    return {} if attributes.blank?
+
+    Array(attributes).each_with_object({}) do |opt, hash|
+      next if opt[:_destroy] == "1"
+      hash[opt[:job_option_id].to_i] = opt
+    end
+  end
+
+  # Update or create options
+  def save_task_options!(submitted_options)
     submitted_options.each do |job_option_id, attrs|
       @job_task.job_task_options
               .find_or_initialize_by(job_option_id: job_option_id)
               .update!(attrs.except(:_destroy, :id))
     end
+  end
 
-    # Remove options that weren't submitted (if on that step of form)
-    if params[:step].to_i == 3
-      @job_task.job_task_options.where.not(job_option_id: submitted_options.keys).destroy_all
-
-      # Also remove quoted options if the option is deselected
-      if @job_task.job_task_quote
-        @job_task.job_task_quote.job_task_quote_options.where.not(job_option_id: submitted_options.keys).destroy_all
-      end
-    end
-
-    @job_task.update!(job_task_params.except(:job_task_options_attributes)) if job_task_params.present?
-    @job_task = create_next_task! if params[:add_another] == "true"
+  # Removes the task's options outside job_option_ids, and their quoted options when the task has a quote.
+  def remove_unsubmitted_options!(job_option_ids)
+    @job_task.job_task_options.where.not(job_option_id: job_option_ids).destroy_all
+    quote = @job_task.job_task_quote
+    quote.job_task_quote_options.where.not(job_option_id: job_option_ids).destroy_all if quote
   end
 
   # Handle custom service if selected
