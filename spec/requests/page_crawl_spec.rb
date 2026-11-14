@@ -15,9 +15,8 @@ require "rails_helper"
 RSpec.describe "Page crawl (request level)", type: :request do
   include ActiveSupport::Testing::TimeHelpers
 
-  CRAWL_CLOCK = Time.utc(2027, 3, 16, 16) # noon in Toronto
-
-  around { |example| travel_to(CRAWL_CLOCK) { example.run } }
+  # Same fixed time as the browser crawl (noon in Toronto), so both crawls see the same dates.
+  around { |example| travel_to(PageCrawl::Browser::CLOCK) { example.run } }
 
   # route (path spec) => { role => short reason }
   ALL = PageCrawl::ROLES
