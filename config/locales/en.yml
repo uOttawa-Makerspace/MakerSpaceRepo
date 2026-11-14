@@ -340,6 +340,8 @@ en:
       redirecting: "Redirecting\u2026"
       redirect: "Click here if you are not redirected within 5 seconds"
   settings:
+    admin:
+      title: "Account Settings"
     profile:
       title: "Edit Profile"
       public_information: "Public Information"
@@ -506,6 +508,7 @@ en:
       add_another_task: "Add Another Task"
       save_draft: "Save Draft"
       delete: "Delete"
+      unnamed_task: "Unnamed Task"
     new:
       title: "What kind of project are you starting?"
       ready_to_make:

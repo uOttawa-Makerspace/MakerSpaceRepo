@@ -370,6 +370,8 @@ fr:
       redirecting: "Redirection en cours\u2026"
       redirect: "Cliquez ici si vous n'êtes pas redirigé d'ici 5 secondes"
   settings:
+    admin:
+      title: "Paramètres du compte"
     profile:
       title: "Modifier mon profil"
       public_information: "Informations publiques"
@@ -584,6 +586,7 @@ fr:
       add_another_task: "Ajouter une Autre Tâche"
       save_draft: "Enregistrer le Brouillon"
       delete: "Supprimer"
+      unnamed_task: "Tâche sans nom"
     new:
       title: "Quel type de projet commencez-vous?"
       ready_to_make:
