@@ -6,24 +6,6 @@ require "rails_helper"
 # copy of the page still carries the markup of the pickers it was left with,
 # and each select must end up with one working picker, as on a fresh visit.
 RSpec.describe "Pickers on a page restored from the Turbo cache", type: :system, skip_bullet: true do
-  # Visits the same page again with Turbo, then goes back to the cached copy
-  # and waits until the page scripts have run over it.
-  def leave_and_restore(path)
-    wait_for_app_js
-    page.execute_script("Turbo.visit(#{"#{path}#{path.include?('?') ? '&' : '?'}revisit=1".to_json})")
-    expect(page).to have_current_path(/revisit=1/)
-    wait_for_app_js
-    # Set only after the forward visit has loaded, so it marks the load of the
-    # restored page; it runs after the page scripts' own handlers.
-    page.execute_script(<<~JS)
-      document.addEventListener("turbo:load", () => {
-        document.documentElement.dataset.restoredLoad = "done";
-      }, { once: true });
-    JS
-    page.go_back
-    expect(page).to have_css("html[data-restored-load='done']", visible: :all)
-  end
-
   def expect_one_working_picker(id)
     expect(page).to have_css("##{id} ~ .ts-wrapper", count: 1, visible: :all)
     expect(page.evaluate_script("Boolean(document.getElementById(#{id.to_json}).tomselect)")).to be(true)
