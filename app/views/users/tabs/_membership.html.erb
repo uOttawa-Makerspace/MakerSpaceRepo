@@ -53,7 +53,7 @@
                     <% end %>
                   </td>
                   <td class="text-start">
-                    <% unless membership.status == 'revoked' || membership.membership_tier == 'faculty' %>
+                    <% unless membership.status == 'revoked' || membership.faculty? %>
                       <%= button_to revoke_membership_path(membership),
                                     method: :patch,
                                     class: "btn btn-sm btn-outline-danger ms-2",
