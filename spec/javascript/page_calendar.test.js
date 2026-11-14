@@ -4,11 +4,8 @@ import listPlugin from "@fullcalendar/list";
 
 import {
   calendarTexts,
-  overlapLabel,
   pageCalendar,
   relabel,
-  rememberedOverlap,
-  toggleEventOverlap,
 } from "../../app/javascript/src/page_calendar.js";
 import {
   CALENDAR_TEXTS,
@@ -176,46 +173,59 @@ describe("pageCalendar", () => {
     );
   });
 
-  describe("event overlap", () => {
+  describe("the shared overlap toggle", () => {
     afterEach(() => localStorage.clear());
 
-    it("is off until the browser remembers it on", () => {
-      expect(rememberedOverlap()).toBe(false);
+    const withToggle = (lang) =>
+      draw(lang, {
+        headerToolbar: { left: "toggleEventOverlap", center: "", right: "" },
+      });
+    const button = () =>
+      drawn.target.querySelector(".fc-toggleEventOverlap-button");
+
+    it("starts off, named for turning overlap on, until the browser remembers it on", () => {
+      drawn = withToggle("en");
+      expect(drawn.calendar.getOption("slotEventOverlap")).toBe(false);
+      expect(button().title).toBe("Enable Event Overlap");
+      drawn.calendar.destroy();
+
       localStorage.fullCalendarEventOverlap = "true";
-      expect(rememberedOverlap()).toBe(true);
-    });
-
-    it("names what pressing its button does, in the page's language", () => {
-      drawn = draw("fr");
-
-      expect(overlapLabel(drawn.target, false)).toBe(
-        "Activer le chevauchement des événements",
-      );
-      expect(overlapLabel(drawn.target, true)).toBe(
+      drawn = withToggle("fr");
+      expect(drawn.calendar.getOption("slotEventOverlap")).toBe(true);
+      expect(button().textContent).toBe(
         "Désactiver le chevauchement des événements",
       );
     });
 
-    it("turns the other way on the calendar, is remembered and relabels its button", () => {
-      drawn = draw("en", {
-        headerToolbar: { left: "toggleEventOverlap", center: "", right: "" },
-        slotEventOverlap: false,
-        customButtons: {
-          toggleEventOverlap: { text: "Enable Event Overlap", click() {} },
-        },
-      });
-      const button = () =>
-        drawn.target.querySelector(".fc-toggleEventOverlap-button");
+    it("turns overlap the other way, remembers it and relabels its button", () => {
+      drawn = withToggle("en");
 
-      toggleEventOverlap(drawn.target, drawn.calendar);
+      button().click();
       expect(drawn.calendar.getOption("slotEventOverlap")).toBe(true);
-      expect(rememberedOverlap()).toBe(true);
+      expect(localStorage.fullCalendarEventOverlap).toBe("true");
       expect(button().title).toBe("Disable Event Overlap");
 
-      toggleEventOverlap(drawn.target, drawn.calendar);
+      button().click();
       expect(drawn.calendar.getOption("slotEventOverlap")).toBe(false);
       expect(localStorage.fullCalendarEventOverlap).toBe("false");
       expect(button().textContent).toBe("Enable Event Overlap");
+    });
+
+    it("is left out of a calendar whose toolbar does not show it", () => {
+      localStorage.fullCalendarEventOverlap = "true";
+      drawn = draw("en", {
+        customButtons: { book: { text: "Book", click() {} } },
+      });
+
+      // FullCalendar's own default stands: no option is set.
+      expect(drawn.calendar.getOption("slotEventOverlap")).toBeUndefined();
+      expect(Object.keys(drawn.calendar.getOption("customButtons"))).toEqual([
+        "book",
+      ]);
+      localStorage.removeItem("fullCalendarEventOverlap");
+      drawn.calendar.destroy();
+      drawn = draw("en", { slotEventOverlap: false });
+      expect(drawn.calendar.getOption("slotEventOverlap")).toBe(false);
     });
   });
 });

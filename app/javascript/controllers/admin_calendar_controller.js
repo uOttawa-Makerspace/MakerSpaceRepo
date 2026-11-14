@@ -7,14 +7,7 @@ import { Tooltip } from "bootstrap";
 import { eventClick, eventCreate } from "../src/calendar_helper.js";
 import { closeSaved } from "../src/calendar_dialog.js";
 import { applyEventBackground } from "../src/calendar_background.js";
-import {
-  calendarTexts,
-  overlapLabel,
-  pageCalendar,
-  relabel,
-  rememberedOverlap,
-  toggleEventOverlap,
-} from "../src/page_calendar.js";
+import { calendarTexts, pageCalendar, relabel } from "../src/page_calendar.js";
 import { rangeSource, unticked } from "../src/range_source.js";
 
 // Titles and descriptions come from imported calendars, so they are text, never markup.
@@ -234,7 +227,6 @@ export default class extends TypedController {
   }
 
   calendarOptions() {
-    const overlap = rememberedOverlap();
     return {
       initialView: "timeGridWeek",
       headerToolbar: {
@@ -245,7 +237,6 @@ export default class extends TypedController {
       slotMinTime: "07:00:00",
       slotMaxTime: "22:00:00",
       nowIndicator: true,
-      slotEventOverlap: overlap,
       selectable: true,
       selectMirror: true,
       selectMinDistance: 15,
@@ -253,10 +244,6 @@ export default class extends TypedController {
         toggleWeekends: {
           text: this.texts.hideWeekends,
           click: () => this.toggleWeekends(),
-        },
-        toggleEventOverlap: {
-          text: overlapLabel(this.calendarTarget, overlap),
-          click: () => toggleEventOverlap(this.calendarTarget, this.calendar),
         },
       },
       eventDidMount: (info) => this.decorate(info),

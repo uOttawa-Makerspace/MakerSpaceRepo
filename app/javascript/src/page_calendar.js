@@ -15,28 +15,36 @@ export function calendarTexts(target) {
 // It is in the page's language (every layout names one), with the page's hints,
 // so its buttons and their names are French on a French page, and this
 // viewDidMount, which hides the toolbar chevrons from assistive technology,
-// replaces any in the options. The target is emptied first: a page restored
-// from Turbo's cache still holds the calendar drawn before.
+// replaces any in the options. A toolbar may show the shared overlap toggle,
+// toggleEventOverlap. The target is emptied first: a page restored from
+// Turbo's cache still holds the calendar drawn before.
 export function pageCalendar(target, options, ...plugins) {
   target.replaceChildren();
-  return new Calendar(target, {
+  const texts = calendarTexts(target);
+  const toolbar = Object.values(options.headerToolbar ?? {}).join(",");
+  const overlap = toolbar.includes("toggleEventOverlap")
+    ? overlapToggle(texts, () => calendar)
+    : {};
+  const calendar = new Calendar(target, {
     timeZone: "America/Toronto",
     firstDay: 0,
     height: "80vh",
     scrollTime: "07:00:00",
-    ...calendarTexts(target).hints,
+    ...texts.hints,
+    ...overlap,
     ...options,
+    customButtons: { ...overlap.customButtons, ...options.customButtons },
     plugins: [timeGridPlugin, dayGridPlugin, ...plugins],
     locales: [frenchLocale],
     locale: target.ownerDocument.documentElement.lang,
     viewDidMount: makeCalendarAccessible.bind(null, target),
   });
+  return calendar;
 }
 
 // Gives the calendar's custom button of that name a new label. FullCalendar
-// draws it, and names the button (its title, the tooltip) after it; a label
-// written into the button itself would keep the old name and be doubled the
-// next time the toolbar is drawn.
+// draws it and names the button (its title, the tooltip) after it, also when
+// it draws the toolbar again.
 export function relabel(calendar, name, label) {
   const buttons = calendar.getOption("customButtons");
   calendar.setOption("customButtons", {
@@ -45,23 +53,20 @@ export function relabel(calendar, name, label) {
   });
 }
 
-// Whether events overlap in the week grid: one setting for the staff and admin
-// calendars, which the browser remembers.
-export function rememberedOverlap() {
-  return localStorage.fullCalendarEventOverlap === "true";
-}
-
-// The label of the toggleEventOverlap button, which names what pressing it does.
-export function overlapLabel(target, overlap) {
-  const texts = calendarTexts(target);
-  return overlap ? texts.disableOverlap : texts.enableOverlap;
-}
-
-// Turns overlap the other way on the calendar drawn on the target, remembers
-// it and relabels the toggleEventOverlap button.
-export function toggleEventOverlap(target, calendar) {
-  const overlap = !calendar.getOption("slotEventOverlap");
-  localStorage.fullCalendarEventOverlap = overlap;
-  calendar.setOption("slotEventOverlap", overlap);
-  relabel(calendar, "toggleEventOverlap", overlapLabel(target, overlap));
+// Event overlap in the week grid is one setting for every calendar showing
+// its toggle, which the browser remembers: such a calendar starts with it, and
+// the button, named for what pressing it does, turns it the other way.
+function overlapToggle(texts, calendar) {
+  const label = (on) => (on ? texts.disableOverlap : texts.enableOverlap);
+  const overlap = localStorage.fullCalendarEventOverlap === "true";
+  const click = () => {
+    const on = !calendar().getOption("slotEventOverlap");
+    localStorage.fullCalendarEventOverlap = on;
+    calendar().setOption("slotEventOverlap", on);
+    relabel(calendar(), "toggleEventOverlap", label(on));
+  };
+  return {
+    slotEventOverlap: overlap,
+    customButtons: { toggleEventOverlap: { text: label(overlap), click } },
+  };
 }
