@@ -32,7 +32,7 @@ class SubSpaceBookingController < SessionsController
         .order(start_time: :desc)
 
     load_admin_queues if current_user.admin?
-    @supervisors = supervisor_options
+    @supervisors = SpaceManagerJoin.supervisor_options
   end
 
   def request_access
@@ -710,11 +710,6 @@ class SubSpaceBookingController < SessionsController
     @pagy_old_approved, @old_approved_bookings = old_bookings(BookingStatus.approved.id, page_key: "old_approved_page")
     @pagy_old_declined, @old_declined_bookings = old_bookings(BookingStatus.declined.id, page_key: "old_declined_page")
     @pending_access_requests = UserBookingApproval.pending.from_active_accounts.includes(:user).to_a
-  end
-
-  # The space managers as [name, id] options, each once, sorted by name ignoring case.
-  def supervisor_options
-    SpaceManagerJoin.includes(:user).map { |smj| [smj.user.name, smj.user.id] }.uniq.sort_by { |elem| elem[0].downcase }
   end
 
   def load_recurring_bookings_for_page(paginated_bookings)
