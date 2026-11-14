@@ -2,6 +2,7 @@
 
 class UsersController < SessionsController
   include TurnstileHelper
+  include RepositorySorting
   
   before_action :current_user,
                 except: %i[
@@ -658,21 +659,6 @@ class UsersController < SessionsController
       :student_id,
       :read_and_accepted_waiver_form
     )
-  end
-
-  def sort_order
-    case params[:sort]
-    when 'newest'
-      %i[created_at desc]
-    when 'most_likes'
-      %i[like desc]
-    when 'most_makes'
-      %i[make desc]
-    when 'recently_updated'
-      %i[updated_at desc]
-    else
-      %i[created_at desc]
-    end
   end
 
   SLUG_TO_CATEGORY_MODEL = {
