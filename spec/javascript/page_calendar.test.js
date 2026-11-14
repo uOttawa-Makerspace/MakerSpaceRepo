@@ -5,6 +5,7 @@ import listPlugin from "@fullcalendar/list";
 import {
   calendarTexts,
   pageCalendar,
+  relabel,
 } from "../../app/javascript/src/page_calendar.js";
 import {
   CALENDAR_TEXTS,
@@ -152,5 +153,23 @@ describe("pageCalendar", () => {
     expect(drawn.calendar.getOption("timeZone")).toBe("America/New_York");
     expect(drawn.calendar.getOption("height")).toBe("auto");
     expect(drawn.calendar.view.type).toBe("listWeek");
+  });
+
+  it("relabels a custom button, which is named after its new label and keeps it when the toolbar is drawn again", () => {
+    drawn = draw("en", {
+      headerToolbar: { left: "toggle,next", center: "title", right: "" },
+      customButtons: { toggle: { text: "Show Weekends", click: () => {} } },
+    });
+    const button = () => drawn.target.querySelector(".fc-toggle-button");
+    expect(button().title).toBe("Show Weekends");
+
+    relabel(drawn.calendar, "toggle", "Hide Weekends");
+    drawn.calendar.next();
+
+    expect(button().textContent).toBe("Hide Weekends");
+    expect(button().title).toBe("Hide Weekends");
+    expect(drawn.calendar.getOption("customButtons").toggle.click).toBeTypeOf(
+      "function",
+    );
   });
 });

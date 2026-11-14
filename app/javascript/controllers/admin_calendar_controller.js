@@ -7,7 +7,7 @@ import { Tooltip } from "bootstrap";
 import { eventClick, eventCreate } from "../src/calendar_helper.js";
 import { closeSaved } from "../src/calendar_dialog.js";
 import { applyEventBackground } from "../src/calendar_background.js";
-import { calendarTexts, pageCalendar } from "../src/page_calendar.js";
+import { calendarTexts, pageCalendar, relabel } from "../src/page_calendar.js";
 import { rangeSource, unticked } from "../src/range_source.js";
 
 // Titles and descriptions come from imported calendars, so they are text, never markup.
@@ -245,11 +245,11 @@ export default class extends TypedController {
       customButtons: {
         toggleWeekends: {
           text: this.texts.hideWeekends,
-          click: (_event, button) => this.toggleWeekends(button),
+          click: () => this.toggleWeekends(),
         },
         toggleEventOverlap: {
           text: this.overlapLabel(overlap),
-          click: (_event, button) => this.toggleOverlap(button),
+          click: () => this.toggleOverlap(),
         },
       },
       eventDidMount: (info) => this.decorate(info),
@@ -262,19 +262,21 @@ export default class extends TypedController {
     };
   }
 
-  toggleWeekends(button) {
+  toggleWeekends() {
     const weekends = !this.calendar.getOption("weekends");
     this.calendar.setOption("weekends", weekends);
-    button.textContent = weekends
-      ? this.texts.hideWeekends
-      : this.texts.showWeekends;
+    relabel(
+      this.calendar,
+      "toggleWeekends",
+      weekends ? this.texts.hideWeekends : this.texts.showWeekends,
+    );
   }
 
-  toggleOverlap(button) {
+  toggleOverlap() {
     const overlap = !this.calendar.getOption("slotEventOverlap");
     localStorage.fullCalendarEventOverlap = overlap;
     this.calendar.setOption("slotEventOverlap", overlap);
-    button.textContent = this.overlapLabel(overlap);
+    relabel(this.calendar, "toggleEventOverlap", this.overlapLabel(overlap));
   }
 
   overlapLabel(overlap) {

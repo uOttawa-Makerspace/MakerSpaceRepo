@@ -31,17 +31,23 @@ vi.mock("@fullcalendar/core", () => ({
     getOption(name) {
       return this.options[name];
     }
+    // FullCalendar draws each custom button with its label as its name too.
     setOption(name, value) {
       this.options[name] = value;
+      if (name === "customButtons") this.labelButtons();
     }
     render() {
       this.rendered = true;
-      this.el.innerHTML = Object.entries(this.options.customButtons)
-        .map(
-          ([name, { text }]) =>
-            `<button class="fc-${name}-button">${text}</button>`,
-        )
+      this.el.innerHTML = Object.keys(this.options.customButtons)
+        .map((name) => `<button class="fc-${name}-button"></button>`)
         .join("");
+      this.labelButtons();
+    }
+    labelButtons() {
+      Object.entries(this.options.customButtons).forEach(([name, { text }]) => {
+        const button = this.el.querySelector(`.fc-${name}-button`);
+        button.textContent = button.title = text;
+      });
     }
     destroy() {
       this.destroyed = true;
@@ -574,6 +580,7 @@ describe("calendar options", () => {
     press(calendar, "toggleWeekends");
     expect(calendar.options.weekends).toBe(false);
     expect(weekends.textContent).toBe("Show Weekends");
+    expect(weekends.title).toBe("Show Weekends");
   });
 
   it("toggles event overlap, remembers it and relabels the button", async () => {
@@ -585,13 +592,17 @@ describe("calendar options", () => {
     expect(calendar.options.slotEventOverlap).toBe(true);
     expect(localStorage.fullCalendarEventOverlap).toBe("true");
     expect(overlap.textContent).toBe("Disable Event Overlap");
+    expect(overlap.title).toBe("Disable Event Overlap");
   });
 
   it("names its buttons, drafts and hours in French on a French page", async () => {
     localStorage.fullCalendarEventOverlap = "true";
     const calendar = await boot({ lang: "fr" });
-    const label = (name) =>
-      calendar.el.querySelector(`.fc-${name}-button`).textContent;
+    const label = (name) => {
+      const button = calendar.el.querySelector(`.fc-${name}-button`);
+      expect(button.title).toBe(button.textContent);
+      return button.textContent;
+    };
     expect(label("toggleWeekends")).toBe("Masquer les fins de semaine");
     expect(label("toggleEventOverlap")).toBe(
       "Désactiver le chevauchement des événements",

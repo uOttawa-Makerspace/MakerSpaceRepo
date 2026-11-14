@@ -32,3 +32,15 @@ export function pageCalendar(target, options, ...plugins) {
     viewDidMount: makeCalendarAccessible.bind(null, target),
   });
 }
+
+// Gives the calendar's custom button of that name a new label. FullCalendar
+// draws it, and names the button (its title, the tooltip) after it; a label
+// written into the button itself would keep the old name and be doubled the
+// next time the toolbar is drawn.
+export function relabel(calendar, name, label) {
+  const buttons = calendar.getOption("customButtons");
+  calendar.setOption("customButtons", {
+    ...buttons,
+    [name]: { ...buttons[name], text: label },
+  });
+}

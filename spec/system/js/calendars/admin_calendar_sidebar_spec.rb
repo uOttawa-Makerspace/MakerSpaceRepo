@@ -195,6 +195,17 @@ RSpec.describe "Admin calendar: sidebar and toolbar", type: :system do
       expect(page).to have_css("th.fc-col-header-cell[data-date]", count: 7)
     end
 
+    it "names a toggled button after its new label, and keeps the label when another week is shown", js: true, skip_bullet: true do
+      open_admin_calendar
+      weekends = ".fc-toggleWeekends-button"
+
+      find(weekends).click
+      expect(page).to have_css("#{weekends}[title='Show Weekends']", exact_text: "Show Weekends")
+      find(".fc-next-button").click
+      expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 22 – 26, 2027")
+      expect(page).to have_css("#{weekends}[title='Show Weekends']", exact_text: "Show Weekends")
+    end
+
     it "remembers the event overlap setting in the browser", js: true, skip_bullet: true do
       open_admin_calendar
 
