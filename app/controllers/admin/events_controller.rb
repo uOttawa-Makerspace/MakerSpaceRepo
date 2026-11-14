@@ -14,11 +14,7 @@ class Admin::EventsController < AdminAreaController
     saved = @event.save && assignments.all?(&:save)
     @event.push_to_google_later if @event.persisted?
 
-    if saved
-      dialog_done(notice: "Event created successfully.")
-    else
-      dialog_done(alert: validation_message(@event, "failed_saves.event_create"))
-    end
+    dialog_saved(saved, "Event created successfully.", @event, "failed_saves.event_create")
   end
 
   def update

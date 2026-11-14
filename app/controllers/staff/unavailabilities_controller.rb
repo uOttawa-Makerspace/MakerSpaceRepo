@@ -18,11 +18,8 @@ class Staff::UnavailabilitiesController < StaffAreaController
       user_id: target_user.id
     )
 
-    if @staff_unavailability.save
-      dialog_done(notice: "Unavailability created#{" for #{target_user.name}" if admin_managing_other_user?}.")
-    else
-      dialog_done(alert: validation_message(@staff_unavailability, "failed_saves.unavailability_create"))
-    end
+    dialog_saved(@staff_unavailability.save, "Unavailability created#{" for #{target_user.name}" if admin_managing_other_user?}.",
+                 @staff_unavailability, "failed_saves.unavailability_create")
   end
 
   def update
@@ -188,16 +185,9 @@ class Staff::UnavailabilitiesController < StaffAreaController
 
   def update_single_unavailability
     start, finish = @staff_unavailability.times_after_update(*dialog_times, keep: keep_dialog_times?)
-    if @staff_unavailability.update(
-        **dialog_fields,
-        start_time: start,
-        end_time: finish,
-        recurrence_rule: staff_params[:recurrence_rule].presence
-      )
-      dialog_done(notice: "Unavailability updated successfully.")
-    else
-      dialog_done(alert: validation_message(@staff_unavailability, "failed_saves.unavailability_update"))
-    end
+    saved = @staff_unavailability.update(**dialog_fields, start_time: start, end_time: finish,
+                                                          recurrence_rule: staff_params[:recurrence_rule].presence)
+    dialog_saved(saved, "Unavailability updated successfully.", @staff_unavailability, "failed_saves.unavailability_update")
   end
 
   def update_all_occurrences
@@ -206,16 +196,8 @@ class Staff::UnavailabilitiesController < StaffAreaController
     start, finish = @staff_unavailability.times_after_update(*dialog_times, keep: keep_dialog_times?, series: true)
     rule_to_use = series_rule(@staff_unavailability).with_time_from(staff_params[:recurrence_rule], at: start)
 
-    if @staff_unavailability.update(
-        **dialog_fields,
-        start_time: start,
-        end_time: finish,
-        recurrence_rule: rule_to_use
-      )
-      dialog_done(notice: "All occurrences updated successfully.")
-    else
-      dialog_done(alert: validation_message(@staff_unavailability, "failed_saves.unavailability_update"))
-    end
+    saved = @staff_unavailability.update(**dialog_fields, start_time: start, end_time: finish, recurrence_rule: rule_to_use)
+    dialog_saved(saved, "All occurrences updated successfully.", @staff_unavailability, "failed_saves.unavailability_update")
   end
 
   # Whether the dialog sent its time fields as it filled them from the clicked entry.

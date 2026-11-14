@@ -289,6 +289,7 @@ export default class extends TypedController {
 
   reset() {
     this.formTarget.reset();
+    this.element.querySelector("#calendar_dialog_alert").replaceChildren();
     this.allDayTarget.checked = false;
     this.endTimeTarget.disabled = false;
     this.timeErrorTarget.classList.add("d-none");

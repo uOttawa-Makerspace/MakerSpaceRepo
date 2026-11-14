@@ -406,7 +406,9 @@ describe("form behaviour", () => {
     fire($("eventModal"), "show.bs.modal");
     $("all_day_checkbox").checked = true;
     $("save_button").disabled = true;
+    $("calendar_dialog_alert").innerHTML = '<div class="alert">Failed</div>';
     fire($("eventModal"), "hidden.bs.modal");
+    expect($("calendar_dialog_alert").innerHTML).toBe("");
     expect($("all_day_checkbox").checked).toBe(false);
     expect($("save_button").disabled).toBe(false);
     expect($("recurrence_options").style.display).toBe("none");
@@ -517,10 +519,6 @@ describe("submit", () => {
       vi.fn(() => true),
     );
     modal.dispatchEvent(new Event("hide.bs.modal", { cancelable: true }));
-    expect(modal.dataset.shown).toBeUndefined();
-
-    fire(modal, "shown.bs.modal");
-    fire(modal, "hidden.bs.modal");
     expect(modal.dataset.shown).toBeUndefined();
   });
 });

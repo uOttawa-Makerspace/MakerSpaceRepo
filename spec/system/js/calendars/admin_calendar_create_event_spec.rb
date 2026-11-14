@@ -354,6 +354,34 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     expect(page).to have_css(".fc-timegrid-event", text: "✎ Meeting", visible: :all)
   end
 
+  it "keeps the dialog open with what was typed and the alert when the server refuses the save", js: true, skip_bullet: true do
+    open_admin_calendar
+    open_add_modal
+    fill_datetime("start_time_field", "2027-03-17T10:00")
+    fill_datetime("end_time_field", "2027-03-17T11:00")
+    select "Meeting", from: "event_type_select"
+    open_custom_values
+    fill_in "title", with: "Planning chat"
+    select "Weekly", from: "recurrence_frequency"
+    uncheck "day_WE"
+    click_button "Save Draft"
+
+    expect(page).to have_css("#eventModal.show #calendar_dialog_alert", text: "Failed to create event")
+    expect(page).to have_no_css("#flash", text: "Failed to create event")
+    expect(find("#title", visible: :all).value).to eq("Planning chat")
+    expect(field_value("start_time_field")).to eq("2027-03-17T10:00")
+    expect(page).to have_select("recurrence_frequency", selected: "Weekly")
+    expect(page.evaluate_script("window.sameDocument")).to be(true)
+    expect(Event.count).to eq(0)
+
+    check "day_WE"
+    click_button "Save Draft"
+
+    expect_flash("Event created successfully.")
+    expect_saved_in_place
+    expect(Event.find_by!(title: "Planning chat").recurrence_rule).to include("BYDAY=WE")
+  end
+
   it "asks before closing the modal and keeps it open when the answer is no", js: true, skip_bullet: true do
     open_admin_calendar
     open_add_modal

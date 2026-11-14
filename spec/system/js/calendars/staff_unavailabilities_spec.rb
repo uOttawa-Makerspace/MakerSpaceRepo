@@ -208,6 +208,31 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       expect(page).to have_css("#day_freq_error.d-none", visible: :all)
     end
 
+    it "keeps the dialog open with what was typed and the alert when the server refuses the save", js: true, skip_bullet: true do
+      open_page
+      open_add_modal
+      fill_datetime("start_time_field", "2027-03-17T10:00")
+      fill_datetime("end_time_field", "2027-03-17T12:00")
+      open_custom_values
+      fill_in "title", with: "Dentist"
+      select "Weekly", from: "recurrence_frequency"
+      uncheck "day_WE"
+      click_button "Save"
+
+      expect(page).to have_css("#unavailabilityModal.show #calendar_dialog_alert", text: "Failed to create unavailability")
+      expect(page).to have_no_css("#flash", text: "Failed to create unavailability")
+      expect(find("#title", visible: :all).value).to eq("Dentist")
+      expect(field_value("start_time_field")).to eq("2027-03-17T10:00")
+      expect(page).to have_select("recurrence_frequency", selected: "Weekly")
+      expect(page.evaluate_script("window.sameDocument")).to be(true)
+      expect(StaffUnavailability.count).to eq(0)
+
+      accept_confirm { click_button "Cancel" }
+      expect(page).to have_no_css("#unavailabilityModal.show")
+      open_add_modal
+      expect(page).to have_no_css("#calendar_dialog_alert .alert")
+    end
+
     it "returns the focus to the add button when the dialog is closed", js: true, skip_bullet: true do
       open_page
       open_add_modal

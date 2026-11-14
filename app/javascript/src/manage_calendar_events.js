@@ -362,9 +362,8 @@ onPageLoad("#eventModal", () => {
   });
   // Reset the form
   modal.addEventListener("hidden.bs.modal", () => {
-    delete modal.dataset.shown;
-    const form = modal.querySelector("#eventModal form");
-    form.reset();
+    modal.querySelector("form").reset();
+    modal.querySelector("#calendar_dialog_alert").replaceChildren();
     allDayCheckbox.checked = false;
     endTimeField.disabled = false;
     timeError.classList.add("d-none");
