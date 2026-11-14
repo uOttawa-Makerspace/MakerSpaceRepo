@@ -46,9 +46,8 @@ RSpec.describe "Training standing, badge and recommended hours on the skills pag
     end
   end
 
-  # The profile's badges tab loads each certificate's session by itself; that is not part of the skills tab.
   def counted?(payload)
-    payload[:sql].match?(HELPER_TABLES) && payload[:name] != "SCHEMA" && !payload[:sql].include?('"training_sessions"."id" = $1')
+    payload[:sql].match?(HELPER_TABLES) && payload[:name] != "SCHEMA"
   end
 
   def sql_during

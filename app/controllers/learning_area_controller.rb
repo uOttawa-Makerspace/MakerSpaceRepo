@@ -34,7 +34,8 @@ class LearningAreaController < DevelopmentProgramsController
         .transform_values do |modules|
           modules.sort_by { |m| LearningModule.levels.keys.index(m.level) }
         end
-    @completed_module_ids = LearningModuleTrack.completed.where(user: current_user).pluck(:learning_module_id).to_set
+    @tracks_by_module = current_user.learning_module_tracks.index_by(&:learning_module_id)
+    @completed_module_ids = current_user.completed_learning_module_ids.to_set
   end
 
   def new

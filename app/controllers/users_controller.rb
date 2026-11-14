@@ -406,7 +406,7 @@ class UsersController < SessionsController
     repo_scope = repo_scope.public_repos unless sees_private_repos?(@repo_user)
     @pagy, @repositories = pagy(repo_scope, limit: 18)
 
-    @acclaim_data = @repo_user.certifications
+    @acclaim_data = @repo_user.certifications_with_training
     
     makes_scope = @repo_user.repositories.includes(:owner, :photos).where.not(make_id: nil).order(created_at: :desc)
     makes_scope = makes_scope.public_repos unless sees_private_repos?(@repo_user)
