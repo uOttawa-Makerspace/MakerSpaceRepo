@@ -91,6 +91,36 @@ module ShopifyConcern
       [gone ? :gone : :error, nil]
     end
 
+    CREATE_QUERY = <<~QUERY
+      mutation draftOrderCreate($input: DraftOrderInput!) {
+        draftOrderCreate(input: $input) {
+          draftOrder {
+            id
+            invoiceUrl
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    QUERY
+
+    # draftOrderCreate with `variables` ({ input: DraftOrderInput }). Returns [the draft's gid, its invoice URL] and
+    # stores nothing. Raises on anything but HTTP 200, on userErrors, and on an answer without the draft.
+    def self.create(variables, client: self.client)
+      resp = client.query(query: CREATE_QUERY, variables: variables)
+      raise "Network error: Received HTTP #{resp.code} while creating draft order" unless resp.code == 200
+
+      user_errors = resp.body&.dig("data", "draftOrderCreate", "userErrors")
+      raise "Shopify Draft Order Creation Failed: #{user_errors.map { |e| e['message'] }.join(', ')}" if user_errors.present?
+
+      draft_order_data = resp.body&.dig("data", "draftOrderCreate", "draftOrder")
+      raise "No draft order data received: #{resp.body}" unless draft_order_data
+
+      [draft_order_data["id"], draft_order_data["invoiceUrl"]]
+    end
+
     # draftOrderDelete for the draft `gid`. It checks nothing about whose draft it is, so it stays out of the models'
     # API. Its only caller is ShopifyConcern::DraftRemoval (the one delete-and-classify rule, used by
     # JobOrder::DraftDeletion and LockerRental).
@@ -351,43 +381,9 @@ module ShopifyConcern
     # Shopify call runs outside any lock and the caller decides under the lock whether to keep the draft
     # (#keep_draft_order_id_unless_taken).
     def create_remote_draft_order
-      create_draft_order = <<~QUERY
-        mutation draftOrderCreate($input: DraftOrderInput!) {
-          draftOrderCreate(input: $input) {
-            draftOrder {
-              id
-              invoiceUrl
-            }
-            userErrors {
-              field
-              message
-            }
-          }
-        }
-      QUERY
-
       variables = shopify_draft_order_input
-      resp = shopify_admin_client.query(
-        query: create_draft_order,
-        variables: variables
-      )
-
-      unless resp.code == 200
-        raise "Network error: Received HTTP #{resp.code} while creating draft order"
-      end
-
-      user_errors = resp.body&.dig("data", "draftOrderCreate", "userErrors")
-      if user_errors.present?
-        messages = user_errors.map { |e| e["message"] }.join(", ")
-        raise "Shopify Draft Order Creation Failed: #{messages}"
-      end
-
-      draft_order_data = resp.body&.dig("data", "draftOrderCreate", "draftOrder")
-      unless draft_order_data
-        raise "No draft order data received: #{resp.body}"
-      end
-
-      [draft_order_data["id"], variables.dig(:input, :lineItems), draft_order_data["invoiceUrl"]]
+      id, invoice_url = ShopifyConcern::DraftOrders.create(variables, client: shopify_admin_client)
+      [id, variables.dig(:input, :lineItems), invoice_url]
     end
 
     # The tags of the draft: the environment's operating tag (what the paid webhook routes on). A model may add
