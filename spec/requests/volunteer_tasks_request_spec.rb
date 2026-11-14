@@ -289,6 +289,39 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       expect(photo.reload.image).to be_attached
     end
 
+    describe "removing ticked photos" do
+      def named_photo(filename)
+        png = Rails.root.join("spec/support/assets/avatar.png")
+        image = Rack::Test::UploadedFile.new(png, "image/png", original_filename: filename)
+        create(:photo, volunteer_task: task, image: image)
+      end
+
+      let!(:short) { named_photo("a.png") }
+      let!(:long) { named_photo("aa.png") }
+
+      def remaining_names
+        task.photos.reload.map { |photo| photo.image.filename.to_s }.sort
+      end
+
+      it "removes only the photo whose file name the form sent, not one whose name it contains" do
+        expect { patch volunteer_task_path(task), params: task_params.merge(deleteimages: "aa.png,") }
+          .to change(Photo, :count).by(-1)
+        expect(remaining_names).to eq(["a.png"])
+        expect(short.reload.image).to be_attached
+      end
+
+      it "removes every photo the form sent, and keeps the others" do
+        named_photo("b.png")
+        patch volunteer_task_path(task), params: task_params.merge(deleteimages: "a.png,aa.png,")
+        expect(remaining_names).to eq(["b.png"])
+      end
+
+      it "removes nothing for a sent name that only ends with a stored one" do
+        expect { patch volunteer_task_path(task), params: task_params.merge(deleteimages: "ba.png,") }
+          .not_to change(Photo, :count)
+      end
+    end
+
     it "edits the other fields of a stored 36 hour task" do
       task.update!(hours: 36)
       patch volunteer_task_path(task), params: task_params(title: "Renamed", hours: 36)

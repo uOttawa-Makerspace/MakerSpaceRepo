@@ -554,21 +554,27 @@ class JobOrdersController < SessionsController
   end
 
   # The quote form's writes, run by JobOrder#transition! under the order's row lock (the order was reloaded by
-  # lock!, so its tasks are read fresh). Validation failures raise, which rolls the transition back.
+  # lock!, so its tasks are read fresh, in id order, with their quote rows and options). Validation failures raise,
+  # which rolls the transition back.
   def apply_quote_params!
-    @job_order.job_tasks.each { |task| apply_task_quote_params!(task) }
+    @job_order.job_tasks.includes(:job_task_quote, :job_task_options).find_each do |task|
+      apply_task_quote_params!(task)
+    end
     replace_quote_line_items! if params[:job_quote_line_items].present?
     apply_staff_comments
     @job_order.save!
   end
 
-  # One task's quote row (price, service quantity and price), then its option prices, then its staff files.
+  # One task's quote row (price, service quantity and price), then its option prices, then its staff files. The
+  # option prices are read from the form first, so every task's preloaded options are read even when a quote row
+  # is refused.
   def apply_task_quote_params!(task)
+    option_prices = option_prices_for(task)
     job_task_quote = task.job_task_quote || task.build_job_task_quote
     job_task_quote.assign_attributes(quote_amounts_for(task))
     job_task_quote.save!
 
-    apply_option_prices!(task, job_task_quote)
+    apply_option_prices!(job_task_quote, option_prices)
     attach_staff_files(task)
   end
 
@@ -582,13 +588,16 @@ class JobOrdersController < SessionsController
     }
   end
 
-  # A price for each of the task's options the form filled in; an option left blank keeps what it had.
-  def apply_option_prices!(task, job_task_quote)
-    task.job_task_options.each do |option|
-      price = params["task_#{task.id}_option_price_#{option.job_option_id}"]
-      next if price.blank?
+  # The price the form filled in for each of the task's options, as { job_option_id => price }; an option left
+  # blank is absent, so it keeps what it had.
+  def option_prices_for(task)
+    task.job_task_options.map(&:job_option_id)
+        .index_with { |job_option_id| params["task_#{task.id}_option_price_#{job_option_id}"] }.compact_blank
+  end
 
-      qt_option = job_task_quote.job_task_quote_options.find_or_initialize_by(job_option_id: option.job_option_id)
+  def apply_option_prices!(job_task_quote, option_prices)
+    option_prices.each do |job_option_id, price|
+      qt_option = job_task_quote.job_task_quote_options.find_or_initialize_by(job_option_id: job_option_id)
       qt_option.price = price
       qt_option.save!
     end
