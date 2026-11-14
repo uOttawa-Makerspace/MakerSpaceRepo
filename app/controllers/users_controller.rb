@@ -50,8 +50,10 @@ class UsersController < SessionsController
   rate_limit to: 30, within: 1.hour, only: :create, name: 'sign-up-ip',
              by: -> { request.remote_ip }, with: -> { sign_up_throttled }
 
+  # The new account keeps the language the sign-up page was shown in (always a supported one, see RequestLocale),
+  # so its confirmation and welcome mails are written in it.
   def create
-    @new_user = User.new(user_params)
+    @new_user = User.new(user_params.merge(locale: I18n.locale.to_s))
     hash_sign_up_password if @new_user.valid?
 
     if !verify_turnstile

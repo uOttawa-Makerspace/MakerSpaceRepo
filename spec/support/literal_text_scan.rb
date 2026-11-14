@@ -4,7 +4,8 @@
 # strings handed to helpers that render them.
 module LiteralTextScan
   # Names and addresses that are the same in every language.
-  ALLOWED_LITERALS = ["@uOCEED", "@uoceed", "CEED", "makerepo.com/new", "MakerRepo", "email@uottawa.ca"].freeze
+  ALLOWED_LITERALS = ["@uOCEED", "@uoceed", "CEED", "makerepo.com", "MakerRepo.com", "makerepo.com/new", "MakerRepo", "MAKERREPO",
+                      "email@uottawa.ca"].freeze
 
   LITERAL_ARGUMENT = /
     (?<helper>link_to|button_to|button_tag|label_tag|submit_tag|provide|tag\.\w+|content_tag|(?<![.\w'"])\w+\.(?:label|submit)\b|

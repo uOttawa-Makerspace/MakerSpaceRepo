@@ -23,14 +23,27 @@ RSpec.describe ApplicationMailer, type: :mailer do
     expect(html_lang(welcome(create(:user)))).to eq("en")
   end
 
+  def cc_order(address) = MsrMailer.send_cc_money_email(address, 20, "TOKEN")
+
   it "matches the address without regard to case" do
     user = create(:user, locale: "fr")
-    expect(html_lang(MsrMailer.email_changed_email(user, user.email.upcase))).to eq("fr")
+    expect(html_lang(cc_order(user.email.upcase))).to eq("fr")
   end
 
   it "renders a mail to an address with no account in the default language" do
+    create(:user, locale: "fr")
+    expect(html_lang(cc_order("nobody@example.com"))).to eq("en")
+  end
+
+  it "renders a mail sent with locale: in that language, whatever account the address belongs to" do
+    create(:user, locale: "en", email: "taken@example.com")
     user = create(:user, locale: "fr")
-    expect(html_lang(MsrMailer.email_changed_email(user, "nobody@example.com"))).to eq("en")
+    expect(html_lang(MsrMailer.email_confirmation_email("taken@example.com", user, "T"))).to eq("fr")
+  end
+
+  it "falls back to the recipient's language when locale: is blank" do
+    create(:user, locale: "fr", email: "other@example.com")
+    expect(html_lang(MsrMailer.email_changed_email(create(:user), "other@example.com"))).to eq("fr")
   end
 
   it "leaves the thread's language as it was after rendering" do
