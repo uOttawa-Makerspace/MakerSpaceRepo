@@ -112,6 +112,17 @@ RSpec.describe "Admin calendar: sidebar and toolbar", type: :system do
       expect(find("#checkbox-#{admin.id}").ancestor("div.d-flex")).to have_css(".user-hours", text: "0 hrs")
     end
 
+    it "rounds the hours to a tenth, written the French way on a French page", js: true, skip_bullet: true do
+      talk = create(:event, space: space, title: "Talk", event_type: "meeting", draft: false,
+                            start_time: eastern.local(2027, 3, 18, 9), end_time: eastern.local(2027, 3, 18, 10, 20))
+      create(:event_assignment, event: talk, user: admin)
+      log_in_as(admin, to: admin_calendar_index_path(locale: :fr), local_storage: { fullCalendarDefaultDateAdmin: CalendarJsHelpers::WEEK_MIDDAY })
+      wait_for_admin_calendar_scripts
+
+      expect(find("#checkbox-#{admin.id}").ancestor("div.d-flex")).to have_css(".user-hours", exact_text: "1,3 h")
+      expect(find("#checkbox-#{worker.id}").ancestor("div.d-flex")).to have_css(".user-hours", exact_text: "3 h")
+    end
+
     it "hides the events assigned to a staff member with the slash checkbox", js: true, skip_bullet: true do
       open_admin_calendar
       expect(event_titled("Front desk").size).to eq(1)

@@ -307,29 +307,27 @@ export default class extends TypedController {
     this.deleteDraftsTarget.innerText = deleteDrafts[info.view.type];
   }
 
-  // Each staff member's hours in the events shown that lie within the view.
+  // Each staff member's hours in the events shown that lie within the view, to
+  // a tenth of an hour in the page's language.
   showHours(events) {
     const { activeStart, activeEnd } = this.calendar.view;
-    const shifts = events.filter(
-      (event) =>
-        event.start >= activeStart &&
-        event.end <= activeEnd &&
-        event.extendedProps.assignedUsers?.length >= 1,
+    const shown = events.filter(
+      (event) => event.start >= activeStart && event.end <= activeEnd,
     );
+    const { lang } = this.element.ownerDocument.documentElement;
     this.hoursTargets.forEach((badge) => {
-      const hours = shifts
+      const time = shown
         .filter((event) =>
-          event.extendedProps.assignedUsers.some(
+          event.extendedProps.assignedUsers?.some(
             (user) => String(user.id) === badge.dataset.userId,
           ),
         )
         .reduce(
-          (sum, event) =>
-            sum +
-            (event.end.getTime() - event.start.getTime()) / 1000 / 60 / 60,
+          (sum, event) => sum + (event.end.getTime() - event.start.getTime()),
           0,
         );
-      badge.textContent = this.texts.hours.replace("{hours}", String(hours));
+      const hours = (Math.round(time / 360000) / 10).toLocaleString(lang);
+      badge.textContent = this.texts.hours.replace("{hours}", hours);
     });
   }
 }

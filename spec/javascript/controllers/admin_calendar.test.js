@@ -257,6 +257,7 @@ async function boot({
   lang,
 } = {}) {
   window.happyDOM.setURL(url);
+  document.documentElement.lang = lang ?? "en";
   document.body.innerHTML = page({ hidden, lang });
   created.length = 0;
   application = Application.start();
@@ -734,5 +735,33 @@ describe("calendar options", () => {
       (badge) => badge.textContent,
     );
     expect(hours).toEqual(["4.5 hrs", "3 hrs"]);
+  });
+
+  it("rounds each staff member's hours to a tenth, in the page's language", async () => {
+    for (const [lang, shown] of [
+      ["en", ["2.5 hrs", "1.3 hrs"]],
+      ["fr", ["2,5 h", "1,3 h"]],
+    ]) {
+      application?.stop();
+      const calendar = await boot({ lang });
+      const at = (iso) => new Date(iso);
+      calendar.options.eventsSet([
+        {
+          start: at("2027-03-15T13:00:00Z"),
+          end: at("2027-03-15T14:20:00Z"),
+          extendedProps: { assignedUsers: [{ id: 5 }, { id: 6 }] },
+        },
+        {
+          start: at("2027-03-16T13:00:00Z"),
+          end: at("2027-03-16T14:12:00Z"),
+          extendedProps: { assignedUsers: [{ id: 5 }] },
+        },
+      ]);
+
+      const hours = [...document.querySelectorAll("[data-user-id]")].map(
+        (badge) => badge.textContent,
+      );
+      expect(hours).toEqual(shown);
+    }
   });
 });
