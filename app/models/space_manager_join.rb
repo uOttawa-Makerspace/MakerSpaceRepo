@@ -7,7 +7,7 @@ class SpaceManagerJoin < ApplicationRecord
 
   # The space managers as [name, id] options, each once, sorted by name ignoring case. A row with no user is left out.
   def self.supervisor_options
-    User.where(id: select(:user_id)).pluck(:name, :id).sort_by { |name, _id| name.downcase }
+    User.where(id: select(:user_id)).pluck(:name, :id).sort_by { |name, id| [name.downcase, id] }
   end
 
   private
