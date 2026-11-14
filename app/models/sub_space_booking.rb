@@ -229,6 +229,60 @@ class SubSpaceBooking < ApplicationRecord
     minute_changed?(:start_time) || minute_changed?(:end_time)
   end
 
+  # Whether this save moves the booking in time or to another room.
+  def moving?
+    times_changing? || will_save_change_to_sub_space_id?
+  end
+
+  # Whether an admin block in this booking's room, other than this booking, overlaps its times (the zoned
+  # instants the model stores, compared with the stored UTC instants of the blocks).
+  def overlaps_block?
+    SubSpaceBooking
+      .where(sub_space_id: sub_space_id)
+      .where(blocking: true)
+      .where.not(id: id)
+      .overlapping(start_time.utc, end_time.utc)
+      .any?
+  end
+
+  def duration_hours
+    (end_time - start_time) / 1.hour
+  end
+
+  # Hours the booking's owner already has in the booking's sub space, in the week (Time.zone) containing
+  # the booking's start_time, not counting the booking itself.
+  def owner_hours_that_week
+    week = start_time.in_time_zone.all_week
+    SubSpaceBooking
+      .where(sub_space_id: sub_space_id, user_id: user_id)
+      .where.not(id: id)
+      .where(start_time: week)
+      .sum { |other| other.end_time - other.start_time } / 1.hour
+  end
+
+  # The first of its room's limits this booking breaks, as [code, message], or nil: the maximum duration,
+  # then the owner's maximum hours in the room that week.
+  def room_limit_breach
+    room = sub_space
+    max_duration = room.maximum_booking_duration
+    max_per_week = room.maximum_booking_hours_per_week
+    if !max_duration.nil? && duration_hours > max_duration
+      ["DurationHour", "You cannot book #{room.name} for more than #{max_duration} hours."]
+    elsif !max_per_week.nil? && owner_hours_that_week + duration_hours > max_per_week
+      ["DurationWeek", "You cannot book #{room.name} for more than #{max_per_week} hours per week."]
+    end
+  end
+
+  # The status a new booking starts with: approved when an admin books it or its room needs no approval;
+  # otherwise approved only up to the room's automatic-approval hours, and pending beyond them or when
+  # the room has none.
+  def initial_status(booked_by_admin:)
+    return BookingStatus.approved if booked_by_admin || !sub_space.approval_required
+
+    auto_hours = sub_space.max_automatic_approval_hour
+    !auto_hours.nil? && duration_hours <= auto_hours ? BookingStatus.approved : BookingStatus.pending
+  end
+
   def minute_changed?(attribute)
     to_minute = ->(time) { time&.change(sec: 0) }
     to_minute.call(attribute_in_database(attribute)) != to_minute.call(public_send(attribute))
