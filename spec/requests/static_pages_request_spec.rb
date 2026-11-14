@@ -476,6 +476,21 @@ RSpec.describe "Static pages", type: :request do
       expect(response.body).not_to include('id="home-skills"')
     end
 
+    it "shows a guest the public cards only" do
+      get root_path
+      headings = Nokogiri::HTML(response.body).css("h2").map { |h| h.text.squish }
+      expect(headings).to eq(["Shortcuts", "General Resources", "Welcome to MakerRepo", "Explore", "Makerstore",
+                              "Want to know when our next big event is happening?", "Workshops this week"])
+      expect(response.body).not_to include('id="home-userinfo"', 'id="home-skills"', I18n.t("home.badges.header"))
+    end
+
+    it "runs no member queries for a guest" do
+      sqls = selects_on("certifications", "learning_modules", "learning_module_tracks", "volunteer_task_joins",
+                        "shadowing_hours") { get root_path }
+      expect(response).to have_http_status(:ok)
+      expect(sqls).to be_empty
+    end
+
     it "a signed-in member outside both programs sees the skills card but neither program card" do
       sign_in_as(:regular)
       get root_path

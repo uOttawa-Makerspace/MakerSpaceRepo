@@ -15,9 +15,9 @@ class StaticPagesController < SessionsController
     @volunteer_program_your_tasks = []
     @hours_calendars = StaffNeededCalendar.open_hours
 
-    # User-specific data (Only run when a user is signed in)
-    user = current_user || @user
-    load_member_sections(user) if user
+    # The member cards are shown only to a signed-in user (a guest is User.new), so
+    # their queries run only then.
+    load_member_sections(current_user) if signed_in?
 
     @recent_projects = cached_recent_projects
     @contact_info = cached_contact_info
