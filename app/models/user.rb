@@ -400,6 +400,37 @@ class User < ApplicationRecord
     REPORT_FACULTY_LABELS.fetch(faculty, faculty)
   end
 
+  YEAR_OF_STUDY_TEXT_ORDER = ['Alumni', 'N/A'].freeze
+  BLANK_YEAR_OF_STUDY = 'Blank'
+
+  # Counts by year of study ({ year => count }, as a group count or a tally
+  # gives them), each year with its own count, in year order: the numbered
+  # years (as numbers) from the first up, then Alumni, then N/A, then any
+  # other text, then the users with no year (nil and empty together) as Blank.
+  def self.years_of_study_in_order(counts)
+    counts
+      .each_with_object(Hash.new(0)) { |(year, count), totals| totals[year_of_study_key(year)] += count }
+      .sort_by { |year, _| year_of_study_rank(year) }
+  end
+
+  def self.year_of_study_key(year)
+    text = year.to_s.strip
+    return BLANK_YEAR_OF_STUDY if text.empty?
+
+    text.match?(/\A\d+\z/) ? text.to_i : text
+  end
+  private_class_method :year_of_study_key
+
+  def self.year_of_study_rank(year)
+    case year
+    when Integer then [0, year]
+    when *YEAR_OF_STUDY_TEXT_ORDER then [1, YEAR_OF_STUDY_TEXT_ORDER.index(year)]
+    when BLANK_YEAR_OF_STUDY then [3, 0]
+    else [2, year]
+    end
+  end
+  private_class_method :year_of_study_rank
+
   # The identity as the report spreadsheets have always shown it
   # (community_member is "Community member"), None when missing.
   def self.identity_label(identity)

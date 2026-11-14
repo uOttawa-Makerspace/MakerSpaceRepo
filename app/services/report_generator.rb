@@ -479,12 +479,8 @@ class ReportGenerator
         sheet.add_row
 
         title(sheet, "Year of Study")
-        # year of study is stored as text, transform key to int for sorting
-        users
-          .group(:year_of_study)
-          .count
-          .transform_keys { |k| k.to_i }
-          .sort
+        User
+          .years_of_study_in_order(users.group(:year_of_study).count)
           .each { |key, value| sheet.add_row [key, value] }
 
         sheet.add_row
