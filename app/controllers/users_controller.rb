@@ -233,48 +233,16 @@ class UsersController < SessionsController
   end
 
   def change_password
-    if (alert = current_password_alert)
+    if (alert = change_password_alert)
       flash.now[:alert] = alert
-      render 'settings/admin', layout: 'setting' and return
-    end
-
-    if user_params[:password].blank?
-      flash.now[:alert] = 'New password cannot be blank.'
-      render 'settings/admin', layout: 'setting' and return
-    end
-
-    new_password = user_params[:password]
-    if new_password != user_params[:password_confirmation]
-      flash.now[:alert] = 'Your password and password confirmation do not match.'
-      render 'settings/admin', layout: 'setting' and return
-    end
-
+      render_password_settings
     # The plaintext is checked (presence, strength); only the password columns are
     # then written, so an unrelated legacy-invalid field cannot block the change.
-    if @user.plaintext_password_problems(new_password).any?
-      render 'settings/admin', layout: 'setting' and return
+    elsif @user.plaintext_password_problems(user_params[:password]).any?
+      render_password_settings
+    else
+      store_changed_password(user_params[:password])
     end
-
-    begin
-      # A timed (brute-force) lockout is cleared: the owner just proved the password.
-      @user.store_new_password!(new_password, clear_timed_lock: true)
-    rescue ActiveRecord::StaleObjectError
-      # An expected race, not an error: the credentials were revoked while this request
-      # ran (or the account was soft-deleted or removed). This session is dead, never
-      # re-synced.
-      sign_out
-      redirect_to login_path, alert: 'Your session has ended. Please sign in again.' and return
-    rescue ActiveRecord::ActiveRecordError => e
-      report_unexpected(e, source: 'users#update_password')
-      flash.now[:alert] = I18n.t('errors.users.password_not_saved', reference: error_reference)
-      render 'settings/admin', layout: 'setting' and return
-    end
-
-    session[:token_version] = @user.token_version if session[:user_id] # this session stays signed in
-    MsrMailer.confirm_password_change(@user).deliver_now
-    redirect_to settings_admin_path,
-                notice:
-                  'Password changed successfully, an email will be sent to confirm.'
   end
 
   # POST only, and it needs the account's current password (the same check as
@@ -318,46 +286,16 @@ class UsersController < SessionsController
 
   def reset_password_confirmation
     user = User.find_by_token_for(:password_reset, params[:token])
-    if user.nil?
-      flash[:alert] = LINK_EXPIRED_ALERT
-    elsif params[:password] != params[:password_confirmation]
-      flash[:alert] = 'Your password and password confirmation do not match.'
+    if (alert = reset_password_alert(user))
+      flash[:alert] = alert
+      redirect_to root_path
     elsif (problems = user.plaintext_password_problems(params[:password])).any?
       # the strength rules see the plain password
       flash[:alert] = "Your password was not changed: #{problems.to_sentence}."
-      return redirect_to reset_password_form_users_path(token: params[:token])
+      redirect_to reset_password_form_users_path(token: params[:token])
     else
-      stored =
-        begin
-          user.store_new_password!(params[:password], clear_timed_lock: true)
-          true
-        rescue ActiveRecord::StaleObjectError
-          # A concurrent bump (an expected race, not an error). Re-check UNCACHED: the
-          # request's query cache may hold the first lookup. A link that no longer resolves
-          # can mean a changed password, a soft-deleted account or an expiry, which must
-          # not be told apart to someone holding no valid token: one neutral message.
-          if User.uncached { User.find_by_token_for(:password_reset, params[:token]) }.nil?
-            flash[:alert] = RESET_LINK_INVALID_ALERT
-            return redirect_to login_path
-          end
-
-          flash[:alert] = 'Your account changed while resetting the password. Please use the link again.'
-          return redirect_to reset_password_form_users_path(token: params[:token])
-        rescue ActiveRecord::ActiveRecordError => e
-          report_unexpected(e, source: 'users#reset_password')
-          false
-        end
-      if stored
-        session[:token_version] = user.token_version if session[:user_id] == user.id
-        MsrMailer.confirm_password_change(user).deliver_now
-        flash[
-          :notice
-        ] = 'Your password has been updated, an email will be sent to confirm!'
-      else
-        flash[:alert] = I18n.t('errors.users.password_not_saved', reference: error_reference)
-      end
+      store_reset_password(user)
     end
-    redirect_to root_path
   end
 
   def change_programs
@@ -578,6 +516,82 @@ class UsersController < SessionsController
   # The current password the action was given (change_password nests it).
   def submitted_current_password
     (action_name == 'change_password' ? params.dig(:user, :old_password) : params[:current_password]).to_s
+  end
+
+  def render_password_settings
+    render 'settings/admin', layout: 'setting'
+  end
+
+  # The first refusal of a password change, in order: the current password (which
+  # current_password_alert verifies), a blank new one, a confirmation mismatch.
+  def change_password_alert
+    current_password_alert || new_password_alert
+  end
+
+  def new_password_alert
+    return 'New password cannot be blank.' if user_params[:password].blank?
+
+    'Your password and password confirmation do not match.' if user_params[:password] != user_params[:password_confirmation]
+  end
+
+  def store_changed_password(new_password)
+    # A timed (brute-force) lockout is cleared: the owner just proved the password.
+    @user.store_new_password!(new_password, clear_timed_lock: true)
+  rescue ActiveRecord::StaleObjectError
+    # An expected race, not an error: the credentials were revoked while this request
+    # ran (or the account was soft-deleted or removed). This session is dead, never
+    # re-synced.
+    sign_out
+    redirect_to login_path, alert: 'Your session has ended. Please sign in again.'
+  rescue ActiveRecord::ActiveRecordError => e
+    report_unexpected(e, source: 'users#update_password')
+    flash.now[:alert] = I18n.t('errors.users.password_not_saved', reference: error_reference)
+    render_password_settings
+  else
+    session[:token_version] = @user.token_version if session[:user_id] # this session stays signed in
+    MsrMailer.confirm_password_change(@user).deliver_now
+    redirect_to settings_admin_path,
+                notice:
+                  'Password changed successfully, an email will be sent to confirm.'
+  end
+
+  # The refusal of a password reset before its strength check: a link that does not
+  # resolve, then a confirmation mismatch.
+  def reset_password_alert(user)
+    return LINK_EXPIRED_ALERT if user.nil?
+
+    'Your password and password confirmation do not match.' if params[:password] != params[:password_confirmation]
+  end
+
+  def store_reset_password(user)
+    user.store_new_password!(params[:password], clear_timed_lock: true)
+  rescue ActiveRecord::StaleObjectError
+    redirect_after_reset_race
+  rescue ActiveRecord::ActiveRecordError => e
+    report_unexpected(e, source: 'users#reset_password')
+    flash[:alert] = I18n.t('errors.users.password_not_saved', reference: error_reference)
+    redirect_to root_path
+  else
+    session[:token_version] = user.token_version if session[:user_id] == user.id
+    MsrMailer.confirm_password_change(user).deliver_now
+    flash[
+      :notice
+    ] = 'Your password has been updated, an email will be sent to confirm!'
+    redirect_to root_path
+  end
+
+  # A concurrent bump (an expected race, not an error). Re-check UNCACHED: the
+  # request's query cache may hold the first lookup. A link that no longer resolves
+  # can mean a changed password, a soft-deleted account or an expiry, which must
+  # not be told apart to someone holding no valid token: one neutral message.
+  def redirect_after_reset_race
+    if User.uncached { User.find_by_token_for(:password_reset, params[:token]) }.nil?
+      flash[:alert] = RESET_LINK_INVALID_ALERT
+      redirect_to login_path
+    else
+      flash[:alert] = 'Your account changed while resetting the password. Please use the link again.'
+      redirect_to reset_password_form_users_path(token: params[:token])
+    end
   end
 
   # nil when the submitted current password is right (which clears the attempt

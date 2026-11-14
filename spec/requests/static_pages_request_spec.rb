@@ -465,6 +465,70 @@ RSpec.describe "Static pages", type: :request do
       expect(controller.instance_variable_get(:@user_skills)).to eq([[session.training.name_en, session.level]])
     end
 
+    it "a guest gets empty member sections and neither program card" do
+      get root_path
+      %i[@user_skills @user_tracks @volunteer_program_shadowing_scheduled @volunteer_program_your_tasks].each do |ivar|
+        expect(controller.instance_variable_get(ivar)).to eq([])
+      end
+      expect(controller.instance_variable_get(:@hours_calendars)).not_to be_nil
+      expect(response.body).not_to include(I18n.t("home.volunteer_program.no_shifts_scheduled"))
+      expect(response.body).not_to include(I18n.t("home.development_program.no_devs"))
+      expect(response.body).not_to include('id="home-skills"')
+    end
+
+    it "a signed-in member outside both programs sees the skills card but neither program card" do
+      sign_in_as(:regular)
+      get root_path
+      expect(response.body).to include('id="home-skills"', I18n.t("home.skills.no_skills"))
+      expect(response.body).not_to include(I18n.t("home.volunteer_program.no_shifts_scheduled"))
+      expect(response.body).not_to include(I18n.t("home.development_program.no_devs"))
+    end
+
+    it "lists at most five certifications as skills" do
+      user = sign_in_as(:regular)
+      6.times { create(:certification, user: user) }
+      get root_path
+      expect(controller.instance_variable_get(:@user_skills).size).to eq(5)
+      expect(response.body).not_to include(I18n.t("home.skills.no_skills"))
+    end
+
+    it "a volunteer with no shifts or tasks sees the empty volunteer card" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      get root_path
+      expect(response.body).to include(I18n.t("home.volunteer_program.no_shifts_scheduled"),
+                                        I18n.t("home.volunteer_program.no_tasks_assigned"))
+      expect(response.body).not_to include(I18n.t("home.development_program.no_devs"))
+    end
+
+    it "a development-program member with no tracks sees the empty development card" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::DEV_PROGRAM)
+      get root_path
+      expect(response.body).to include(I18n.t("home.development_program.no_devs"))
+      expect(response.body).not_to include(I18n.t("home.volunteer_program.no_shifts_scheduled"))
+    end
+
+    it "shows each training's track progress against every module of that training" do
+      # The completed count reads the stored status label, while a track's status reads back as the
+      # enum key, so the count shows 0 even for a completed track.
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::DEV_PROGRAM)
+      training = create(:training, name_en: "Laser Cutting Basics")
+      modules = create_list(:learning_module, 3, training: training)
+      create(:learning_module_track, :completed, user: user, learning_module: modules[0])
+      create(:learning_module_track, user: user, learning_module: modules[1])
+      other = create(:learning_module, training: create(:training, name_en: "Soldering Basics"))
+      create(:learning_module_track, user: user, learning_module: other)
+
+      get root_path
+
+      expect(controller.instance_variable_get(:@user_tracks))
+        .to contain_exactly(["Laser Cutting Basics", "0/3"], ["Soldering Basics", "0/1"])
+      expect(response.body).to include("Laser Cutting Basics", "0/3")
+      expect(response.body).not_to include(I18n.t("home.development_program.no_devs"))
+    end
+
     it "locale param switches the page language and sticks in the session" do
       get root_path, params: { locale: "fr" }
       expect(response).to have_http_status(:ok)
