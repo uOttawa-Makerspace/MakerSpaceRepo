@@ -46,6 +46,8 @@ RSpec.describe "Volunteer task pages", type: :system, skip_bullet: true do
       %w[spaceFilter categoryFilter certFilter].each do |id|
         expect(page).to have_css("##{id} ~ .ts-wrapper", count: 1, visible: :all)
       end
+      # the picker of a restored page can be reached with Tab, as on a fresh visit
+      expect(page.evaluate_script("document.querySelector('#spaceFilter + .ts-wrapper .ts-control').tabIndex")).to eq(0)
       find("#categoryFilter + .ts-wrapper .ts-control").click
       find(".ts-dropdown .option", text: I18n.t("volunteer_area.tasks.categories.workshops")).click
       # both tasks are events, so a workshop filter hides them

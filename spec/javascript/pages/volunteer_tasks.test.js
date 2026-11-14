@@ -9,6 +9,9 @@ vi.mock("tom-select", () => ({
       this.config = config;
       this.value = el.dataset.initial ?? (config.maxItems === null ? [] : "");
       this.handlers = {};
+      // the real TomSelect gives its control the select's tabindex, then -1 to the select
+      this.tabIndex = el.tabIndex || 0;
+      el.tabIndex = -1;
       el.tomselect = this;
       selects.push(this);
     }
@@ -130,6 +133,33 @@ describe("task form", () => {
     expect($("copy")).toBeNull();
     expect($("next")).not.toBeNull();
     expect($("user_id").className).toBe("form-select");
+  });
+
+  it("lets the new picker of a copied select be reached with Tab", () => {
+    load(
+      `<select id="user_id" class="tomselected ts-hidden-accessible" tabindex="-1" data-view-tabindex=""></select><div class="ts-wrapper"></div>`,
+    );
+    expect(byId("user_id").tabIndex).toBe(0);
+  });
+
+  it("lets the new picker of a copied select without a kept tabindex be reached with Tab", () => {
+    load(
+      `<select id="user_id" class="tomselected ts-hidden-accessible" tabindex="-1"></select><div class="ts-wrapper"></div>`,
+    );
+    expect(byId("user_id").tabIndex).toBe(0);
+  });
+
+  it("gives the new picker of a copied select the tabindex the view set", () => {
+    load(
+      `<select id="user_id" class="tomselected ts-hidden-accessible" tabindex="-1" data-view-tabindex="3"></select><div class="ts-wrapper"></div>`,
+    );
+    expect(byId("user_id").tabIndex).toBe(3);
+  });
+
+  it("keeps the tabindex the view set on a select it decorates", () => {
+    load(`<select id="user_id" tabindex="3"></select>`);
+    expect($("user_id").dataset.viewTabindex).toBe("3");
+    expect(byId("user_id").tabIndex).toBe(3);
   });
 
   it("keeps the element after a copied select when it is not a picker", () => {
