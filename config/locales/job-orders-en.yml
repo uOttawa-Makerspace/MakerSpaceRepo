@@ -35,6 +35,69 @@ en:
     pricing:
       title: "Rates & Fees"
       text: "Internal and external rates vary by service. Materials sold separately. One-hour consultations are free."
+    # The pages a customer opens from the emailed links: pay, quote approval and its confirmation
+    customer_pages:
+      thank_you_for_ordering: "Thank You for ordering a Job Order!"
+      pay_intro: "You can now pay for your order! Please make sure you verify the pricing before you proceed with the payment. Once the payment has been completed, it is not be possible to cancel it."
+      no_payment_data_saved_html: "<b>We do not save any payment information</b>. All data is saved on our Payment Processor's servers."
+      # %{amount} = the order total, as money
+      total_quote: "Total Quote: %{amount}"
+      proceed_to_payment: "Proceed to the payment page"
+      approval_intro: "You can Accept or Deny your quote on this page! Please make sure you verify your quote and price before you accept the quote. Once you accept the quote, it might not be possible to cancel it."
+      approve_quote: "Approve the Quote"
+      deny_quote: "Deny the Quote"
+      thank_you_for_answering: "Thank You for Approving/Denying the Job Order!"
+    # Contact lines at the bottom of the customer pages; %{email} = a mail link
+    contact:
+      title: "Having trouble or have any questions? Contact Us!"
+      general_html: "%{email} (For General Questions and Administrative issues)"
+      technical_html: "%{email} (Website Technical Issues)"
+    # The printable invoice
+    invoice_page:
+      title: "Job Order Invoice"
+      number: "Invoice #%{id}"
+      address:
+        name: "University Of Ottawa Richard L'Abbé Makerspace"
+        room: "STM 107"
+        street: "150 Louis Pasteur"
+        city: "Ottawa, ON K1N 6N5"
+      client: "Client : %{name}"
+      date: "Date : %{date}"
+      payment_method: "Payment Method"
+      # %{link} = link to the wiki page on paying for an order
+      payment_details_html: "Please see %{link} for payment details"
+      item: "Item"
+      price: "Price"
+      # %{task} = the task's title
+      base_fee: "%{task} - Base Fee"
+      # Shown when the task has no service of its own
+      service: "Service"
+      # Shown when the service has no unit of its own
+      unit: "unit"
+      # %{name} = the option's name
+      option: "%{name} (Option)"
+      # Shown when a line item has no description
+      line_item: "Line Item"
+      # %{amount} = an amount of money
+      amount: "CAD %{amount}"
+      # %{amount} = the total, from amount
+      total: "Total: %{amount}"
+      print: "Print this page"
+    # The customer's order list
+    list:
+      chats: "Chats"
+      user: "User"
+      id: "ID"
+      submitted: "Submitted"
+      type: "Type"
+      status: "Status"
+      view: "View"
+      # After the number of unread chat messages, for screen readers
+      unread_messages: "unread messages"
+    # Links of the job order menu shown to staff and admins
+    navigation:
+      all_job_orders_staff_only: "All Job Orders (Staff Only)"
+      settings_admin_only: "Settings (Admin Only)"
   job_order_mailer:
     quote_notes: "Note from the staff:"
     hello: "Hello,"
@@ -150,3 +213,7 @@ en:
       body: "You have received a new message regarding your Job Order #%{id} from %{sender}."
       message: "Message:"
       button: "View Job Order"
+  time:
+    formats:
+      # The date on the printable invoice
+      job_order_invoice: "%Y/%m/%d"
