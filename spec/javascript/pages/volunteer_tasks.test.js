@@ -116,17 +116,30 @@ describe("task form", () => {
     expect($("task-hider").innerHTML).toBe("Hide Completed Task");
   });
 
-  it("binds the page controls again when the same page loads a second time", () => {
+  it("binds each page control once when the same page loads a second time", () => {
     load(`<input id="deleteimages" value="">
       <div><a class="image-remove" id="11"></a></div>
       <button id="task-hider">Hide Completed Task</button>
       <table><tr completed="completed" id="done"></tr></table>`);
     document.dispatchEvent(new Event("turbo:load"));
     $("task-hider").click();
-    expect($("done").classList.contains("d-none")).toBe(false);
-    expect($("task-hider").innerHTML).toBe("Hide Completed Task");
+    expect($("done").classList.contains("d-none")).toBe(true);
+    expect($("task-hider").innerHTML).toBe("Show Completed Task");
     $("11").click();
-    expect($("deleteimages").value).toBe("11,11,");
+    expect($("deleteimages").value).toBe("11,");
+  });
+
+  it("binds the copies of the controls on a page restored from the cache", () => {
+    load(`<input id="deleteimages" value="">
+      <div><a class="image-remove" id="11"></a></div>
+      <button id="task-hider">Hide Completed Task</button>
+      <table><tr completed="completed" id="done"></tr></table>`);
+    document.body.replaceWith(document.body.cloneNode(true));
+    document.dispatchEvent(new Event("turbo:load"));
+    $("task-hider").click();
+    expect($("done").classList.contains("d-none")).toBe(true);
+    $("11").click();
+    expect($("deleteimages").value).toBe("11,");
   });
 
   it("does nothing on a page without the task controls", () => {
@@ -300,10 +313,13 @@ describe("task index filters", () => {
     expect(visible()).toEqual(["paint"]);
   });
 
-  it("adds another change handler each time the same decorated page loads", () => {
+  it("adds no further handlers when the same decorated page loads again", () => {
     document.dispatchEvent(new Event("turbo:load"));
-    expect(byId("spaceFilter").handlers.change).toHaveLength(2);
-    expect(byId("categoryFilter").handlers.change).toHaveLength(2);
-    expect(byId("certFilter").handlers.change).toHaveLength(2);
+    expect(byId("spaceFilter").handlers.change).toHaveLength(1);
+    expect(byId("categoryFilter").handlers.change).toHaveLength(1);
+    expect(byId("certFilter").handlers.change).toHaveLength(1);
+    const searches = vi.spyOn($("taskSearchInput"), "addEventListener");
+    document.dispatchEvent(new Event("turbo:load"));
+    expect(searches).not.toHaveBeenCalled();
   });
 });
