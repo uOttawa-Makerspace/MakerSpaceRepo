@@ -16,11 +16,11 @@ function restorePreviousAnchor() {
 }
 
 function bindAdminSubTabs() {
+  const adminTabPane = document.getElementById("adminTabPane");
+  if (!adminTabPane) return;
+
   // Get all admin sub tabs
-  const adminTablist = document
-    .getElementById("adminTabPane")
-    .querySelectorAll(".nav-link");
-  adminTablist.forEach((el) => {
+  adminTabPane.querySelectorAll(".nav-link").forEach((el) => {
     // on click, change hash
     el.addEventListener("click", (ev) => {
       window.location.hash = el.getAttribute("href");
@@ -73,14 +73,12 @@ function bindShowHideControls() {
         this.getAttribute("data-show") || this.getAttribute("data-hide");
       const show = this.getAttribute("data-show") != null;
       const hide = this.getAttribute("data-hide") != null;
-      const checked = this.checked;
+      if (!this.checked || !(show || hide)) return;
 
-      if (checked && (show || hide)) {
-        document.querySelector(selector).style.display = show
-          ? "block"
-          : "none";
-        document.querySelector(selector).disabled = !show;
-      }
+      const target = document.querySelector(selector);
+      if (!target) return;
+      target.style.display = show ? "block" : "none";
+      target.disabled = !show;
     });
 
     if (elements[i].checked) {
@@ -124,19 +122,18 @@ function initProgramSelect() {
 }
 
 function bindRoleButtons() {
-  const staffRoleButtons = document.querySelectorAll(".role-button");
   const staffSpaceChanger = document.getElementById("staff-space-changer");
-  if (staffRoleButtons) {
-    staffRoleButtons.forEach((button) => {
-      button.addEventListener("click", (e) => {
-        if (e.target.value === "regular_user") {
-          staffSpaceChanger.style.display = "none";
-        } else {
-          staffSpaceChanger.style.display = "block";
-        }
-      });
+  if (!staffSpaceChanger) return;
+
+  document.querySelectorAll(".role-button").forEach((button) => {
+    button.addEventListener("click", (e) => {
+      if (e.target.value === "regular_user") {
+        staffSpaceChanger.style.display = "none";
+      } else {
+        staffSpaceChanger.style.display = "block";
+      }
     });
-  }
+  });
 }
 
 function bindKeyCertUploads() {

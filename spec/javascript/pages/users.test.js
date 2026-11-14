@@ -143,6 +143,12 @@ describe("profile tabs", () => {
     expect(window.location.hash).toBe("#admin-roles");
   });
 
+  it("sets up the rest of the page when the admin tab has no admin pane", () => {
+    load(`<ul id="myTab"><a class="nav-link" id="admin-tab" href="#admin"></a></ul>
+      ${BASE}<select id="user_program"></select>`);
+    expect(selects.map((s) => s.el.id)).toEqual(["user_program"]);
+  });
+
   it("opens the outer admin tab itself for its own address", () => {
     const clicked = [];
     document.addEventListener("click", (e) => clicked.push(e.target.id), {
@@ -197,6 +203,18 @@ describe("show and hide controls", () => {
     );
     expect($("extra").style.display).toBe("none");
     expect($("extra").disabled).toBe(true);
+  });
+
+  it("reports no error for a control whose target is not on the page", () => {
+    const errors = [];
+    const record = (e) => errors.push(e.error ?? e);
+    window.addEventListener("error", record);
+    load(
+      `${BASE}<input type="radio" id="r" data-hide="#gone" checked><input type="radio" id="s" data-hide="#extra" checked><input id="extra">`,
+    );
+    window.removeEventListener("error", record);
+    expect(errors).toEqual([]);
+    expect($("extra").style.display).toBe("none");
   });
 
   it("does nothing while unchecked", () => {
@@ -279,6 +297,18 @@ describe("role buttons", () => {
     expect($("staff-space-changer").style.display).toBe("none");
     $("b").click();
     expect($("staff-space-changer").style.display).toBe("block");
+  });
+});
+
+describe("role buttons without the space changer", () => {
+  it("reports no error when a role button is clicked", () => {
+    const errors = [];
+    const record = (e) => errors.push(e.error ?? e);
+    window.addEventListener("error", record);
+    load(`<button class="role-button" id="a" value="staff"></button>`);
+    $("a").click();
+    window.removeEventListener("error", record);
+    expect(errors).toEqual([]);
   });
 });
 
