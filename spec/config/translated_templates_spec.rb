@@ -2,201 +2,45 @@
 
 require "rails_helper"
 
-# Templates whose wording lives in config/locales. A literal English sentence, label or
-# attribute added to one of them fails here; add a locale key (English and French) instead.
-# Add a template to the list when it is converted.
+# Every template, mails included, takes its wording from config/locales. A literal English
+# sentence, label or attribute in a template fails here; add a locale key (English and French)
+# instead. Templates that still have literal text are listed in untranslated_templates.txt, and
+# that list only shrinks: a listed template that has become clean must be taken off it.
 RSpec.describe "Translated templates" do
-  TRANSLATED_TEMPLATES = %w[
-    app/views/static_pages/about.html.erb
-    app/views/static_pages/contact.html.erb
-    app/views/static_pages/hours.html.erb
-    app/views/static_pages/_opening_hours.html.erb
-    app/views/licenses/_license.html.erb
-    app/views/licenses/common_creative_attribution.html.erb
-    app/views/licenses/common_creative_attribution_share_alike.html.erb
-    app/views/licenses/common_creative_attribution_no_derivatives.html.erb
-    app/views/licenses/common_creative_attribution_non_commercial.html.erb
-    app/views/licenses/attribution_non_commercial_share_alike.html.erb
-    app/views/licenses/attribution_non_commercial_no_derivatives.html.erb
-    app/views/layouts/license.html.erb
-    app/views/layouts/getting_started.html.erb
-    app/views/getting_started/setting_up_account.html.erb
-    app/views/getting_started/creating_repository.html.erb
-    app/views/users/confirm.html.erb
-    app/views/users/unlock_account.html.erb
-    app/views/users/resend_confirmation.html.erb
-    app/views/search/explore.html.erb
-    app/views/search/category.html.erb
-    app/views/search/equipment.html.erb
-    app/views/repositories/_repository_card.html.erb
-    app/views/repositories/show.html.erb
-    app/views/users/_repositories.html.erb
-    app/views/staff_dashboard/index.html.erb
-    app/views/staff_dashboard/search.html.erb
-    app/views/staff_dashboard/_search.html.erb
-    app/views/staff_dashboard/_signed_in_table.html.erb
-    app/views/staff_dashboard/_signed_out_table.html.erb
-    app/views/staff_dashboard/_space_activity_row.html.erb
-    app/views/staff_dashboard/_newly_signed_up.html.erb
-    app/views/staff_dashboard/_max_capacity_warning.html.erb
-    app/views/staff_dashboard/_signin_modal.html.erb
-    app/views/staff_dashboard/_flag.html.erb
-    app/views/staff_dashboard/_flag_list.html.erb
-    app/views/staff_dashboard/_no_assigned_spaces.html.erb
-    app/views/staff_dashboard/no_space.html.erb
-    app/views/staff_dashboard/_table_broadcast.turbo_stream.erb
-    app/views/learning_area/index.html.erb
-    app/views/learning_area/show.html.erb
-    app/views/learning_area/new.html.erb
-    app/views/learning_area/edit.html.erb
-    app/views/learning_area/subskill.html.erb
-    app/views/learning_area/_form.html.erb
-    app/views/learning_area/_content.html.erb
-    app/views/learning_area/_learning_module_card.html.erb
-    app/views/learning_area/_scorm.html.erb
-    app/views/learning_area/_scorm_problem.html.erb
-    app/views/learning_module_track/index.html.erb
-    app/views/lockers/index.html.erb
-    app/views/lockers/show.html.erb
-    app/views/lockers/_locker_bulk_edit_modal.html.erb
-    app/views/lockers/_lockers_inventory_table.html.erb
-    app/views/lockers/_locker_size_control.html.erb
-    app/views/lockers/_new_locker_modal.html.erb
-    app/views/locker_rentals/admin.html.erb
-    app/views/locker_rentals/assign_locker.html.erb
-    app/views/locker_rentals/_assign_locker_form.html.erb
-    app/views/locker_rentals/expired.html.erb
-    app/views/locker_rentals/index.html.erb
-    app/views/locker_rentals/new.html.erb
-    app/views/locker_rentals/show.html.erb
-    app/views/locker_rentals/_rental_data_table.html.erb
-    app/views/locker_rentals/_staff_actions.html.erb
-    app/views/users/tabs/_lockers.html.erb
-    app/views/layouts/_volunteer_header.html.erb
-    app/views/volunteers/index.html.erb
-    app/views/volunteers/calendar.html.erb
-    app/views/volunteers/new_event.html.erb
-    app/views/volunteers/shadowing_shifts.html.erb
-    app/views/volunteers/emails.html.erb
-    app/views/volunteers/volunteer_list.html.erb
-    app/views/volunteers/my_stats.html.erb
-    app/views/volunteer_tasks/index.html.erb
-    app/views/volunteer_tasks/_task_card_grid.html.erb
-    app/views/volunteer_tasks/show.html.erb
-    app/views/volunteer_tasks/new.html.erb
-    app/views/volunteer_tasks/edit.html.erb
-    app/views/volunteer_tasks/my_tasks.html.erb
-    app/views/volunteer_task_requests/index.html.erb
-    app/views/volunteer_task_requests/_pending_requests.html.erb
-    app/views/volunteer_task_requests/_processed_requests.html.erb
-    app/views/volunteer_task_joins/_new.html.erb
-    app/views/volunteer_task_joins/_remove.html.erb
-    app/views/volunteer_hours/index.html.erb
-    app/views/volunteer_hours/new.html.erb
-    app/views/volunteer_hours/_new.html.erb
-    app/views/volunteer_hours/edit.html.erb
-    app/views/volunteer_hours/volunteer_hour_requests.html.erb
-    app/views/volunteer_hours/volunteer_hour_per_user.html.erb
-    app/views/admin/add_new_staff/index.html.erb
-    app/views/admin/announcements/edit.html.erb
-    app/views/admin/announcements/index.html.erb
-    app/views/admin/announcements/new.html.erb
-    app/views/admin/announcements/show.html.erb
-    app/views/admin/cc_moneys/index.html.erb
-    app/views/admin/contact_infos/edit.html.erb
-    app/views/admin/contact_infos/index.html.erb
-    app/views/admin/contact_infos/new.html.erb
-    app/views/admin/contact_infos/_opening_hour_form.html.erb
-    app/views/admin/deleted_repositories/index.html.erb
-    app/views/admin/design_days/_design_day_schedule_form.html.erb
-    app/views/admin/design_days/show.html.erb
-    app/views/admin/drop_off_locations/edit.html.erb
-    app/views/admin/drop_off_locations/index.html.erb
-    app/views/admin/drop_off_locations/new.html.erb
-    app/views/admin/job_options/edit.html.erb
-    app/views/admin/job_options/_form.html.erb
-    app/views/admin/job_options/new.html.erb
-    app/views/admin/job_service_groups/edit.html.erb
-    app/views/admin/job_service_groups/_form.html.erb
-    app/views/admin/job_service_groups/new.html.erb
-    app/views/admin/job_services/edit.html.erb
-    app/views/admin/job_services/_form.html.erb
-    app/views/admin/job_services/new.html.erb
-    app/views/admin/job_types/edit.html.erb
-    app/views/admin/job_types/_form.html.erb
-    app/views/admin/job_types/new.html.erb
-    app/views/admin/keys/assign.html.erb
-    app/views/admin/keys/edit.html.erb
-    app/views/admin/keys/history.html.erb
-    app/views/admin/keys/index.html.erb
-    app/views/admin/keys/_keys_requests_table.html.erb
-    app/views/admin/keys/_keys_table.html.erb
-    app/views/admin/keys/new.html.erb
-    app/views/admin/keys/requests.html.erb
-    app/views/admin/keys/revoke.html.erb
-    app/views/admin/key_transactions/edit.html.erb
-    app/views/admin/key_transactions/index.html.erb
-    app/views/admin/key_transactions/_key_transaction_table.html.erb
-    app/views/admin/key_transactions/show.html.erb
-    app/views/admin/memberships/index.html.erb
-    app/views/admin/settings/index.html.erb
-    app/views/admin/teams/edit.html.erb
-    app/views/admin/teams/index.html.erb
-    app/views/admin/teams/new.html.erb
-    app/views/admin/teams/show.html.erb
-    app/views/admin/time_periods/edit.html.erb
-    app/views/admin/time_periods/_form.html.erb
-    app/views/admin/time_periods/index.html.erb
-    app/views/admin/time_periods/new.html.erb
-    app/views/admin/index.html.erb
-    app/views/admin/users/index.html.erb
-    app/views/admin/users/search.html.erb
-    app/views/admin/users/show.html.erb
-    app/views/admin/users/edit.html.erb
-    app/views/admin/users/manage_roles.erb
-    app/views/admin/users/_user_table.html.erb
-    app/views/admin/spaces/index.html.erb
-    app/views/admin/spaces/edit.html.erb
-    app/views/admin/trainings/index.html.erb
-    app/views/admin/trainings/new.html.erb
-    app/views/admin/trainings/edit.html.erb
-    app/views/admin/trainings/_form.html.erb
-    app/views/admin/training_sessions/index.html.erb
-    app/views/admin/training_sessions/_training_session_table.html.erb
-    app/views/admin/certifications/show.html.erb
-    app/views/admin/certifications/demotions.html.erb
-    app/views/admin/certifications/_table_demotions.html.erb
-    app/views/admin/certifications/_certification_modal.html.erb
-    app/views/admin/skills/index.html.erb
-    app/views/admin/skills/new.html.erb
-    app/views/admin/skills/edit.html.erb
-    app/views/admin/uni_programs/index.html.erb
-    app/views/exams/index.html.erb
-    app/views/exams/show.html.erb
-    app/views/exams/_question_with_response.html.erb
-    app/views/exams/_question_without_response.html.erb
-    app/views/questions/index.html.erb
-    app/views/questions/show.html.erb
-    app/views/questions/new.html.erb
-    app/views/questions/edit.html.erb
-    app/views/questions/_question_form.html.erb
-    app/views/questions/_answers.html.erb
-    app/views/questions/_question_images.html.erb
-    app/views/locker_mailer/locker_assigned.html.erb
-    app/views/locker_mailer/locker_cancelled.html.erb
-    app/views/locker_mailer/locker_checkout.html.erb
-    app/views/locker_mailer/locker_moved.html.erb
-    app/views/locker_mailer/locker_requested.html.erb
-    app/views/locker_mailer/rental_expired.html.erb
-  ].freeze
+  baseline_file = Rails.root.join("spec/config/untranslated_templates.txt")
+  baseline = baseline_file.readlines(chomp: true).grep_v(/\A\s*(#|\z)/)
 
-  TRANSLATED_TEMPLATES.each do |path|
+  # .js.erb responses are JavaScript, not markup; a template with a locale in its name
+  # (_waiver.fr.erb) is itself the translation.
+  templates = Rails.root.glob("app/{views,components}/**/*.erb").map { |path| path.relative_path_from(Rails.root).to_s }
+                   .reject { |path| path.end_with?(".js.erb") || path.match?(/\.(en|fr)\./) }.sort
+
+  def literals(path)
+    source = Rails.root.join(path).read
+    LiteralTextScan.visible_literals(source) + LiteralTextScan.literal_attributes(source) +
+      LiteralTextScan.literal_arguments(source)
+  end
+
+  (templates - baseline).each do |path|
     it "#{path} has no literal text" do
-      source = Rails.root.join(path).read
-
-      expect(LiteralTextScan.visible_literals(source)).to eq([])
-      expect(LiteralTextScan.literal_attributes(source)).to eq([])
-      expect(LiteralTextScan.literal_arguments(source)).to eq([])
+      expect(literals(path)).to eq([])
     end
+  end
+
+  (templates & baseline).each do |path|
+    it "#{path} still has literal text (take it off #{baseline_file.basename} once it is clean)" do
+      expect(literals(path)).not_to be_empty
+    end
+  end
+
+  it "lists only existing templates, once each, in order" do
+    expect(baseline - templates).to eq([])
+    expect(baseline).to eq(baseline.uniq.sort)
+  end
+
+  it "has a French twin for every English-only template" do
+    english = Rails.root.glob("app/views/**/*.en.*").map { |path| path.to_s.sub(".en.", ".fr.") }
+
+    expect(english.reject { |path| File.exist?(path) }).to eq([])
   end
 end
