@@ -199,9 +199,11 @@ describe("modal", () => {
     $("save_button").disabled = true;
     $("recurrence_options").style.display = "block";
     $("delete_forms").style.display = "flex";
+    $("calendar_dialog_alert").innerHTML = '<div class="alert">Failed</div>';
     fire($("unavailabilityModal"), "hidden.bs.modal");
 
     expect($("title").value).toBe("");
+    expect($("calendar_dialog_alert").innerHTML).toBe("");
     expect($("all_day_checkbox").checked).toBe(false);
     expect($("end_time_field").disabled).toBe(false);
     expect($("time_error").classList.contains("d-none")).toBe(true);

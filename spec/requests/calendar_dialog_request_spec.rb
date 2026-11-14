@@ -2,8 +2,9 @@
 
 require "rails_helper"
 
-# A calendar dialog is a Turbo form: it asks for a Turbo Stream and gets the flash plus the signal that closes the
-# dialog and fetches the calendar again. Any other request is redirected as before.
+# A calendar dialog is a Turbo form: it asks for a Turbo Stream. A save gets the flash plus the signal that closes the
+# dialog and fetches the calendar again; a refusal gets the alert inside the dialog, which stays open. Any other
+# request is redirected as before.
 RSpec.describe "Calendar dialog answers", type: :request do
   include SpacesSpecHelpers
 
@@ -32,6 +33,17 @@ RSpec.describe "Calendar dialog answers", type: :request do
     expect(response.body).to include('data-controller="calendar-saved"')
   end
 
+  # A refusal shows the alert inside the open dialog and leaves the dialog, the page flash and the calendar as they
+  # are, so what was typed stays.
+  def expect_refusal(text)
+    expect(response).to have_http_status(:ok)
+    expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+    alert = Nokogiri::HTML5.fragment(response.body).at_css('turbo-stream[action="update"][target="calendar_dialog_alert"]')
+    expect(alert.at_css("template .alert-danger").text).to include(text)
+    expect(response.body).not_to include('target="flash"')
+    expect(response.body).not_to include("calendar-saved")
+  end
+
   describe "admin event dialog" do
     it "answers a create with the stream" do
       expect { post admin_events_path, params: event_params, headers: turbo }.to change(Event, :count).by(1)
@@ -47,7 +59,7 @@ RSpec.describe "Calendar dialog answers", type: :request do
     it "answers a refused create with the alert in the stream and saves nothing" do
       expect { post admin_events_path, params: event_params.deep_merge(event: { space_id: nil }), headers: turbo }
         .not_to change(Event, :count)
-      expect_stream("Failed to create event")
+      expect_refusal("Failed to create event")
     end
 
     it "answers an update with the stream" do
@@ -59,7 +71,7 @@ RSpec.describe "Calendar dialog answers", type: :request do
 
     it "answers an update of one occurrence and of the series with the stream" do
       patch admin_event_path(series), params: event_params.merge(update_scope: "nonsense"), headers: turbo
-      expect_stream("Invalid update scope.")
+      expect_refusal("Invalid update scope.")
       patch admin_event_path(series), params: event_params.merge(update_scope: "this"), headers: turbo
       expect_stream("This event occurrence updated successfully.")
       patch admin_event_path(series), params: event_params.merge(update_scope: "all"), headers: turbo
@@ -68,7 +80,7 @@ RSpec.describe "Calendar dialog answers", type: :request do
 
     it "answers a request without usable times with the alert in the stream" do
       patch admin_event_path(series), params: { event: { title: "x", event_type: "meeting" } }, headers: turbo
-      expect_stream(I18n.t("admin_events.times_required"))
+      expect_refusal(I18n.t("admin_events.times_required"))
     end
 
     it "answers every delete scope with the stream" do
@@ -77,9 +89,9 @@ RSpec.describe "Calendar dialog answers", type: :request do
       delete delete_with_scope_admin_event_path(series), params: { scope: "following", start_date: "2027-04-19T14:00:00Z" }, headers: turbo
       expect_stream("This and following deleted.")
       delete delete_with_scope_admin_event_path(series), params: { scope: "single" }, headers: turbo
-      expect_stream(I18n.t("admin_events.start_date_required"))
+      expect_refusal(I18n.t("admin_events.start_date_required"))
       delete delete_with_scope_admin_event_path(series), params: { scope: "other" }, headers: turbo
-      expect_stream("Invalid delete scope: other")
+      expect_refusal("Invalid delete scope: other")
       delete delete_with_scope_admin_event_path(series), params: { scope: "all" }, headers: turbo
       expect_stream("Event series deleted.")
       expect(Event.exists?(series.id)).to be(false)
@@ -89,6 +101,21 @@ RSpec.describe "Calendar dialog answers", type: :request do
       event = create(:event, space: space, created_by: admin)
       delete delete_with_scope_admin_event_path(event), params: { scope: "all" }, headers: turbo
       expect_stream("Event deleted.")
+    end
+
+    it "answers a refused update with the alert in the dialog and keeps the event" do
+      event = create(:event, space: space, title: "Old", created_by: admin)
+      weekly = event_params.deep_merge(event: { recurrence_rule: "DTSTART:20270401T100000Z\nRRULE:FREQ=WEEKLY" })
+      patch admin_event_path(event), params: weekly, headers: turbo
+      expect_refusal("Failed to update event")
+      expect(event.reload.title).to eq("Old")
+    end
+
+    it "answers a refused publish with the alert in the dialog and keeps the draft" do
+      event = create(:event, space: space, created_by: admin, draft: true, event_type: "training", training_id: nil)
+      patch publish_admin_event_path(event), headers: turbo
+      expect_refusal("Failed to publish event")
+      expect(event.reload.draft).to be(true)
     end
 
     it "answers publish and unpublish with the stream" do
@@ -113,7 +140,7 @@ RSpec.describe "Calendar dialog answers", type: :request do
       hourly = "DTSTART:20270405T140000Z\nRRULE:FREQ=HOURLY;COUNT=3"
       series.update_column(:recurrence_rule, hourly)
       delete delete_with_scope_admin_event_path(series), params: { scope: "single", start_date: "2027-04-05T14:00:00Z" }, headers: turbo
-      expect_stream("Failed to update event")
+      expect_refusal("Failed to update event")
       expect(series.reload.recurrence_rule).to eq(hourly)
     end
 
@@ -145,6 +172,12 @@ RSpec.describe "Calendar dialog answers", type: :request do
       expect_stream("Unavailability deleted.")
     end
 
+    it "answers a refused create with the alert in the dialog and saves nothing" do
+      weekly = attrs.deep_merge(staff_unavailability: { recurrence_rule: "DTSTART:20270301T150000Z\nRRULE:FREQ=WEEKLY" })
+      expect { post staff_unavailabilities_path, params: weekly, headers: turbo }.not_to change(StaffUnavailability, :count)
+      expect_refusal("Failed to create unavailability")
+    end
+
     it "answers a scoped delete with the stream" do
       delete delete_with_scope_staff_unavailability_path(record), params: { scope: "all" }, headers: turbo
       expect_stream("Unavailability deleted.")
@@ -153,7 +186,7 @@ RSpec.describe "Calendar dialog answers", type: :request do
     it "refuses an update of a one-off entry whose times cannot be read, and keeps the record" do
       bad = { staff_unavailability: { title: "Moved", utc_start_time: "not a time", utc_end_time: "" } }
       patch staff_unavailability_path(record), params: bad, headers: turbo
-      expect_stream("Failed to update")
+      expect_refusal("Failed to update")
       expect(record.reload.title).to eq("Unavailable")
     end
 
@@ -165,14 +198,14 @@ RSpec.describe "Calendar dialog answers", type: :request do
 
       it "answers an invalid delete scope with the alert" do
         delete delete_with_scope_staff_unavailability_path(repeating), params: { scope: "other" }, headers: turbo
-        expect_stream("Invalid delete scope: other")
+        expect_refusal("Invalid delete scope: other")
       end
 
       it "refuses a delete of a series whose stored rule no longer validates, and keeps the rule" do
         hourly = "DTSTART:20270405T140000Z\nRRULE:FREQ=HOURLY;COUNT=3"
         repeating.update_column(:recurrence_rule, hourly)
         delete delete_with_scope_staff_unavailability_path(repeating), params: { scope: "single", start_date: "2027-04-05T14:00:00Z" }, headers: turbo
-        expect_stream("Failed to update")
+        expect_refusal("Failed to update")
         expect(repeating.reload.recurrence_rule).to eq(hourly)
       end
 

@@ -7,6 +7,7 @@ export const EVENT_MODAL_HTML = `
 <div id="content">
 <div class="modal fade" id="eventModal">
   <h5 id="eventModalLabel">Add Event</h5>
+  <div id="calendar_dialog_alert"></div>
   <form id="eventForm" action="/admin/events" method="post">
     <div id="staff_select_container" class="mb-3">
       <select name="staff_select[]" id="staff_select" multiple></select>
@@ -86,6 +87,7 @@ export const UNAVAILABILITY_MODAL_HTML = `
 <div class="modal fade" id="unavailabilityModal" data-controller="unavailability-form" data-unavailability-form-exit-message-value="Are you sure you want to exit? All changes will be lost."
   ${A("hide.bs.modal->unavailability-form#confirmExit hidden.bs.modal->unavailability-form#reset show.bs.modal->unavailability-form#proposeTimes")}>
   <h5 id="unavailabilityModalLabel" ${T("label")}>Add Unavailability</h5>
+  <div id="calendar_dialog_alert"></div>
   <form id="unavailForm" action="/staff/unavailabilities" method="post" ${T("form")} ${A("submit->unavailability-form#sendInstants")}>
     <input type="hidden" name="_method" value="patch" disabled ${T("methodField")}>
     <input type="checkbox" id="all_day_checkbox" ${T("allDay")} ${A("change->unavailability-form#allDayChanged")}>

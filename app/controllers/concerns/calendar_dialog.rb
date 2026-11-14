@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
-# How the calendar dialogs answer a save or a delete. A Turbo form gets a stream that shows the flash, closes the
-# dialog and refetches the calendar's events; any other request is redirected back to the page it came from, or to
-# the admin calendar (a controller may override `after_dialog_path`).
+# How the calendar dialogs answer a save or a delete. A Turbo form gets a stream: a save shows the flash, closes the
+# dialog and refetches the calendar's events; a refusal (an alert) shows the alert inside the open dialog and leaves
+# what was typed there. Any other request is redirected back to the page it came from, or to the admin calendar (a
+# controller may override `after_dialog_path`).
 module CalendarDialog
   extend ActiveSupport::Concern
 
@@ -14,7 +15,7 @@ module CalendarDialog
       format.html { redirect_to after_dialog_path, notice: notice, alert: alert }
       format.turbo_stream do
         { notice: notice, alert: alert }.compact.each { |kind, text| flash.now[kind] = text }
-        render "calendar_dialog/done"
+        render alert ? "calendar_dialog/refused" : "calendar_dialog/done"
       end
     end
   end

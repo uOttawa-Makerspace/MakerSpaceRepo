@@ -6,6 +6,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
             </div>
             <div class="modal-body">
+                <div id="calendar_dialog_alert"></div>
                 <%= form_with url: admin_events_path, scope: :event, local: false, html: { id: "eventForm", class: "useTurbo" } do |f| %>
                     <div id="staff_select_container" class="mb-3">
                         <label class="form-label" for="staff_select">Assigned Staff</label>

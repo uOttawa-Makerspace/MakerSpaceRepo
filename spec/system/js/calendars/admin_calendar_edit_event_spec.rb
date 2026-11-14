@@ -159,6 +159,24 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       expect(single.users).to contain_exactly(admin)
     end
 
+    it "keeps the dialog open with what was typed and the alert when the server refuses the update", js: true, skip_bullet: true do
+      open_admin_calendar
+      open_event("Team sync")
+      open_custom_values
+      fill_in "title", with: "Team retro"
+      select "Weekly", from: "recurrence_frequency"
+      uncheck "day_TU"
+      click_button "Update"
+
+      expect(page).to have_css("#eventModal.show #calendar_dialog_alert", text: "Failed to update event")
+      expect(page).to have_no_css("#flash", text: "Failed to update event")
+      expect(find("#title", visible: :all).value).to eq("Team retro")
+      expect(page).to have_select("recurrence_frequency", selected: "Weekly")
+      expect(page.evaluate_script("window.sameDocument")).to be(true)
+      expect(single.reload.title).to eq("Team sync")
+      expect(single.recurrence_rule).to be_nil
+    end
+
     it "moves the event when the times are changed", js: true, skip_bullet: true do
       open_admin_calendar
       open_event("Team sync")
