@@ -46,9 +46,7 @@ RSpec.describe "Repository sort order", type: :request do
     end
   }.each do |page, visit|
     describe page do
-      # The liked repositories page labels the chosen sort, so it is only visited with a known one.
       EXPECTED.each do |sort, order|
-        next if page == "liked repositories page" && (sort.is_a?(Array) || sort == "unknown")
 
         it "orders by #{sort.inspect}" do
           instance_exec(sort.nil? ? {} : { sort: sort }, &visit)
@@ -57,6 +55,30 @@ RSpec.describe "Repository sort order", type: :request do
           expect(titles_in_order(response.body)).to eq(order)
         end
       end
+    end
+  end
+
+  describe "liked repositories page sort label" do
+    def sort_label
+      Nokogiri::HTML(response.body).at_css("#sort-dropdown-menu").text.squish
+    end
+
+    before { post login_authentication_path, params: { username_email: owner.username, password: "asa32A353#" } }
+
+    { "most_likes" => "Sort by Most Likes", "unknown" => "Sort by Newest", ["most_likes"] => "Sort by Newest" }
+      .each do |sort, label|
+        it "names the sort applied for #{sort.inspect}" do
+          get likes_user_path(owner.username), params: { sort: sort }
+
+          expect(response).to have_http_status(:ok)
+          expect(sort_label).to eq(label)
+        end
+      end
+
+    it "names no sort when none is chosen" do
+      get likes_user_path(owner.username)
+
+      expect(sort_label).to eq("Sort by")
     end
   end
 end
