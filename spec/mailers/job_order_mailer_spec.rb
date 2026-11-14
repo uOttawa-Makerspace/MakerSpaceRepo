@@ -286,6 +286,22 @@ RSpec.describe JobOrderMailer, type: :mailer do
       expect(delivered.last.header["Importance"].to_s).to eq("high")
     end
 
+    it "writes nothing about the staff member to the log" do
+      log = StringIO.new
+      previous = described_class.logger
+      described_class.logger = ActiveSupport::Logger.new(log, level: :info)
+      begin
+        described_class.staff_assigned(order.id, staff.id).deliver_now
+      ensure
+        described_class.logger = previous
+      end
+
+      expect(delivered.last.to).to eq([staff.email])
+      expect(log.string).not_to include(staff.email)
+      expect(log.string).not_to include(staff.name)
+      expect(log.string).not_to include(staff.username)
+    end
+
     it "sends nothing for an unknown order" do
       described_class.staff_assigned(99_999_999, staff.id).deliver_now
       expect(delivered).to be_empty

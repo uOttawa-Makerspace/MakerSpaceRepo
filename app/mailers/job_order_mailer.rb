@@ -100,8 +100,6 @@ class JobOrderMailer < ApplicationMailer
     @staff_member = User.find(staff_member_id)
 
     staff_mail(@staff_member.email, id: @job_order.id)
-
-    logger.warn "YOU'VE GOT MAIL #{@staff_member.inspect}"
   end
 
   private
