@@ -18,7 +18,7 @@
               <label for="questions_trainings" id="questions_trainings_label"><%= t('questions.form.categories') %></label>
               <br />
               <div class="mt-3">
-                <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name', false), {}, { multiple: true, id: 'questions_trainings', class: 'form-control form-select', aria: { labelledby: 'questions_trainings_label' } } %>
+                <%= f.select :training_ids, options_from_collection_for_select(@categories, 'id', 'name', false), {}, { multiple: true, id: 'questions_trainings', class: 'form-control form-select', aria: { labelledby: 'questions_trainings_label' }, data: { clear_title: t('questions.form.clear_categories') } } %>
               </div>
               <br />
 

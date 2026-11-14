@@ -1,0 +1,37 @@
+# Textes des composants de page (DataTables, Tom Select, flatpickr), rendus sur l'élément <html> du gabarit
+# pour app/javascript/src/page_locale.js.
+fr:
+  widgets:
+    datatables:
+      aria:
+        orderable: " : activer pour trier"
+        orderableReverse: " : activer pour inverser le tri"
+        orderableRemove: " : activer pour retirer le tri"
+        paginate:
+          first: "Première"
+          last: "Dernière"
+          next: "Suivante"
+          previous: "Précédente"
+      emptyTable: "Aucune donnée dans le tableau"
+      entries:
+        _: "entrées"
+        "1": "entrée"
+      info: "Affichage de _START_ à _END_ sur _TOTAL_ _ENTRIES-TOTAL_"
+      infoEmpty: "Affichage de 0 à 0 sur 0 _ENTRIES-TOTAL_"
+      infoFiltered: "(filtrées parmi _MAX_ _ENTRIES-MAX_ au total)"
+      lengthLabels:
+        "-1": "Toutes"
+      lengthMenu: "_MENU_ _ENTRIES_ par page"
+      loadingRecords: "Chargement..."
+      search: "Rechercher :"
+      thousands: " "
+      zeroRecords: "Aucune entrée correspondante"
+    flatpickr:
+      # jetons de format flatpickr : F nom du mois, j jour, J jour avec son ordinal, Y année, H:i heure
+      date: "J F Y"
+      date_time: "J F Y à H:i"
+    tom_select:
+      add: "Ajouter"
+      clear_all: "Tout effacer"
+      no_results: "Aucun résultat"
+      remove: "Retirer"

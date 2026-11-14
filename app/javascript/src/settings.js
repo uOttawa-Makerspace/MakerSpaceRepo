@@ -1,4 +1,5 @@
 import TomSelect from "tom-select";
+import { tomSelectOptions } from "./page_locale.js";
 
 let programTomSelect = null;
 
@@ -12,11 +13,14 @@ function initializeProgramSelect() {
 
   const optgroups = Array.from(programSelect.querySelectorAll("optgroup"));
 
-  programTomSelect = new TomSelect(programSelect, {
-    maxItems: 1,
-    maxOptions: null,
-    searchOnKeyUp: true,
-  });
+  programTomSelect = new TomSelect(
+    programSelect,
+    tomSelectOptions(programSelect, {
+      maxItems: 1,
+      maxOptions: null,
+      searchOnKeyUp: true,
+    }),
+  );
 
   const facultySelect = document.getElementById("user_faculty");
   if (facultySelect) {

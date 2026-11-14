@@ -1,0 +1,37 @@
+# Texts of the page widgets (DataTables, Tom Select, flatpickr), rendered on the layout's <html> element
+# for app/javascript/src/page_locale.js. The English texts are the libraries' own.
+en:
+  widgets:
+    datatables:
+      aria:
+        orderable: ": Activate to sort"
+        orderableReverse: ": Activate to invert sorting"
+        orderableRemove: ": Activate to remove sorting"
+        paginate:
+          first: "First"
+          last: "Last"
+          next: "Next"
+          previous: "Previous"
+      emptyTable: "No data available in table"
+      entries:
+        _: "entries"
+        "1": "entry"
+      info: "Showing _START_ to _END_ of _TOTAL_ _ENTRIES-TOTAL_"
+      infoEmpty: "Showing 0 to 0 of 0 _ENTRIES-TOTAL_"
+      infoFiltered: "(filtered from _MAX_ total _ENTRIES-MAX_)"
+      lengthLabels:
+        "-1": "All"
+      lengthMenu: "_MENU_ _ENTRIES_ per page"
+      loadingRecords: "Loading..."
+      search: "Search:"
+      thousands: ","
+      zeroRecords: "No matching records found"
+    flatpickr:
+      # flatpickr format tokens: F month name, j day, J day with its ordinal, Y year, H:i time
+      date: "F j, Y"
+      date_time: "F j, Y at H:i"
+    tom_select:
+      add: "Add"
+      clear_all: "Clear All"
+      no_results: "No results found"
+      remove: "Remove"

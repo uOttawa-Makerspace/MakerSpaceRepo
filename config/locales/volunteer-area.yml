@@ -370,7 +370,7 @@ en:
       skills_tab: "Skills & Progression"
       history_tab: "Activity & Credit History"
       quick_jump: "Quick Jump to Tool / Certification:"
-      search_placeholder: "Search a tool or certification (e.g. Mill, 3D Printer, Laser)..."
+      search_placeholder: "Search certification (e.g. Mill, 3D Printer, Laser)..."
       search_option: "Search a tool or certification..."
       tracks:
         one: "%{count} track"
@@ -789,7 +789,7 @@ fr:
       skills_tab: "Compétences et progression"
       history_tab: "Historique des activités et des crédits"
       quick_jump: "Aller directement à un outil / une certification :"
-      search_placeholder: "Chercher un outil ou une certification (p. ex. fraiseuse, imprimante 3D, laser)..."
+      search_placeholder: "Chercher une certification (p. ex. fraiseuse, imprimante 3D, laser)..."
       search_option: "Chercher un outil ou une certification..."
       tracks:
         one: "%{count} parcours"

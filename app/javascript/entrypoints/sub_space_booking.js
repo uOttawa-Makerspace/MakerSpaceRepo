@@ -2,6 +2,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 import TomSelect from "tom-select";
 import "flatpickr";
+import { flatpickrOptions, tomSelectOptions } from "../src/page_locale.js";
 import { Toast } from "bootstrap";
 import { csrfHeaders } from "../src/csrf";
 import { calendarTexts, pageCalendar } from "../src/page_calendar.js";
@@ -28,40 +29,43 @@ function userPicker(select) {
   const hint = select.dataset.hint;
   let answeredQuery = null;
 
-  const picker = new TomSelect(select, {
-    plugins: { remove_button: { title: "Remove" } },
-    valueField: "id",
-    labelField: "name",
-    searchField: ["name"],
-    options: [],
-    score: () => () => 1,
-    shouldLoad: (query) => query.length >= minLength,
-    render: {
-      not_loading: () => {
-        const el = document.createElement("div");
-        el.className = "no-results";
-        el.textContent = hint;
-        return el;
+  const picker = new TomSelect(
+    select,
+    tomSelectOptions(select, {
+      plugins: ["remove_button"],
+      valueField: "id",
+      labelField: "name",
+      searchField: ["name"],
+      options: [],
+      score: () => () => 1,
+      shouldLoad: (query) => query.length >= minLength,
+      render: {
+        not_loading: () => {
+          const el = document.createElement("div");
+          el.className = "no-results";
+          el.textContent = hint;
+          return el;
+        },
       },
-    },
-    /** @this {import("tom-select").default} */
-    load(query, callback) {
-      // an unanswered lookup is forgotten, so typing the same text again asks the server again
-      const skip = () => {
-        delete this.loadedSearches[query];
-        callback();
-      };
-      const answer = (people) => {
-        if (!people || this.inputValue() !== query) return skip();
-        answeredQuery = query;
-        callback(people);
-      };
-      if (this.inputValue() !== query) return skip();
-      fetch(`/sub_space_booking/users?query=${encodeURIComponent(query)}`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then(answer, skip);
-    },
-  });
+      /** @this {import("tom-select").default} */
+      load(query, callback) {
+        // an unanswered lookup is forgotten, so typing the same text again asks the server again
+        const skip = () => {
+          delete this.loadedSearches[query];
+          callback();
+        };
+        const answer = (people) => {
+          if (!people || this.inputValue() !== query) return skip();
+          answeredQuery = query;
+          callback(people);
+        };
+        if (this.inputValue() !== query) return skip();
+        fetch(`/sub_space_booking/users?query=${encodeURIComponent(query)}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then(answer, skip);
+      },
+    }),
+  );
 
   const dropStaleOptions = () => {
     if (answeredQuery === null || answeredQuery === picker.inputValue()) return;
@@ -76,6 +80,10 @@ function userPicker(select) {
 }
 
 // ─── turbo:load — runs every soft navigation ──────────────────────────────────
+
+// The booking's date and time pickers, which show the date and time worded in
+// the page's language.
+const BOOKING_TIME = { enableTime: true, time_24hr: true, altInput: true };
 
 document.addEventListener("turbo:load", function () {
   // ── Recurring-approval modal ──────────────────────────────────────────────
@@ -158,18 +166,12 @@ document.addEventListener("turbo:load", function () {
   }
 
   // ── Edit-page flatpickr ───────────────────────────────────────────────────
-  document.getElementById("sub_space_booking_start_time")?.flatpickr({
-    enableTime: true,
-    time_24hr: true,
-    altInput: true,
-    altFormat: "F j, Y at H:i",
-  });
-  document.getElementById("sub_space_booking_end_time")?.flatpickr({
-    enableTime: true,
-    time_24hr: true,
-    altInput: true,
-    altFormat: "F j, Y at H:i",
-  });
+  document
+    .getElementById("sub_space_booking_start_time")
+    ?.flatpickr(flatpickrOptions(document, BOOKING_TIME, "date_time"));
+  document
+    .getElementById("sub_space_booking_end_time")
+    ?.flatpickr(flatpickrOptions(document, BOOKING_TIME, "date_time"));
 
   // ── Calendar setup ────────────────────────────────────────────────────────
   const bookedCalendarEl = document.getElementById("booked-calendar");
@@ -321,23 +323,17 @@ document.addEventListener("turbo:load", function () {
   }
 
   // ---- Flatpickr instances -------------------------------------------------
-  start_picker = document.getElementById("book-start").flatpickr({
-    enableTime: true,
-    time_24hr: true,
-    altInput: true,
-    altFormat: "F j, Y at H:i",
-  });
-  end_picker = document.getElementById("book-end").flatpickr({
-    enableTime: true,
-    time_24hr: true,
-    altInput: true,
-    altFormat: "F j, Y at H:i",
-  });
-  recurring_picker = document.getElementById("book-recurring-end").flatpickr({
-    enableTime: false,
-    altInput: true,
-    altFormat: "F j, Y",
-  });
+  start_picker = document
+    .getElementById("book-start")
+    .flatpickr(flatpickrOptions(document, BOOKING_TIME, "date_time"));
+  end_picker = document
+    .getElementById("book-end")
+    .flatpickr(flatpickrOptions(document, BOOKING_TIME, "date_time"));
+  recurring_picker = document
+    .getElementById("book-recurring-end")
+    .flatpickr(
+      flatpickrOptions(document, { enableTime: false, altInput: true }, "date"),
+    );
 
   // ---- Modal button wiring ------------------------------------------------
   document.getElementById("bookCancel").addEventListener("click", closeModal);

@@ -1,4 +1,5 @@
 import TomSelect from "tom-select";
+import { dataTableOptions, tomSelectOptions } from "../src/page_locale.js";
 import DataTable from "datatables.net-bs5";
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
 document.addEventListener("turbo:load", () => {
@@ -15,10 +16,13 @@ document.addEventListener("turbo:load", () => {
   );
   if (document.getElementById("training_requirements")) {
     if (!document.getElementById("training_requirements").tomselect) {
-      new TomSelect("#training_requirements", {
-        plugins: ["remove_button"],
-        maxItems: null,
-      });
+      new TomSelect(
+        "#training_requirements",
+        tomSelectOptions(document, {
+          plugins: ["remove_button"],
+          maxItems: null,
+        }),
+      );
     }
   }
   let form =
@@ -119,4 +123,4 @@ document.addEventListener("turbo:load", () => {
   }
 });
 
-new DataTable("#prof-proj-requests");
+new DataTable("#prof-proj-requests", dataTableOptions(document));

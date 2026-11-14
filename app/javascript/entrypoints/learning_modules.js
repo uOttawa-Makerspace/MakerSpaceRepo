@@ -1,5 +1,6 @@
 import Sortable from "sortablejs";
 import TomSelect from "tom-select";
+import { tomSelectOptions } from "../src/page_locale.js";
 import { csrfHeaders } from "../src/csrf";
 import { reportFailure, requestJson } from "../src/request_error";
 
@@ -38,10 +39,13 @@ document.addEventListener("turbo:load", () => {
 
   let subskill = document.querySelector("#learning_module_subskill");
   if (subskill) {
-    new TomSelect(subskill, {
-      maxItems: 1,
-      plugins: ["remove_button"],
-      create: true,
-    });
+    new TomSelect(
+      subskill,
+      tomSelectOptions(subskill, {
+        maxItems: 1,
+        plugins: ["remove_button"],
+        create: true,
+      }),
+    );
   }
 });

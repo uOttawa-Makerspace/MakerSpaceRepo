@@ -1,14 +1,17 @@
 import TomSelect from "tom-select";
+import { flatpickrOptions, tomSelectOptions } from "../src/page_locale.js";
 import "flatpickr";
 
 document.addEventListener("DOMContentLoaded", () => {
   const depositDateInput = document.getElementById("deposit-return-date");
   if (depositDateInput) {
-    const depositDatePicker = depositDateInput.flatpickr({
-      enableTime: false,
-      noCalendar: false,
-      dateFormat: "Y-m-d",
-    });
+    const depositDatePicker = depositDateInput.flatpickr(
+      flatpickrOptions(depositDateInput, {
+        enableTime: false,
+        noCalendar: false,
+        dateFormat: "Y-m-d",
+      }),
+    );
 
     document
       .getElementById("deposit-return-date-clear")
@@ -19,13 +22,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let supervisorSelect = document.getElementById("supervisor-select");
   if (supervisorSelect && !supervisorSelect.tomselect) {
-    new TomSelect("#supervisor-select", {
-      searchField: ["name"],
-      valueField: "id",
-      labelField: "name",
-      maxOptions: null,
-      searchOnKeyUp: true,
-    });
+    new TomSelect(
+      "#supervisor-select",
+      tomSelectOptions(document, {
+        searchField: ["name"],
+        valueField: "id",
+        labelField: "name",
+        maxOptions: null,
+        searchOnKeyUp: true,
+      }),
+    );
   }
 
   const statusSelect = document.getElementById("status-select");
@@ -42,24 +48,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let spaceSelect = document.getElementById("space-select");
   if (spaceSelect && !spaceSelect.tomselect) {
-    new TomSelect("#space-select", {
-      searchField: ["name"],
-      valueField: "id",
-      labelField: "name",
-      maxOptions: null,
-      searchOnKeyUp: true,
-    });
+    new TomSelect(
+      "#space-select",
+      tomSelectOptions(document, {
+        searchField: ["name"],
+        valueField: "id",
+        labelField: "name",
+        maxOptions: null,
+        searchOnKeyUp: true,
+      }),
+    );
   }
 
   let keyRequestSelect = document.getElementById("key-request-select");
   if (keyRequestSelect && !keyRequestSelect.tomselect) {
-    new TomSelect("#key-request-select", {
-      searchField: ["name"],
-      valueField: "id",
-      labelField: "name",
-      maxOptions: null,
-      searchOnKeyUp: true,
-    });
+    new TomSelect(
+      "#key-request-select",
+      tomSelectOptions(document, {
+        searchField: ["name"],
+        valueField: "id",
+        labelField: "name",
+        maxOptions: null,
+        searchOnKeyUp: true,
+      }),
+    );
   }
 
   const customKeycode = document.getElementById("custom-keycode");

@@ -198,6 +198,7 @@ en:
       update: "Update Lockers"
     inventory:
       bulk_edit: "Bulk edit"
+      search_placeholder: "Search lockers, users, notes, status..."
       inline_editing: "Inline editing"
       search_hint_html: '<strong>Search hint:</strong> You can search by locker #, tenant name, username, student ID, email, notes, or status (<code class="text-body-secondary">expired</code>, <code class="text-body-secondary">free</code>, <code class="text-body-secondary">staff</code>, <code class="text-body-secondary">gng</code>).'
       size_and_sku: "Size & SKU"
@@ -591,6 +592,7 @@ fr:
       update: "Mettre à jour les casiers"
     inventory:
       bulk_edit: "Modifier en lot"
+      search_placeholder: "Rechercher des casiers, utilisateurs, remarques, statuts..."
       inline_editing: "Modification en ligne"
       search_hint_html: '<strong>Astuce de recherche :</strong> vous pouvez rechercher par numéro de casier, nom du locataire, nom d''utilisateur, numéro d''étudiant, courriel, remarques ou statut (<code class="text-body-secondary">expired</code>, <code class="text-body-secondary">free</code>, <code class="text-body-secondary">staff</code>, <code class="text-body-secondary">gng</code>).'
       size_and_sku: "Taille et UGS"
