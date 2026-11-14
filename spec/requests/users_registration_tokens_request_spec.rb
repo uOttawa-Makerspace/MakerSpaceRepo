@@ -815,6 +815,74 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(u.reload.password).to eq(forced)
     end
 
+    it "checks the link first, then the confirmation, then the strength" do
+      p = reset_params(user, pw: "abc", confirm: "abd")
+      patch reset_password_confirmation_users_path, params: p.merge(token: "garbage")
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq(expired_alert)
+      patch reset_password_confirmation_users_path, params: p
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("Your password and password confirmation do not match.")
+      expect(user.reload.authenticate_password(password)).to be(true)
+    end
+
+    it "names every strength problem in the alert and sends no mail" do
+      problems = User.find(user.id).plaintext_password_problems("abc")
+      p = reset_params(user, pw: "abc")
+      perform_enqueued_jobs { patch reset_password_confirmation_users_path, params: p }
+      expect(response).to have_http_status(:found)
+      expect(response).to redirect_to(reset_password_form_users_path(token: p[:token]))
+      expect(flash[:alert]).to eq("Your password was not changed: #{problems.to_sentence}.")
+      expect(deliveries).to be_empty
+      expect(user.reload.token_version).to eq(0)
+    end
+
+    it "a blank new password is refused as a strength problem and leaves the link usable" do
+      p = reset_params(user, pw: "")
+      patch reset_password_confirmation_users_path, params: p
+      expect(response).to redirect_to(reset_password_form_users_path(token: p[:token]))
+      # The blank message is a full sentence of its own, so the alert reads with the attribute name and two stops.
+      expect(flash[:alert]).to eq("Your password was not changed: Password This field is required..")
+      expect(user.reload.authenticate_password(password)).to be(true)
+    end
+
+    it "an expired or used link sends no mail and keeps the password" do
+      p = reset_params(user)
+      travel 121.minutes do
+        perform_enqueued_jobs { patch reset_password_confirmation_users_path, params: p }
+      end
+      expect(response).to redirect_to(root_path)
+      expect(deliveries).to be_empty
+      expect(user.reload.authenticate_password(password)).to be(true)
+    end
+
+    it "a success mails the owner once and bumps the token version" do
+      perform_enqueued_jobs { patch reset_password_confirmation_users_path, params: reset_params(user) }
+      expect(response).to have_http_status(:found)
+      expect(response).to redirect_to(root_path)
+      expect(deliveries.map(&:to)).to eq([[user.email]])
+      expect(user.reload.token_version).to eq(1)
+    end
+
+    it "a member signed in as another account who resets this one stays signed in, their session version untouched" do
+      other = create(:user, :regular_user)
+      login!(other)
+      before_version = session[:token_version]
+      patch reset_password_confirmation_users_path, params: reset_params(user)
+      expect(flash[:notice]).to start_with("Your password has been updated")
+      expect(session[:user_id]).to eq(other.id)
+      expect(session[:token_version]).to eq(before_version)
+      expect(user.reload.authenticate_password("NewPassw0rd!x#9")).to be(true)
+      expect(signed_in?).to be(true)
+    end
+
+    it "a signed-in owner who resets their own password keeps the new token version in the session" do
+      login!(user)
+      patch reset_password_confirmation_users_path, params: reset_params(user)
+      expect(session[:user_id]).to eq(user.id)
+      expect(session[:token_version]).to eq(1)
+    end
+
     it "soft-deleted user: the link is treated as expired" do
       u = create(:user, :regular_user)
       p = reset_params(u)

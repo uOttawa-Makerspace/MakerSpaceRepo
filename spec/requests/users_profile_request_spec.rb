@@ -679,6 +679,64 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       get check_signed_in_path
       expect(json["signed_in"]).to eq("true")
     end
+
+    it "a missing current password: re-renders (200) asking for it, unchanged, no email" do
+      login!(user)
+      perform_enqueued_jobs { change!(old: "") }
+      expect(response).to have_http_status(:ok)
+      expect(flash[:alert]).to eq("Please enter your current password.")
+      expect(user.reload.authenticate_password(password)).to be(true)
+      expect(user.token_version).to eq(0)
+      expect(deliveries).to be_empty
+    end
+
+    it "checks the current password first, then a blank new one, then the confirmation, then the strength" do
+      login!(user)
+      change!(old: "wrong", pw: "", confirm: "x")
+      expect(flash[:alert]).to eq("Incorrect current password.")
+      change!(pw: "", confirm: "x")
+      expect(flash[:alert]).to eq("New password cannot be blank.")
+      change!(pw: "abc", confirm: "abd")
+      expect(flash[:alert]).to eq("Your password and password confirmation do not match.")
+      change!(pw: "abc")
+      expect(flash[:alert]).to be_nil
+      expect(user.reload.authenticate_password(password)).to be(true)
+    end
+
+    it "a weak new password re-renders (200) the form with the strength error, no flash, no email" do
+      login!(user)
+      checked = User.find(user.id)
+      checked.plaintext_password_problems("abc")
+      perform_enqueued_jobs { change!(pw: "abc") }
+      expect(response).to have_http_status(:ok)
+      expect(flash[:alert]).to be_nil
+      expect(response.body).to include(CGI.escapeHTML(checked.errors[:password].first))
+      expect(user.reload.token_version).to eq(0)
+      expect(deliveries).to be_empty
+    end
+
+    it "the session that changes the password keeps the new token version" do
+      login!(user)
+      change!
+      expect(session[:token_version]).to eq(1)
+      expect(session[:user_id]).to eq(user.id)
+    end
+
+    it "a change made with a Bearer token stores nothing in the cookie session, ends that token and mails the owner" do
+      token = user.token
+      perform_enqueued_jobs do
+        patch change_password_user_path(user.username),
+              params: { user: { old_password: password, password: new_pw, password_confirmation: new_pw } },
+              headers: { "Authorization" => "Bearer #{token}" }
+      end
+      expect(response).to redirect_to(settings_admin_path)
+      expect(flash[:notice]).to eq("Password changed successfully, an email will be sent to confirm.")
+      expect(session[:token_version]).to be_nil
+      expect(user.reload.authenticate_password(new_pw)).to be(true)
+      expect(deliveries.map(&:to)).to eq([[user.email]])
+      get check_signed_in_path, headers: { "Authorization" => "Bearer #{token}" }
+      expect(json["signed_in"]).to eq("false")
+    end
   end
 
   describe "flags (staff moderation)" do
