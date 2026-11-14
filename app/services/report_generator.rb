@@ -650,20 +650,28 @@ class ReportGenerator
   # with the student number in the last column. A missing attendee name,
   # training or instructor shows Unknown in that cell.
   def self.attendee_row(certification)
-    session = certification.training_session
     user = certification.user
     [
       user&.name || UNKNOWN,
       user&.email,
-      session.training&.name_en || UNKNOWN,
-      session.created_at.strftime("%Y-%m-%d %H:%M"),
-      session.user&.name || UNKNOWN,
-      session.course,
-      session.space&.name,
+      *attendee_session_cells(certification.training_session),
       nil,
       user&.student_id
     ]
   end
+
+  # The training, date, instructor, course and facility cells of an attendee
+  # line.
+  def self.attendee_session_cells(session)
+    [
+      session.training&.name_en || UNKNOWN,
+      session.created_at.strftime("%Y-%m-%d %H:%M"),
+      session.user&.name || UNKNOWN,
+      session.course,
+      session.space&.name
+    ]
+  end
+  private_class_method :attendee_session_cells
   private_class_method :attendee_row
 
   def self.generate_training_attendees_report(start_date, end_date)
