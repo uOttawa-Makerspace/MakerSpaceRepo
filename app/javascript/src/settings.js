@@ -1,5 +1,6 @@
 import TomSelect from "tom-select";
 import { tomSelectOptions } from "./page_locale.js";
+import { bindOnce } from "./bind_once.js";
 
 let programTomSelect = null;
 
@@ -22,24 +23,30 @@ function initializeProgramSelect() {
     }),
   );
 
-  const facultySelect = document.getElementById("user_faculty");
-  if (facultySelect) {
-    facultySelect.addEventListener("change", () => {
-      programSelect.querySelectorAll("optgroup").forEach((e) => e.remove());
-      const targetLabel = facultySelect.value;
+  // The listener keeps the full program list of the first load of the page.
+  bindOnce(document.getElementById("user_faculty"), (facultySelect) =>
+    facultySelect.addEventListener(
+      "change",
+      showProgramsOf.bind(null, facultySelect, programSelect, optgroups),
+    ),
+  );
+}
 
-      optgroups.forEach((option) => {
-        if (option.getAttribute("label") === targetLabel) {
-          programSelect.appendChild(option.cloneNode(true));
-        }
-      });
+// Leaves in the program select only the programs of the chosen faculty.
+function showProgramsOf(facultySelect, programSelect, optgroups) {
+  const faculty = facultySelect.value;
+  programSelect.querySelectorAll("optgroup").forEach((e) => e.remove());
 
-      if (programSelect.tomselect) {
-        programSelect.tomselect.clear();
-        programSelect.tomselect.clearOptions();
-        programSelect.tomselect.sync();
-      }
-    });
+  optgroups.forEach((option) => {
+    if (option.getAttribute("label") === faculty) {
+      programSelect.appendChild(option.cloneNode(true));
+    }
+  });
+
+  if (programSelect.tomselect) {
+    programSelect.tomselect.clear();
+    programSelect.tomselect.clearOptions();
+    programSelect.tomselect.sync();
   }
 }
 

@@ -1,17 +1,7 @@
 import { flatpickrOptions } from "../src/page_locale.js";
 import { newTomSelect } from "../src/tom_select.js";
+import { bindOnce } from "../src/bind_once.js";
 import "flatpickr";
-
-// The elements this script has already bound: a second load over the same
-// page binds nothing twice. A page Turbo restores from its cache is a copy made
-// of new elements, which are bound again.
-const boundElements = new WeakSet();
-
-function bindOnce(el, bind) {
-  if (!el || boundElements.has(el)) return;
-  boundElements.add(el);
-  bind(el);
-}
 
 // Every visit to an admin key page, the first one and each Turbo visit or
 // restore after it.
