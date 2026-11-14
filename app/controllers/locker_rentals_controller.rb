@@ -79,43 +79,21 @@ class LockerRentalsController < SessionsController
 
   def create
     # Allow staff to assign lockers
-    unless current_user.staff? || LockerOption.lockers_enabled
-      flash[:alert] = t('errors.lockers.not_accepted')
-      redirect_to locker_rentals_path
-      return
-    end
-
+    return lockers_not_accepted_response unless current_user.staff? || LockerOption.lockers_enabled
     # Staff named a renter who does not exist: refuse, never fall back to themself
     # (the fallback below is only for a request that names no renter at all).
-    if unknown_renter_username?
-      @locker_rental = LockerRental.new
-      @locker_rental.errors.add(:base, renter_not_found_message)
-      new_instance_attributes
-      render :new, status: :unprocessable_content
-      return
-    end
+    return create_renter_not_found_response if unknown_renter_username?
 
     # Force all new lockers to be assigned to the user submitting the request
     @locker_rental =
       LockerRental.new(
         locker_rental_params.with_defaults(rented_by_id: current_user.id)
       )
-
     # If locker rental needs a decision
-    unless @locker_rental.reviewing?
-      @locker_rental.decided_by = current_user
-      # Explicitly handle indefinite state so it overrides any submitted dates
-      if @locker_rental.indefinite == '1'
-        @locker_rental.owned_until = nil
-      else
-        @locker_rental.owned_until ||= end_of_this_semester
-      end
-    end
+    record_create_decision unless @locker_rental.reviewing?
 
     if @locker_rental.save
-      @locker_rental.notify_after_commit
-      redirect_back fallback_location: :new_locker_rental,
-                    notice: (t('lockers.flash.assigned') if @locker_rental.active?)
+      rental_created_response
     else
       new_instance_attributes
       render :new, status: :unprocessable_content
@@ -248,6 +226,35 @@ class LockerRentalsController < SessionsController
     @locker_rental.errors.add(:requested_as, t('errors.lockers.request_type_not_offered'))
     new_instance_attributes
     render :new, status: :unprocessable_content
+  end
+
+  def lockers_not_accepted_response
+    flash[:alert] = t('errors.lockers.not_accepted')
+    redirect_to locker_rentals_path
+  end
+
+  def create_renter_not_found_response
+    @locker_rental = LockerRental.new
+    @locker_rental.errors.add(:base, renter_not_found_message)
+    new_instance_attributes
+    render :new, status: :unprocessable_content
+  end
+
+  # A rental created in any state but reviewing is decided by the creating user. Explicitly handle indefinite
+  # state so it overrides any submitted dates; otherwise a missing end date is the end of this semester.
+  def record_create_decision
+    @locker_rental.decided_by = current_user
+    if @locker_rental.indefinite == '1'
+      @locker_rental.owned_until = nil
+    else
+      @locker_rental.owned_until ||= end_of_this_semester
+    end
+  end
+
+  def rental_created_response
+    @locker_rental.notify_after_commit
+    redirect_back fallback_location: :new_locker_rental,
+                  notice: (t('lockers.flash.assigned') if @locker_rental.active?)
   end
 
   def new_instance_attributes
