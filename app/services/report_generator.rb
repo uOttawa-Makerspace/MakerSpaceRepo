@@ -451,8 +451,8 @@ class ReportGenerator
         title(sheet, "Year of Study")
         # year of study is stored as text, transform key to int for sorting
         users
-          .group(:year_of_study)
-          .count
+          .current_years_of_study
+          .tally
           .transform_keys { |k| k.to_i }
           .sort
           .each { |key, value| sheet.add_row [key, value] }
@@ -628,7 +628,7 @@ class ReportGenerator
                           user.gender,
                           User.identity_label(user.identity),
                           user.faculty,
-                          user.year_of_study,
+                          user.current_year_of_study,
                           user.student_id,
                           user.created_at.in_time_zone.strftime("%Y-%m-%d %H:%M")
                         ],

@@ -12,6 +12,7 @@ class User < ApplicationRecord
   include ActiveModel::Serialization
   include UoengConcern
   include TrainingProgress
+  include YearOfStudy
   include SniffedUploadValidation
 
   # ============================================
@@ -464,18 +465,6 @@ class User < ApplicationRecord
   end
   scope :unknown_identity, -> { where(identity: 'unknown') }
   
-  scope :created_at_month, ->(month) { 
-    where("DATE_PART('month', created_at) = ?", month) 
-  }
-  
-  scope :not_created_this_year, -> {
-    where.not(created_at: Time.current.beginning_of_year..Time.current.end_of_year)
-  }
-  
-  scope :created_this_year, -> {
-    where(created_at: Time.current.beginning_of_year..Time.current.end_of_year)
-  }
-  
   scope :staff, -> { where(role: %w[admin staff]) }
 
   # Everyone who may be offered a key: staff and admins (listed whether or not
@@ -883,14 +872,19 @@ class User < ApplicationRecord
 
   # Secrets never leave the server: every JSON rendering of a user
   # (as_json/to_json/render json:) goes through serializable_hash.
-  SERIALIZATION_EXCLUDED_ATTRIBUTES = %w[password access_token].freeze
+  # The year-of-study reference point is not sent either: year_of_study is sent
+  # as the current year instead.
+  SERIALIZATION_EXCLUDED_ATTRIBUTES = %w[password access_token year_of_study_entered year_of_study_set_on
+                                         year_of_study_set_by].freeze
 
   def serializable_hash(options = nil)
     options = options ? options.dup : {}
     # Rails ignores :except when :only is given, so filter both.
     options[:only] = Array(options[:only]).map(&:to_s) - SERIALIZATION_EXCLUDED_ATTRIBUTES if options[:only]
     options[:except] = Array(options[:except]).map(&:to_s) | SERIALIZATION_EXCLUDED_ATTRIBUTES
-    super
+    hash = super
+    hash["year_of_study"] = current_year_of_study if hash.key?("year_of_study")
+    hash
   end
 
   # Lock bookkeeping uses update_columns: a validated update silently fails for a
@@ -1356,12 +1350,13 @@ class User < ApplicationRecord
     return "" if identity.blank?
 
     name = I18n.t(identity, scope: "users.identity_readable.identities", default: identity.humanize)
-    return name unless student? && year_of_study.to_i.positive?
+    year = current_year_of_study.to_i
+    return name unless student? && year.positive?
 
     I18n.t(
       "users.identity_readable.student_year",
-      count: year_of_study.to_i,
-      ordinal: year_of_study.to_i.ordinalize,
+      count: year,
+      ordinal: year.ordinalize,
       identity: name
     )
   end

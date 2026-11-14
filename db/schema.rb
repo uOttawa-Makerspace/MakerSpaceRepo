@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_13_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_14_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1793,12 +1793,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_13_130000) do
     t.citext "username"
     t.integer "wallet", default: 0
     t.string "year_of_study"
+    t.string "year_of_study_entered"
+    t.string "year_of_study_set_by", default: "entered", null: false
+    t.date "year_of_study_set_on", default: -> { "((now() AT TIME ZONE 'America/New_York'::text))::date" }, null: false
     t.index "lower((email)::text)", name: "index_users_on_lowercase_email", unique: true
     t.index "lower((username)::text)", name: "index_users_on_lowercase_username", unique: true
     t.index ["name"], name: "index_users_on_name", opclass: :gin_trgm_ops, using: :gin
     t.index ["space_id"], name: "index_users_on_space_id"
     t.index ["username"], name: "index_users_on_username", opclass: :gin_trgm_ops, using: :gin
     t.check_constraint "locale::text = ANY (ARRAY['en'::character varying, 'fr'::character varying]::text[])", name: "users_locale_supported"
+    t.check_constraint "year_of_study_set_by::text = ANY (ARRAY['entered'::character varying, 'backfill_last_run'::character varying, 'backfill_marked_inactive'::character varying]::text[])", name: "users_year_of_study_set_by_known"
   end
 
   create_table "videos", id: :serial, force: :cascade do |t|

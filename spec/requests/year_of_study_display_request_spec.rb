@@ -87,4 +87,71 @@ RSpec.describe "Year of study shown and reported", type: :request do
       expect(response.body).to include("[[3,1]]")
     end
   end
+
+  context "after the student's next move up, on the first of the creation month" do
+    before { travel_to(Time.zone.local(2026, 3, 1, 9)) }
+
+    it "shows the current year everywhere and keeps the entered one in the legacy column" do
+      expect(shown_years(admin)).to eq(profile: "4", admin_form: "4", volunteer_list: true)
+      expect(own_form_year).to eq("4")
+      expect(api_year(admin)).to eq("4")
+      expect(legacy_json_year(admin)).to eq("4")
+      expect(student.reload.identity_readable).to eq("4th Year Undergraduate")
+      expect(student.year_of_study).to eq("3")
+    end
+
+    it "reports the current year in the new users spreadsheet and chart" do
+      rows = report_rows
+      expect(rows).to include([4, 1])
+      expect(rows.find { |row| row.include?(student.username) }[6]).to eq(4)
+      login!(admin)
+      get admin_report_generator_index_path,
+          params: { report_type: "new_users", start_date: "2024-03-01", end_date: "2024-03-31" }
+      expect(response.body).to include("[[4,1]]")
+    end
+  end
+
+  context "once the student is Alumni" do
+    before { travel_to(Time.zone.local(2032, 3, 2)) }
+
+    it "offers Alumni in both forms, chosen, so saving another field keeps it" do
+      expect(own_form_year).to eq("Alumni")
+      login!(admin)
+      get edit_admin_user_path(student)
+      expect(selected_year).to eq("Alumni")
+      login!(student)
+      patch user_path(student.username), params: { user: { name: "New Name", year_of_study: "Alumni" } }
+      expect(flash[:notice]).to eq("Profile updated successfully.")
+      expect(student.reload.current_year_of_study).to eq("Alumni")
+    end
+  end
+
+  describe "setting the year records it as the new reference point" do
+    def reference(user)
+      user.reload.attributes.values_at("year_of_study", "year_of_study_entered", "year_of_study_set_on",
+                                       "year_of_study_set_by")
+    end
+
+    before { travel_to(Time.zone.local(2026, 5, 20, 10)) }
+
+    it "on sign-up" do
+      attrs = FactoryBot.attributes_for(:user, :regular_user, :student, password: password, year_of_study: "2")
+      post users_path, params: { user: attrs }
+      expect(reference(User.find_by!(username: attrs[:username]))).to eq(["2", "2", Date.new(2026, 5, 20), "entered"])
+    end
+
+    it "from the profile form" do
+      login!(student)
+      patch user_path(student.username), params: { user: { year_of_study: "5" } }
+      expect(reference(student)).to eq(["5", "5", Date.new(2026, 5, 20), "entered"])
+      travel_to(Time.zone.local(2027, 3, 1))
+      expect(student.reload.current_year_of_study).to eq("6")
+    end
+
+    it "from the admin edit form" do
+      login!(admin)
+      patch admin_user_path(student), params: { user: { year_of_study: "6" } }
+      expect(reference(student)).to eq(["6", "6", Date.new(2026, 5, 20), "entered"])
+    end
+  end
 end

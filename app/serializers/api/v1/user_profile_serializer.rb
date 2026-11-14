@@ -13,7 +13,7 @@ module Api
         {
           user: {
             id: user.id, username: user.username, name: user.name, email: user.email,
-            faculty: user.faculty, program: user.program, year_of_study: user.year_of_study,
+            faculty: user.faculty, program: user.program, year_of_study: user.current_year_of_study,
             identity: user.identity, role: user.role, avatar_url: avatar_url,
             rfid: user.rfid && { card_number: user.rfid.card_number }
           },

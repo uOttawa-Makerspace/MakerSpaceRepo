@@ -176,12 +176,12 @@
                         <% if v.program.present? %>
                           <div class="fw-semibold text-body-emphasis small"><%= v.program %></div>
                         <% end %>
-                        <% if v.year_of_study.present? %>
+                        <% if v.current_year_of_study.present? %>
                           <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle small mt-1">
-                            <%= t('volunteer_area.list.year', year: v.year_of_study) %>
+                            <%= t('volunteer_area.list.year', year: v.current_year_of_study) %>
                           </span>
                         <% end %>
-                        <% if v.program.blank? && v.year_of_study.blank? %>
+                        <% if v.program.blank? && v.current_year_of_study.blank? %>
                           <span class="text-body-secondary small fst-italic"><%= t('volunteer_area.list.not_specified') %></span>
                         <% end %>
                       </div>
@@ -300,12 +300,12 @@
                         <% if v.program.present? %>
                           <div class="fw-semibold text-body-emphasis small"><%= v.program %></div>
                         <% end %>
-                        <% if v.year_of_study.present? %>
+                        <% if v.current_year_of_study.present? %>
                           <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle small mt-1">
-                            <%= t('volunteer_area.list.year', year: v.year_of_study) %>
+                            <%= t('volunteer_area.list.year', year: v.current_year_of_study) %>
                           </span>
                         <% end %>
-                        <% if v.program.blank? && v.year_of_study.blank? %>
+                        <% if v.program.blank? && v.current_year_of_study.blank? %>
                           <span class="text-body-secondary small fst-italic"><%= t('volunteer_area.list.not_specified') %></span>
                         <% end %>
                       </div>
