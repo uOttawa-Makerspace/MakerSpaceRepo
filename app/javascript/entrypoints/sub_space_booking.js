@@ -1,8 +1,8 @@
 import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
-import TomSelect from "tom-select";
 import "flatpickr";
-import { flatpickrOptions, tomSelectOptions } from "../src/page_locale.js";
+import { flatpickrOptions } from "../src/page_locale.js";
+import { newTomSelect } from "../src/tom_select.js";
 import { Toast } from "bootstrap";
 import { csrfHeaders } from "../src/csrf";
 import { calendarTexts, pageCalendar } from "../src/page_calendar.js";
@@ -25,47 +25,45 @@ import {
 //    selection, close or clear) the options are dropped before anything is shown.
 // `score` always 1 keeps Tom Select from filtering the server's matches again by name.
 function userPicker(select) {
+  if (select.tomselect) return; // made by an earlier load of the same page
   const minLength = Number(select.dataset.minLength);
   const hint = select.dataset.hint;
   let answeredQuery = null;
 
-  const picker = new TomSelect(
-    select,
-    tomSelectOptions(select, {
-      plugins: ["remove_button"],
-      valueField: "id",
-      labelField: "name",
-      searchField: ["name"],
-      options: [],
-      score: () => () => 1,
-      shouldLoad: (query) => query.length >= minLength,
-      render: {
-        not_loading: () => {
-          const el = document.createElement("div");
-          el.className = "no-results";
-          el.textContent = hint;
-          return el;
-        },
+  const picker = newTomSelect(select, {
+    plugins: ["remove_button"],
+    valueField: "id",
+    labelField: "name",
+    searchField: ["name"],
+    options: [],
+    score: () => () => 1,
+    shouldLoad: (query) => query.length >= minLength,
+    render: {
+      not_loading: () => {
+        const el = document.createElement("div");
+        el.className = "no-results";
+        el.textContent = hint;
+        return el;
       },
-      /** @this {import("tom-select").default} */
-      load(query, callback) {
-        // an unanswered lookup is forgotten, so typing the same text again asks the server again
-        const skip = () => {
-          delete this.loadedSearches[query];
-          callback();
-        };
-        const answer = (people) => {
-          if (!people || this.inputValue() !== query) return skip();
-          answeredQuery = query;
-          callback(people);
-        };
-        if (this.inputValue() !== query) return skip();
-        fetch(`/sub_space_booking/users?query=${encodeURIComponent(query)}`)
-          .then((r) => (r.ok ? r.json() : null))
-          .then(answer, skip);
-      },
-    }),
-  );
+    },
+    /** @this {import("tom-select").default} */
+    load(query, callback) {
+      // an unanswered lookup is forgotten, so typing the same text again asks the server again
+      const skip = () => {
+        delete this.loadedSearches[query];
+        callback();
+      };
+      const answer = (people) => {
+        if (!people || this.inputValue() !== query) return skip();
+        answeredQuery = query;
+        callback(people);
+      };
+      if (this.inputValue() !== query) return skip();
+      fetch(`/sub_space_booking/users?query=${encodeURIComponent(query)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then(answer, skip);
+    },
+  });
 
   const dropStaleOptions = () => {
     if (answeredQuery === null || answeredQuery === picker.inputValue()) return;
@@ -152,9 +150,7 @@ function wireAdminLists() {
   });
 
   const userSelect = document.getElementById("user_booking_select");
-  if (userSelect && !userSelect.tomSelect) {
-    userSelect.tomSelect = userPicker(userSelect);
-  }
+  if (userSelect) userPicker(userSelect);
 }
 
 // ─── turbo:load — runs every soft navigation ──────────────────────────────────

@@ -1,15 +1,11 @@
-import TomSelect from "tom-select";
-import { tomSelectOptions } from "../src/page_locale.js";
+import { newTomSelect } from "../src/tom_select.js";
 document.addEventListener("turbo:load", function () {
   if (document.getElementById("questions_trainings")) {
     if (!document.getElementById("questions_trainings").tomselect) {
       const trainings = /** @type {HTMLSelectElement} */ (
         document.getElementById("questions_trainings")
       );
-      new TomSelect(
-        trainings,
-        tomSelectOptions(trainings, { plugins: ["clear_button"] }),
-      );
+      newTomSelect(trainings, { plugins: ["clear_button"] });
     }
   }
   if (document.getElementById("pictureInput")) {
@@ -34,10 +30,7 @@ document.addEventListener("turbo:load", function () {
       const trainings = /** @type {HTMLSelectElement} */ (
         document.getElementById("questions_trainings")
       );
-      new TomSelect(
-        trainings,
-        tomSelectOptions(trainings, { plugins: ["clear_button"] }),
-      );
+      newTomSelect(trainings, { plugins: ["clear_button"] });
     }
   }
 });

@@ -33,3 +33,9 @@ export function newTomSelect(el, options) {
   rememberTabIndex(el);
   return new TomSelect(el, tomSelectOptions(el, options));
 }
+
+// The select's TomSelect: the one an earlier load of the same page gave it, or
+// a new one. Turbo runs a page's scripts again on every visit and restore.
+export function tomSelectFor(el, options) {
+  return el.tomselect ?? newTomSelect(el, options);
+}
