@@ -42,10 +42,11 @@
            <% if params[:room].present? %>
               <h3 class="text-center mb-4 fw-bold text-body-emphasis"><%= @subspace.name %> Calendar</h3>
               <div>
-                <% unless @rules.empty? %>
+                <% rules = booking_rules(@subspace) %>
+                <% unless rules.empty? %>
                   <p class="text-center alert alert-info shadow-sm">
                     <strong><%= @subspace.name %></strong>
-                    <%= @rules.to_sentence %>
+                    <%= rules.to_sentence %>
                   </p>
                 <% end %>
               </div>

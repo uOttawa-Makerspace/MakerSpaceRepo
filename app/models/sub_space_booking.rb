@@ -237,6 +237,8 @@ class SubSpaceBooking < ApplicationRecord
   # Whether an admin block in this booking's room, other than this booking, overlaps its times (the zoned
   # instants the model stores, compared with the stored UTC instants of the blocks).
   def overlaps_block?
+    return false unless times_present?
+
     SubSpaceBooking
       .where(sub_space_id: sub_space_id)
       .where(blocking: true)
@@ -245,8 +247,9 @@ class SubSpaceBooking < ApplicationRecord
       .any?
   end
 
+  # The booking's length in hours, or nil while a time is missing.
   def duration_hours
-    (end_time - start_time) / 1.hour
+    (end_time - start_time) / 1.hour if times_present?
   end
 
   # Hours the booking's owner already has in the booking's sub space, in the week (Time.zone) containing
@@ -260,17 +263,30 @@ class SubSpaceBooking < ApplicationRecord
       .sum { |other| other.end_time - other.start_time } / 1.hour
   end
 
-  # The first of its room's limits this booking breaks, as [code, message], or nil: the maximum duration,
-  # then the owner's maximum hours in the room that week.
-  def room_limit_breach
-    room = sub_space
-    max_duration = room.maximum_booking_duration
-    max_per_week = room.maximum_booking_hours_per_week
-    if !max_duration.nil? && duration_hours > max_duration
-      ["DurationHour", "You cannot book #{room.name} for more than #{max_duration} hours."]
-    elsif !max_per_week.nil? && owner_hours_that_week + duration_hours > max_per_week
-      ["DurationWeek", "You cannot book #{room.name} for more than #{max_per_week} hours per week."]
-    end
+  # Whether the booking is longer than its room's maximum duration. False when the room has no maximum or a
+  # time is missing.
+  def exceeds_maximum_duration?
+    max_duration = sub_space.maximum_booking_duration
+    !max_duration.nil? && times_present? && duration_hours > max_duration
+  end
+
+  # Whether the booking takes its owner past the room's maximum hours that week, counting the owner's other
+  # bookings in the room. False when the room has no weekly maximum or a time is missing.
+  def exceeds_weekly_hours?
+    max_per_week = sub_space.maximum_booking_hours_per_week
+    !max_per_week.nil? && times_present? && owner_hours_that_week + duration_hours > max_per_week
+  end
+
+  # Sets what a new booking starts with when the user books it: its first status (see initial_status), the
+  # room's default visibility and, when an admin books it, the approval stamp (an admin booking is always
+  # approved). Sets only the booking's own attributes; the caller saves it.
+  def apply_initial_state(by:)
+    self.booking_status_id = initial_status(booked_by_admin: by.admin?).id
+    self.public = sub_space.default_public
+    return unless by.admin?
+
+    self.approved_at = Time.current
+    self.approved_by_id = by.id
   end
 
   # The status a new booking starts with: approved when an admin books it or its room needs no approval;
@@ -282,6 +298,11 @@ class SubSpaceBooking < ApplicationRecord
     auto_hours = sub_space.max_automatic_approval_hour
     !auto_hours.nil? && duration_hours <= auto_hours ? BookingStatus.approved : BookingStatus.pending
   end
+
+  def times_present?
+    [start_time, end_time].none?(nil)
+  end
+  private :times_present?
 
   def minute_changed?(attribute)
     to_minute = ->(time) { time&.change(sec: 0) }

@@ -322,6 +322,12 @@ en:
       decline_label: "Decline %{name}"
     picker:
       min_length: "Type at least %{count} characters to search for a person."
+    rules:
+      maximum_duration: "has a maximum booking duration of %{hours} hours"
+      weekly_hours: "has a maximum booking hours per person per week of %{hours} hours"
+      public_by_default: "bookings (Name and Description of event) are public by default"
+      approval_with_automatic: "Bookings require manual approval, bookings of %{hours} hours or less will be automatically approved"
+      approval_required: "bookings will require manual approval"
     series:
       too_long: "A recurring booking can span at most %{days} days."
       partial: "Booked %{booked} of %{total} occurrences. Not booked: %{failed}."

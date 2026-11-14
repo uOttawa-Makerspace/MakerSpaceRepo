@@ -22,4 +22,20 @@ RSpec.describe SpaceManagerJoin, type: :model do
   it "skips the admin check when no user is set" do
     expect(SpaceManagerJoin.new(space: space)).to be_valid
   end
+
+  describe ".supervisor_options" do
+    it "lists each manager once as [name, id], sorted by name ignoring case" do
+      bob = create(:user, :admin, name: "Bob Manager")
+      alice = create(:user, :admin, name: "alice Manager")
+      SpaceManagerJoin.create!(space: space, user: bob)
+      SpaceManagerJoin.create!(space: create(:space), user: bob)
+      SpaceManagerJoin.create!(space: space, user: alice)
+
+      expect(SpaceManagerJoin.supervisor_options).to eq([["alice Manager", alice.id], ["Bob Manager", bob.id]])
+    end
+
+    it "is empty when no space has a manager" do
+      expect(SpaceManagerJoin.supervisor_options).to eq([])
+    end
+  end
 end

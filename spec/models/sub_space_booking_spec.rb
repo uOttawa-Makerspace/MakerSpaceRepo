@@ -457,6 +457,12 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
         block = described_class.find_by!(blocking: true, sub_space: room)
         expect(block.overlaps_block?).to be(false)
       end
+
+      it "is false while a time is missing" do
+        saved_at("2027-04-03", "12:00", "14:00", blocking: true)
+        expect(booking_at("2027-04-03", "13:00", "15:00", end_time: nil).overlaps_block?).to be(false)
+        expect(booking_at("2027-04-03", "13:00", "15:00", start_time: nil).overlaps_block?).to be(false)
+      end
     end
 
     describe "#moving?" do
@@ -485,20 +491,88 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
       end
     end
 
-    describe "#room_limit_breach" do
-      it "is nil for a room without limits" do
-        expect(booking_at("2027-04-07", "10:00", "20:00").room_limit_breach).to be_nil
+    describe "#duration_hours" do
+      it "is the length in hours, and nil while a time is missing" do
+        expect(booking_at("2027-04-07", "10:00", "11:30").duration_hours).to eq(1.5)
+        expect(booking_at("2027-04-07", "10:00", "11:30", end_time: nil).duration_hours).to be_nil
+        expect(booking_at("2027-04-07", "10:00", "11:30", start_time: nil).duration_hours).to be_nil
+      end
+    end
+
+    describe "#exceeds_maximum_duration?" do
+      it "is false for a room without a maximum duration" do
+        expect(booking_at("2027-04-07", "10:00", "20:00").exceeds_maximum_duration?).to be(false)
       end
 
-      it "names the maximum duration first, then the weekly hours" do
-        room.update!(maximum_booking_duration: 2, maximum_booking_hours_per_week: 3)
+      it "is true only beyond the room's maximum duration" do
+        room.update!(maximum_booking_duration: 2)
+        expect(booking_at("2027-04-07", "10:00", "12:01").exceeds_maximum_duration?).to be(true)
+        expect(booking_at("2027-04-07", "10:00", "12:00").exceeds_maximum_duration?).to be(false)
+      end
+
+      it "is false while a time is missing" do
+        room.update!(maximum_booking_duration: 2)
+        expect(booking_at("2027-04-07", "10:00", "13:00", end_time: nil).exceeds_maximum_duration?).to be(false)
+      end
+    end
+
+    describe "#exceeds_weekly_hours?" do
+      it "is false for a room without a weekly maximum" do
+        saved_at("2027-04-06", "10:00", "20:00")
+        expect(booking_at("2027-04-07", "10:00", "20:00").exceeds_weekly_hours?).to be(false)
+      end
+
+      it "is true only when the owner's other hours that week plus this booking pass the room's weekly maximum" do
+        room.update!(maximum_booking_hours_per_week: 3)
         saved_at("2027-04-06", "10:00", "12:00")
 
-        expect(booking_at("2027-04-07", "10:00", "13:00").room_limit_breach)
-          .to eq(["DurationHour", "You cannot book #{room.name} for more than 2 hours."])
-        expect(booking_at("2027-04-07", "10:00", "12:00").room_limit_breach)
-          .to eq(["DurationWeek", "You cannot book #{room.name} for more than 3 hours per week."])
-        expect(booking_at("2027-04-07", "10:00", "11:00").room_limit_breach).to be_nil
+        expect(booking_at("2027-04-07", "10:00", "11:01").exceeds_weekly_hours?).to be(true)
+        expect(booking_at("2027-04-07", "10:00", "11:00").exceeds_weekly_hours?).to be(false)
+        expect(booking_at("2027-04-14", "10:00", "13:00").exceeds_weekly_hours?).to be(false) # next week
+      end
+
+      it "is false while a time is missing" do
+        room.update!(maximum_booking_hours_per_week: 1)
+        expect(booking_at("2027-04-07", "10:00", "13:00", start_time: nil).exceeds_weekly_hours?).to be(false)
+      end
+    end
+
+    describe "#apply_initial_state" do
+      let(:admin) { create(:user, :admin) }
+
+      it "approves an admin's booking, stamps the approval and takes the room's default visibility" do
+        room.update!(approval_required: true, default_public: true)
+        booking = booking_at("2027-04-07", "10:00", "13:00")
+
+        booking.apply_initial_state(by: admin)
+
+        expect(booking.booking_status_id).to eq(@approved_status.id)
+        expect(booking.public).to be(true)
+        expect(booking.approved_by_id).to eq(admin.id)
+        expect(booking.approved_at).to eq(Time.current)
+        expect(booking).to be_new_record
+      end
+
+      it "gives a user's booking the room's initial status and visibility, with no approval stamp" do
+        room.update!(approval_required: true, default_public: false)
+        booking = booking_at("2027-04-07", "10:00", "13:00")
+
+        booking.apply_initial_state(by: owner)
+
+        expect(booking.booking_status_id).to eq(@pending_status.id)
+        expect(booking.public).to be(false)
+        expect(booking.approved_by_id).to be_nil
+        expect(booking.approved_at).to be_nil
+      end
+
+      it "leaves a user's automatically approved booking without an approval stamp" do
+        booking = booking_at("2027-04-07", "10:00", "11:00")
+
+        booking.apply_initial_state(by: owner)
+
+        expect(booking.booking_status_id).to eq(@approved_status.id)
+        expect(booking.approved_by_id).to be_nil
+        expect(booking.approved_at).to be_nil
       end
     end
 

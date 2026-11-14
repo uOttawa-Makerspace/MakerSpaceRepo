@@ -352,6 +352,12 @@ fr:
       decline_label: "Refuser %{name}"
     picker:
       min_length: "Saisissez au moins %{count} caractères pour rechercher une personne."
+    rules:
+      maximum_duration: "a une durée maximale de réservation de %{hours} heures"
+      weekly_hours: "a un maximum de %{hours} heures de réservation par personne par semaine"
+      public_by_default: "les réservations (nom et description de l'événement) sont publiques par défaut"
+      approval_with_automatic: "Les réservations nécessitent une approbation manuelle, les réservations de %{hours} heures ou moins seront approuvées automatiquement"
+      approval_required: "les réservations nécessiteront une approbation manuelle"
     series:
       too_long: "Une réservation récurrente peut couvrir au plus %{days} jours."
       partial: "%{booked} occurrences sur %{total} réservées. Non réservées : %{failed}."
