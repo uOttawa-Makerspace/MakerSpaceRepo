@@ -7,6 +7,14 @@ class Video < ApplicationRecord
 
   scope :processed, -> { where(processed: true) }
 
+  # The videos of one kind of parent (:proficient_project or :learning_module), newest first, with their files. The
+  # parent is loaded for the videos that have files, the only ones the admin list shows.
+  def self.listed_under(parent)
+    videos = joins(parent).preload(video_attachments: :blob).order(created_at: :desc).to_a
+    ActiveRecord::Associations::Preloader.new(records: videos.select { |video| video.video.attached? }, associations: parent).call
+    videos
+  end
+
   has_many_attached :video
 
   ALLOWED_CONTENT_TYPES = %w[

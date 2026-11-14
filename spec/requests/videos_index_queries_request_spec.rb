@@ -44,6 +44,15 @@ RSpec.describe "Admin video list: queries", type: :request do
     ])
   end
 
+  it "lists nothing for videos without files" do
+    2.times { create(:video, proficient_project: create(:proficient_project)) }
+
+    get videos_path
+
+    expect(response).to have_http_status(:ok)
+    expect(shown).to eq([])
+  end
+
   it "runs the same number of queries for two videos as for five" do
     videos!(2)
     two = queries_for(videos_path)

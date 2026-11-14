@@ -5,8 +5,8 @@ class VideosController < DevelopmentProgramsController
   before_action :set_video, only: %i[destroy]
 
   def index
-    @videos_pp = Video.joins(:proficient_project).preload(:proficient_project, video_attachments: :blob).order(created_at: :desc)
-    @videos_lm = Video.joins(:learning_module).preload(:learning_module, video_attachments: :blob).order(created_at: :desc)
+    @videos_pp = Video.listed_under(:proficient_project)
+    @videos_lm = Video.listed_under(:learning_module)
   end
 
   def new
