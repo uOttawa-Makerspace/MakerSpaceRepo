@@ -1,5 +1,6 @@
 import TomSelect from "tom-select";
 import { tomSelectOptions } from "../src/page_locale.js";
+import { reportFailure, requestJson } from "../src/request_error";
 import "../src/file_upload.js";
 
 window.showPass = function () {
@@ -22,23 +23,21 @@ window.togglePass = function () {
   }
 };
 
-// Asks the server for the users matching the typed text, from two
-// characters on (TomSelect itself only calls this past two, see shouldLoad).
+// Asks the server for the users matching the typed text (TomSelect only asks
+// once shouldLoadUsers agrees). A failed search shows an error toast and
+// answers the list with no options.
 function loadUsers(type, callback) {
-  if (type.length < 2) {
-    return;
-  } else {
-    let url = "/repositories/populate_users?search=" + type;
-    fetch(url)
-      .then((response) => response.json())
-      .then((data) => {
-        callback(
-          data.users.map((user) => {
-            return { id: user.id, username: user.username };
-          }),
-        );
-      });
-  }
+  const query = new URLSearchParams({ search: type });
+  requestJson(`/repositories/populate_users?${query}`, undefined, {
+    requireBody: true,
+  })
+    .then((data) =>
+      callback(data.users.map(({ id, username }) => ({ id, username }))),
+    )
+    .catch((error) => {
+      reportFailure(error);
+      callback();
+    });
 }
 
 function shouldLoadUsers(type) {
