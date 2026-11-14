@@ -62,6 +62,7 @@ group :development, :test do
   gem "bullet"
   gem "bundler-audit", require: false
   gem "factory_bot_rails"
+  gem "i18n-tasks", "1.2.1", require: false
   gem "faker", "~> 3.1"
   gem "listen", "~> 3.7"
   gem "rspec-json_expectations"
