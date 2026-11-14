@@ -17,7 +17,7 @@
             <div class="accordion" id="accordion-<%= training.id %>">
               <div class="accordion-item m-3">
                 <div class="accordion-header" id="header-<%= training.id %>">
-                  <p style="float: right"><%= sanitize(get_lower_level_lm(training.id)) %></p>
+                  <p style="float: right"><%= sanitize(get_lower_level_lm(training)) %></p>
                   <h2 class="mb-0">
                     <button class="accordion-button btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>">
                       <%= training.localized_name %>
@@ -30,10 +30,10 @@
 
                     <p><%= training.description.presence %></p>
 
-                    <p><%= t('learning_module_track.index.modules_finished', done: LearningModule.where(id: current_user.learning_module_tracks.completed.pluck(:learning_module_id)).where(training_id: training.id).count, total: training.learning_modules.count) %></p>
+                    <p><%= t('learning_module_track.index.modules_finished', done: training.learning_modules_completed(current_user).size, total: training.learning_modules.size) %></p>
                     <p><%= t('learning_module_track.index.next_modules') %></p>
                     <ul>
-                      <% get_next_lm(training.id).each do |next_module| %>
+                      <% get_next_lm(training).each do |next_module| %>
                         <li><%= link_to next_module.title, learning_area_path(id: next_module.id) %></li>
                       <% end %>
                     </ul>

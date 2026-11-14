@@ -1,6 +1,6 @@
 class LearningModuleTrackController < DevelopmentProgramsController
   def index
-    @skills = Skill.includes(:trainings)
+    @skills = Skill.includes(trainings: :learning_modules)
     @certifications = current_user.certifications.includes(training_session: :training)
     @remaining_trainings = current_user.remaining_trainings
   end

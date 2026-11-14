@@ -41,6 +41,13 @@ class Training < ApplicationRecord
     level ? scope.where(learning_modules: { level: level }) : scope
   end
 
+  # The learning modules of this training the user has not completed yet, in their set order. Reads the loaded
+  # learning_modules, so a page listing many trainings preloads them once.
+  def learning_modules_remaining(user)
+    completed_ids = user.completed_learning_module_ids
+    learning_modules.reject { |m| completed_ids.include?(m.id) }
+  end
+
   # The training's proficient projects that the user has been awarded. Reads the loaded
   # proficient_projects, so a page listing many trainings preloads them once.
   def awarded_proficient_projects(user)
