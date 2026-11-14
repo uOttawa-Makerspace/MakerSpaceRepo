@@ -11,11 +11,7 @@ require "i18n/tasks"
 RSpec.describe "Translation keys used by the app" do
   # Keys used today but defined in neither locale ("all"). Take a key off once it is defined, or its
   # use is fixed; never add one.
-  known_missing = %w[
-    all:job_orders.order.unnamed_task
-    all:settings.admin.title
-    all:users.tablist..about
-  ]
+  known_missing = %w[]
 
   before(:context) do
     leaves = I18n::Tasks::BaseTask.new.missing_keys.leaves

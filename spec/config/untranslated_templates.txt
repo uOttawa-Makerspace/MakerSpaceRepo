@@ -36,7 +36,6 @@ app/views/coupon_codes/edit.html.erb
 app/views/coupon_codes/index.html.erb
 app/views/development_programs/skills.html.erb
 app/views/faqs/_form.html.erb
-app/views/faqs/create.html.erb
 app/views/faqs/edit.html.erb
 app/views/faqs/index.html.erb
 app/views/faqs/new.html.erb
@@ -102,9 +101,7 @@ app/views/msr_mailer/issue_email_to_team.html.erb
 app/views/msr_mailer/new_printer_issue.html.erb
 app/views/msr_mailer/print_failed.html.erb
 app/views/msr_mailer/repo_report.html.erb
-app/views/msr_mailer/reset_password_email.html.erb
 app/views/msr_mailer/send_admin_pp_evaluation.html.erb
-app/views/msr_mailer/send_checklist_reminder.html.erb
 app/views/msr_mailer/send_exam.html.erb
 app/views/msr_mailer/send_kit_email.html.erb
 app/views/msr_mailer/send_monthly_report.html.erb
@@ -113,9 +110,7 @@ app/views/msr_mailer/send_notification_for_task_request.html.erb
 app/views/msr_mailer/send_notification_for_task_request_update.html.erb
 app/views/msr_mailer/send_notification_to_staff_for_joining_task.erb
 app/views/msr_mailer/send_notification_to_volunteer_for_joining_task.erb
-app/views/msr_mailer/send_ommic.html.erb
 app/views/msr_mailer/send_profile_update.html.erb
-app/views/msr_mailer/send_report.html.erb
 app/views/msr_mailer/send_results_pp.html.erb
 app/views/msr_mailer/send_training_report.html.erb
 app/views/msr_mailer/send_user_pp_evaluation.html.erb
@@ -126,11 +121,9 @@ app/views/order_items/order_item_modal.html.erb
 app/views/order_items/revoke_order_item_modal.html.erb
 app/views/orders/index.html.erb
 app/views/partials/_streaming.html.erb
-app/views/printer_issues/destroy.html.erb
 app/views/printer_issues/index.html.erb
 app/views/printer_issues/new.html.erb
 app/views/printer_issues/show.html.erb
-app/views/printer_issues/update.html.erb
 app/views/printer_types/edit.html.erb
 app/views/printer_types/index.html.erb
 app/views/printer_types/new.html.erb
