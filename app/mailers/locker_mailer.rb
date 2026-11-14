@@ -58,8 +58,4 @@ class LockerMailer < ApplicationMailer
   def staff_mail(address, subject_key)
     mail(to: address, subject: subject_for(address, subject_key))
   end
-
-  def subject_for(address, subject_key, **values)
-    I18n.t("locker_mailer.#{action_name}.#{subject_key}", locale: recipient_locale(address), **values)
-  end
 end

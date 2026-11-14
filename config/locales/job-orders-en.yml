@@ -37,3 +37,116 @@ en:
       text: "Internal and external rates vary by service. Materials sold separately. One-hour consultations are free."
   job_order_mailer:
     quote_notes: "Note from the staff:"
+    hello: "Hello,"
+    see_order: "See Order"
+    # Subject of a mail to staff about an expedited order; %{subject} = the usual subject
+    expedited_subject: "EXPEDITED: %{subject}"
+    send_job_submitted:
+      subject: "A new Job Order has been submitted"
+      preheader: "Makerepo - Job Order Created"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "You have received this email because a new Job Order has been created on %{site_link}."
+      # %{link} = link to the job order admin page, text from page_link
+      body_html: "A user has created a Job order with ID %{id}. Check the %{link} for details."
+      page_link: "Job Order page"
+    send_job_requote_needed:
+      subject: "Job Order #%{id} needs a new quote"
+      preheader: "Makerepo - Job Order needs a new quote"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "You have received this email because a quoted Job Order on %{site_link} needs a new quote."
+      body: 'Job Order %{id} is back in "Waiting for Staff Approval". Its previous quote can no longer be approved and its previous payment link no longer works. Please review the order and send a new quote.'
+    send_job_quote:
+      # The quote mail is in French, then English; subject: "<French> // <English>"
+      subject_approved: "Your job order #%{id} has been approved"
+      subject_reapproved: "Your job order #%{id} has been re-approved"
+      preheader: "Makerepo - Job Order Approval"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "You have received this email because a Job Order was approved on %{site_link}."
+      reminder: "This is a reminder that admins have approved a Job Order. Please review the quote and approve or deny it."
+      # %{link} = link to the approval page, text from page_link
+      approved_html: "Your Job Order with ID #%{id} has been approved. Check the %{link} to approve or deny the quote."
+      page_link: "Job Order page"
+      pricing: "Pricing:"
+      # %{amount} = an amount of money
+      amount: "CAD %{amount}"
+      # Start of the price breakdown of a task, followed by "<quantity> <unit> × <unit price>"
+      base_fee: "base fee of %{amount} plus"
+      # Shown when the service has no unit of its own
+      unit: "unit"
+      pending: "Pending pricing"
+      line_items: "Line items:"
+      grand_total: "Grand Total:"
+      # Button text: "<French> / <English>"
+      button: "See Order"
+    send_job_declined:
+      subject: "Your job #%{id} has been declined"
+      preheader: "Makerepo - Job Order Declined"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "You have received this email because a Job Order has been declined on %{site_link}."
+      body: "Admins have declined a Job order with ID #%{id}."
+      comments: "Please see for the following comments from admins for more details:"
+      # %{contact} = the makerspace address, as a mail link
+      contact_html: "If you require any further assistance or have question about the current declined order, please contact us at %{contact}. Please include the Job Order ID #%{id} in your email."
+    send_job_user_approval:
+      subject: "A user has approved a Job Order"
+      preheader: "Makerepo - Job Order User Approval"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "You have received this email because a user has approved a Job Order on %{site_link}."
+      # %{link} = link to the job order admin page, text from page_link
+      body_html: "A user has approved Job order with ID %{id}. Check the %{link} for details."
+      page_link: "Job Order page"
+    send_job_user_declined:
+      subject: "A user has declined a Job Order"
+      preheader: "Makerepo - Job Order User Decline"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "You have received this email because a user has declined a Job Order on %{site_link}."
+      # %{link} = link to the job order admin page, text from page_link
+      body_html: "A user has declined Job order with ID %{id}. Check the %{link} for details."
+      page_link: "Job Order page"
+    send_job_decision_confirmation:
+      # The confirmation is in French, then English; subject: "<French> // <English>"
+      subject_approved: "Your approval of job order #%{id} is recorded"
+      subject_declined: "Your decline of job order #%{id} is recorded"
+      # Preheader: "MakerRepo - <French> // <English>"
+      confirmation: "Confirmation"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "You received this email because you responded to the quote of your job order on %{site_link}."
+      approved: "We have recorded your approval of the quote for job order #%{id}. MakerRepo staff will now process it."
+      declined: "We have recorded your decline of the quote for job order #%{id}."
+      # %{contact} = the makerspace address, as a mail link
+      questions_html: "If you have any questions, email %{contact} and include the job order number."
+    send_job_completed:
+      subject: "Your Job Order #%{id} has been completed"
+      preheader: "Makerepo - Job Order Completed"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "You have received this email because a new Job Order has been approved on %{site_link}."
+      button: "Pay by Credit Card"
+    payment_succeeded:
+      subject: "Your Job Order #%{id} is now ready for pickup"
+      preheader: "Makerepo - Job Order Payment Succeeded"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "You have received this email because your payment for Job Order was successful on %{site_link}."
+      body: "We are happy to inform you that your Payment for the Job Order #%{id} has been successfully completed! Please email makerspace@uottawa.ca to arrange for pick up of your part or if you have any questions."
+      button: "View Order"
+    staff_assigned:
+      subject: "You've been assigned to Job Order #%{id}"
+      preheader: "Makerepo - Staff Assignment Notification"
+      # The mail is in French, then English. %{site_link} = link to makerepo.com
+      why_received_html: "You received this email because an administrator assigned you to a job order on %{site_link}."
+      hello: "Hello %{name},"
+      body: "You have been assigned to Job Order #%{id} by an administrator."
+      details: "Job Order Details:"
+      client: "Client: %{name}"
+      expedited: "(EXPEDITED ORDER)"
+      button: "View Job Order"
+  chat_message_mailer:
+    new_message:
+      # The mail is in French, then English; subject: "MakerRepo - <French> // <English>"
+      subject: "New message"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "You received this email because a new message was posted on your job order on %{site_link}."
+      hello: "Hello,"
+      # %{sender} = the sender's name
+      body: "You have received a new message regarding your Job Order #%{id} from %{sender}."
+      message: "Message:"
+      button: "View Job Order"

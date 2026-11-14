@@ -1,4 +1,5 @@
 class ChatMessageMailer < ApplicationMailer
+  # French, then English, whatever the recipient's language; the layout and sign-off follow the recipient's language.
   # One message to one address: a notification never shows the other recipients' addresses.
   def new_message(chat_message, recipient_email)
     @chat_message = chat_message
@@ -6,9 +7,8 @@ class ChatMessageMailer < ApplicationMailer
     @sender = chat_message.display_sender
     @sender_name = { fr: sender_name(:fr), en: sender_name(:en) }
 
-    subject = "MakerRepo - Nouveau message // New message"
-    
-    mail(to: recipient_email, subject: subject)
+    @subject = "MakerRepo - #{bilingual_subject('subject')}"
+    mail(to: recipient_email, subject: @subject)
   end
 
   private
