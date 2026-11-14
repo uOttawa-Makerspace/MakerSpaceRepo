@@ -204,11 +204,13 @@ class Staff::UnavailabilitiesController < StaffAreaController
   end
 
   def update_single_unavailability
+    start, finish = @staff_unavailability.times_after_update(parse_time(staff_params[:utc_start_time]),
+                                                             parse_time(staff_params[:utc_end_time]), keep: keep_dialog_times?)
     if @staff_unavailability.update(
         title: staff_params[:title].presence || "Unavailable",
         description: ActionController::Base.helpers.strip_tags(staff_params[:description].to_s),
-        start_time: parse_time(staff_params[:utc_start_time]),
-        end_time: parse_time(staff_params[:utc_end_time]),
+        start_time: start,
+        end_time: finish,
         recurrence_rule: staff_params[:recurrence_rule].presence
       )
       flash[:notice] = "Unavailability updated successfully."
@@ -220,7 +222,8 @@ class Staff::UnavailabilitiesController < StaffAreaController
   def update_all_occurrences
     return alert_unreadable_times if unreadable_times?
 
-    start, finish = series_times
+    start, finish = @staff_unavailability.times_after_update(parse_time(staff_params[:utc_start_time]),
+                                                          parse_time(staff_params[:utc_end_time]), keep: keep_dialog_times?, series: true)
     rule_to_use = series_rule(@staff_unavailability).with_time_from(staff_params[:recurrence_rule], at: start)
 
     if @staff_unavailability.update(
@@ -236,25 +239,18 @@ class Staff::UnavailabilitiesController < StaffAreaController
     end
   end
 
-  # The series' start and end after "update all": its own when the dialog sends its times as it filled them
-  # (keep_series_times), else the series' Toronto start date at the posted Toronto clock time, for the posted length.
-  def series_times
-    return [@staff_unavailability.start_time, @staff_unavailability.end_time] if params[:keep_series_times] == "1"
-
-    posted_start = parse_time(staff_params[:utc_start_time])
-    start = helpers.combine_date_and_time(@staff_unavailability.start_time, posted_start)
-    [start, start + (parse_time(staff_params[:utc_end_time]) - posted_start).to_i]
+  # Whether the dialog sent its time fields as it filled them from the clicked entry.
+  def keep_dialog_times?
+    params[:keep_series_times] == "1"
   end
 
   def update_this_occurrence
     return alert_unreadable_times if unreadable_times?
 
-    exclusion_start_time = helpers.combine_date_and_time(
-      parse_time(staff_params[:utc_start_time]),
-      @staff_unavailability.start_time
+    excluded, start, finish = @staff_unavailability.occurrence_after_update(
+      parse_time(staff_params[:utc_start_time]), parse_time(staff_params[:utc_end_time]), keep: keep_dialog_times?
     )
-
-    updated_rule = series_rule(@staff_unavailability).appending_exdate(exclusion_start_time)
+    updated_rule = series_rule(@staff_unavailability).appending_exdate(excluded)
 
     unless @staff_unavailability.update(recurrence_rule: updated_rule)
       flash[:alert] = validation_message(@staff_unavailability, "failed_saves.unavailability_update")
@@ -264,8 +260,8 @@ class Staff::UnavailabilitiesController < StaffAreaController
     StaffUnavailability.create!(
       title: staff_params[:title].presence || "Unavailable",
       description: ActionController::Base.helpers.strip_tags(staff_params[:description].to_s),
-      start_time: parse_time(staff_params[:utc_start_time]),
-      end_time: parse_time(staff_params[:utc_end_time]),
+      start_time: start,
+      end_time: finish,
       recurrence_rule: nil,
       user_id: @staff_unavailability.user_id
     )

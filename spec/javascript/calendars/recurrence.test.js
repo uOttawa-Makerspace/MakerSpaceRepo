@@ -10,6 +10,7 @@ import {
   instantFromCalendar,
   instantToWall,
   startOfDay,
+  wallEnd,
   wallFromCalendar,
   wallOfField,
   wallFromString,
@@ -132,6 +133,18 @@ describe.each(ZONES)("with the process clock in %s", (zone) => {
       );
       expect(new Date(endOfDateInstant("2026-01-09")).toISOString()).toBe(
         "2026-01-10T04:59:59.000Z",
+      );
+    });
+
+    it("ends a calendar entry at its own end", () => {
+      expect(wallEnd("2026-03-30T10:30:00-04:00", wall(2026, 3, 30, 9))).toBe(
+        wall(2026, 3, 30, 10, 30),
+      );
+    });
+
+    it("ends an entry the calendar gives no end one wall-clock hour after its start, also on the night the clocks go back", () => {
+      expect(wallEnd("", wall(2027, 11, 7, 1, 30))).toBe(
+        wall(2027, 11, 7, 2, 30),
       );
     });
   });

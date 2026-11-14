@@ -167,6 +167,42 @@ RSpec.describe "Staff unavailabilities", type: :request do
         expect(record.reload.title).to eq("Same")
       end
 
+      # A one-hour entry from the first 01:30 of the night the clocks go back: its dialog fields read 01:30 to 02:30,
+      # which post as two real hours.
+      it "keeps the stored times of a one-off when the dialog sends them as it filled them" do
+        first = Time.zone.local(2027, 11, 7, 1, 30)
+        night = create(:staff_unavailability, user: staff, title: "Night", start_time: first, end_time: first + 1.hour)
+        patch staff_unavailability_path(night), params: payload(title: "Renamed", utc_start_time: "2027-11-07T05:30:00Z",
+                                                                utc_end_time: "2027-11-07T07:30:00Z").merge(keep_series_times: "1")
+
+        expect(night.reload).to have_attributes(title: "Renamed", start_time: first, end_time: first + 1.hour)
+      end
+
+      it "takes the posted times of a one-off when they were changed" do
+        first = Time.zone.local(2027, 11, 7, 1, 30)
+        night = create(:staff_unavailability, user: staff, title: "Night", start_time: first, end_time: first + 1.hour)
+        patch staff_unavailability_path(night), params: payload(utc_start_time: "2027-11-07T05:30:00Z", utc_end_time: "2027-11-07T07:30:00Z")
+
+        expect(night.reload).to have_attributes(start_time: first, end_time: first + 2.hours)
+      end
+
+      # "Update this" from the night the clocks go back: the dialog's fields read 01:30 to 02:30 whichever 01:30 was opened.
+      {
+        "the first 01:30" => [Time.utc(2027, 10, 31, 5, 30), "2027-11-07T05:30:00Z", "2027-11-07T06:30:00Z"],
+        "the second 01:30 (a series that starts there)" => [Time.utc(2027, 11, 7, 6, 30), "2027-11-07T06:30:00Z", "2027-11-07T07:30:00Z"]
+      }.each do |label, (starts_at, from, to)|
+        it "scope 'this' replaces and excludes #{label} with its real hour when the times are as the dialog filled them" do
+          weekly = create(:staff_unavailability, user: staff, title: "Series", start_time: starts_at, end_time: starts_at + 1.hour,
+                                                 recurrence_rule: "DTSTART:#{starts_at.strftime('%Y%m%dT%H%M%SZ')}\nRRULE:FREQ=WEEKLY;BYDAY=SU")
+          patch staff_unavailability_path(weekly), params: payload(title: "Once", utc_start_time: "2027-11-07T05:30:00Z", utc_end_time: "2027-11-07T07:30:00Z")
+            .merge(update_scope: "this", keep_series_times: "1")
+
+          replacement = StaffUnavailability.order(:id).last
+          expect([replacement.start_time.utc.iso8601, replacement.end_time.utc.iso8601]).to eq([from, to])
+          expect(weekly.reload.recurrence_rule).to include("EXDATE:#{Time.iso8601(from).strftime('%Y%m%dT%H%M%SZ')}")
+        end
+      end
+
       it "404s for someone else's record and leaves it untouched" do
         theirs = create(:staff_unavailability, user: other, title: "Theirs")
         patch staff_unavailability_path(theirs), params: payload(title: "Hacked")

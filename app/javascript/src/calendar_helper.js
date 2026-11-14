@@ -5,14 +5,12 @@ import {
   dateValue,
   fieldValue,
   instantFromCalendar,
-  instantToWall,
   storedRule,
+  wallEnd,
   wallFromCalendar,
-  wallToInstant,
 } from "./recurrence";
 
-const HOUR_MS = 60 * 60 * 1000;
-const DAY_MS = 24 * HOUR_MS;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 // The dialog's time fields as they stand; saving compares them with how they
 // were filled, so "update all" keeps the series' own times unless they changed.
@@ -332,13 +330,6 @@ export function eventClick(eventImpl) {
   openEventForEditing(eventImpl);
 }
 
-// The end of an event the calendar gives without one: the next day for an
-// all-day event, otherwise an hour after the start.
-function defaultEnd(start, allDay) {
-  if (allDay) return start + DAY_MS;
-  return instantToWall(wallToInstant(start) + HOUR_MS);
-}
-
 // The title to edit: the stored one when the feed sends it (an entry with no
 // title sends null, which is an empty field), otherwise the calendar's label
 // without its pencil mark.
@@ -462,9 +453,9 @@ function openEventForEditing(eventImpl) {
   endTimeField.disabled = eventImpl.allDay;
   startTimeField.value = fieldValue(start);
   endTimeField.value = fieldValue(
-    eventImpl.end
-      ? wallFromCalendar(eventImpl.endStr)
-      : defaultEnd(start, eventImpl.allDay),
+    eventImpl.allDay && !eventImpl.end
+      ? start + DAY_MS
+      : wallEnd(eventImpl.endStr, start),
   );
   document.getElementById("keep_series_times").dataset.filled = timesShown();
 
