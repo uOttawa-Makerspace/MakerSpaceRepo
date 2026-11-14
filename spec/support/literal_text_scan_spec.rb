@@ -43,6 +43,10 @@ RSpec.describe LiteralTextScan do
     expect(described_class.visible_literals("<p><%= t('x') %></p>")).to eq([])
   end
 
+  it "ignores a page's style sheet but not the words after it" do
+    expect(described_class.visible_literals("<style>.colors { margin: 2rem auto; }</style><p>Hi</p>")).to eq(["Hi"])
+  end
+
   it "ignores a path shown as written but not words around it" do
     expect(described_class.visible_literals("<code>/learning_area/s/</code>")).to eq([])
     expect(described_class.visible_literals("<p>Go to /help now</p>")).to eq(%w[Go to now])

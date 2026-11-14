@@ -96,6 +96,9 @@ RSpec.describe "Translated templates" do
     app/views/volunteer_hours/edit.html.erb
     app/views/volunteer_hours/volunteer_hour_requests.html.erb
     app/views/volunteer_hours/volunteer_hour_per_user.html.erb
+    app/views/admin/calendar/index.html.erb
+    app/views/admin/calendar/_sidebar.html.erb
+    app/views/admin/calendar/_colors.html.erb
   ].freeze
 
   TRANSLATED_TEMPLATES.each do |path|
