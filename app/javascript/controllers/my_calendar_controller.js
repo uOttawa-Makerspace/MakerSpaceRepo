@@ -2,7 +2,14 @@ import { Controller } from "@hotwired/stimulus";
 import { Tooltip } from "bootstrap";
 
 import { applyEventBackground } from "../src/calendar_background.js";
-import { calendarTexts, pageCalendar, relabel } from "../src/page_calendar.js";
+import {
+  calendarTexts,
+  overlapLabel,
+  pageCalendar,
+  relabel,
+  rememberedOverlap,
+  toggleEventOverlap,
+} from "../src/page_calendar.js";
 
 // The title and description are free text, so they go in as text nodes and
 // never as markup.
@@ -48,7 +55,7 @@ export default class extends TypedController {
   }
 
   calendarOptions() {
-    const overlap = localStorage.fullCalendarEventOverlap === "true";
+    const overlap = rememberedOverlap();
     return {
       initialView: "timeGridWeek",
       headerToolbar: {
@@ -63,8 +70,8 @@ export default class extends TypedController {
           click: () => this.toggleOthersShifts(),
         },
         toggleEventOverlap: {
-          text: this.overlapLabel(overlap),
-          click: () => this.toggleEventOverlap(),
+          text: overlapLabel(this.calendarTarget, overlap),
+          click: () => toggleEventOverlap(this.calendarTarget, this.calendar),
         },
       },
       events: this.feedUrlValue,
@@ -97,17 +104,6 @@ export default class extends TypedController {
         ? this.texts.showAllShifts
         : this.texts.showMyShiftsOnly,
     );
-  }
-
-  toggleEventOverlap() {
-    const overlap = !this.calendar.getOption("slotEventOverlap");
-    localStorage.fullCalendarEventOverlap = overlap;
-    this.calendar.setOption("slotEventOverlap", overlap);
-    relabel(this.calendar, "toggleEventOverlap", this.overlapLabel(overlap));
-  }
-
-  overlapLabel(overlap) {
-    return overlap ? this.texts.disableOverlap : this.texts.enableOverlap;
   }
 
   decorateEvent(info) {

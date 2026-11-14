@@ -4,8 +4,11 @@ import listPlugin from "@fullcalendar/list";
 
 import {
   calendarTexts,
+  overlapLabel,
   pageCalendar,
   relabel,
+  rememberedOverlap,
+  toggleEventOverlap,
 } from "../../app/javascript/src/page_calendar.js";
 import {
   CALENDAR_TEXTS,
@@ -171,5 +174,48 @@ describe("pageCalendar", () => {
     expect(drawn.calendar.getOption("customButtons").toggle.click).toBeTypeOf(
       "function",
     );
+  });
+
+  describe("event overlap", () => {
+    afterEach(() => localStorage.clear());
+
+    it("is off until the browser remembers it on", () => {
+      expect(rememberedOverlap()).toBe(false);
+      localStorage.fullCalendarEventOverlap = "true";
+      expect(rememberedOverlap()).toBe(true);
+    });
+
+    it("names what pressing its button does, in the page's language", () => {
+      drawn = draw("fr");
+
+      expect(overlapLabel(drawn.target, false)).toBe(
+        "Activer le chevauchement des événements",
+      );
+      expect(overlapLabel(drawn.target, true)).toBe(
+        "Désactiver le chevauchement des événements",
+      );
+    });
+
+    it("turns the other way on the calendar, is remembered and relabels its button", () => {
+      drawn = draw("en", {
+        headerToolbar: { left: "toggleEventOverlap", center: "", right: "" },
+        slotEventOverlap: false,
+        customButtons: {
+          toggleEventOverlap: { text: "Enable Event Overlap", click() {} },
+        },
+      });
+      const button = () =>
+        drawn.target.querySelector(".fc-toggleEventOverlap-button");
+
+      toggleEventOverlap(drawn.target, drawn.calendar);
+      expect(drawn.calendar.getOption("slotEventOverlap")).toBe(true);
+      expect(rememberedOverlap()).toBe(true);
+      expect(button().title).toBe("Disable Event Overlap");
+
+      toggleEventOverlap(drawn.target, drawn.calendar);
+      expect(drawn.calendar.getOption("slotEventOverlap")).toBe(false);
+      expect(localStorage.fullCalendarEventOverlap).toBe("false");
+      expect(button().textContent).toBe("Enable Event Overlap");
+    });
   });
 });

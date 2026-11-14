@@ -44,3 +44,24 @@ export function relabel(calendar, name, label) {
     [name]: { ...buttons[name], text: label },
   });
 }
+
+// Whether events overlap in the week grid: one setting for the staff and admin
+// calendars, which the browser remembers.
+export function rememberedOverlap() {
+  return localStorage.fullCalendarEventOverlap === "true";
+}
+
+// The label of the toggleEventOverlap button, which names what pressing it does.
+export function overlapLabel(target, overlap) {
+  const texts = calendarTexts(target);
+  return overlap ? texts.disableOverlap : texts.enableOverlap;
+}
+
+// Turns overlap the other way on the calendar drawn on the target, remembers
+// it and relabels the toggleEventOverlap button.
+export function toggleEventOverlap(target, calendar) {
+  const overlap = !calendar.getOption("slotEventOverlap");
+  localStorage.fullCalendarEventOverlap = overlap;
+  calendar.setOption("slotEventOverlap", overlap);
+  relabel(calendar, "toggleEventOverlap", overlapLabel(target, overlap));
+}
