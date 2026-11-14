@@ -6,24 +6,6 @@ require "rails_helper"
 # copy of the page still carries the markup of the pickers it was left with,
 # and each select must end up with one working picker, as on a fresh visit.
 RSpec.describe "Pickers on a page restored from the Turbo cache", type: :system, skip_bullet: true do
-  # Visits the same page again with Turbo, then goes back to the cached copy
-  # and waits until the page scripts have run over it.
-  def leave_and_restore(path)
-    wait_for_app_js
-    page.execute_script("Turbo.visit(#{"#{path}#{path.include?('?') ? '&' : '?'}revisit=1".to_json})")
-    expect(page).to have_current_path(/revisit=1/)
-    wait_for_app_js
-    # Set only after the forward visit has loaded, so it marks the load of the
-    # restored page; it runs after the page scripts' own handlers.
-    page.execute_script(<<~JS)
-      document.addEventListener("turbo:load", () => {
-        document.documentElement.dataset.restoredLoad = "done";
-      }, { once: true });
-    JS
-    page.go_back
-    expect(page).to have_css("html[data-restored-load='done']", visible: :all)
-  end
-
   def expect_one_working_picker(id)
     expect(page).to have_css("##{id} ~ .ts-wrapper", count: 1, visible: :all)
     expect(page.evaluate_script("Boolean(document.getElementById(#{id.to_json}).tomselect)")).to be(true)
@@ -119,5 +101,84 @@ RSpec.describe "Pickers on a page restored from the Turbo cache", type: :system,
 
   it "keeps one working training picker on the new question form" do
     restore_with_picker(create(:user, :admin), new_question_path, "questions_trainings")
+  end
+
+  describe "on admin forms" do
+    let(:admin) { create(:user, :admin) }
+
+    it "keeps one working skill picker per language on the new training form" do
+      log_in_as(admin, to: new_admin_training_path)
+      expect(page).to have_css("#training_list_of_skills_fr.tomselected", visible: :all)
+      leave_and_restore(new_admin_training_path)
+      # The two skill selects share a parent, so each is checked by its own next sibling.
+      %w[training_list_of_skills_en training_list_of_skills_fr].each do |id|
+        expect(page).to have_css("##{id} + .ts-wrapper", count: 1, visible: :all)
+        expect(page).to have_no_css("##{id} + .ts-wrapper + .ts-wrapper", visible: :all)
+        expect(page.evaluate_script("Boolean(document.getElementById(#{id.to_json}).tomselect)")).to be(true)
+      end
+    end
+
+    it "keeps one working job type picker on the new job option form" do
+      create(:job_type)
+      restore_with_picker(admin, new_admin_job_option_path, "job_type_ids_option")
+    end
+
+    it "keeps one working space picker on the new contact info form" do
+      create(:space)
+      restore_with_picker(admin, new_admin_contact_info_path, "contact_info_space_id")
+    end
+
+    it "keeps one working manager picker on the space settings page" do
+      restore_with_picker(admin, edit_admin_space_path(create(:space)), "space-manager-select")
+    end
+
+    it "keeps one working captain search on the new team form" do
+      restore_with_picker(admin, new_admin_team_path, "search_users_add")
+    end
+  end
+
+  describe "on pages whose script once ran only when first loaded" do
+    let(:admin) { create(:user, :admin) }
+
+    it "keeps one working user picker on the new project kit form" do
+      restore_with_picker(admin, new_project_kit_path, "kit_user_select")
+    end
+
+    it "keeps one working category picker and link buttons on the new project proposal form" do
+      restore_with_picker(admin, new_project_proposal_path, "project_proposal_categories")
+      click_button "link-list"
+      expect(page).to have_css(".main_ul li input", count: 1)
+      click_button "remove-link-list"
+      expect(page).to have_no_css(".main_ul li")
+    end
+
+    it "keeps one working printer picker and model code on the printers page" do
+      create(:printer_type, :UM2P)
+      create(:printer_type, :RPL2)
+      restore_with_picker(admin, printers_path, "remove_printer")
+      select "Ultimaker 2+ (UM2P)", from: "model_id"
+      expect(page).to have_css("#newPrinterCode", exact_text: "UM2P")
+      select "Replicator 2 (RPL2)", from: "model_id"
+      expect(page).to have_css("#newPrinterCode", exact_text: "RPL2")
+    end
+
+    it "keeps one working staff picker on the add new staff page" do
+      restore_with_picker(admin, admin_add_new_staff_index_path, "new_staff_select")
+    end
+
+    it "sets up the staff picker on the add new staff page reached by a Turbo visit" do
+      log_in_as(admin, to: admin_users_path)
+      wait_for_app_js
+      page.execute_script("Turbo.visit(#{admin_add_new_staff_index_path.to_json})")
+      expect(page).to have_current_path(admin_add_new_staff_index_path)
+      expect(page).to have_css("#new_staff_select.tomselected", visible: :all)
+      expect_one_working_picker("new_staff_select")
+    end
+
+    it "keeps one working supervisor and department picker on the new key request form" do
+      create(:space)
+      restore_with_picker(create(:user, :staff), new_key_request_path, "supervisor-select")
+      expect_one_working_picker("space-select")
+    end
   end
 end

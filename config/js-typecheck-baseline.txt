@@ -25,10 +25,6 @@
 2	app/javascript/controllers/volunteer_search_controller.js	TS2339	Property 'inactiveRowTargets' does not exist on type 'default'.
 1	app/javascript/controllers/volunteer_search_controller.js	TS2339	Property 'inactiveTableContainerTarget' does not exist on type 'default'.
 3	app/javascript/controllers/volunteer_search_controller.js	TS2339	Property 'inputTarget' does not exist on type 'default'.
-1	app/javascript/entrypoints/add_new_staff.js	TS2345	Argument of type 'HTMLElement' is not assignable to parameter of type 'string | TomInput'.
-1	app/javascript/entrypoints/add_new_staff.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
-1	app/javascript/entrypoints/admin_spaces.js	TS2353	Object literal may only specify known properties, and 'searchOnKeyUp' does not exist in type 'RecursivePartial<TomSettings>'.
-1	app/javascript/entrypoints/admin_spaces.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 1	app/javascript/entrypoints/application.js	TS2322	Type '(func: any, wait: any, immediate: any) => (...args: any[]) => void' is not assignable to type '(func: any, wait: any) => (...args: any[]) => void'.
 1	app/javascript/entrypoints/application.js	TS2339	Property 'clearEndDate' does not exist on type 'Window & typeof globalThis'.
 2	app/javascript/entrypoints/application.js	TS2339	Property 'dataset' does not exist on type 'Element'.
@@ -56,7 +52,6 @@
 1	app/javascript/entrypoints/contact_infos.js	TS2339	Property 'id' does not exist on type 'Node'.
 2	app/javascript/entrypoints/contact_infos.js	TS2339	Property 'innerHTML' does not exist on type 'Node'.
 2	app/javascript/entrypoints/contact_infos.js	TS2339	Property 'querySelectorAll' does not exist on type 'Node'.
-1	app/javascript/entrypoints/contact_infos.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 1	app/javascript/entrypoints/design_days.js	TS2339	Property 'href' does not exist on type 'HTMLElement'.
 1	app/javascript/entrypoints/design_days.js	TS2339	Property 'querySelector' does not exist on type 'Node'.
 1	app/javascript/entrypoints/design_days.js	TS2339	Property 'value' does not exist on type 'Element'.
@@ -65,7 +60,6 @@
 1	app/javascript/entrypoints/exams.js	TS2554	Expected 0 arguments, but got 1.
 1	app/javascript/entrypoints/faqs.js	TS2339	Property 'checked' does not exist on type 'EventTarget'.
 2	app/javascript/entrypoints/generate_acquired_badge.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
-1	app/javascript/entrypoints/job_options.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 3	app/javascript/entrypoints/job_orders_wizard.js	TS2339	Property 'dataset' does not exist on type 'Element'.
 2	app/javascript/entrypoints/job_orders_wizard.js	TS2339	Property 'querySelector' does not exist on type 'Node'.
 1	app/javascript/entrypoints/job_orders_wizard.js	TS2339	Property 'removeAttribute' does not exist on type 'Node'.
@@ -78,9 +72,6 @@
 4	app/javascript/entrypoints/job_orders.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
 3	app/javascript/entrypoints/job_orders.js	TS2362	The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
 3	app/javascript/entrypoints/job_orders.js	TS2363	The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
-1	app/javascript/entrypoints/key_requests.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
-2	app/javascript/entrypoints/key_requests.js	TS2353	Object literal may only specify known properties, and 'searchOnKeyUp' does not exist in type 'RecursivePartial<TomSettings>'.
-2	app/javascript/entrypoints/key_requests.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 1	app/javascript/entrypoints/key_transactions.js	TS2339	Property 'flatpickr' does not exist on type 'HTMLElement'.
 1	app/javascript/entrypoints/keys.js	TS2339	Property 'src' does not exist on type 'Element'.
 2	app/javascript/entrypoints/keys.js	TS2339	Property 'value' does not exist on type 'EventTarget'.
@@ -120,8 +111,6 @@
 1	app/javascript/entrypoints/lockers.js	TS2550	Property 'intersection' does not exist on type 'Set<any>'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2025' or later.
 2	app/javascript/entrypoints/printer_issues.js	TS2304	Cannot find name 'issueSummary'.
 2	app/javascript/entrypoints/printer_issues.js	TS2339	Property 'value' does not exist on type 'Element'.
-1	app/javascript/entrypoints/printers.js	TS2339	Property 'options' does not exist on type 'EventTarget'.
-1	app/javascript/entrypoints/printers.js	TS2339	Property 'selectedIndex' does not exist on type 'EventTarget'.
 8	app/javascript/entrypoints/proficient_projects.js	TS2339	Property 'children' does not exist on type 'Node'.
 1	app/javascript/entrypoints/proficient_projects.js	TS2339	Property 'closest' does not exist on type 'EventTarget'.
 1	app/javascript/entrypoints/proficient_projects.js	TS2339	Property 'files' does not exist on type 'HTMLElement'.
@@ -131,16 +120,11 @@
 1	app/javascript/entrypoints/proficient_projects.js	TS2339	Property 'style' does not exist on type 'Node'.
 2	app/javascript/entrypoints/proficient_projects.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
 1	app/javascript/entrypoints/proficient_projects.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
-1	app/javascript/entrypoints/project_kits.js	TS2353	Object literal may only specify known properties, and 'searchOnKeyUp' does not exist in type 'RecursivePartial<TomSettings>'.
-1	app/javascript/entrypoints/project_kits.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
-8	app/javascript/entrypoints/project_proposals.js	TS2339	Property 'children' does not exist on type 'Node'.
 2	app/javascript/entrypoints/project_proposals.js	TS2339	Property 'focus' does not exist on type 'Element'.
-2	app/javascript/entrypoints/project_proposals.js	TS2339	Property 'removeAttribute' does not exist on type 'Node'.
 2	app/javascript/entrypoints/project_proposals.js	TS2339	Property 'style' does not exist on type 'Element'.
 1	app/javascript/entrypoints/project_proposals.js	TS2339	Property 'value' does not exist on type 'ChildNode'.
 2	app/javascript/entrypoints/project_proposals.js	TS2339	Property 'value' does not exist on type 'Element'.
-5	app/javascript/entrypoints/project_proposals.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
-1	app/javascript/entrypoints/project_proposals.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
+2	app/javascript/entrypoints/project_proposals.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
 1	app/javascript/entrypoints/questions.js	TS2322	Type 'string | ArrayBuffer' is not assignable to type 'string'.
 1	app/javascript/entrypoints/questions.js	TS2339	Property 'files' does not exist on type 'EventTarget'.
 1	app/javascript/entrypoints/questions.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
@@ -188,9 +172,6 @@
 1	app/javascript/entrypoints/sub_space_booking.js	TS2339	Property 'value' does not exist on type 'EventTarget'.
 15	app/javascript/entrypoints/sub_space_booking.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
 2	app/javascript/entrypoints/tap_box_console.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
-1	app/javascript/entrypoints/teams.js	TS2353	Object literal may only specify known properties, and 'searchOnKeyUp' does not exist in type 'RecursivePartial<TomSettings>'.
-1	app/javascript/entrypoints/teams.js	TS2353	Object literal may only specify known properties, and 'searchPlaceholder' does not exist in type 'RecursivePartial<TomSettings>'.
-2	app/javascript/entrypoints/teams.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 1	app/javascript/entrypoints/unavailabilities.js	TS2339	Property 'closest' does not exist on type 'EventTarget'.
 1	app/javascript/entrypoints/unavailabilities.js	TS2339	Property 'querySelector' does not exist on type 'Node'.
 1	app/javascript/entrypoints/unavailabilities.js	TS2339	Property 'querySelectorAll' does not exist on type 'Node'.

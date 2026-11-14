@@ -1,17 +1,12 @@
-import TomSelect from "tom-select";
-import { tomSelectOptions } from "../src/page_locale.js";
+import { tomSelectFor } from "../src/tom_select.js";
 document.addEventListener("turbo:load", function () {
-  if (document.getElementById("contact_info_space_id")) {
-    if (!document.getElementById("contact_info_space_id").tomselect) {
-      new TomSelect(
-        "#contact_info_space_id",
-        tomSelectOptions(document, {
-          plugins: ["remove_button", "restore_on_backspace", "clear_button"],
-          create: true,
-          persist: false,
-        }),
-      );
-    }
+  const space = document.getElementById("contact_info_space_id");
+  if (space) {
+    tomSelectFor(space, {
+      plugins: ["remove_button", "restore_on_backspace", "clear_button"],
+      create: true,
+      persist: false,
+    });
   }
 
   function attachToggleEvents(inputs) {

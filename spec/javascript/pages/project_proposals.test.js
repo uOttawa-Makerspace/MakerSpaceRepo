@@ -7,19 +7,26 @@ vi.mock("tom-select", () => ({
     constructor(target, config) {
       this.target = target;
       this.config = config;
-      document.querySelector(target).tomselect = this;
+      target.tomselect = this;
       selects.push(this);
     }
   },
 }));
 vi.mock("../../../app/javascript/src/file_upload.js", () => ({}));
 
+// Each load imports the page script afresh, and removes the turbo:load
+// listener of the one before, so a later page load runs only the newest.
+let pageLoad;
 async function load(html) {
   document.body.innerHTML = html;
   selects.length = 0;
   vi.resetModules();
   vi.spyOn(console, "log").mockImplementation(() => {});
+  if (pageLoad) document.removeEventListener("turbo:load", pageLoad);
+  const listen = vi.spyOn(document, "addEventListener");
   await import("../../../app/javascript/entrypoints/project_proposals.js");
+  pageLoad = listen.mock.calls.find(([type]) => type === "turbo:load")[1];
+  listen.mockRestore();
 }
 
 const $ = (id) => document.getElementById(id);
@@ -33,13 +40,49 @@ const submit = (form) => {
 describe("categories", () => {
   it("lets a proposal pick up to five categories", async () => {
     await load('<select id="project_proposal_categories"></select>');
-    expect(selects[0].target).toBe("#project_proposal_categories");
+    expect(selects[0].target).toBe($("project_proposal_categories"));
     expect(selects[0].config.maxItems).toBe(5);
   });
 
   it("does not decorate the select twice", async () => {
     await load('<select id="project_proposal_categories"></select>');
     expect(selects).toHaveLength(1);
+  });
+
+  it("keeps the select's picker on a later load of the same page", async () => {
+    await load('<select id="project_proposal_categories"></select>');
+    document.dispatchEvent(new Event("turbo:load"));
+    expect(selects).toHaveLength(1);
+  });
+});
+
+describe("later page loads", () => {
+  const page = `<ul class="main_ul"></ul><button id="link-list"></button>`;
+
+  it("binds each button once over the same page", async () => {
+    await load(page);
+    document.dispatchEvent(new Event("turbo:load"));
+    $("link-list").click();
+    expect(links()).toHaveLength(1);
+  });
+
+  it("binds the buttons of a page restored from the cache", async () => {
+    await load(page);
+    document.body.innerHTML = page;
+    document.dispatchEvent(new Event("turbo:load"));
+    $("link-list").click();
+    expect(links()).toHaveLength(1);
+  });
+
+  it("does not add the saved links again to a restored page that shows them", async () => {
+    const saved = `<ul class="main_ul"></ul>
+      <input id="ignore_past_experiences" value="notes|https://a,https://b,">`;
+    await load(saved);
+    // A restored page is a copy of the page as it was left.
+    const shown = document.body.innerHTML;
+    document.body.innerHTML = shown;
+    document.dispatchEvent(new Event("turbo:load"));
+    expect(links()).toHaveLength(2);
   });
 });
 
