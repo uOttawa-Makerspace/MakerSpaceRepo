@@ -38,17 +38,6 @@ function bindImageRemovals() {
     .forEach((el) => bindOnce(el, bindImageRemoval));
 }
 
-function bindCompletedTaskToggle(hider) {
-  const completedRows = document.querySelectorAll('tr[completed="completed"]');
-  hider.addEventListener("click", () => {
-    completedRows.forEach((row) => row.classList.toggle("d-none"));
-    hider.innerHTML =
-      hider.innerHTML === "Hide Completed Task"
-        ? "Show Completed Task"
-        : "Hide Completed Task";
-  });
-}
-
 // The TomSelect of a filter select: the one an earlier load of the same page
 // made, or a new one. Null when the page has no such select.
 function filterSelect(el, options) {
@@ -170,11 +159,9 @@ document.addEventListener("turbo:load", function () {
   });
 
   // ------------------------------------------------------------------------
-  // 2. Task Form Image Removals & Completed Task Toggler
+  // 2. Task Form Image Removals
   // ------------------------------------------------------------------------
   bindImageRemovals();
-  const hider = document.getElementById("task-hider");
-  if (hider) bindOnce(hider, bindCompletedTaskToggle);
 
   // ------------------------------------------------------------------------
   // 3. Volunteer Tasks Index Filter & Search Engine

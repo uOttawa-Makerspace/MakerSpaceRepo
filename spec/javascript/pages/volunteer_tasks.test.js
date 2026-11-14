@@ -86,58 +86,27 @@ describe("task form", () => {
     expect(document.querySelectorAll(".image-remove")).toHaveLength(0);
   });
 
-  it("hides and shows the completed tasks", () => {
+  it("leaves a completed task toggle alone, as no page has one", () => {
     load(`<button id="task-hider">Hide Completed Task</button>
-      <table><tr completed="completed" id="done"></tr><tr id="open"></tr></table>`);
-    $("task-hider").click();
-    expect($("done").classList.contains("d-none")).toBe(true);
-    expect($("open").classList.contains("d-none")).toBe(false);
-    expect($("task-hider").innerHTML).toBe("Show Completed Task");
+      <table><tr completed="completed" id="done"></tr></table>`);
     $("task-hider").click();
     expect($("done").classList.contains("d-none")).toBe(false);
     expect($("task-hider").innerHTML).toBe("Hide Completed Task");
   });
 
-  it("toggles the rows that were completed when the page loaded", () => {
-    load(`<button id="task-hider">Hide Completed Task</button>
-      <table><tbody id="t"><tr completed="completed" id="done"></tr></tbody></table>`);
-    const later = document.createElement("tr");
-    later.id = "later";
-    later.setAttribute("completed", "completed");
-    $("t").appendChild(later);
-    $("task-hider").click();
-    expect($("done").classList.contains("d-none")).toBe(true);
-    expect($("later").classList.contains("d-none")).toBe(false);
-  });
-
-  it("shows the hide label after any other label", () => {
-    load(`<button id="task-hider">Something else</button>`);
-    $("task-hider").click();
-    expect($("task-hider").innerHTML).toBe("Hide Completed Task");
-  });
-
   it("binds each page control once when the same page loads a second time", () => {
     load(`<input id="deleteimages" value="">
-      <div><a class="image-remove" id="11"></a></div>
-      <button id="task-hider">Hide Completed Task</button>
-      <table><tr completed="completed" id="done"></tr></table>`);
+      <div><a class="image-remove" id="11"></a></div>`);
     document.dispatchEvent(new Event("turbo:load"));
-    $("task-hider").click();
-    expect($("done").classList.contains("d-none")).toBe(true);
-    expect($("task-hider").innerHTML).toBe("Show Completed Task");
     $("11").click();
     expect($("deleteimages").value).toBe("11,");
   });
 
   it("binds the copies of the controls on a page restored from the cache", () => {
     load(`<input id="deleteimages" value="">
-      <div><a class="image-remove" id="11"></a></div>
-      <button id="task-hider">Hide Completed Task</button>
-      <table><tr completed="completed" id="done"></tr></table>`);
+      <div><a class="image-remove" id="11"></a></div>`);
     document.body.replaceWith(document.body.cloneNode(true));
     document.dispatchEvent(new Event("turbo:load"));
-    $("task-hider").click();
-    expect($("done").classList.contains("d-none")).toBe(true);
     $("11").click();
     expect($("deleteimages").value).toBe("11,");
   });
