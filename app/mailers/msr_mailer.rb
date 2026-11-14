@@ -91,14 +91,6 @@ class MsrMailer < ApplicationMailer
     mail(to: @user.email, subject: "Your Proficient Project Results")
   end
 
-  # def send_ommic
-  #   all_users = User.where('email like ? and length(email) = 19', '%@uottawa.ca').pluck(:email).uniq
-  #   attachments['ommic1.png'] = File.read("#{Rails.root}/app/assets/images/mail/ommic1.png")
-  #   attachments['ommic2.jpg'] = File.read("#{Rails.root}/app/assets/images/mail/ommic2.jpg")
-  #   attachments['ommic1.jpg'] = File.read("#{Rails.root}/app/assets/images/mail/ommic3.jpg")
-  #   mail(to: 'bruno.mrlima@gmail.com', subject: 'OMMIC Conference | Discount for students', bcc: all_users)
-  # end
-
   def repo_report(repository, user)
     @repository = repository
     @user = user
@@ -108,13 +100,6 @@ class MsrMailer < ApplicationMailer
       subject: "Repository #{repository.title} reported"
     )
   end
-
-  # THIS IS DEPRECATED
-  # def reset_password_email(email, newpassword)
-  #   @user = User.find_by email: email
-  #   @password = newpassword
-  #   mail(to: email, subject: 'New password for MakerRepo')
-  # end
 
   # Mail can wait in the queue or be retried for hours, so the link is checked when the mail is built: one
   # whose link has expired is not sent (the person asks again).
@@ -250,12 +235,6 @@ class MsrMailer < ApplicationMailer
       subject: "Your 3D print on #{printer.number} has failed"
     )
   end
-
-  # Not in use currently
-  # def send_checklist_reminder(email, master_email)
-  #   @email = email
-  #   mail(to: email, subject: 'Checklist Reminder', bcc: master_email)
-  # end
 
   # contact_email: the address the reporter typed, shown to the team when they chose to share it
   # (the mail itself always goes to +email+). account: the signed-in user, always shown to the
