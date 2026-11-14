@@ -16,11 +16,11 @@ vi.mock("tom-select", () => ({
       return this.value;
     }
     on(name, fn) {
-      this.handlers[name] = fn;
+      (this.handlers[name] ??= []).push(fn);
     }
     set(value) {
       this.value = value;
-      this.handlers.change?.();
+      (this.handlers.change ?? []).forEach((fn) => fn());
     }
   },
 }));
@@ -97,6 +97,42 @@ describe("task form", () => {
     expect($("done").classList.contains("d-none")).toBe(false);
     expect($("task-hider").innerHTML).toBe("Hide Completed Task");
   });
+
+  it("toggles the rows that were completed when the page loaded", () => {
+    load(`<button id="task-hider">Hide Completed Task</button>
+      <table><tbody id="t"><tr completed="completed" id="done"></tr></tbody></table>`);
+    const later = document.createElement("tr");
+    later.id = "later";
+    later.setAttribute("completed", "completed");
+    $("t").appendChild(later);
+    $("task-hider").click();
+    expect($("done").classList.contains("d-none")).toBe(true);
+    expect($("later").classList.contains("d-none")).toBe(false);
+  });
+
+  it("shows the hide label after any other label", () => {
+    load(`<button id="task-hider">Something else</button>`);
+    $("task-hider").click();
+    expect($("task-hider").innerHTML).toBe("Hide Completed Task");
+  });
+
+  it("binds the page controls again when the same page loads a second time", () => {
+    load(`<input id="deleteimages" value="">
+      <div><a class="image-remove" id="11"></a></div>
+      <button id="task-hider">Hide Completed Task</button>
+      <table><tr completed="completed" id="done"></tr></table>`);
+    document.dispatchEvent(new Event("turbo:load"));
+    $("task-hider").click();
+    expect($("done").classList.contains("d-none")).toBe(false);
+    expect($("task-hider").innerHTML).toBe("Hide Completed Task");
+    $("11").click();
+    expect($("deleteimages").value).toBe("11,11,");
+  });
+
+  it("does nothing on a page without the task controls", () => {
+    load("<p>nothing here</p>");
+    expect(selects).toHaveLength(0);
+  });
 });
 
 describe("task index filters", () => {
@@ -161,5 +197,113 @@ describe("task index filters", () => {
   it("works without any of the filter controls", () => {
     load('<div id="volunteerTasksIndex"></div>');
     expect(selects).toHaveLength(0);
+  });
+
+  it("gives each filter select its own options", () => {
+    expect(byId("spaceFilter").config).toEqual({
+      allowEmptyOption: true,
+      create: false,
+      controlInput: null,
+    });
+    expect(byId("categoryFilter").config).toEqual({
+      allowEmptyOption: true,
+      create: false,
+      controlInput: null,
+    });
+    // the placeholder now comes from the select element, translated in the view
+    expect(byId("certFilter").config).toEqual({
+      plugins: ["remove_button"],
+      create: false,
+    });
+  });
+
+  it("matches the space and category whatever their case", () => {
+    byId("spaceFilter").set("sTUDIO");
+    expect(visible()).toEqual(["paint"]);
+    byId("spaceFilter").set("");
+    byId("categoryFilter").set("bUILD");
+    expect(visible()).toEqual(["welding"]);
+  });
+
+  it("matches the space exactly, not by part of its name", () => {
+    byId("spaceFilter").set("Stud");
+    expect(visible()).toEqual([]);
+  });
+
+  it("matches a certification by part of its name, whatever its case", () => {
+    byId("certFilter").set(["weld"]);
+    expect(visible()).toEqual(["welding"]);
+    byId("certFilter").set(["SAFE"]);
+    expect(visible()).toEqual(["welding", "paint"]);
+  });
+
+  it("matches the search text anywhere in the card text", () => {
+    $("taskSearchInput").value = "the w";
+    $("taskSearchInput").dispatchEvent(new Event("input"));
+    expect(visible()).toEqual(["paint"]);
+    $("taskSearchInput").value = "   ";
+    $("taskSearchInput").dispatchEvent(new Event("input"));
+    expect(visible()).toEqual(["welding", "paint", "bare"]);
+  });
+
+  it("shows a hidden card again once it matches", () => {
+    byId("spaceFilter").set("Studio");
+    byId("spaceFilter").set("Garage");
+    expect(visible()).toEqual(["welding"]);
+    expect($("welding").style.display).toBe("");
+  });
+
+  it("filters only the cards inside the task index", () => {
+    load(`${page}${card("outside", 'data-space="Garage"')}`);
+    byId("spaceFilter").set("Studio");
+    expect(visible()).toEqual(["paint", "outside"]);
+  });
+
+  it("filters by the selects alone on a page without the search box", () => {
+    load(`<div id="volunteerTasksIndex">
+      <select id="spaceFilter"></select>
+      ${card("a", 'data-space="Garage"')}${card("b", 'data-space="Studio"')}
+    </div>`);
+    expect(selects.map((s) => s.el.id)).toEqual(["spaceFilter"]);
+    byId("spaceFilter").set("Garage");
+    expect(visible()).toEqual(["a"]);
+  });
+
+  it("filters by the search box alone on a page without the selects", () => {
+    load(`<div id="volunteerTasksIndex">
+      <input id="taskSearchInput">
+      ${card("a", 'data-searchable-text="Sweep"')}${card("b", 'data-searchable-text="Mop"')}
+    </div>`);
+    $("taskSearchInput").value = "mop";
+    $("taskSearchInput").dispatchEvent(new Event("input"));
+    expect(visible()).toEqual(["b"]);
+  });
+
+  it("takes the selected values from selects decorated before the page loaded", () => {
+    document.body.innerHTML = page;
+    const earlier = {
+      getValue: () => "Studio",
+      handlers: [],
+      on(name, fn) {
+        this.handlers.push([name, fn]);
+      },
+    };
+    $("spaceFilter").tomselect = earlier;
+    selects.length = 0;
+    document.dispatchEvent(new Event("turbo:load"));
+    expect(selects.map((s) => s.el.id)).toEqual([
+      "categoryFilter",
+      "certFilter",
+    ]);
+    expect(earlier.handlers.map(([name]) => name)).toEqual(["change"]);
+    earlier.handlers[0][1]();
+    expect(visible()).toEqual(["paint"]);
+  });
+
+  it("adds another change handler each time the same decorated page loads", () => {
+    document.dispatchEvent(new Event("turbo:load"));
+    expect(byId("spaceFilter").handlers.change).toHaveLength(2);
+    expect(byId("categoryFilter").handlers.change).toHaveLength(2);
+    expect(byId("certFilter").handlers.change).toHaveLength(2);
   });
 });

@@ -8,11 +8,32 @@ document.addEventListener("turbo:submit-start", function () {
   prev_anchor = window.location.hash;
 });
 
-document.addEventListener("turbo:load", function () {
+function restorePreviousAnchor() {
   if (prev_anchor) {
     window.location.hash = prev_anchor;
     prev_anchor = "";
   }
+}
+
+function bindAdminSubTabs() {
+  // Get all admin sub tabs
+  const adminTablist = document
+    .getElementById("adminTabPane")
+    .querySelectorAll(".nav-link");
+  adminTablist.forEach((el) => {
+    // on click, change hash
+    el.addEventListener("click", (ev) => {
+      window.location.hash = el.getAttribute("href");
+    });
+
+    // If hash linking to this tab, click
+    if (window.location.hash == el.getAttribute("href")) {
+      el.click();
+    }
+  });
+}
+
+function bindProfileTabs() {
   // Find hash and manually click on load
   // this only finds links within the #myTab element
   // because having random links be clicked via a hash is a security nightmare
@@ -21,23 +42,7 @@ document.addEventListener("turbo:load", function () {
     // Find admin tab, exists if user is an admin
     const adminTab = profileTablist.querySelector("#admin-tab");
 
-    if (adminTab) {
-      // Get all admin sub tabs
-      const adminTablist = document
-        .getElementById("adminTabPane")
-        .querySelectorAll(".nav-link");
-      adminTablist.forEach((el) => {
-        // on click, change hash
-        el.addEventListener("click", (ev) => {
-          window.location.hash = el.getAttribute("href");
-        });
-
-        // If hash linking to this tab, click
-        if (window.location.hash == el.getAttribute("href")) {
-          el.click();
-        }
-      });
-    }
+    if (adminTab) bindAdminSubTabs();
 
     profileTablist.querySelectorAll(".nav-link").forEach((el) => {
       // Add the hash on click on any outer tab
@@ -58,7 +63,9 @@ document.addEventListener("turbo:load", function () {
       }
     });
   }
+}
 
+function bindShowHideControls() {
   const elements = document.querySelectorAll("[data-show], [data-hide]");
   for (let i = 0; i < elements.length; i++) {
     elements[i].addEventListener("change", function () {
@@ -80,7 +87,9 @@ document.addEventListener("turbo:load", function () {
       elements[i].dispatchEvent(new Event("change"));
     }
   }
+}
 
+function initProgramSelect() {
   const programSelect = document.getElementById("user_program");
   if (programSelect && !programSelect.tomselect) {
     new TomSelect(
@@ -112,7 +121,9 @@ document.addEventListener("turbo:load", function () {
       });
     }
   }
+}
 
+function bindRoleButtons() {
   const staffRoleButtons = document.querySelectorAll(".role-button");
   const staffSpaceChanger = document.getElementById("staff-space-changer");
   if (staffRoleButtons) {
@@ -126,7 +137,9 @@ document.addEventListener("turbo:load", function () {
       });
     });
   }
+}
 
+function bindKeyCertUploads() {
   const fileInputs = document.querySelectorAll(".key-cert-file");
   fileInputs.forEach((fileInput) => {
     fileInput.addEventListener("change", (e) => {
@@ -155,7 +168,9 @@ document.addEventListener("turbo:load", function () {
       }
     });
   });
+}
 
+function decorateRoleSpaceSelects() {
   // For the select boxes in admin/users/manage_roles
   document.querySelectorAll(".role-space-select").forEach((i) => {
     new TomSelect(
@@ -171,7 +186,9 @@ document.addEventListener("turbo:load", function () {
       }),
     );
   });
+}
 
+function bindUserSpaceButtons() {
   document.querySelectorAll("input.set-user-space-button").forEach((i) => {
     i.addEventListener("change", (event) => {
       // Get total space list
@@ -195,4 +212,15 @@ document.addEventListener("turbo:load", function () {
       });
     });
   });
+}
+
+document.addEventListener("turbo:load", function () {
+  restorePreviousAnchor();
+  bindProfileTabs();
+  bindShowHideControls();
+  initProgramSelect();
+  bindRoleButtons();
+  bindKeyCertUploads();
+  decorateRoleSpaceSelects();
+  bindUserSpaceButtons();
 });
