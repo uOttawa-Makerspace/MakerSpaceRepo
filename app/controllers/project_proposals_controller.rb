@@ -148,67 +148,37 @@ class ProjectProposalsController < SessionsController
   end
 
   def create_revision
-    if params[:old_project_proposal_id] &&
-         ProjectProposal.where(id: params[:old_project_proposal_id]).present?
-      @old_project_proposal = ProjectProposal.find(params[:old_project_proposal_id])
-      unless owner_or_admin?(@old_project_proposal)
-        redirect_to project_proposals_path,
-                    alert: 'You are not allowed to create a revision of this project proposal.'
-        return
-      end
-      values = @old_project_proposal.attributes.except(
-        'id',
-        'user_id',
-        'admin_id',
-        'approved',
-        'slug',
-        'season',
-        'year'
-      )
-      values['title'] = "Revision of #{@old_project_proposal.title}"
-      values['linked_project_proposal_id'] = params[:old_project_proposal_id]
+    unless revision_source_exists?
+      return redirect_back(fallback_location: root_path, alert: I18n.t('errors.proposals.revision_source_missing'))
+    end
 
-      @project_proposal = ProjectProposal.new(values)
-      @project_proposal.user_id = current_user&.id
-      unless @project_proposal.save
-        return redirect_to project_proposal_path(@old_project_proposal),
-                           alert: validation_message(@project_proposal, 'errors.proposals.revision_not_created')
-      end
+    @old_project_proposal = ProjectProposal.find(params[:old_project_proposal_id])
+    unless owner_or_admin?(@old_project_proposal)
+      redirect_to project_proposals_path,
+                  alert: 'You are not allowed to create a revision of this project proposal.'
+      return
+    end
 
-      if @old_project_proposal.photos.attached?
-        @old_project_proposal.photos.each do |photo|
-          @project_proposal.photos.attach(photo.blob)
-        end
-      end
+    @project_proposal = ProjectProposal.new(revision_values(@old_project_proposal))
+    @project_proposal.user_id = current_user&.id
+    unless @project_proposal.save
+      return redirect_to project_proposal_path(@old_project_proposal),
+                         alert: validation_message(@project_proposal, 'errors.proposals.revision_not_created')
+    end
 
-      if @old_project_proposal.project_files.attached?
-        @old_project_proposal.project_files.each do |file|
-          @project_proposal.project_files.attach(file.blob)
-        end
+    copy_revision_content(@old_project_proposal, @project_proposal)
+    respond_to do |format|
+      format.html do
+        redirect_to project_proposal_path(@project_proposal),
+                    notice:
+                      'The project proposal revision has been successfully created.'
       end
-
-      @old_project_proposal.categories.each do |category|
-        Category.create(
-          name: category.name,
-          project_proposal_id: @project_proposal.id
-        )
+      format.json do
+        render json: {
+                 redirect_uri:
+                   project_proposal_path(@project_proposal).to_s
+               }
       end
-
-      respond_to do |format|
-        format.html do
-          redirect_to project_proposal_path(@project_proposal),
-                      notice:
-                        'The project proposal revision has been successfully created.'
-        end
-        format.json do
-          render json: {
-                   redirect_uri:
-                     project_proposal_path(@project_proposal).to_s
-                 }
-        end
-      end
-    else
-      redirect_back(fallback_location: root_path, alert: I18n.t('errors.proposals.revision_source_missing'))
     end
   end
 
@@ -301,6 +271,47 @@ class ProjectProposalsController < SessionsController
   end
 
   private
+
+  def revision_source_exists?
+    params[:old_project_proposal_id] &&
+      ProjectProposal.where(id: params[:old_project_proposal_id]).present?
+  end
+
+  # The copied proposal's attributes, retitled and linked to it, without its owner, review state or semester.
+  def revision_values(old_proposal)
+    values = old_proposal.attributes.except(
+      'id',
+      'user_id',
+      'admin_id',
+      'approved',
+      'slug',
+      'season',
+      'year'
+    )
+    values['title'] = "Revision of #{old_proposal.title}"
+    values['linked_project_proposal_id'] = params[:old_project_proposal_id]
+    values
+  end
+
+  # The revision shares the old proposal's photo and file blobs and gets a copy of each of its categories.
+  def copy_revision_content(old_proposal, revision)
+    attach_revision_blobs(old_proposal.photos, revision.photos)
+    attach_revision_blobs(old_proposal.project_files, revision.project_files)
+    old_proposal.categories.each do |category|
+      Category.create(
+        name: category.name,
+        project_proposal_id: revision.id
+      )
+    end
+  end
+
+  def attach_revision_blobs(old_attachments, revision_attachments)
+    return unless old_attachments.attached?
+
+    old_attachments.each do |attachment|
+      revision_attachments.attach(attachment.blob)
+    end
+  end
 
   # Admins see everything; everyone else sees approved proposals plus their own.
   # The listing shows the proposer and reviewer to admins only, deleted accounts included.

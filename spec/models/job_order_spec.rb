@@ -664,6 +664,38 @@ RSpec.describe JobOrder, type: :model do
         expect(order.checkout_link.value).to be_nil
       end
 
+      it "serves a current draft from the locked path when the caller's status skips the lock-free read" do
+        quoted_task!("Task #1", price: 20, service_price: 0, service_quantity: 0)
+        order.reload.checkout_link
+        shopify.calls.clear
+
+        expect(order.reload.checkout_link(JobStatus.staff_approval).value).to eq("https://pay.example/inv-1")
+        expect(shopify.calls.map { |c| c[:query][/\b(draftOrder\w+|getDraftOrder)\b/] }).to eq(%w[getDraftOrder])
+        expect(order.job_order_statuses.last.job_status).to eq(JobStatus.completed)
+      end
+
+      it "returns no link and keeps the stored legacy draft when Shopify does not answer the locked read" do
+        quoted_task!("Task #1", price: 20, service_price: 0, service_quantity: 0)
+        order.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/7", shopify_draft_order_fingerprint: nil)
+        shopify.status = 502
+
+        expect(order.reload.checkout_link.value).to be_nil
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/7")
+        expect(shopify.calls.map { |c| c[:query][/\b(draftOrder\w+|getDraftOrder)\b/] }).to eq(%w[getDraftOrder])
+      end
+
+      it "drops a stored id Shopify no longer knows and creates a new draft, deleting nothing" do
+        quoted_task!("Task #1", price: 20, service_price: 0, service_quantity: 0)
+        order.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/7", shopify_draft_order_fingerprint: nil)
+        shopify.missing_ids = ["gid://shopify/DraftOrder/7"]
+
+        expect(order.reload.checkout_link.value).to eq("https://pay.example/inv-1")
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+        expect(shopify.deleted_ids).to be_empty
+        expect(shopify.calls.map { |c| c[:query][/\b(draftOrder\w+|getDraftOrder)\b/] })
+          .to eq(%w[getDraftOrder draftOrderCreate getDraftOrder])
+      end
+
       it "treats an empty (but non-null) draftOrder as found, not gone: no re-create" do
         fingerprint = described_class.find(order.id).quote_fingerprint
         order.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/9001", shopify_draft_order_fingerprint: fingerprint)

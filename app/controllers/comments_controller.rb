@@ -31,39 +31,36 @@ class CommentsController < SessionsController
   end
 
   def vote
-    downvote = params["downvote"].eql?("t") ? true : false
-    repository = @repository
-    comment = repository.comments.find params[:comment_id]
+    downvote = params["downvote"].eql?("t")
+    comment = @repository.comments.find params[:comment_id]
     upvote = @user.upvotes.find_by(comment_id: comment.id)
 
     # Nobody votes on their own comment (a vote already cast can still be taken back).
     if comment.user_id == @user.id && upvote.nil?
-      return redirect_to repository_path(repository.user_username, params[:id], anchor: "repo-comments"),
-                         alert: "You cannot vote on your own comment"
+      return redirect_to repository_comments_anchor, alert: "You cannot vote on your own comment"
     end
 
-    if upvote
-      if downvote != upvote.downvote
-        switch_vote(comment, downvote)
-        message = "Successfully #{downvote ? "downvoted" : "upvoted"} comment"
-      else
-        retract_vote(comment, downvote)
-        message = "Successfully removed #{downvote ? "downvote" : "upvote"}"
-      end
-    else
-      cast_new_vote(comment, downvote)
-      message = "Successfully #{downvote ? "downvoted" : "upvoted"} comment"
-    end
-
-    redirect_to repository_path(
-                  repository.user_username,
-                  params[:id],
-                  anchor: "repo-comments"
-                ),
-                notice: message
+    redirect_to repository_comments_anchor, notice: record_vote(comment, upvote, downvote)
   end
 
   private
+
+  def repository_comments_anchor
+    repository_path(@repository.user_username, params[:id], anchor: "repo-comments")
+  end
+
+  # Casts, switches or takes back this user's vote, and returns the notice that says which.
+  def record_vote(comment, upvote, downvote)
+    if upvote.nil?
+      cast_new_vote(comment, downvote)
+    elsif downvote != upvote.downvote
+      switch_vote(comment, downvote)
+    else
+      retract_vote(comment, downvote)
+      return "Successfully removed #{downvote ? "downvote" : "upvote"}"
+    end
+    "Successfully #{downvote ? "downvoted" : "upvoted"} comment"
+  end
 
   # A deleted repository has no page any more, so the visitor goes to the home page instead.
   def redirect_after_destroy(repository)

@@ -941,20 +941,26 @@ class JobOrder < ApplicationRecord
     state, url = shopify_fail_closed { probe_draft_order }
     return TransitionResult.done([nil, false]) if state == :error
     return TransitionResult.done([url, false]) if state == :found && draft_order_current?
+    return send_back_for_requote(latest) if state == :found && shopify_draft_order_fingerprint.present?
 
-    if state == :found && shopify_draft_order_fingerprint.present?
-      enter_status!(JobStatus.staff_approval, from: latest, actor: user, reason: "invoice_mismatch")
-      return TransitionResult.done([nil, true])
-    end
+    retire_unusable_draft(state)
+    TransitionResult.done([shopify_fail_closed { create_draft_order_keeping_id }, false])
+  end
 
-    # a legacy draft is deleted by the one refused-delete rule (a vanished one is :cleared, a paid one refuses; fail closed);
-    # a confirmed-gone id is dropped
+  # A fingerprinted draft that no longer matches the quote: the order goes back to staff and no link is served.
+  def send_back_for_requote(latest)
+    enter_status!(JobStatus.staff_approval, from: latest, actor: user, reason: "invoice_mismatch")
+    TransitionResult.done([nil, true])
+  end
+
+  # A legacy draft is deleted by the one refused-delete rule (a vanished one is :cleared, a paid one refuses; fail
+  # closed); a confirmed-gone id is dropped.
+  def retire_unusable_draft(state)
     if state == :found
       shopify_fail_closed { delete_draft_unless_paid }
     elsif shopify_draft_order_id.present?
       update_column(:shopify_draft_order_id, nil)
     end
-    TransitionResult.done([shopify_fail_closed { create_draft_order_keeping_id }, false])
   end
 
   def change_fingerprints

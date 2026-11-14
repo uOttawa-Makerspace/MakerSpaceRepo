@@ -436,6 +436,17 @@ RSpec.describe "Admin spaces", type: :request do
         expect(reader.reload.space_id).to eq(space.id)
       end
 
+      it "records no request and shows no message when the space no longer saves (a name another space shares)" do
+        create(:space).update_columns(name: "Alpha")
+
+        destroy_space("ALPHA")
+
+        expect(response).to redirect_to(admin_spaces_path)
+        expect(flash[:notice]).to be_nil
+        expect(flash[:alert]).to be_nil
+        expect(space.reload.destroy_admin_id).to be_nil
+      end
+
       it "404s without the id param (the route only supplies space_id)" do
         delete admin_space_destroy_path(space_id: space.id), params: { admin_input: "ALPHA" }
         expect(response).to have_http_status(:not_found)
