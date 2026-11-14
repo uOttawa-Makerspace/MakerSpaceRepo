@@ -55,20 +55,31 @@ RSpec.describe ChatMessage, type: :model do
     end
   end
 
-  describe ".count_unread_by_admin" do
-    it "counts the newest consecutive messages written by the order's owner" do
+  describe ".unread_by_admin_counts" do
+    it "counts the newest consecutive messages written by each order's owner" do
       travel_to(Time.utc(2027, 1, 1, 12)) { described_class.create!(job_order: order, sender: owner, message: "old owner") }
       travel_to(Time.utc(2027, 1, 1, 13)) { described_class.create!(job_order: order, sender: staff, message: "staff reply") }
       travel_to(Time.utc(2027, 1, 1, 14)) { described_class.create!(job_order: order, sender: owner, message: "owner 1") }
       travel_to(Time.utc(2027, 1, 1, 15)) { described_class.create!(job_order: order, sender: owner, message: "owner 2") }
+      other = make_job_order!(owner: create(:user, :regular_user), status_key: :user_approval)
+      travel_to(Time.utc(2027, 1, 1, 12)) { described_class.create!(job_order: other, sender: other.user, message: "first") }
 
-      expect(described_class.count_unread_by_admin(order)).to eq(2)
+      counts = nil
+      expect(count_queries { counts = described_class.unread_by_admin_counts([order, other]) }).to eq(1)
+      expect(counts).to eq(order.id => 2, other.id => 1)
     end
 
-    it "is 0 when staff wrote last and for an empty thread" do
-      expect(described_class.count_unread_by_admin(order)).to eq(0)
-      described_class.create!(job_order: order, sender: staff, message: "last word")
-      expect(described_class.count_unread_by_admin(order)).to eq(0)
+    it "leaves out an order whose last word is staff's and an empty thread" do
+      empty = make_job_order!(owner: owner, status_key: :user_approval)
+      travel_to(Time.utc(2027, 1, 1, 12)) { described_class.create!(job_order: order, sender: owner, message: "question") }
+      travel_to(Time.utc(2027, 1, 1, 13)) { described_class.create!(job_order: order, sender: staff, message: "last word") }
+      expect(described_class.unread_by_admin_counts([order, empty])).to eq({})
+    end
+
+    it "counts nothing on an order without an owner" do
+      described_class.create!(job_order: order, sender: owner, message: "question")
+      order.update_columns(user_id: nil)
+      expect(described_class.unread_by_admin_counts([order])).to eq({})
     end
   end
 

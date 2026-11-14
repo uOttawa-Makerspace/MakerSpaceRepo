@@ -51,6 +51,52 @@ RSpec.describe "Job order lists: status queries", type: :request do
     expect_flat(admin_job_orders_path, admin)
   end
 
+  describe "admin list flags" do
+    let(:staff) { create(:user, :staff) }
+    let(:expedited) { JobOption.create!(name: "Expedited Resin", fee: 2) }
+
+    # One order of each kind: expedited with two owner messages after a staff reply, plain with a
+    # staff reply last, and plain with one owner message.
+    def flagged_orders!
+      fast, answered, waiting = orders!(3, owner: owner)
+      fast.job_tasks.create!(title: "Task #1").job_task_options.create!(job_option: expedited)
+      fast.job_tasks.create!(title: "Task #2")
+      message!(fast, owner, 4.hours.ago)
+      message!(fast, staff, 3.hours.ago)
+      message!(fast, owner, 2.hours.ago)
+      message!(fast, owner, 1.hour.ago)
+      message!(answered, owner, 2.hours.ago)
+      message!(answered, staff, 1.hour.ago)
+      message!(waiting, owner, 1.hour.ago)
+      [fast, answered, waiting]
+    end
+
+    def message!(order, sender, at)
+      ChatMessage.create!(job_order: order, sender: sender, message: "note", created_at: at)
+    end
+
+    def flags
+      Nokogiri::HTML(response.body).css("tr[id^='job-order-row-']").to_h do |row|
+        cells = row.css("td")
+        [row["id"].delete_prefix("job-order-row-").to_i, [cells[0].text.squish, cells[1].text.squish]]
+      end
+    end
+
+    it "marks expedited orders and counts the owner's unanswered messages in a number of queries that does not grow with the orders", :aggregate_failures do
+      session_login!(admin)
+      flagged_orders!
+      get admin_job_orders_path # warm up (caches, constants)
+      few = count_queries { get admin_job_orders_path }
+      fast, answered, waiting = flagged_orders!
+      get admin_job_orders_path # warm up again: making orders reseeds the statuses and clears their cache
+      many = count_queries { get admin_job_orders_path }
+
+      expect(many).to eq(few)
+      expect(flags.values_at(fast.id, answered.id, waiting.id))
+        .to eq([["Expedited", "2 unread messages"], ["", ""], ["", "1 unread messages"]])
+    end
+  end
+
   it "does not load the services of the orders on admin, which the list never shows" do
     session_login!(admin)
     orders!(2, owner: owner)

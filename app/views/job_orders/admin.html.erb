@@ -39,7 +39,7 @@
       <tbody>
         <% @job_orders.each do |jo| %>
           <tr id="job-order-row-<%= jo.id %>">
-            <%= render 'admin_row', jo: %>
+            <%= render 'admin_row', jo:, expedited: @expedited_ids.include?(jo.id), unread: @unread_counts.fetch(jo.id, 0) %>
           </tr>
         <% end %>
       </tbody>

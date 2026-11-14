@@ -731,10 +731,12 @@ class JobOrder < ApplicationRecord
   end
 
   def expedited?
-    job_tasks
-      .joins(job_task_options: :job_option)
-      .where("job_options.name LIKE ?", "%Expedited%")
-      .exists?
+    job_tasks.expedited.exists?
+  end
+
+  # The ids of the given orders that have an expedited task; one query however many orders.
+  def self.expedited_ids(orders)
+    JobTask.expedited.where(job_order_id: orders.map(&:id)).distinct.pluck(:job_order_id).to_set
   end
 
   private

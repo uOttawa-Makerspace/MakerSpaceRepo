@@ -1,16 +1,16 @@
 <td style="vertical-align: middle" class="px-1">
-  <% if jo.expedited? %>
+  <% if expedited %>
     <i class='fa fa-exclamation-circle fa-2x text-success'></i>
     <%# span so that datatables can sort it! %>
     <span class="d-none">Expedited</span>
   <% end %>
 </td>
 <td>
-  <% if jo.chat_messages.count_unread_by_admin(jo) > 0 %>
+  <% if unread > 0 %>
     <div class="mx-auto position-relative" style="width: min-content;">
       <i class="fa fa-bell text-danger" style="scale: 1.7;"></i>
       <span class="position-absolute translate-middle badge rounded-pill bg-danger">
-        <%= jo.chat_messages.count_unread_by_admin(jo) %>
+        <%= unread %>
         <span class="visually-hidden">unread messages</span>
       </span>
     </div>

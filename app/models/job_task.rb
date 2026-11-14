@@ -5,6 +5,9 @@ class JobTask < ApplicationRecord
   belongs_to :job_service, optional: true
   has_many :job_task_options, dependent: :destroy
   has_many :job_options, through: :job_task_options
+
+  # Tasks with an option whose name contains "Expedited".
+  scope :expedited, -> { joins(job_task_options: :job_option).where("job_options.name LIKE ?", "%Expedited%") }
   accepts_nested_attributes_for :job_task_options, allow_destroy: true
 
   has_one :job_task_quote, dependent: :destroy

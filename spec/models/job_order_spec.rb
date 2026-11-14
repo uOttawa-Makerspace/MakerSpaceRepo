@@ -343,6 +343,20 @@ RSpec.describe JobOrder, type: :model do
       order.job_tasks.create!(title: "Task #1")
       expect(order.reload.expedited?).to be(false)
     end
+
+    it "gives the ids of the expedited orders among many in one query" do
+      option = JobOption.create!(name: "Expedited Resin", fee: 2)
+      plain = JobOption.create!(name: "Polish", fee: 1)
+      fast, slow, bare = create_list(:job_order, 3, user: create(:user, :regular_user))
+      2.times { |n| fast.job_tasks.create!(title: "Task #{n}").job_task_options.create!(job_option: option) }
+      slow.job_tasks.create!(title: "Task #1").job_task_options.create!(job_option: plain)
+      other = create(:job_order, user: create(:user, :regular_user))
+      other.job_tasks.create!(title: "Task #1").job_task_options.create!(job_option: option)
+
+      ids = nil
+      expect(count_queries { ids = JobOrder.expedited_ids([fast, slow, bare]) }).to eq(1)
+      expect(ids).to eq(Set[fast.id])
+    end
   end
 
   describe "#total_price with nil prices" do
