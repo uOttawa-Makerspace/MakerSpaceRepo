@@ -12,20 +12,16 @@ onEveryPageLoad(() => {
     maxOptions: 5,
     searchOnKeyUp: true,
     load: function (type, callback) {
-      if (type.length < 2) {
-        return;
-      } else {
-        let url = "/project_kits/populate_kit_users?search=" + type;
-        fetch(url)
-          .then((response) => response.json())
-          .then((data) => {
-            callback(
-              data.users.map((user) => {
-                return { id: user.id, name: user.name };
-              }),
-            );
-          });
-      }
+      let url = "/project_kits/populate_kit_users?search=" + type;
+      fetch(url)
+        .then((response) => response.json())
+        .then((data) => {
+          callback(
+            data.users.map((user) => {
+              return { id: user.id, name: user.name };
+            }),
+          );
+        });
     },
     shouldLoad: function (type) {
       return type.length > 2;
