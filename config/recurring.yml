@@ -44,6 +44,13 @@ shared: &shared
     class: DispatchDueOrdersJob
     schedule: every minute
 
+  # Reports any difference between the locker rentals' stored drafts and locker payments and the payment checkout
+  # records and payments ledger written beside them (LockerRental::PaymentRecordsCheck); changes nothing except
+  # recording the checkout of a stored draft whose status only Shopify can tell.
+  locker_payment_records_check:
+    class: LockerPaymentRecordsCheckJob
+    schedule: every day at 4:30am
+
   # Blanks the payload (customer data) of Shopify orders applied more than 90 days ago; the rows stay.
   purge_processed_order_payloads:
     class: PurgeProcessedOrderPayloadsJob
