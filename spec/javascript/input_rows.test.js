@@ -25,6 +25,12 @@ describe("addInputRow", () => {
     expect(add().getAttribute("aria-label")).toBe("Add file");
   });
 
+  it("sets no remove label when the add button has none", () => {
+    add().removeAttribute("data-remove-label");
+    const remove = addInputRow(add());
+    expect(remove.getAttribute("aria-label")).toBe("Add file");
+  });
+
   it("leaves the add button the only element with its id", () => {
     addInputRow(add());
     addInputRow(add());

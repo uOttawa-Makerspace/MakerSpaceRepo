@@ -43,7 +43,9 @@
          let parent = cloneButton.parentElement;
          let clone = parent.cloneNode(true);
          clone.children[1].removeAttribute("id");
-         clone.children[1].setAttribute("aria-label", cloneButton.dataset.removeLabel);
+         if (cloneButton.dataset.removeLabel) {
+             clone.children[1].setAttribute("aria-label", cloneButton.dataset.removeLabel);
+         }
          clone.children[0].value = null;
          clone.children[1].className = "btn btn-danger";
          clone.children[1].children[0].className = "fa fa-trash";
@@ -59,7 +61,9 @@
          let parent = cloneButton.parentElement;
          let clone = parent.cloneNode(true);
          clone.children[1].removeAttribute("id");
-         clone.children[1].setAttribute("aria-label", cloneButton.dataset.removeLabel);
+         if (cloneButton.dataset.removeLabel) {
+             clone.children[1].setAttribute("aria-label", cloneButton.dataset.removeLabel);
+         }
          clone.children[0].value = null;
          clone.children[1].className = "btn btn-danger";
          clone.children[1].children[0].className = "fa fa-trash";
