@@ -88,6 +88,15 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(status_name(SubSpaceBooking.find_by!(name: "Fresh"))).to eq("Pending")
     end
 
+    it "refuses a booking with a missing time in a room with automatic-approval hours, saving nothing" do
+      room = create(:sub_space, space: managed_space, approval_required: true,
+                                max_automatic_approval_hour: 1)
+      create_booking(room, end_time: "")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["errors"]).to include(a_string_matching(/End time/))
+      expect(SubSpaceBooking.where(name: "Fresh")).to be_empty
+    end
+
     it "copies a default_public sub space into the booking" do
       room = create(:sub_space, space: space, default_public: true)
       create_booking(room)
