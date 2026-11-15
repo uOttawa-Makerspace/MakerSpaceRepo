@@ -37,7 +37,10 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def requests
     @order_item_waiting_for_approval =
-      OrderItem.all.waiting_for_approval.order(updated_at: :asc)
+      OrderItem
+        .waiting_for_approval
+        .includes(:proficient_project, order: :user, files_attachments: :blob)
+        .order(updated_at: :asc)
   end
 
   def new

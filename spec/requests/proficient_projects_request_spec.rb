@@ -450,6 +450,31 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       cells = Nokogiri::HTML(response.body).css("#prof-proj-requests tr td:nth-child(4)").map(&:text)
       expect(cells).to eq([""])
     end
+
+    def request_on(time, user, pp, comments, filename)
+      travel_to(time) do
+        item = order_item_for(user, status: "Waiting for approval", pp: pp)
+        item.files.attach(io: StringIO.new(filename), filename: filename, content_type: "text/plain")
+        item.update!(user_comments: comments)
+      end
+    end
+
+    it "lists several requests, oldest first, with each buyer, project, comments and files" do
+      other_buyer = create(:user, :volunteer_with_dev_program)
+      other_project = create(:proficient_project, training: training, title: "Second widget")
+      request_on(Time.zone.local(2026, 3, 9, 12), other_buyer, other_project, "second comment", "plan.txt")
+      request_on(Time.zone.local(2026, 3, 8, 12), buyer, project, "first comment", "notes.txt")
+      content_sign_in_as(:staff)
+      get requests_proficient_projects_path
+      expect(response).to have_http_status(:ok)
+      rows = Nokogiri::HTML(response.body).css("#prof-proj-requests tr:has(td)").map do |tr|
+        tr.css("td").first(5).map { |td| td.text.squish }
+      end
+      expect(rows).to eq([
+                           [buyer.username, "Cool widget", "2026/03/08", "first comment", "notes.txt"],
+                           [other_buyer.username, "Second widget", "2026/03/09", "second comment", "plan.txt"]
+                         ])
+    end
   end
 
   describe "PUT complete_project" do
