@@ -120,7 +120,8 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         create_call = admin_client.calls.find { |c| c[:query].include?("draftOrderCreate") }
         input = create_call[:variables][:input]
         expect(input[:tags]).to eq(["makerepo_test_membership"])
-        expect(input[:lineItems]).to eq([{ originalUnitPrice: "40.0", quantity: 1, title: "1 Semester Membership" }])
+        expect(input[:lineItems]).to eq([{ originalUnitPriceWithCurrency: { amount: "40.0", currencyCode: "CAD" },
+                                           quantity: 1, title: "1 Semester Membership" }])
         expect(input[:metafields]).to eq([{ namespace: "makerepo", key: "membership_db_reference",
                                             value: m.id.to_s, type: "number_integer" }])
       end
@@ -129,7 +130,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         user.update_column(:identity, User::INTERNAL_IDENTITIES.first)
         post memberships_path, params: { membership: { membership_tier_id: tier.id } }
         create_call = admin_client.calls.find { |c| c[:query].include?("draftOrderCreate") }
-        expect(create_call[:variables][:input][:lineItems].first[:originalUnitPrice]).to eq("25.0")
+        expect(create_call[:variables][:input][:lineItems].first[:originalUnitPriceWithCurrency]).to eq(amount: "25.0", currencyCode: "CAD")
       end
 
       it "starts a purchased membership when it is paid, after the previous active one ends" do

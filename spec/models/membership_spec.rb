@@ -199,7 +199,7 @@ RSpec.describe Membership, type: :model do
       expect(Membership.draft_order_operating_tag).to eq("makerepo_test_membership")
       m = Membership.new(user: build(:user, identity: "definitely_not_internal"), membership_tier: tier)
       expect(m.shopify_draft_order_line_items)
-        .to eq([{ originalUnitPrice: "40.0", quantity: 1, title: "1 Semester Membership" }])
+        .to eq([{ originalUnitPriceWithCurrency: { amount: "40.0", currencyCode: "CAD" }, quantity: 1, title: "1 Semester Membership" }])
     end
 
     it "#checkout_link returns the invoice URL of the (stubbed) draft order" do
@@ -291,7 +291,7 @@ RSpec.describe Membership, type: :model do
         expect(fake.deleted_ids).to eq([old_id])
         queries = fake.calls.map { |c| c[:query][/draftOrder(Create|Delete)/] }.compact
         expect(queries).to eq(%w[draftOrderCreate draftOrderDelete draftOrderCreate])
-        expect(fake.calls.select { |c| c[:query].include?("draftOrderCreate") }.last[:variables].dig(:input, :lineItems, 0, :originalUnitPrice)).to eq("55.0")
+        expect(fake.calls.select { |c| c[:query].include?("draftOrderCreate") }.last[:variables].dig(:input, :lineItems, 0, :originalUnitPriceWithCurrency, :amount)).to eq("55.0")
       end
 
       it "keeps serving the old draft, and reports it, when the old draft cannot be deleted" do

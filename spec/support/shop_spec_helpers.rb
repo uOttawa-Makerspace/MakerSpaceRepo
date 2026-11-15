@@ -60,7 +60,7 @@ module ShopSpecHelpers
       elsif query.include?("NodeMetafields")
         Response.new(200, { "data" => { "node" => { "metafields" => { "edges" => @metafields.map { |m| { "node" => m } } } } } })
       elsif query.include?("draftOrderCreate")
-        @draft_prices[@draft_id] = variables.dig(:input, :lineItems, 0, :originalUnitPrice)
+        @draft_prices[@draft_id] = variables.dig(:input, :lineItems, 0, :originalUnitPriceWithCurrency, :amount)
         Response.new(200, { "data" => { "draftOrderCreate" => {
           "draftOrder" => (@user_errors.empty? ? { "id" => @draft_id, "invoiceUrl" => @invoice_urls.fetch(@draft_id, @invoice_url) } : nil), "userErrors" => @user_errors
         } } })
