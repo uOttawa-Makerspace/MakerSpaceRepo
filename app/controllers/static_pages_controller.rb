@@ -78,8 +78,11 @@ class StaticPagesController < SessionsController
 
   RESET_PASSWORD_NOTICE = 'A reset link email has been sent to the email if the account exists.'
 
-  rate_limit to: 30, within: 1.hour, only: :reset_password, name: 'reset-ip',
-             by: -> { request.remote_ip }, with: -> { reset_password_response }
+  # Per client IP. UsersController#reset_password_confirmation has the same limit (its own count) and the
+  # same answer when throttled.
+  RESET_PASSWORD_RATE_LIMIT = { to: 30, within: 1.hour, name: 'reset-ip', by: -> { request.remote_ip } }.freeze
+
+  rate_limit(**RESET_PASSWORD_RATE_LIMIT, only: :reset_password, with: -> { reset_password_response })
 
   def reset_password
     unless verify_turnstile

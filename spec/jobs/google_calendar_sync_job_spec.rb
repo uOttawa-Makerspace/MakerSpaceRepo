@@ -83,6 +83,22 @@ RSpec.describe GoogleCalendarSyncJob, type: :job do
       expect(chan.reload.sync_token).to eq("NEW")
     end
 
+    it "logs no event title while it syncs" do
+      stub_events([c18_gcal_event(id: "e-logged", summary: "Visit with Jane Example")], next_sync_token: "NEW")
+      io = StringIO.new
+      logger = ActiveSupport::Logger.new(io, level: :info) # the level production logs at
+      Rails.logger.broadcast_to(logger)
+      begin
+        described_class.perform_now
+      ensure
+        Rails.logger.stop_broadcasting_to(logger)
+      end
+
+      expect(SubSpaceBooking.find_by(google_booking_id: "e-logged")).to be_present
+      expect(io.string).to include("e-logged")
+      expect(io.string).not_to include("Jane Example")
+    end
+
     it "without a channel the next sync token is dropped (nowhere to store it)" do
       stub_events([c18_gcal_event], next_sync_token: "NEW")
       expect { described_class.perform_now }.to change(SubSpaceBooking, :count).by(1)

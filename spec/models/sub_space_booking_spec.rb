@@ -159,6 +159,15 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
         expect(described_class.find(booking.id).attributes).to eq(before)
       end
 
+      it "approve stamps who approved it and when" do
+        booking = create(:sub_space_booking)
+        admin = create(:user, :admin)
+
+        booking.approve_if_pending!(by: admin)
+
+        expect(booking.reload).to have_attributes(approved_by_id: admin.id, approved_at: BookingClock::NOW)
+      end
+
       it "decline returns false the second time and changes nothing" do
         booking = create(:sub_space_booking)
         expect(booking.decline_if_pending!).to be(true)
@@ -513,6 +522,7 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
       it "is false while a time is missing" do
         room.update!(maximum_booking_duration: 2)
         expect(booking_at("2027-04-07", "10:00", "13:00", end_time: nil).exceeds_maximum_duration?).to be(false)
+        expect(booking_at("2027-04-07", "10:00", "13:00", start_time: nil).exceeds_maximum_duration?).to be(false)
       end
     end
 
@@ -534,6 +544,7 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
       it "is false while a time is missing" do
         room.update!(maximum_booking_hours_per_week: 1)
         expect(booking_at("2027-04-07", "10:00", "13:00", start_time: nil).exceeds_weekly_hours?).to be(false)
+        expect(booking_at("2027-04-07", "10:00", "13:00", end_time: nil).exceeds_weekly_hours?).to be(false)
       end
     end
 

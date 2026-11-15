@@ -663,6 +663,29 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(user.reload.authenticate_password("NewPassw0rd!x#9")).to be(true)
     end
 
+    it "allows 30 attempts an hour from one IP" do
+      29.times { patch reset_password_confirmation_users_path, params: { token: "garbage" } }
+      patch reset_password_confirmation_users_path, params: reset_params(user)
+      expect(flash[:notice]).to start_with("Your password has been updated")
+      expect(user.reload.authenticate_password("NewPassw0rd!x#9")).to be(true)
+    end
+
+    it "answers further attempts from that IP like a throttled reset request, and changes nothing" do
+      30.times { patch reset_password_path, params: { email: "nobody@example.com" } }
+      patch reset_password_path, params: { email: user.email }
+      throttled_reset = { status: response.status, notice: flash[:notice] }
+      expect(throttled_reset).to eq(status: 200, notice: "A reset link email has been sent to the email if the account exists.")
+
+      30.times { patch reset_password_confirmation_users_path, params: { token: "garbage" } }
+      perform_enqueued_jobs { patch reset_password_confirmation_users_path, params: reset_params(user) }
+
+      expect(status: response.status, notice: flash[:notice]).to eq(throttled_reset)
+      expect(response.body).to include(I18n.t("static_pages.forgot_password.title"))
+        .and include(%(action="#{reset_password_path}"))
+      expect(user.reload.authenticate_password(password)).to be(true)
+      expect(deliveries).to be_empty
+    end
+
     it "a mismatched confirmation does not consume the link" do
       p = reset_params(user)
       patch reset_password_confirmation_users_path, params: p.merge(password_confirmation: "different")
