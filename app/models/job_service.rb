@@ -28,12 +28,4 @@ class JobService < ApplicationRecord
             }
 
   scope :not_user_created, -> { where(user_created: false) }
-
-  def name_with_internal_price
-    "#{name} ($#{internal_price}/#{unit})"
-  end
-
-  def name_with_external_price
-    "#{name} ($#{external_price}/#{unit})"
-  end
 end

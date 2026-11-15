@@ -25,7 +25,7 @@
         <% end %>
 
         <% if @job_order.deletable_by?(current_user, @job_order.latest_status&.job_status) %>
-          <%= button_to t('job_orders.order.delete', default: "Delete"), job_order_path(@job_order), method: :delete, format: :js, class: 'btn btn-danger', **confirmation_options(t('job_orders.are_you_sure_you_want_to_delete')) %>
+          <%= button_to t('job_orders.order.delete'), job_order_path(@job_order), method: :delete, format: :js, class: 'btn btn-danger', **confirmation_options(t('job_orders.are_you_sure_you_want_to_delete')) %>
         <% end %>
       </div>
     </div>
@@ -42,7 +42,7 @@
             <p><strong><%= t("job_orders.order.name") %>:</strong> <%= link_to @job_order.user.name, user_path(@job_order.user.username) %></p>
             <p><strong><%= t("job_orders.order.email") %>:</strong> <%= @job_order.user.email %></p>
           <% else %>
-            <p class="text-danger">[DELETED USER]</p>
+            <p class="text-danger"><%= t('job_orders.order.deleted_user') %></p>
           <% end %>
 
           <p><strong><%= t("job_orders.order.created") %>:</strong> <%= l(@job_order.created_at, format: :long) %></p>
@@ -53,7 +53,7 @@
       <% if @job_tasks.any? %>
         <div class="card mb-4">
           <div class="card-header">
-            <strong><%= t("job_orders.order.tasks", default: "Tasks") %></strong>
+            <strong><%= t("job_orders.order.tasks") %></strong>
           </div>
           <div class="card-body">
             <% @job_tasks.each_with_index do |task, index| %>
@@ -69,7 +69,7 @@
                     <div class="d-flex gap-1 flex-row align-items-center">
                       <%= link_to t('job_orders.public_page.edit'), edit_job_order_job_task_path(@job_order, task, step: 1), class: 'btn btn-secondary py-0 px-2' %>
                       <% if @job_tasks.size > 1 %>
-                        <%= button_to "Delete", job_order_job_task_path(@job_order, task), method: :delete, **confirmation_options(t('confirmations.job_orders.delete_task')), class: "btn btn-outline-danger py-0 px-2" %>
+                        <%= button_to t("job_orders.order.delete"), job_order_job_task_path(@job_order, task), method: :delete, **confirmation_options(t('confirmations.job_orders.delete_task')), class: "btn btn-outline-danger py-0 px-2" %>
                       <% end %>
                     </div>
                   <% end %>
@@ -88,7 +88,7 @@
 
                     <% if task.job_options.any? %>
                       <div class="d-flex align-items-start flex-wrap">
-                        <span class="fw-medium me-1"><%= t("job_orders.order.options", default: "Options") %>:</span>
+                        <span class="fw-medium me-1"><%= t("job_orders.order.options") %>:</span>
                         <% task.job_options.each_with_index do |option, opt_index| %>
                           <span class="badge <%= option.is_job_wide ? "bg-info" : "bg-secondary" %> me-1 mb-1"><%= option.name %></span>
                         <% end %>
@@ -105,7 +105,7 @@
                               data-bs-target="#userFilesCollapse<%= index %>" aria-expanded="false" 
                               aria-controls="userFilesCollapse<%= index %>">
                         <i class="fa fa-cloud-arrow-down me-2"></i>
-                        <%= t("job_orders.order.files_from_client", default: "Client Files") %>
+                        <%= t("job_orders.order.files_from_client") %>
                         <span class="badge bg-primary rounded-pill ms-2"><%= all_user_files.size %></span>
                       </button>
                     </h2>
@@ -124,7 +124,7 @@
                                             class: "btn btn-sm btn-outline-primary flex-shrink-0 ms-2", 
                                             target: "_blank", 
                                             rel: "noopener",
-                                            title: "Download" do %>
+                                            title: t("job_orders.order.download") do %>
                                   <i class="fa fa-download"></i>
                                 <% end %>
                               </div>
@@ -166,7 +166,7 @@
                                             class: "btn btn-sm btn-outline-success flex-shrink-0 ms-2", 
                                             target: "_blank", 
                                             rel: "noopener",
-                                            title: "Download" do %>
+                                            title: t("job_orders.order.download") do %>
                                   <i class="fa fa-download"></i>
                                 <% end %>
                               </div>
@@ -181,7 +181,7 @@
             <% end %>
 
             <% if @job_order.task_edits_offered_to?(current_user) %>
-              <%= button_to t('job_orders.order.add_another_task', default: "Add Another Task"), job_order_job_tasks_path(@job_order), method: :post, class: "btn btn-outline-primary" %>
+              <%= button_to t('job_orders.order.add_another_task'), job_order_job_tasks_path(@job_order), method: :post, class: "btn btn-outline-primary" %>
             <% end %>
           </div>
         </div>

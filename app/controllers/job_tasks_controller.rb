@@ -14,7 +14,7 @@ class JobTasksController < SessionsController
 
     respond_to do |format|
       format.html do
-        flash[:notice] = 'Task was successfully deleted.' unless outcome == :sent_back
+        flash[:notice] = t("job_orders.alerts.task_deleted") unless outcome == :sent_back
         redirect_to job_order_path(@job_order)
       end
       format.json { head :no_content }
@@ -123,7 +123,7 @@ class JobTasksController < SessionsController
       flash[:alert] = message
       redirect_back(fallback_location: edit_job_order_job_task_path(@job_order, @job_task, step: params[:step]))
     elsif action_name == "create"
-      flash[:alert] = "Failed to create task: #{message}"
+      flash[:alert] = t("job_orders.alerts.task_create_failed", message: message)
       redirect_to job_order_path(@job_order)
     else
       refuse_change(message)

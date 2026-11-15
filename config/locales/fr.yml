@@ -508,6 +508,8 @@ fr:
       updated_successfully: "Mis à jour avec succès !"
       action_required_scroll_to_timeline: "Action Requise : Veuillez descendre jusqu'à la section « Chronologie » pour fournir votre contribution. Votre réponse est nécessaire pour continuer. Merci !"
       missing_info: "Votre commande n'est pas soumise ! Il manque des informations requises dans les tâches suivantes :"
+      task_deleted: "La tâche a été supprimée."
+      task_create_failed: "La tâche n'a pas pu être créée : %{message}"
     timeline:
       unknown_user: "Inconnu"
       approved_by_html: "Approuvé par %{name} pour le client"
@@ -561,6 +563,11 @@ fr:
         previous_page_disabled_tooltip: "Vous ne pouvez pas accéder à la page précédente car vous avez sélectionné des services de conception."
         design_description: "Décrivez votre projet"
         design_description_placeholder: "Veuillez décrire votre design et ce dont vous avez besoin d'aide. Cela nous aidera à mieux comprendre vos besoins."
+        create_job_order: "Créer une commande"
+        add_another_file: "Ajouter un autre fichier"
+        fees: "Frais"
+        # A service to choose, with the price per unit: "PLA ($15.0/g)"
+        service_with_price: "%{name} (%{price} $/%{unit})"
       step_3:
         by_unchecking: "Le téléchargement d’un autre fichier écrasera celui-ci."
         no_options: "Il n'y a pas d'options disponibles pour vous. Veuillez continuer vers la prochaine étape."
@@ -600,6 +607,7 @@ fr:
       save_draft: "Enregistrer le Brouillon"
       delete: "Supprimer"
       unnamed_task: "Tâche sans nom"
+      deleted_user: "[UTILISATEUR SUPPRIMÉ]"
     new:
       title: "Quel type de projet commencez-vous?"
       ready_to_make:

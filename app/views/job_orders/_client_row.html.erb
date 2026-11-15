@@ -4,7 +4,7 @@
       <i class="fa fa-bell text-danger" style="scale: 1.7;"></i>
       <span class="position-absolute translate-middle badge rounded-pill bg-danger">
         <%= unread %>
-        <span class="visually-hidden">unread messages</span>
+        <span class="visually-hidden"><%= t('job_orders.list.unread_messages') %></span>
       </span>
     </div>
   <% end %>
@@ -14,7 +14,7 @@
     <%= link_to jo.user.name, user_path(jo.user.username) %>
     <%= jo.user.email %>
   <% else %>
-    [DELETED USER]
+    <%= t('job_orders.order.deleted_user') %>
   <% end %>
 </td>
 <td><%= jo.id %></td>
@@ -26,9 +26,9 @@
     <%= task.job_type&.name || t("job_orders.order.no_job_type") %>
   <% end %>
 </td>
-<td><%= jo.latest_status.job_status.name %></td>
+<td><%= jo.latest_status.job_status.t_name %></td>
 <td>
   <%= 
-    link_to 'View', job_order_path(jo.id), class: 'btn btn-primary btn-sm'
+    link_to t('job_orders.list.view'), job_order_path(jo.id), class: 'btn btn-primary btn-sm'
   %>
 </td>
