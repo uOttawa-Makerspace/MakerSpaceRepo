@@ -1,19 +1,24 @@
 // @vitest-environment happy-dom
 // Drives the real Tom Select: the picker lists only the server's answer for the text now in the box.
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Application } from "@hotwired/stimulus";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
-vi.mock("@fullcalendar/core", () => ({ Calendar: class {} }));
-vi.mock("@fullcalendar/interaction", () => ({ default: {} }));
-vi.mock("@fullcalendar/timegrid", () => ({ default: {} }));
-vi.mock("@fullcalendar/list", () => ({ default: {} }));
-vi.mock("flatpickr", () => ({ default: {} }));
-vi.mock("bootstrap", () => ({
-  Toast: { getOrCreateInstance: () => ({ show() {} }) },
-}));
-vi.mock("../../../app/javascript/src/csrf", () => ({ csrfHeaders: (h) => h }));
+import BookingUserPicker from "../../../app/javascript/controllers/booking_user_picker_controller.js";
 
 const RITA = { id: 1, name: "Rita Requester" };
 const BOB = { id: 2, name: "Bob Brown" };
+
+beforeAll(() => {
+  Application.start().register("booking-user-picker", BookingUserPicker);
+});
 
 let picker;
 let pending;
@@ -44,15 +49,38 @@ beforeEach(async () => {
       }),
   );
   document.body.innerHTML = `<form><select id="user_booking_select" data-min-length="3" data-hint="Type at least 3 characters."></select></form>`;
-  vi.resetModules();
-  await import("../../../app/javascript/entrypoints/sub_space_booking.js");
-  document.dispatchEvent(new Event("turbo:load"));
+  await vi.advanceTimersByTimeAsync(0);
+  // Named once the select is on the page: happy-dom reports a select set
+  // through innerHTML as added a second time once Tom Select changes it.
+  document.getElementById("user_booking_select").dataset.controller =
+    "booking-user-picker";
+  await vi.advanceTimersByTimeAsync(0);
   picker = document.getElementById("user_booking_select").tomselect;
 });
 
 afterEach(() => vi.useRealTimers());
 
 describe("admin user picker", () => {
+  it("removes its picker when it disconnects, leaving the plain select", async () => {
+    const select = document.getElementById("user_booking_select");
+    delete select.dataset.controller;
+    await vi.advanceTimersByTimeAsync(0);
+    expect(select.tomselect).toBeUndefined();
+    expect(select.classList).not.toContain("tomselected");
+    expect(document.querySelectorAll(".ts-wrapper")).toHaveLength(0);
+  });
+
+  it("has one picker again when it connects again", async () => {
+    const select = document.getElementById("user_booking_select");
+    delete select.dataset.controller;
+    await vi.advanceTimersByTimeAsync(0);
+    select.dataset.controller = "booking-user-picker";
+    await vi.advanceTimersByTimeAsync(0);
+    expect(select.tomselect).toBeDefined();
+    expect(select.tomselect).not.toBe(picker);
+    expect(document.querySelectorAll(".ts-wrapper")).toHaveLength(1);
+  });
+
   it("lists the server's answer for the typed text, matches by username included", async () => {
     type("quokka");
     await settle();

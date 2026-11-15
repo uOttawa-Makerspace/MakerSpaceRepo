@@ -19,26 +19,26 @@
   </div>
 
   <% if current_user.booking_approval || current_user.admin? %>
-    <div class="col-xl-11 mx-auto">
+    <div class="col-xl-11 mx-auto" data-controller="booking-tabs">
       <% if (approved_request = current_user.approved_booking_request) %>
         <%= render 'access_status', approval: approved_request %>
       <% end %>
       <ul class="nav nav-tabs nav-fill mb-4 border-bottom-0 shadow-sm rounded bg-body" id="booking-tab-list" role="tablist">
         <li class="nav-item" role="presentation">
-          <button class="nav-link fw-bold text-uppercase tab-link active" id="booking-calendar-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-calendar-tab" type="button" role="tab"><i class="fa fa-calendar me-2"></i> Book Room</button>
+          <button class="nav-link fw-bold text-uppercase active" id="booking-calendar-tab-btn" data-booking-tabs-target="tab" data-bs-toggle="tab" data-bs-target="#booking-calendar-tab" type="button" role="tab"><i class="fa fa-calendar me-2"></i> Book Room</button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link fw-bold text-uppercase tab-link" id="booking-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-tab" type="button" role="tab"><i class="fa fa-list me-2"></i> My Bookings</button>
+          <button class="nav-link fw-bold text-uppercase" id="booking-tab-btn" data-booking-tabs-target="tab" data-bs-toggle="tab" data-bs-target="#booking-tab" type="button" role="tab"><i class="fa fa-list me-2"></i> My Bookings</button>
         </li>
         <% if current_user.admin? %>
           <li class="nav-item" role="presentation">
-            <button class="nav-link fw-bold text-uppercase tab-link" id="booking-admin-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-admin-tab" type="button" role="tab"><i class="fa fa-cog me-2"></i> Admin Panel</button>
+            <button class="nav-link fw-bold text-uppercase" id="booking-admin-tab-btn" data-booking-tabs-target="tab" data-bs-toggle="tab" data-bs-target="#booking-admin-tab" type="button" role="tab"><i class="fa fa-cog me-2"></i> Admin Panel</button>
           </li>
         <% end %>
       </ul>
 
       <div class="tab-content bg-body p-4 shadow-sm rounded" id="tabContent">
-        <div class="tab-pane active show" id="booking-calendar-tab" role="tabpanel">
+        <div class="tab-pane fade active show" id="booking-calendar-tab" role="tabpanel">
            <% if params[:room].present? %>
               <h3 class="text-center mb-4 fw-bold text-body-emphasis"><%= @subspace.name %> Calendar</h3>
               <div>
@@ -151,28 +151,28 @@
             <div class="card-body p-4 bg-body">
               <p class="text-body-secondary text-center mb-4">You do not have permission to book rooms yet. Please request access below.</p>
               
-              <%= form_with url: request_access_sub_space_booking_index_path, method: :put do |f| %>
+              <%= form_with url: request_access_sub_space_booking_index_path, method: :put, data: { controller: 'supervisor-field' } do |f| %>
                 <div class="mb-4">
                   <%= f.label :identity, 'Please select which best describes you:', class: 'form-label fw-bold' %>
                   <div class="form-check">
-                    <%= f.radio_button :identity, 'JMTS', class: 'form-check-input identity-button', required: true %>
+                    <%= f.radio_button :identity, 'JMTS', class: 'form-check-input identity-button', required: true, data: { action: 'click->supervisor-field#toggle' } %>
                     <%= f.label :identity_jmts, 'JMTS team member', class: 'form-check-label' %>
                   </div>
                   <div class="form-check">
-                    <%= f.radio_button :identity, 'Staff', class: 'form-check-input identity-button', required: true %>
+                    <%= f.radio_button :identity, 'Staff', class: 'form-check-input identity-button', required: true, data: { action: 'click->supervisor-field#toggle' } %>
                     <%= f.label :identity_staff, 'Staff member', class: 'form-check-label' %>
                   </div>
                   <div class="form-check">
-                    <%= f.radio_button :identity, 'GNG', class: 'form-check-input identity-button', required: true %>
+                    <%= f.radio_button :identity, 'GNG', class: 'form-check-input identity-button', required: true, data: { action: 'click->supervisor-field#toggle' } %>
                     <%= f.label :identity_gng, 'Student involved with GNG courses', class: 'form-check-label' %>
                   </div>
                   <div class="form-check">
-                    <%= f.radio_button :identity, 'Other', class: 'form-check-input identity-button', required: true %>
+                    <%= f.radio_button :identity, 'Other', class: 'form-check-input identity-button', required: true, data: { action: 'click->supervisor-field#toggle' } %>
                     <%= f.label :identity_other, 'Other', class: 'form-check-label' %>
                   </div>
                 </div>
 
-                <div class="mb-4" id="supervisor-select" style="display: none;">
+                <div class="mb-4" id="supervisor-select" style="display: none;" data-supervisor-field-target="supervisor">
                   <%= label_tag :supervisor, 'Supervisor', class: 'form-label fw-bold' %>
                   <%= select_tag :supervisor, options_for_select(@supervisors), class: 'form-select form-control' %>
                 </div>

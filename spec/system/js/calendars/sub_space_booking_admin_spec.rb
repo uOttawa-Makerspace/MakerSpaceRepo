@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# The booking page outside the calendar (entrypoints/sub_space_booking.js):
+# The booking page outside the calendar (its Stimulus controllers):
 # the access-request form, the tabs, the admin panel's selection boxes, the
 # recurring-approval modal and the user search.
 
@@ -82,6 +82,40 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       log_in_as(admin, to: "#{sub_space_booking_index_path(room: subspace.id)}&approved_page=1")
 
       expect(page).to have_css("#booking-admin-tab.active.show", visible: :all)
+    end
+  end
+
+  describe "the edit page" do
+    let!(:booking) { pending_booking("Soldering club", user: admin) }
+
+    def expect_date_time_pickers
+      %w[start_time end_time].each do |field|
+        expect(page).to have_css("#sub_space_booking_#{field}.flatpickr-input[type=hidden]", visible: :hidden)
+        expect(page).to have_css("#sub_space_booking_#{field} + input[type=text]", visible: :visible)
+        expect(page).to have_css("#sub_space_booking_#{field} ~ input", count: 1, visible: :all)
+      end
+    end
+
+    it "gives the start and end fields date and time pickers on a full load", js: true, skip_bullet: true do
+      log_in_as(admin, to: sub_space_booking_edit_path(sub_space_booking_id: booking.id))
+      expect_date_time_pickers
+    end
+
+    it "gives the start and end fields date and time pickers when reached from My Bookings", js: true, skip_bullet: true do
+      log_in_as(admin, to: "#{sub_space_booking_index_path(room: subspace.id)}#booking-tab")
+      find("#booking-tab form[action='#{sub_space_booking_edit_path(sub_space_booking_id: booking.id)}'] button").click
+      expect(page).to have_css("#bookingEdit")
+      expect_date_time_pickers
+    end
+
+    it "keeps one picker per field on the edit page restored from the Turbo cache", js: true, skip_bullet: true do
+      log_in_as(admin, to: sub_space_booking_edit_path(sub_space_booking_id: booking.id))
+      expect_date_time_pickers
+      page.execute_script("Turbo.visit(arguments[0])", sub_space_booking_index_path(room: subspace.id))
+      expect(page).to have_css("#booking-tab-list")
+      page.go_back
+      expect(page).to have_css("#bookingEdit")
+      expect_date_time_pickers
     end
   end
 

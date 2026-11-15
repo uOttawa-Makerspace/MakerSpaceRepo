@@ -22,11 +22,11 @@
             <div class="p-3 bg-body-tertiary border border-secondary-subtle rounded mb-4">
               <h6 class="fw-bold mb-3 text-body-secondary">Time Slot</h6>
               <div class="form-floating mb-3">
-                <%= f.text_field :start_time, class: 'form-control', placeholder: 'Start Time' %>
+                <%= f.text_field :start_time, class: 'form-control', placeholder: 'Start Time', data: { controller: 'date-time-picker' } %>
                 <%= f.label :start_time, 'Start Time' %>
               </div>
               <div class="form-floating mb-0">
-                <%= f.text_field :end_time, class: 'form-control', placeholder: 'End Time' %>
+                <%= f.text_field :end_time, class: 'form-control', placeholder: 'End Time', data: { controller: 'date-time-picker' } %>
                 <%= f.label :end_time, 'End Time' %>
               </div>
             </div>

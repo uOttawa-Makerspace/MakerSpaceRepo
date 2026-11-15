@@ -29,17 +29,6 @@ vi.mock("@fullcalendar/interaction", () => ({
 }));
 vi.mock("@fullcalendar/timegrid", () => ({ default: {} }));
 vi.mock("@fullcalendar/list", () => ({ default: { name: "list" } }));
-const pickersMade = [];
-vi.mock("tom-select", () => ({
-  default: class {
-    // like Tom Select, the select keeps its picker
-    constructor(select) {
-      pickersMade.push(select.id);
-      select.tomselect = this;
-    }
-    hook() {}
-  },
-}));
 vi.mock("flatpickr", () => ({ default: {} }));
 const toasts = [];
 vi.mock("bootstrap", () => ({
@@ -157,14 +146,12 @@ async function book(response) {
   return cal;
 }
 
-await import("../../../app/javascript/entrypoints/sub_space_booking.js");
 await startBookingControllers();
 
 beforeEach(() => {
   vi.restoreAllMocks();
   requests.length = 0;
   toasts.length = 0;
-  pickersMade.length = 0;
   window.scrollTo = vi.fn();
 });
 
@@ -372,20 +359,6 @@ describe("each Turbo visit", () => {
     });
   });
 
-  it("sets up the edit page's start and end pickers without a calendar", () => {
-    window.happyDOM.setURL("http://localhost/sub_space_booking/3/edit");
-    document.body.innerHTML = `<input id="sub_space_booking_start_time"><input id="sub_space_booking_end_time">`;
-    calendars.length = 0;
-    document.dispatchEvent(new Event("turbo:load"));
-    expect(pickerOptions["sub_space_booking_start_time"]).toMatchObject(
-      DATE_TIME,
-    );
-    expect(pickerOptions["sub_space_booking_end_time"]).toMatchObject(
-      DATE_TIME,
-    );
-    expect(calendars).toHaveLength(0);
-  });
-
   it("builds the calendar in the Toronto time zone with the page's options", async () => {
     const cal = await boot(
       "http://localhost/sub_space_booking?room=4&start=2026-03-02",
@@ -453,12 +426,5 @@ describe("each Turbo visit", () => {
     $("approveRecurringModal").dispatchEvent(event);
     expect($("rc_5").checked).toBe(true);
     expect(document.querySelector("label[for=rc_5]").textContent).toBe("Fri");
-  });
-
-  it("makes the admin user picker once while its select stays on the page", () => {
-    document.body.innerHTML = `<select id="user_booking_select" data-min-length="3"></select>`;
-    document.dispatchEvent(new Event("turbo:load"));
-    document.dispatchEvent(new Event("turbo:load"));
-    expect(pickersMade).toEqual(["user_booking_select"]);
   });
 });

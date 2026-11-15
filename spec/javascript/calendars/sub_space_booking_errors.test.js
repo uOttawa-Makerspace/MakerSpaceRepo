@@ -23,7 +23,6 @@ vi.mock("@fullcalendar/core", () => ({
 vi.mock("@fullcalendar/interaction", () => ({ default: {} }));
 vi.mock("@fullcalendar/timegrid", () => ({ default: {} }));
 vi.mock("@fullcalendar/list", () => ({ default: {} }));
-vi.mock("tom-select", () => ({ default: class {} }));
 vi.mock("flatpickr", () => ({ default: {} }));
 vi.mock("bootstrap", () => ({
   Toast: { getOrCreateInstance: () => ({ show() {} }) },
@@ -74,7 +73,6 @@ Element.prototype.flatpickr = () => ({
   destroy() {},
   setDate() {},
 });
-await import("../../../app/javascript/entrypoints/sub_space_booking.js");
 await startBookingControllers();
 
 beforeEach(async () => {
