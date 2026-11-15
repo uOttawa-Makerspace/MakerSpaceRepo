@@ -203,10 +203,6 @@ fr:
           attributes:
             expires_at:
               after_family_cap: "ne doit pas dépasser la limite de la famille de jetons"
-        help:
-          attributes:
-            base:
-              issue_submission_failed: "Erreur interne lors de la soumission du problème."
         volunteer_task:
           attributes:
             photos:

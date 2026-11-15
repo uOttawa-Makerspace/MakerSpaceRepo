@@ -283,7 +283,6 @@ fr:
       notification_not_sent: "Le problème d'imprimante a été créé, mais le courriel de notification à l'équipe d'entretien n'a pas pu être mis en file d'attente, il n'a donc pas été envoyé."
     help:
       not_received: "Votre demande n'a pas été soumise."
-      copy_not_sent: "Votre demande a été soumise, mais le courriel de confirmation n'a pas pu être mis en file d'attente, vous ne recevrez donc pas de copie."
     users:
       password_not_changed: "Votre mot de passe n'a pas été modifié :"
       password_not_saved: "Votre nouveau mot de passe n'a pas pu être enregistré en raison d'un problème de notre côté. Rien n'a été modifié. Veuillez réessayer. Si le problème persiste, communiquez avec le personnel du makerspace en indiquant la référence %{reference}."

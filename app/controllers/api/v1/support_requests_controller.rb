@@ -3,10 +3,11 @@
 module Api
   module V1
     # Help form for the React app (replaces the old PUT /send_email). Public or signed in.
-    # Same persistence and mail path as HelpController: a Help record (which opens the GitHub
-    # issue, text defanged) and MsrMailer.issue_email plus issue_email_copy_to_team (signed in: one
-    # mail to the account, one to the MakerRepo team) or MsrMailer.issue_email_to_team (anonymous:
-    # team only, reporter in Reply-To).
+    # Same path as HelpController: the request saves a Help record and queues HelpFilingJob, which
+    # mails MsrMailer.issue_email_copy_to_team plus issue_email (signed in: one mail to the MakerRepo
+    # team, one to the account) or MsrMailer.issue_email_to_team (anonymous: team only, reporter in
+    # Reply-To) and opens the GitHub issue (text defanged). It answers 202 once the record is saved,
+    # also when the job cannot be queued (Help#queue_filing reports it and the sweep queues it again).
     # No Turnstile (the React app cannot render it): the rate limits below are the
     # protection. A signed-in caller's name and email always come from the account.
     # Contract: doc/api/v1/support_requests.md.
@@ -26,38 +27,29 @@ module Api
 
       def create
         attrs = support_params
-        help = Help.new(attrs.slice(:subject, :comments))
-        help.defang_github_text = true
-        help.name = current_user&.name || attrs[:name]
-        help.email = current_user&.email || attrs[:email]
-
-        errors = length_errors(attrs)
-        help.valid?
-        errors = help.errors.to_hash.merge(errors) { |_k, a, b| a | b }
-        errors.delete(:base)
+        help = build_help(attrs)
+        errors = request_errors(help, attrs)
         return render_error(:validation_failed, "Validation failed", status: :unprocessable_content, fields: errors) if errors.any?
 
-        if help.save && help.file_issue
-          deliver_request(help, attrs[:app_version].presence)
-          render json: { status: "accepted" }, status: :accepted
-        else
-          # The GitHub issue could not be opened: the report stays saved, nothing is mailed.
-          render_error(:service_unavailable, "Could not submit the request, please try again later",
-                       status: :service_unavailable)
-        end
+        help.save!
+        help.queue_filing
+        render json: { status: "accepted" }, status: :accepted
       end
 
       private
 
-      def deliver_request(help, version)
-        text = help.comments.to_plain_text
-        if current_user
-          MsrMailer.issue_email_copy_to_team(help.name, help.email, help.subject, text, nil, version).deliver_later
-          MsrMailer.issue_email(help.name, help.email, help.subject, text, nil, version).deliver_later
-        else
-          # Anonymous: never mail the caller-supplied address (mail relay). Team only, reporter in Reply-To.
-          MsrMailer.issue_email_to_team(help.name, help.email, help.subject, text, version).deliver_later
-        end
+      # A signed-in caller's name and email come from the account.
+      def build_help(attrs)
+        Help.new(attrs.slice(:subject, :comments).merge(
+                   user: current_user, name: current_user&.name || attrs[:name],
+                   email: current_user&.email || attrs[:email], app_version: attrs[:app_version].presence,
+                   source: Help::APP
+                 ))
+      end
+
+      def request_errors(help, attrs)
+        help.valid?
+        help.errors.to_hash.merge(length_errors(attrs)) { |_k, a, b| a | b }
       end
 
       # Unknown fields are ignored. Non-string values are rejected as blank/invalid by the checks.

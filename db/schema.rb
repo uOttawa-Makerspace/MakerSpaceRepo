@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_14_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_15_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -439,9 +439,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_14_100000) do
   end
 
   create_table "helps", force: :cascade do |t|
+    t.string "app_version"
     t.datetime "created_at", null: false
+    t.string "email"
+    t.datetime "filed_at"
     t.string "gh_issue_number"
+    t.datetime "mailed_at"
+    t.string "name"
+    t.integer "resends", default: 0, null: false
+    t.boolean "share_email"
+    t.string "source"
+    t.string "subject"
     t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.index ["user_id"], name: "index_helps_on_user_id"
   end
 
   create_table "job_options", force: :cascade do |t|
@@ -1989,6 +2000,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_14_100000) do
   add_foreign_key "exams", "training_sessions"
   add_foreign_key "exams", "users"
   add_foreign_key "google_calendar_pending_changes", "shadowing_hours", on_delete: :cascade
+  add_foreign_key "helps", "users", on_delete: :nullify
   add_foreign_key "job_options_types", "job_options"
   add_foreign_key "job_options_types", "job_types"
   add_foreign_key "job_order_options", "job_options"

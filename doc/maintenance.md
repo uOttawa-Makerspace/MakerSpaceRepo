@@ -88,6 +88,7 @@ SELECT max(version) FROM schema_migrations;      -- expected to be 2026110620000
 - [ ] In the first hour, check the worker logs (`docker compose -f docker-compose.production.yml logs worker`) and the `job_alerts` inbox. The worker is recreated alongside `web`, so a scheduled job can run once before the migrations have finished and fail. Check that such a failure does not repeat after `web` is up.
 - [ ] Check that `membership_expiry` is not loaded after the deploy: `SolidQueue::RecurringTask.where(key: "membership_expiry").exists?` in a console is false. The job is held in this release (see the `membership_expiry` note under "Scheduled tasks"), so no pending membership checkout is closed by it.
 - [ ] Create a training session and change space from the staff app.
+- [ ] Send a help request and check that the team mail arrives and the GitHub issue opens; `Help.unfinished.count` is 0 a few minutes later (see "Help requests").
 
 ### Rollback limits
 
@@ -102,7 +103,7 @@ Rolling a migration back by hand (`db:migrate:down`) is possible for most of the
 
 ## Scheduled tasks
 
-Scheduled tasks run in the `worker` container (`bundle exec rake solid_queue:start`), from `config/recurring.yml`, in the application time zone (Eastern). Apart from the year-of-study bump (see below), nothing is scheduled with cron any more. The file has a block shared by production and staging, plus a block for each: the monthly CDEL report is production only, and the Google Calendar catch-up sync is staging only. The shared block also queues again, every 15 minutes, the Google Calendar pushes and removals of events that were never confirmed (rows of `google_calendar_pending_changes`; `GoogleCalendar::PendingChange.all` lists what is waiting, and rows that were resent five times stay there after a report, for staff to look at). The migration that creates that table only adds a table. A volunteer shadowing shift's Google event is created the same way (row action `shadow_push`, naming the shadowing hour): the shift is saved with its row, `GoogleCalendar::ShadowingPushJob` creates the event under the shift's stored id (an id Google already has counts as created), and an event that is not created is queued again by the same resend, up to five times, then reported. The migration that adds the shadowing hour to that table (nullable columns, a wider check, an index that also covers the new column) changes no existing row; rolling it back refuses to run while `shadow_push` rows are waiting, and deletes none. If the `worker` container is not running, nothing is scheduled. Starting it again resumes the schedule; runs missed while it was down are not made up. Solid Queue records each tick once, so restarting the worker during a deploy does not run a task twice.
+Scheduled tasks run in the `worker` container (`bundle exec rake solid_queue:start`), from `config/recurring.yml`, in the application time zone (Eastern). Apart from the year-of-study bump (see below), nothing is scheduled with cron any more. The file has a block shared by production and staging, plus a block for each: the monthly CDEL report is production only, and the Google Calendar catch-up sync is staging only. The shared block also queues again, every 15 minutes, the Google Calendar pushes and removals of events that were never confirmed (rows of `google_calendar_pending_changes`; `GoogleCalendar::PendingChange.all` lists what is waiting, and rows that were resent five times stay there after a report, for staff to look at). The migration that creates that table only adds a table. A volunteer shadowing shift's Google event is created the same way (row action `shadow_push`, naming the shadowing hour): the shift is saved with its row, `GoogleCalendar::ShadowingPushJob` creates the event under the shift's stored id (an id Google already has counts as created), and an event that is not created is queued again by the same resend, up to five times, then reported. The migration that adds the shadowing hour to that table (nullable columns, a wider check, an index that also covers the new column) changes no existing row; rolling it back refuses to run while `shadow_push` rows are waiting, and deletes none. The shared block also queues again, every 15 minutes, the help requests that are not filed or mailed yet (`help_filing_sweep`; see "Help requests"). If the `worker` container is not running, nothing is scheduled. Starting it again resumes the schedule; runs missed while it was down are not made up. Solid Queue records each tick once, so restarting the worker during a deploy does not run a task twice.
 
 Development does not run this schedule: it uses the `:async` job adapter, which runs jobs on a thread in the process that queued them, and `config/recurring.yml` has no `development` block. The README ("Background jobs in development") says how to run Solid Queue locally.
 
@@ -390,9 +391,21 @@ Repository downloads are cached as zips in `tmp/repository_zips`. The cache is l
 
 The cache lives in the `repository_zips` Docker volume (`staging_repository_zips` on staging), mounted at `/rails/tmp/repository_zips` in both the `web` and `worker` services, so it survives deploys and the hourly job manages the same files the web service writes. Emptying it is safe: `docker compose -f docker-compose.production.yml exec web sh -c 'rm -f /rails/tmp/repository_zips/*'` (or remove the volume). `df` inside the container measures the host filesystem behind the volume. If the free space cannot be read (unexpected `df` output) a request applies only the size cap, the problem is reported, and the hourly job evicts nothing that run.
 
-## Help requests whose GitHub issue failed
+## Help requests
 
-When GitHub does not return an issue number, the help request is still saved and the sender is told it was not submitted. These rows have an empty `gh_issue_number`. Find them in a console with `Help.where(gh_issue_number: nil)`. A retry by the sender creates a new row; the earlier one stays as the record of the attempt. Nothing deletes these rows.
+A help request (the web help form, `PUT /send_email`, `POST /api/v1/support_requests`) is saved as a `helps` row and the request answers at once. `HelpFilingJob` then queues the mails and opens the public GitHub issue. Each step is recorded on the row: `mailed_at`, and `filed_at` with `gh_issue_number`. Each is done under the row's lock, so a job that runs twice sends and files once. When GitHub opens no issue or cannot be reached, the job runs again after a growing wait (5 attempts in about 6 minutes), then reports the failure.
+
+The recurring task `help_filing_sweep` (`HelpFilingSweepJob`, every 15 minutes) queues the job again for every row that is not filed or not mailed and has not changed for 15 minutes: a row whose job could not be queued when it was saved (that failure is reported and the sender still sees success), and a row whose job gave up. Each row is queued again at most 12 times (`resends`, about three hours); the last time is reported and the row is left for staff. Running the sweep twice queues nothing twice.
+
+In a console:
+
+```ruby
+Help.unfinished                                 # not filed or not mailed yet
+Help.unfinished.where(resends: Help::MAX_RESENDS) # given up
+HelpFilingJob.perform_now(help_id)             # file and mail one now (does only what is missing)
+```
+
+Rows saved before this change were handled by the request that saved them: the migration sets their `filed_at` and `mailed_at` to their `created_at`, and they have no `source`, which the sweep also skips, so it never files or mails them. Rolling the code back leaves the new columns in place; a request saved by the new code and not yet filed then stays unfiled (old code has no job for it): check `Help.unfinished.count` is 0 before rolling back. Rows from that time with an empty `gh_issue_number` are requests whose GitHub issue failed; the sender was told so. Nothing deletes help rows.
 
 ## Interface components
 

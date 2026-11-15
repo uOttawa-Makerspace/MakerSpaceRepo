@@ -59,6 +59,12 @@ RSpec.describe "config/recurring.yml" do
     expect(Fugit.parse("every 15 minutes", multi: :fail)).to be_a(Fugit::Cron)
   end
 
+  it "queues unfinished help requests again every 15 minutes in production and staging" do
+    %w[production staging].each do |env|
+      expect(config.dig(env, "help_filing_sweep")).to include("class" => "HelpFilingSweepJob", "schedule" => "every 15 minutes")
+    end
+  end
+
   it "keeps the maintenance jobs that were already scheduled" do
     %w[production staging].each do |env|
       expect(config.fetch(env).keys).to include("clear_solid_queue_finished_jobs", "tap_box_log_cleanup", "kiosk_sign_event_cleanup")

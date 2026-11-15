@@ -91,6 +91,12 @@ shared: &shared
     class: GoogleCalendar::ResendJob
     schedule: every 15 minutes
 
+  # Queues HelpFilingJob again for help requests that are not filed and mailed yet (a job that could not be queued, or
+  # that gave up); see Help.queue_unfinished.
+  help_filing_sweep:
+    class: HelpFilingSweepJob
+    schedule: every 15 minutes
+
   # Mails the maintenance address about failed and overdue background jobs, once each (JobAlert).
   job_alerts:
     class: JobAlertJob

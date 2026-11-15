@@ -203,10 +203,6 @@ en:
           attributes:
             expires_at:
               after_family_cap: "must not be after the family cap"
-        help:
-          attributes:
-            base:
-              issue_submission_failed: "Internal error while submitting issue."
         volunteer_task:
           attributes:
             photos:

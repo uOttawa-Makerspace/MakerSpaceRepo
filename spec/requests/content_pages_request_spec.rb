@@ -644,7 +644,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
         { number: 9 }
       end
       guest = { help: params[:help].merge(subject: "See @someone and #123 now", comments: "ping @someone a&b") }
-      post help_path, params: guest
+      perform_enqueued_jobs { post help_path, params: guest }
       zwj = "\u200D"
       expect(posted[:title]).to eq("See @#{zwj}someone and ##{zwj}123 now")
       expect(posted[:body]).to eq("ping @#{zwj}someone a&amp;b")
@@ -657,7 +657,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
         { number: 9 }
       end
       sign_in_as(:regular)
-      post help_path, params: { help: params[:help].merge(subject: "See @someone and #123 now") }
+      perform_enqueued_jobs { post help_path, params: { help: params[:help].merge(subject: "See @someone and #123 now") } }
       expect(posted[:title]).to eq("See @\u200Dsomeone and #\u200D123 now")
     end
 
@@ -668,8 +668,10 @@ RSpec.describe "Content pages (part 2)", type: :request do
         { number: 9 }
       end
       sign_in_as(:regular)
-      put "/send_email", params: { subject: "See @someone and #123 now", comments: "Help please" }.to_json,
-                         headers: { "Content-Type" => "application/json" }
+      perform_enqueued_jobs do
+        put "/send_email", params: { subject: "See @someone and #123 now", comments: "Help please" }.to_json,
+                           headers: { "Content-Type" => "application/json" }
+      end
       expect(posted[:title]).to eq("See @\u200Dsomeone and #\u200D123 now")
     end
 
@@ -762,27 +764,38 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response).to redirect_to(root_path)
     end
 
-    it "fails the submission (422, report kept without an issue number, nothing sent) when GitHub issue creation returns no number" do
+    it "submits and mails the team when GitHub issue creation returns no number; the job tries the issue again" do
       allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return({ number: nil })
       deliveries.clear
       expect {
-        perform_enqueued_jobs { post help_path, params: params }
+        perform_enqueued_jobs(only: ApplicationMailDeliveryJob) do
+          post help_path, params: params
+          HelpFilingJob.perform_now(Help.last.id)
+        end
       }.to change(Help, :count).by(1)
+      expect(response).to redirect_to(help_path)
+      expect(flash[:notice]).to eq("Your issue has been submitted.")
       expect(Help.last.gh_issue_number).to be_nil
-      expect(response).to have_http_status(422)
-      expect(deliveries).to be_empty
+      expect(deliveries.map(&:to)).to eq([["uottawa.makerepo@gmail.com"]])
+      expect(HelpFilingJob).to have_been_enqueued.with(Help.last.id).at_least(:once)
     end
 
-    it "re-renders a form that posts again, and the retry succeeds" do
-      allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return(false)
-      post help_path, params: params
+    it "saves who sent the request and from where, and queues its job" do
+      user = sign_in_as(:regular)
+      post help_path, params: { help: params[:help].merge(email: "typed@example.test"), share_email: "1" }
+      expect(Help.last).to have_attributes(user: user, name: "Pat Visitor", email: "typed@example.test", share_email: true,
+                                           subject: "Booking does not work", source: "help_page", gh_issue_number: nil)
+      expect(HelpFilingJob).to have_been_enqueued.with(Help.last.id)
+    end
+
+    it "re-renders a refused form that posts again, and the retry succeeds" do
+      post help_path, params: { help: params[:help].merge(subject: "short") }
+      expect(response).to have_http_status(422)
       help_form = Nokogiri::HTML(response.body).at_css("form[action='#{help_path}']")
       expect(help_form["method"]).to eq("post")
       expect(help_form.at_css("input[name='_method']")).to be_nil
-      allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return({ number: 5 })
       expect { post help_path, params: params }.to change(Help, :count).by(1)
       expect(response).to redirect_to(help_path)
-      expect(Help.last.gh_issue_number).to eq("5")
     end
   end
 

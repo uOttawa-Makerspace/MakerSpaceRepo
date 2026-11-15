@@ -45,11 +45,20 @@ RSpec.describe "PUT /send_email (React Help form)", type: :request do
     expect(user.email).to eq("original@example.com")
   end
 
-  it "still sends the team its copy when the caller's copy cannot be queued" do
-    allow(MsrMailer).to receive(:issue_email).and_raise(ActiveJob::EnqueueError, "queue down")
-    perform_enqueued_jobs { put "/send_email", params: payload.to_json, headers: headers.merge("Content-Type" => "application/json") }
-    expect(response).to have_http_status(:internal_server_error)
-    expect(deliveries.map(&:to)).to eq([["uottawa.makerepo@gmail.com"]])
+  it "answers success and keeps the request when its job cannot be queued; the sweep sends it later, once" do
+    allow(HelpFilingJob).to receive(:perform_later).and_raise(ActiveJob::EnqueueError, "queue down")
+    expect(Rails.error).to receive(:report).with(an_instance_of(ActiveJob::EnqueueError), hash_including(handled: true))
+    expect do
+      perform_enqueued_jobs { put "/send_email", params: payload.to_json, headers: headers.merge("Content-Type" => "application/json") }
+    end.to change(Help, :count).by(1)
+    expect(response).to have_http_status(:ok)
+    expect(JSON.parse(response.body)).to eq("status" => "sent")
+    expect(deliveries).to be_empty
+
+    allow(HelpFilingJob).to receive(:perform_later).and_call_original
+    travel(Help::RESEND_AFTER + 1.minute) { perform_enqueued_jobs { HelpFilingSweepJob.perform_now } }
+    expect(deliveries.map(&:to)).to eq([["uottawa.makerepo@gmail.com"], ["original@example.com"]])
+    expect(Help.last.gh_issue_number).to eq("42")
   end
 
   # the confirmation goes to the account email, never the posted one.
@@ -70,7 +79,7 @@ RSpec.describe "PUT /send_email (React Help form)", type: :request do
   end
 
   # same persistence path as HelpController#create.
-  it "creates the Help record and attempts the GitHub issue" do
+  it "creates the Help record, answers, and its job opens the GitHub issue" do
     expect_any_instance_of(GithubIssuesService).to receive(:create_issue)
       .with(hash_including(reporter: "Original Name", title: "Printer will not start"))
       .and_return({ number: 77 })
@@ -79,21 +88,25 @@ RSpec.describe "PUT /send_email (React Help form)", type: :request do
       put "/send_email", params: payload.to_json, headers: headers.merge("Content-Type" => "application/json")
     end.to change(Help, :count).by(1)
     expect(response).to have_http_status(:ok)
+    expect(Help.last).to have_attributes(gh_issue_number: nil, user: user, source: "app", app_version: "2.4.1")
+    perform_enqueued_jobs
     expect(Help.last.gh_issue_number).to eq("77")
   end
 
-  # GithubIssuesService#create_issue returns `false` on an Octokit error
-  it "returns 422 JSON errors, keeps the report without an issue number and sends no email when the GitHub API call fails (create_issue => false)" do
+  # GithubIssuesService#create_issue returns `false` on an Octokit error: the request is not told, the job tries again
+  it "answers success and sends the mails when the GitHub API call fails; the issue is filed later" do
     allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return(false)
 
     expect do
-      perform_enqueued_jobs { put "/send_email", params: payload.to_json, headers: headers.merge("Content-Type" => "application/json") }
+      perform_enqueued_jobs(only: ApplicationMailDeliveryJob) do
+        put "/send_email", params: payload.to_json, headers: headers.merge("Content-Type" => "application/json")
+        HelpFilingJob.perform_now(Help.last.id)
+      end
     end.to change(Help, :count).by(1)
-    expect(deliveries).to be_empty
-
+    expect(response).to have_http_status(:ok)
+    expect(deliveries.size).to eq(2)
     expect(Help.last.gh_issue_number).to be_nil
-    expect(response).to have_http_status(:unprocessable_content)
-    expect(JSON.parse(response.body)["errors"].join).to include("Internal error")
+    expect(HelpFilingJob).to have_been_enqueued.with(Help.last.id).at_least(:once)
   end
 
   it "rejects invalid input with 422 JSON errors and sends nothing" do

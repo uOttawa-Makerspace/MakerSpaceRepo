@@ -163,6 +163,7 @@ fr:
         email: Courriel
         subject: Sujet
         comments: Commentaires
+        source: Origine
       chat_message:
         job_order: Commande
         sender: Expéditeur
