@@ -296,16 +296,19 @@ RSpec.describe "Job order customer pages in English and French", type: :request 
       expect(flash[:notice]).to eq("La tâche a été supprimée.")
     end
 
-    it "says a task could not be created in each language" do
-      order
-      invalid = JobTask.new.tap { |task| task.errors.add(:base, "Broken") }
-      allow_any_instance_of(JobTask).to receive(:save!).and_raise(ActiveRecord::RecordInvalid.new(invalid)) # rubocop:disable RSpec/AnyInstance
+    it "says in each language that a task cannot be added to a paid order, and adds none" do
+      paid = make_job_order!(owner: owner, status_key: :paid).tap { |o| typed_task!(o, "Task #1") }
 
-      post job_order_job_tasks_path(order)
-      expect(flash[:alert]).to eq("Failed to create task: Broken")
+      expect do
+        post job_order_job_tasks_path(paid)
+        expect(response).to redirect_to(job_order_path(paid))
+        expect(flash[:alert]).to eq("This order has already been paid, so it can no longer be changed here. " \
+                                    "Please contact makerspace@uottawa.ca to change it.")
 
-      post job_order_job_tasks_path(order), params: fr
-      expect(flash[:alert]).to eq("La tâche n'a pas pu être créée : Broken")
+        post job_order_job_tasks_path(paid), params: fr
+        expect(flash[:alert]).to eq("Cette commande a déjà été payée et ne peut plus être modifiée ici. " \
+                                    "Veuillez contacter makerspace@uottawa.ca pour la modifier.")
+      end.not_to(change { paid.job_tasks.count })
     end
   end
 end

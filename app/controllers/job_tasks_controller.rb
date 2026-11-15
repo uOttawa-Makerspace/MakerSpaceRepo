@@ -117,17 +117,13 @@ class JobTasksController < SessionsController
     end
   end
 
-  # The change's own writes did not validate: the task errors, back to the step (update) or the order page.
+  # The change's own writes did not validate: the task errors, back to the step (update) or the order page. A new
+  # task has only a title, so create never gets here.
   def invalid_change(message)
-    if action_name == "update"
-      flash[:alert] = message
-      redirect_back(fallback_location: edit_job_order_job_task_path(@job_order, @job_task, step: params[:step]))
-    elsif action_name == "create"
-      flash[:alert] = t("job_orders.alerts.task_create_failed", message: message)
-      redirect_to job_order_path(@job_order)
-    else
-      refuse_change(message)
-    end
+    return refuse_change(message) unless action_name == "update"
+
+    flash[:alert] = message
+    redirect_back(fallback_location: edit_job_order_job_task_path(@job_order, @job_task, step: params[:step]))
     false
   end
 
