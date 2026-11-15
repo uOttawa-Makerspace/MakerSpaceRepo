@@ -95,6 +95,14 @@ describe("job order tables", () => {
     expect(exemptPageFromCache).toHaveBeenCalledTimes(1);
   });
 
+  it("builds every job order table of the page", () => {
+    load(
+      "/job_orders",
+      "<table class='table' id='a'></table><table class='table notDataTable'></table><table class='table' id='b'></table>",
+    );
+    expect(tables.map((t) => t.selector)).toEqual([$("a"), $("b")]);
+  });
+
   it("builds nothing on a page without a job order table", () => {
     load("/job_orders/settings", "<table class='table notDataTable'></table>");
     expect(tables).toEqual([]);

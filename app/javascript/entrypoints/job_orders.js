@@ -24,13 +24,18 @@ function removeDateFilter() {
   if (index !== -1) DataTable.ext.search.splice(index, 1);
 }
 
-// Builds the job order table of the page and, on the admin page, its filters.
-// A table already built is left as it is, with the filters it was given.
+// Builds each job order table of the page and, on the admin page, the filters
+// of its one table. Tables already built are left as they are, with the
+// filters they were given.
 onEveryPageLoad(() => {
-  const dt = pageTable(document.querySelector(".table:not(.notDataTable)"), {
-    order: [[3, "desc"]], // sorts by id on /admin and submitted date on client view
-    pageLength: 25,
-  });
+  const [dt] = [...document.querySelectorAll(".table:not(.notDataTable)")]
+    .map((table) =>
+      pageTable(table, {
+        order: [[3, "desc"]], // sorts by id on /admin and submitted date on client view
+        pageLength: 25,
+      }),
+    )
+    .filter(Boolean);
   if (!dt) return;
   removeDateFilter();
 
