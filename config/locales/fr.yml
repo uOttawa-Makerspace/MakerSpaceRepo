@@ -156,6 +156,7 @@ fr:
         other: "Autre"
         no_specify: "Je préfère ne pas spécifier"
         i_am: "Je suis..."
+        internal_proof_hint: "Les choix étudiant, professeur et employé de uOttawa demandent une adresse courriel @uottawa.ca confirmée."
         undergrad: "un étudiant de premier cycle de uOttawa"
         international_undergrad: "un étudiant international de premier cycle de uOttawa"
         grad: "un étudiant aux cycles supérieurs de uOttawa"

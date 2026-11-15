@@ -48,6 +48,7 @@
 
           <div class="mb-3">
             <%= form.label :identity, t('users.new.form.i_am'), class: 'required' %>
+            <div class="form-text mb-1"><%= t('users.new.form.internal_proof_hint') %></div>
             <% for account_type in User::ACCOUNT_IDENTITIES %>
             <div class="form-check">
               <%= form.radio_button :identity, account_type, class: 'form-check-input', (User::STUDENT_IDENTITIES.include?(account_type) ? 'data-show' : 'data-hide') => '#students-only', required: true %>

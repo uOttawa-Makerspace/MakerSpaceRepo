@@ -38,6 +38,7 @@
     <!-- IDENTITY RADIO BUTTONS -->
     <div class="mb-4">
       <label class="form-label d-block mb-2"><%= t('users.new.form.i_am') %> <span class="text-danger">*</span></label>
+      <div class="form-text mb-2"><%= t('users.new.form.internal_proof_hint') %></div>
       
       <div class="d-flex flex-column gap-2">
         <% for account_type in User::ACCOUNT_IDENTITIES %>

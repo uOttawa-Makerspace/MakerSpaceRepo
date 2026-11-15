@@ -16,7 +16,7 @@ RSpec.describe "Admin CDEL reports", type: :request do
 
   let!(:world) do
     space = create(:space, name: "Cdel Space")
-    student = create(:user, :student, name: "Cora Student", email: "cora@example.test",
+    student = create(:user, :student, name: "Cora Student", email: "cora@uottawa.ca",
                      username: "corastudent", created_at: march_10)
     training = create(:training, name_en: "Cdel Training")
     session = create(:training_session, space: space, training: training,
@@ -40,7 +40,7 @@ RSpec.describe "Admin CDEL reports", type: :request do
         expect_admin_area_bounce(guest: role == :guest)
         get admin_cdel_reports_generate_path, params: range.merge(visitors: "Dump visitors")
         expect_admin_area_bounce(guest: role == :guest)
-        expect(response.body).not_to include("cora@example.test")
+        expect(response.body).not_to include("cora@uottawa.ca")
       end
     end
 
@@ -66,7 +66,7 @@ RSpec.describe "Admin CDEL reports", type: :request do
       expect(rows.first).to eq(%w[users.id users.name users.email users.identity users.student_id users.program
                                    spaces.name lab_sessions.sign_in_time lab_sessions.sign_out_time])
       expect(rows.size).to eq(2)
-      expect(rows[1][0..2]).to eq([world[:student].id.to_s, "Cora Student", "cora@example.test"])
+      expect(rows[1][0..2]).to eq([world[:student].id.to_s, "Cora Student", "cora@uottawa.ca"])
       expect(rows[1][6]).to eq("Cdel Space")
     end
 
@@ -88,7 +88,7 @@ RSpec.describe "Admin CDEL reports", type: :request do
       expect(rows.first).to eq(%w[users.id users.name users.email users.identity users.student_id users.program
                                    users.username users.created_at users.last_signed_in_time users.last_seen_at
                                    users.use users.how_heard_about_us users.confirmed])
-      data = rows.find { |r| r[2] == "cora@example.test" }
+      data = rows.find { |r| r[2] == "cora@uottawa.ca" }
       expect(data[4]).to eq(world[:student].student_id)
       expect(data[6]).to eq("corastudent")
     end
@@ -124,14 +124,14 @@ RSpec.describe "Admin CDEL reports", type: :request do
 
       it "a range report covers the whole From and To days in Toronto" do
         # 21:00 on Feb 28 in Toronto is already March 1 in UTC
-        create(:user, :student, email: "eve@example.test", created_at: Time.zone.local(2026, 2, 28, 21))
-        create(:user, :student, email: "firstday@example.test", created_at: Time.zone.local(2026, 3, 1, 0, 30))
-        create(:user, :student, email: "lastday@example.test", created_at: Time.zone.local(2026, 3, 31, 23, 30))
-        create(:user, :student, email: "nextday@example.test", created_at: Time.zone.local(2026, 4, 1, 0, 30))
+        create(:user, :student, email: "eve@uottawa.ca", created_at: Time.zone.local(2026, 2, 28, 21))
+        create(:user, :student, email: "firstday@uottawa.ca", created_at: Time.zone.local(2026, 3, 1, 0, 30))
+        create(:user, :student, email: "lastday@uottawa.ca", created_at: Time.zone.local(2026, 3, 31, 23, 30))
+        create(:user, :student, email: "nextday@uottawa.ca", created_at: Time.zone.local(2026, 4, 1, 0, 30))
         get admin_cdel_reports_generate_path, params: range.merge(new_users: "x")
         emails = csv_rows.map { |r| r[2] }
-        expect(emails).to include("firstday@example.test", "lastday@example.test", "cora@example.test")
-        expect(emails).not_to include("eve@example.test", "nextday@example.test")
+        expect(emails).to include("firstday@uottawa.ca", "lastday@uottawa.ca", "cora@uottawa.ca")
+        expect(emails).not_to include("eve@uottawa.ca", "nextday@uottawa.ca")
       end
 
       it "a semester report ends at the end of its last day in Toronto" do

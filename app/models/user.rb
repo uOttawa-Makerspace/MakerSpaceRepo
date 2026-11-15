@@ -13,6 +13,7 @@ class User < ApplicationRecord
   include UoengConcern
   include TrainingProgress
   include YearOfStudy
+  include UottawaAffiliation
   include SniffedUploadValidation
 
   # ============================================

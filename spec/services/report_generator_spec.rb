@@ -89,7 +89,7 @@ RSpec.describe ReportGenerator do
     let!(:space) { create(:space, name: "Unit Space") }
     let!(:training) { create(:training, name_en: "Unit Training") }
     let!(:session) { create(:training_session, space: space, training: training, created_at: march_10) }
-    let!(:learner) { create(:user, :student, name: "Lena Learner", email: "lena@example.test") }
+    let!(:learner) { create(:user, :student, name: "Lena Learner", email: "lena@uottawa.ca") }
 
     before do
       session.users << learner
@@ -112,7 +112,7 @@ RSpec.describe ReportGenerator do
       expect(sheets.keys).to eq(["Report - Unit Space"])
       rows = sheets["Report - Unit Space"]
       expect(rows.first.first).to eq("Training Attendees - Unit Space")
-      expect(rows.flatten).to include("Lena Learner", "lena@example.test")
+      expect(rows.flatten).to include("Lena Learner", "lena@uottawa.ca")
     end
 
     it "training_attendees: an empty range returns a package with no worksheets at all" do

@@ -308,14 +308,14 @@ RSpec.describe ReportGenerator do
 
     before do
       gina = student("Gina Genie", gender: "Female")
-      gina.update_columns(faculty: "Génie", email: "gina@example.test", username: "gina")
+      gina.update_columns(faculty: "Génie", email: "gina@uottawa.ca", username: "gina")
       cam = create(:user, name: "Cam Community", created_at: march_10, gender: "Male",
-                          email: "cam@example.test", username: "cam")
+                          email: "cam@uottawa.ca", username: "cam")
       cam.update_columns(faculty: "", program: "", year_of_study: nil)
       student("Mo Master", program: "Master of Arts", faculty: "Arts", gender: "Male",
-                           email: "mo@example.test", username: "mo")
+                           email: "mo@uottawa.ca", username: "mo")
       student("Phil Doc", program: "PhD Physics", faculty: "Science", gender: "Other",
-                          email: "phil@example.test", username: "phil")
+                          email: "phil@uottawa.ca", username: "phil")
       create(:user, name: "Early Bird", created_at: Time.utc(2026, 2, 1))
     end
 
@@ -376,11 +376,11 @@ RSpec.describe ReportGenerator do
       expect(body.size).to eq(4)
       gina = User.find_by(username: "gina")
       expect(body.find { |r| r.first == "Gina Genie" }).to eq(
-        ["Gina Genie", "gina", "gina@example.test", "Female", "undergrad", "Génie", 2020,
+        ["Gina Genie", "gina", "gina@uottawa.ca", "Female", "undergrad", "Génie", 2020,
          "2026-03-10 11:00", nil, gina.student_id]
       )
       expect(body.find { |r| r.first == "Cam Community" }).to eq(
-        ["Cam Community", "cam", "cam@example.test", "Male", "community_member", nil, nil, "2026-03-10 11:00"]
+        ["Cam Community", "cam", "cam@uottawa.ca", "Male", "community_member", nil, nil, "2026-03-10 11:00"]
       )
     end
 
@@ -457,7 +457,7 @@ RSpec.describe ReportGenerator do
     let(:laser) { create(:training, name_en: "Laser", name: "Laser") }
 
     let(:teacher) { create(:user, :staff, name: "Ina Instructor") }
-    let(:lena) { create(:user, :student, name: "Lena Learner", email: "lena@example.test", student_id: "012345678") }
+    let(:lena) { create(:user, :student, name: "Lena Learner", email: "lena@uottawa.ca", student_id: "012345678") }
 
     def attend(user, session, at)
       create(:certification, user: user, training_session: session, training: session.training, created_at: at)
@@ -466,7 +466,7 @@ RSpec.describe ReportGenerator do
     it "lists attendees, then monthly and weekly averages of attendees per session" do
       session = create(:training_session, space: alpha, training: laser, user: teacher, course: "MCG1", created_at: march_10)
       attend(lena, session, march_10)
-      attend(create(:user, name: "Max Mate", email: "max@example.test"), session, march_10)
+      attend(create(:user, name: "Max Mate", email: "max@uottawa.ca"), session, march_10)
       rows = grid(described_class.generate_training_attendees_report(from, to))["Report - Alpha"]
       expect(rows.first(5)).to eq(
         [["Training Attendees - Alpha"], ["From", "2026-03-01"], ["To", "2026-03-31"], [],
@@ -478,8 +478,8 @@ RSpec.describe ReportGenerator do
       # first header, as it always has, and the student number (leading zero
       # kept) follows the eight original columns
       expect(rows[5..6]).to contain_exactly(
-        ["Lena Learner", "lena@example.test", "Laser", stamp, "Ina Instructor", "MCG1", "Alpha", nil, "012345678"],
-        ["Max Mate", "max@example.test", "Laser", stamp, "Ina Instructor", "MCG1", "Alpha"]
+        ["Lena Learner", "lena@uottawa.ca", "Laser", stamp, "Ina Instructor", "MCG1", "Alpha", nil, "012345678"],
+        ["Max Mate", "max@uottawa.ca", "Laser", stamp, "Ina Instructor", "MCG1", "Alpha"]
       )
       expect(rows[8..9]).to eq([["Month", "March"], ["Month average of attendees per sessions", 2]])
       expect(rows[11]).to eq(
@@ -581,7 +581,7 @@ RSpec.describe ReportGenerator do
       attend(lena, session, march_10)
       session.update_columns(training_id: nil, user_id: nil)
       rows = grid(described_class.generate_training_attendees_report(from, to))["Report - Alpha"]
-      expect(rows[5]).to eq(["Lena Learner", "lena@example.test", "Unknown",
+      expect(rows[5]).to eq(["Lena Learner", "lena@uottawa.ca", "Unknown",
                              session.created_at.in_time_zone("America/Toronto").strftime("%Y-%m-%d %H:%M"),
                              "Unknown", session.course, "Alpha", nil, "012345678"])
     end
@@ -601,7 +601,7 @@ RSpec.describe ReportGenerator do
       rows = grid(described_class.generate_training_attendees_report(from, to))
       expect(rows.keys).to eq(["Report - Unknown"])
       expect(rows["Report - Unknown"].first).to eq(["Training Attendees - Unknown"])
-      expect(rows["Report - Unknown"][5]).to eq(["Lena Learner", "lena@example.test", "Laser",
+      expect(rows["Report - Unknown"][5]).to eq(["Lena Learner", "lena@uottawa.ca", "Laser",
                                           session.created_at.strftime("%Y-%m-%d %H:%M"), session.user.name,
                                           nil, nil, nil, "012345678"])
     end
