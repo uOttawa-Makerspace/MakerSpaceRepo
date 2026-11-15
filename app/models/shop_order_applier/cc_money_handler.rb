@@ -10,10 +10,9 @@ class ShopOrderApplier
         return
       end
 
-      user = User.find_by(email: email)
       Payments::ShopifyAdapter::Order.cc_items(hook).each do |item|
         cc = 10 * item["quantity"].to_i
-        user.present? ? CcMoney.create!(user_id: user.id, cc: cc) : credit_unclaimed(cc)
+        customer ? CcMoney.create!(user_id: customer.id, cc: cc) : credit_unclaimed(cc)
       end
     end
 

@@ -4,10 +4,7 @@ class ShopOrderApplier
   # The membership an order pays: the pending membership its metafield names, else (an order with no reference) new
   # paid memberships for the customer, one per line item that names a tier.
   class MembershipHandler < Handler
-    PRODUCT = :membership
-    KEY = "membership_db_reference"
-
-    def self.reference_key(hook) = (KEY if hook["line_items"].present?)
+    def self.metafield_key(hook) = ("membership_db_reference" if hook["line_items"].present?)
 
     def call
       return unresolved("has no line items") if hook["line_items"].blank?
@@ -15,9 +12,9 @@ class ShopOrderApplier
       # A membership order whose reference lookup was refused is not an order without a reference: the pending
       # membership it names is still unpaid, and matching by email or title would create a second, paid one.
       # Nothing is applied for membership; the refusal is reported once (report_lookup_rejection).
-      return if plan.left_unapplied?(PRODUCT)
+      return if left_unapplied?
 
-      plan.metafield(KEY).present? ? apply_referenced : apply_by_email
+      reference.present? ? apply_referenced : apply_by_email
     end
 
     private
@@ -29,7 +26,7 @@ class ShopOrderApplier
     # Only a pending membership becomes paid. One that is already paid, revoked, failed or expired is left as it is and
     # reported with the order, so a late or second order cannot reactivate a membership staff took away.
     def apply_referenced
-      ref = plan.metafield(KEY)
+      ref = reference
       membership = Membership.find_by(id: ref)
       if membership.nil?
         applier.refuse("membership reference #{ref} not found")
@@ -46,15 +43,13 @@ class ShopOrderApplier
       unresolved("references #{detail}", MembershipNotPending, membership_id: membership.id)
     end
 
-    # Fallback when the order carries no membership reference: the customer's email names the user (users.email is
-    # case-insensitive) and each line item's title the tier (checkout sells one membership per line, quantity 1).
+    # Fallback when the order carries no membership reference: the customer's email names the user and each line item's title the tier (checkout sells one membership per line, quantity 1).
     # Each matched tier line is a new paid membership starting when the member's latest active one ends (or now).
     def apply_by_email
       return unresolved("has no membership reference and no customer email") if email.blank?
 
-      user = User.find_by(email: email)
-      return unresolved("has no membership reference and its customer is not a user") unless user
-      return if grant_tiers(user).positive?
+      return unresolved("has no membership reference and its customer is not a user") unless customer
+      return if grant_tiers(customer).positive?
 
       unresolved("has no membership reference and no line item names a tier")
     end

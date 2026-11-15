@@ -3,14 +3,11 @@
 class ShopOrderApplier
   # The locker payment of an order: paid by card (orders/paid) or in cash (orders/fulfilled).
   class LockerHandler < Handler
-    PRODUCT = :locker
-    KEY = "locker_db_reference"
-
     def self.takes_cash? = true
-    def self.reference_key(_hook) = KEY
+    def self.metafield_key(_hook) = "locker_db_reference"
 
     def call
-      return if plan.left_unapplied?(PRODUCT) # the refused lookup is reported once (report_lookup_rejection)
+      return if left_unapplied? # the refused lookup is reported once (report_lookup_rejection)
 
       rental = referenced_rental
       record_payment(rental) if rental
@@ -21,7 +18,7 @@ class ShopOrderApplier
     # A locker-tagged order that names no locker rental at all: nothing to apply, and not to be lost silently
     # either (staff reconcile it from the report).
     def referenced_rental
-      ref = plan.metafield(KEY)
+      ref = reference
       if ref.blank?
         applier.report_problem(LockerOrderWithoutReference.new("locker order #{plan.id} carries no locker_db_reference"),
                                context: { shopify_order_id: plan.id })

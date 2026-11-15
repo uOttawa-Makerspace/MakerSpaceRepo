@@ -30,4 +30,22 @@ RSpec.describe ShopOrderApplier do
       expect(described_class::HANDLERS.keys).to eq(Payments::Reference::KINDS - ["job_order"])
     end
   end
+
+  describe "a handler" do
+    it "knows its kind from the registry" do
+      expect(described_class::HANDLERS.values.map(&:kind)).to eq(described_class::HANDLERS.keys)
+    end
+  end
+
+  it "applies an order whose metafield lookup did not run as one without a reference" do
+    rental = create(:locker_rental, :await_payment)
+    order, = ProcessedOrder.receive!(provider: "shopify", order_id: 7501, topic: "orders/paid",
+                                     payload: { "id" => 7501, "tags" => [LockerRental.draft_order_operating_tag] })
+    allow_any_instance_of(described_class).to receive(:resolve_references)
+    reports = []
+    allow(Rails.error).to receive(:report) { |error, **| reports << error.class }
+    described_class.new(order).call
+    expect([order.reload.status, rental.reload.state]).to eq(%w[applied await_payment])
+    expect(reports).to eq([described_class::LockerOrderWithoutReference])
+  end
 end

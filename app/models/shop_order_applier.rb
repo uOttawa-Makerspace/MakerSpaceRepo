@@ -36,14 +36,14 @@ class ShopOrderApplier
   # metafield values that name the records, and a refused lookup, are filled in by the Shopify lookup
   # (resolve_references).
   Plan = Struct.new(:hook, :id, :event, :handlers, :metafields, :lookup_rejection, :left_unapplied, keyword_init: true) do
-    def metafield(key) = metafields[key]
-    def left_unapplied?(product) = Array(left_unapplied).include?(product)
+    def metafield(key) = metafields.fetch(key, nil)
+    def left_unapplied?(kind) = Array(left_unapplied).include?(kind.to_sym)
   end
 
   # The handlers that apply the payment of `event`: none for plain merch, job orders and products of another
   # environment, whose orders are not stored.
   def self.handlers_for(event)
-    HANDLERS.filter_map { |kind, handler| handler if event.kinds.include?(kind) && (handler.takes_cash? || !event.cash) }
+    HANDLERS.values.select { |handler| handler.applies_to?(event) }
   end
 
   def initialize(record)
@@ -106,7 +106,7 @@ class ShopOrderApplier
   def plan_for(record)
     event = record.payment_event
     Plan.new(hook: record.payload, id: Payments::ShopifyAdapter::Order.order_id(record.payload), event: event,
-             handlers: self.class.handlers_for(event))
+             handlers: self.class.handlers_for(event), metafields: {})
   end
 
   def apply(plan)
@@ -124,7 +124,7 @@ class ShopOrderApplier
     end
   end
 
-  # The values of the makerepo metafields the handlers need (each handler's reference_key): from the payload when it
+  # The values of the makerepo metafields the handlers need (each handler's metafield_key): from the payload when it
   # carries them, else from ONE Shopify lookup of the draft order shared by all the keys
   # (Payments::ShopifyAdapter::Metafields). It can raise when Shopify is not configured or the lookup must be retried
   # (the job retries). A lookup Shopify refuses for good yields no values and is noted on the plan, so the order
@@ -132,7 +132,7 @@ class ShopOrderApplier
   def resolve_references(plan)
     @remote = :unfetched
     plan.metafields = plan.handlers.each_with_object({}) do |handler, values|
-      key = handler.reference_key(plan.hook)
+      key = handler.metafield_key(plan.hook)
       values[key] = metafield_value(plan, handler, key) if key
     end
   end
@@ -151,7 +151,7 @@ class ShopOrderApplier
   # a reference.
   def remote_metafield(plan, handler, key)
     @remote = fetch_remote_metafields(plan) if @remote == :unfetched
-    (plan.left_unapplied ||= []) << handler::PRODUCT if plan.lookup_rejection
+    (plan.left_unapplied ||= []) << handler.kind.to_sym if plan.lookup_rejection
     @remote&.find { |f| f["key"] == key }
   end
 
