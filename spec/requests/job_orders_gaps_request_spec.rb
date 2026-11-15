@@ -671,6 +671,21 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(body.index("<td>#{newer.id}</td>")).to be < body.index("<td>#{older.id}</td>")
     end
 
+    # Every order is created with its Draft status row in the same save, so an order with no status row only
+    # exists when written straight to the table; the admin list, like the customer list, leaves it out.
+    it "leaves an order with no status row out of the admin list, and create always gives an order its Draft row" do
+      statusless = create(:job_order, user: owner)
+      session_login!(owner)
+      post job_orders_path, params: { job_order: { user_comments: "first order" }, redirect_step: "1" }
+      created = JobOrder.order(:id).last
+      expect(created.job_order_statuses.map { |s| s.job_status.name }).to eq(["Draft"])
+
+      session_login!(admin)
+      get admin_job_orders_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("<td>#{statusless.id}</td>")
+    end
+
     it "offers every non-Draft status in the admin filter" do
       session_login!(staff)
       get admin_job_orders_path
