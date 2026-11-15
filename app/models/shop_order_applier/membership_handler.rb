@@ -43,7 +43,8 @@ class ShopOrderApplier
       unresolved("references #{detail}", MembershipNotPending, membership_id: membership.id)
     end
 
-    # Fallback when the order carries no membership reference: the customer's email names the user and each line item's title the tier (checkout sells one membership per line, quantity 1).
+    # Fallback when the order carries no membership reference: the customer's email names the user and each line
+    # item's title the tier (checkout sells one membership per line, quantity 1).
     # Each matched tier line is a new paid membership starting when the member's latest active one ends (or now).
     def apply_by_email
       return unresolved("has no membership reference and no customer email") if email.blank?

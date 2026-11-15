@@ -33,8 +33,9 @@ RSpec.describe ProcessedOrder do
 
     it "dates an order that names no time when it was received, and a fulfilled one as cash" do
       fulfilled, = store(5003, topic: "orders/fulfilled")
-      fulfilled.update_columns(created_at: Time.utc(2026, 10, 1, 8))
-      expect(fulfilled.payment_event).to have_attributes(provider_ref: "5003/fulfilled", paid_at: Time.utc(2026, 10, 1, 8), cash: true)
+      fulfilled.update!(created_at: Time.utc(2026, 10, 1, 8))
+      expect(fulfilled.payment_event)
+        .to have_attributes(provider_ref: "5003/fulfilled", paid_at: Time.utc(2026, 10, 1, 8), cash: true)
     end
   end
 

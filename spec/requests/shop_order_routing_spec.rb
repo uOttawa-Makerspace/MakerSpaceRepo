@@ -36,7 +36,9 @@ RSpec.describe "Shopify order routing", type: :request do
 
   def field(key, value) = { namespace: "makerepo", key: key, value: value.to_s }
 
-  def locker_order(**extra) = { id: 7001, name: "#7001", tags: [locker_tag], metafields: [field("locker_db_reference", rental.id)] }.merge(extra)
+  def locker_order(**extra)
+    { id: 7001, name: "#7001", tags: [locker_tag], metafields: [field("locker_db_reference", rental.id)] }.merge(extra)
+  end
 
   def membership_order(**extra)
     { id: 7002, name: "#7002", tags: [membership_tag], line_items: [{ title: "1 Day Membership", quantity: 1 }],
@@ -44,7 +46,12 @@ RSpec.describe "Shopify order routing", type: :request do
   end
 
   def cc_order(**extra)
-    { id: 7003, name: "#7003", customer: { email: user.email }, line_items: [{ product_id: cc_product_id, quantity: 2 }] }.merge(extra)
+    { id: 7003, name: "#7003", customer: { email: user.email },
+      line_items: [{ product_id: cc_product_id, quantity: 2 }] }.merge(extra)
+  end
+
+  def both_references
+    [field("locker_db_reference", rental.id), field("membership_db_reference", pending_membership.id)]
   end
 
   def job_order_order(**extra) = { id: 7004, name: "#7004", tags: [job_order_tag, "job_order:12"] }.merge(extra)
@@ -64,14 +71,17 @@ RSpec.describe "Shopify order routing", type: :request do
     end
   end
 
-  def row(ref, topic: "orders/paid", name: "##{ref.to_s.split('/').first}", status: "applied", attempts: 1, last_error: nil)
-    { "provider" => "shopify", "provider_ref" => ref.to_s, "topic" => topic, "order_name" => name, "status" => status,
-      "attempts" => attempts, "last_error" => last_error, "payload_id" => ref.to_s.split("/").first.to_i,
-      "applied" => status == "applied", "leased" => false }
+  # The expected row of `ref` (overrides: topic, status, last_error).
+  def row(ref, **overrides)
+    id = ref.to_s.split("/").first
+    expected = { "provider" => "shopify", "provider_ref" => ref.to_s, "topic" => "orders/paid",
+                 "order_name" => "##{id}", "status" => "applied", "attempts" => 1, "last_error" => nil,
+                 "payload_id" => id.to_i, "leased" => false }.merge(overrides.transform_keys(&:to_s))
+    expected.merge("applied" => expected["status"] == "applied")
   end
 
   # The tables a job run writes, in order (INSERT and UPDATE statements), without the queue's own tables.
-  def writes_during
+  def writes_during(&)
     tables = []
     callback = lambda do |*, payload|
       sql = payload[:sql].to_s
@@ -80,7 +90,7 @@ RSpec.describe "Shopify order routing", type: :request do
 
       tables << match[1]
     end
-    ActiveSupport::Notifications.subscribed(callback, "sql.active_record") { yield }
+    ActiveSupport::Notifications.subscribed(callback, "sql.active_record", &)
     tables.chunk_while { |a, b| a == b }.map(&:first)
   end
 
@@ -110,7 +120,8 @@ RSpec.describe "Shopify order routing", type: :request do
       allow(Rails.logger).to receive(:info).and_call_original
       deliver("orders/paid", job_order_order(draft_order_id: 55))
       expect(stored_rows).to be_empty
-      expect(Rails.logger).to have_received(:info).with(/paid job-order draft order ignored.*id=7004.*draft_order_id=55/)
+      expect(Rails.logger).to have_received(:info)
+        .with(/paid job-order draft order ignored.*id=7004.*draft_order_id=55/)
     end
 
     it "job order with the CC product: logs it and still credits the CC Money" do
@@ -124,8 +135,9 @@ RSpec.describe "Shopify order routing", type: :request do
     it "locker, membership and CC in one order: applies the locker, then the membership, then the CC Money" do
       body = locker_order(id: 7006, name: "#7006", tags: [locker_tag, membership_tag],
                           customer: { email: user.email },
-                          line_items: [{ title: "1 Day Membership", quantity: 1 }, { product_id: cc_product_id, quantity: 1 }],
-                          metafields: [field("locker_db_reference", rental.id), field("membership_db_reference", pending_membership.id)])
+                          line_items: [{ title: "1 Day Membership", quantity: 1 },
+                                       { product_id: cc_product_id, quantity: 1 }],
+                          metafields: both_references)
       rental
       pending_membership
       writes = writes_during { deliver("orders/paid", body) }
@@ -133,7 +145,8 @@ RSpec.describe "Shopify order routing", type: :request do
       expect(writes.index("locker_payments")).to be < writes.index("memberships")
       expect(writes.index("memberships")).to be < writes.index("cc_moneys")
       expect(writes.last(2)).to eq(%w[cc_moneys processed_orders])
-      expect([rental.reload.state, pending_membership.reload.status, CcMoney.where(user: user).sum(:cc)]).to eq(["active", "paid", 10])
+      expect([rental.reload.state, pending_membership.reload.status, CcMoney.where(user: user).sum(:cc)])
+        .to eq(["active", "paid", 10])
     end
   end
 
@@ -162,7 +175,7 @@ RSpec.describe "Shopify order routing", type: :request do
     it "a cash order for a locker and a membership applies only the locker" do
       body = locker_order(financial_status: "pending", tags: [locker_tag, membership_tag],
                           line_items: [{ title: "1 Day Membership", quantity: 1 }],
-                          metafields: [field("locker_db_reference", rental.id), field("membership_db_reference", pending_membership.id)])
+                          metafields: both_references)
       deliver("orders/fulfilled", body)
       expect(stored_rows).to eq([row("7001/fulfilled", topic: "orders/fulfilled")])
       expect([rental.reload.state, pending_membership.reload.status]).to eq(%w[active pending])
@@ -234,7 +247,8 @@ RSpec.describe "Shopify order routing", type: :request do
     it "a reference to a membership that is not pending: applied, refusal stored on the row and reported" do
       pending_membership.update!(status: "revoked")
       deliver("orders/paid", membership_order)
-      expect(stored_rows).to eq([row(7002, last_error: "refused: membership #{pending_membership.id} is revoked, not pending")])
+      refusal = "refused: membership #{pending_membership.id} is revoked, not pending"
+      expect(stored_rows).to eq([row(7002, last_error: refusal)])
       expect(@reports).to eq(["ShopOrderApplier::MembershipNotPending"])
     end
 
@@ -242,7 +256,8 @@ RSpec.describe "Shopify order routing", type: :request do
       allow_any_instance_of(ShopOrderApplier).to receive(:draft_order_metafields)
         .and_raise(ShopifyConcern::MetafieldLookupFailed, "Shopify answered 503")
       deliver("orders/paid", locker_order(metafields: nil))
-      expect(stored_rows).to eq([row(7001, status: "received", last_error: "ShopifyConcern::MetafieldLookupFailed: Shopify answered 503")])
+      error = "ShopifyConcern::MetafieldLookupFailed: Shopify answered 503"
+      expect(stored_rows).to eq([row(7001, status: "received", last_error: error)])
       expect(rental.reload.state).to eq("await_payment")
     end
 

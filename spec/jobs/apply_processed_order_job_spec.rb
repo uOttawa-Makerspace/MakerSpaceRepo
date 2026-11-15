@@ -21,7 +21,8 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
     topic = extra.delete(:topic) || "orders/paid"
     payload = JSON.parse({ id: SecureRandom.random_number(10**15) }.merge(path_params).merge(extra).to_json)
     order_id = Payments::ShopifyAdapter::Order.order_id(payload)
-    @order, = ProcessedOrder.receive!(provider: "shopify", order_id: order_id || "x#{SecureRandom.hex(4)}", topic: topic, payload: payload, name: payload["name"])
+    @order, = ProcessedOrder.receive!(provider: "shopify", order_id: order_id || "x#{SecureRandom.hex(4)}",
+                                      topic: topic, payload: payload, name: payload["name"])
     perform(@order)
     @order.reload
   end

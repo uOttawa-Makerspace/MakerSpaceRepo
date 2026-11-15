@@ -8,31 +8,28 @@ class ShopOrderApplier
 
     def call
       return if left_unapplied? # the refused lookup is reported once (report_lookup_rejection)
+      return report_without_reference if reference.blank?
 
-      rental = referenced_rental
-      record_payment(rental) if rental
+      rental = LockerRental.find_by(id: reference)
+      rental ? record_payment(rental) : report_unknown_rental
     end
 
     private
 
     # A locker-tagged order that names no locker rental at all: nothing to apply, and not to be lost silently
     # either (staff reconcile it from the report).
-    def referenced_rental
-      ref = reference
-      if ref.blank?
-        applier.report_problem(LockerOrderWithoutReference.new("locker order #{plan.id} carries no locker_db_reference"),
-                               context: { shopify_order_id: plan.id })
-        return
-      end
-
-      rental = LockerRental.find_by(id: ref)
-      return rental if rental
-
+    def report_without_reference
       applier.report_problem(
-        UnknownLockerRental.new("locker order #{plan.id} references unknown locker rental #{ref}"),
-        context: { locker_rental_id: ref.to_s, shopify_order_id: plan.id }
+        LockerOrderWithoutReference.new("locker order #{plan.id} carries no locker_db_reference"),
+        context: { shopify_order_id: plan.id }
       )
-      nil
+    end
+
+    def report_unknown_rental
+      applier.report_problem(
+        UnknownLockerRental.new("locker order #{plan.id} references unknown locker rental #{reference}"),
+        context: { locker_rental_id: reference.to_s, shopify_order_id: plan.id }
+      )
     end
 
     # amount = the locker line only (nil when it cannot be told); order_total = the whole order. A malformed
@@ -40,14 +37,16 @@ class ShopOrderApplier
     # after its commit, and only when the payment row is really new, so a replayed delivery does not report it again.
     def record_payment(rental)
       problems = []
-      rental.record_payment(
-        shopify_order_id: plan.id,
-        paid_at: plan.event.paid_at,
+      amounts = money(rental, problems)
+      rental.record_payment(shopify_order_id: plan.id, paid_at: plan.event.paid_at, **amounts,
+                            currency: hook["currency"].presence&.to_s&.first(8), malformed_amounts: problems)
+    end
+
+    def money(rental, problems)
+      {
         amount: safe_money(problems, "locker line amount") { rental.locker_line_amount(hook["line_items"]) },
-        order_total: safe_money(problems, "order total") { LockerPayment.money(hook["total_price"]) },
-        currency: hook["currency"].presence&.to_s&.first(8),
-        malformed_amounts: problems
-      )
+        order_total: safe_money(problems, "order total") { LockerPayment.money(hook["total_price"]) }
+      }
     end
 
     def safe_money(problems, what)

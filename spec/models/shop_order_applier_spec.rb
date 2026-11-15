@@ -6,7 +6,8 @@ require "rails_helper"
 # shop_order_routing_spec.rb).
 RSpec.describe ShopOrderApplier do
   def event(*kinds, cash: false)
-    Payments::PaymentEvent.new(provider: "shopify", provider_ref: "1", references: kinds.map { |k| Payments::Reference.new(kind: k) },
+    references = kinds.map { |k| Payments::Reference.new(kind: k) }
+    Payments::PaymentEvent.new(provider: "shopify", provider_ref: "1", references: references,
                                amount: nil, paid_at: Time.current, cash: cash)
   end
 
@@ -22,7 +23,8 @@ RSpec.describe ShopOrderApplier do
     end
 
     it "applies a cash payment only with a handler that takes cash" do
-      expect(described_class.handlers_for(event("locker", "membership", "cc_money", cash: true))).to eq([described_class::LockerHandler])
+      expect(described_class.handlers_for(event("locker", "membership", "cc_money", cash: true)))
+        .to eq([described_class::LockerHandler])
       expect(described_class.handlers_for(event("membership", cash: true))).to eq([])
     end
 

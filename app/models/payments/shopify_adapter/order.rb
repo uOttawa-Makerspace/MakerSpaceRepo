@@ -16,7 +16,8 @@ module Payments
       TAGGED_KINDS = %w[locker membership job_order].freeze
       FULFILLED = "orders/fulfilled"
 
-      # `received_at`: when the order was received, the paid_at of an order that names no time (else the time it is read).
+      # `received_at`: when the order was received, the paid_at of an order that names no time (else the time it is
+      # read).
       attr_reader :hook, :topic
 
       def initialize(hook, topic:, received_at: nil)
@@ -77,12 +78,12 @@ module Payments
 
       # orders/fulfilled: when the cash was taken (the latest fulfillment); orders/paid: the order's processed_at.
       def paid_at
-        time = if @topic == FULFILLED
-                 Array(@hook["fulfillments"]).filter_map { |f| self.class.parse_time(f["created_at"]) if f.is_a?(Hash) }.max
-               else
-                 self.class.parse_time(@hook["processed_at"])
-               end
+        time = @topic == FULFILLED ? fulfilled_at : self.class.parse_time(@hook["processed_at"])
         time || @received_at || Time.current
+      end
+
+      def fulfilled_at
+        Array(@hook["fulfillments"]).filter_map { |f| self.class.parse_time(f["created_at"]) if f.is_a?(Hash) }.max
       end
     end
   end

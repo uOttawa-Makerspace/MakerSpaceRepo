@@ -88,14 +88,18 @@ RSpec.describe Payments::ShopifyAdapter do
     shopify_request(body, hmac: shopify_hmac_for(body, secret: secret), topic: topic)
   end
 
-  def webhook(signature, provider_ref:, references:, amount:, paid_at:, cash: false)
-    raise ArgumentError, "a card payment of one product" if cash || references.size != 1
+  def webhook(signature, **fields)
+    raise ArgumentError, "a card payment of one product" if fields[:cash] || fields[:references].size != 1
 
-    reference = references.first
-    body = { id: provider_ref.to_i, total_price: amount.to_s, processed_at: paid_at.iso8601,
-             tags: "makerepo_test_locker, locker_rental:#{reference.record_id}, makerepo_test_checkout_#{reference.checkout_id}" }.to_json
+    body = webhook_order(fields, fields[:references].first).to_json
     hmac = { valid: shopify_hmac_for(body), none: nil, wrong: shopify_hmac_for(body, secret: "another") }.fetch(signature)
     shopify_request(body, hmac: hmac)
+  end
+
+  def webhook_order(fields, reference)
+    { id: fields[:provider_ref].to_i, total_price: fields[:amount].to_s, processed_at: fields[:paid_at].iso8601,
+      tags: ["makerepo_test_locker", "locker_rental:#{reference.record_id}",
+             "makerepo_test_checkout_#{reference.checkout_id}"].join(", ") }
   end
 
   def unsupported_topic_webhook = signed({ id: 1 }, topic: "orders/create")
@@ -233,7 +237,8 @@ RSpec.describe Payments::ShopifyAdapter do
     end
 
     it "uses the models' kinds and marker names" do
-      expect(Payments::ShopifyAdapter::Order::TAGGED_KINDS).to eq([LockerRental, Membership, JobOrder].map(&:shopify_draft_order_key_name))
+      expect(Payments::ShopifyAdapter::Order::TAGGED_KINDS)
+        .to eq([LockerRental, Membership, JobOrder].map(&:shopify_draft_order_key_name))
       expect(Payments::Reference::KINDS).to eq(Payments::ShopifyAdapter::Order::TAGGED_KINDS + ["cc_money"])
       expect(described_class::MARKERS).to eq("locker" => LockerRental.draft_marker_name, "job_order" => JobOrder.draft_marker_name)
       expect { Membership.draft_marker_name }.to raise_error(NotImplementedError)
@@ -347,7 +352,8 @@ RSpec.describe Payments::ShopifyAdapter do
     end
 
     it "names every product of an order, tagged kinds in their order and CC Money last" do
-      hook = { id: 1, tags: "makerepo_test_membership, makerepo_test_job_order, job_order:4, makerepo_test_locker, locker_rental:5",
+      tags = "makerepo_test_membership, makerepo_test_job_order, job_order:4, makerepo_test_locker, locker_rental:5"
+      hook = { id: 1, tags: tags,
                line_items: [{ product_id: 1 }, "x", { product_id: Payments::ShopifyAdapter::Order::CC_PRODUCT_ID.to_s }] }
       event = adapter.parse_webhook(**signed(hook))
       expect(event.kinds).to eq(%w[locker membership job_order cc_money])

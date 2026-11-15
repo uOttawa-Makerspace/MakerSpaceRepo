@@ -93,9 +93,10 @@ module Payments
     def self.sign(body) = OpenSSL::HMAC.hexdigest("sha256", SECRET, body)
 
     # A POST whose JSON body names the event's fields, signed (or with `signature:` instead).
-    def self.signed_request(provider_ref:, references:, amount:, paid_at:, cash:, signature: :sign)
-      body = { provider_ref: provider_ref, references: references.map(&:to_h), amount: amount.to_s, paid_at: paid_at.iso8601,
-               cash: cash }.to_json
+    # `fields`: provider_ref, references, amount, paid_at, cash.
+    def self.signed_request(signature: :sign, **fields)
+      body = fields.merge(references: fields.fetch(:references).map(&:to_h), amount: fields.fetch(:amount).to_s,
+                          paid_at: fields.fetch(:paid_at).iso8601).to_json
       request(body, signature: signature)
     end
 
@@ -121,7 +122,8 @@ module Payments
     def event_from(hook)
       references = hook["references"].map { |ref| Reference.new(**ref.symbolize_keys) }
       PaymentEvent.new(provider: PROVIDER, provider_ref: hook["provider_ref"], references: references,
-                       amount: BigDecimal(hook["amount"]), paid_at: Time.zone.parse(hook["paid_at"]), cash: hook["cash"])
+                       amount: BigDecimal(hook["amount"]), paid_at: Time.zone.parse(hook["paid_at"]),
+                       cash: hook["cash"])
     end
   end
 end

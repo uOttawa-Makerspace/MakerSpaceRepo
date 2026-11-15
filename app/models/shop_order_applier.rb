@@ -35,7 +35,8 @@ class ShopOrderApplier
   # What one stored order asks for: its PaymentEvent and the handlers that apply it, from the payload alone. The
   # metafield values that name the records, and a refused lookup, are filled in by the Shopify lookup
   # (resolve_references).
-  Plan = Struct.new(:hook, :id, :event, :handlers, :metafields, :lookup_rejection, :left_unapplied, keyword_init: true) do
+  Plan = Struct.new(:hook, :id, :event, :handlers, :metafields, :lookup_rejection, :left_unapplied,
+                    keyword_init: true) do
     def metafield(key) = metafields.fetch(key, nil)
     def left_unapplied?(kind) = Array(left_unapplied).include?(kind.to_sym)
   end
@@ -60,7 +61,8 @@ class ShopOrderApplier
       next unless order.status == "received"
 
       apply(plan)
-      order.update!(status: "applied", applied_at: Time.current, last_error: ProcessedOrder.refusal_note(@refusals), leased_until: nil)
+      order.update!(status: "applied", applied_at: Time.current, last_error: ProcessedOrder.refusal_note(@refusals),
+                    leased_until: nil)
       @applied_here = true
     end
   rescue StandardError => e

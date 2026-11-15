@@ -76,7 +76,10 @@ RSpec.shared_examples "a Payments adapter" do
   end
 
   describe "#verify_webhook!" do
-    let(:fields) { { provider_ref: "5001", references: [reference], amount: BigDecimal("1"), paid_at: Time.zone.parse("2026-11-02 14:30:00"), cash: false } }
+    let(:fields) do
+      { provider_ref: "5001", references: [reference], amount: BigDecimal("1"),
+        paid_at: Time.zone.parse("2026-11-02 14:30:00"), cash: false }
+    end
 
     it "accepts a signed request, whatever it is a notice of" do
       expect(adapter.verify_webhook!(**webhook(:valid, **fields))).to be_nil
@@ -94,7 +97,9 @@ RSpec.shared_examples "a Payments adapter" do
 
   describe "#parse_webhook" do
     let(:paid_at) { Time.zone.parse("2026-11-02 14:30:00") }
-    let(:event_fields) { { provider_ref: "5001", references: [reference], amount: BigDecimal("12.5"), paid_at: paid_at, cash: false } }
+    let(:event_fields) do
+      { provider_ref: "5001", references: [reference], amount: BigDecimal("12.5"), paid_at: paid_at, cash: false }
+    end
 
     it "returns the verified PaymentEvent of a signed request" do
       event = adapter.parse_webhook(**webhook(:valid, **event_fields))
