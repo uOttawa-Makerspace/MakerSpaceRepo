@@ -539,9 +539,10 @@ function setUpBookingCalendar(bookedCalendarEl) {
   }
 
   const bookText = calendarTexts(bookedCalendarEl).book;
+  const params = new URLSearchParams(window.location.search);
   const calendarOptions = {
-    initialDate: window.location.href.includes("start")
-      ? new Date(new URLSearchParams(window.location.search).get("start"))
+    initialDate: params.has("start")
+      ? new Date(params.get("start"))
       : new Date(),
     height: "auto",
     headerToolbar: {

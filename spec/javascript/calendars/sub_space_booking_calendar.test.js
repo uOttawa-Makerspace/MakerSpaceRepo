@@ -170,6 +170,22 @@ describe("calendar page", () => {
     );
   });
 
+  it.each([
+    "http://localhost/sub_space_booking?room=4&restart=1",
+    "http://localhost/sub_space_booking?room=4&starts_on=2026-03-02",
+    "http://localhost/sub_space_booking?room=4#start",
+  ])("opens on today when the address has no start parameter: %s", (url) => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-15T12:00:00Z"));
+    try {
+      expect(boot(url).options.initialDate.toISOString()).toBe(
+        "2026-11-15T12:00:00.000Z",
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("says when the bookings could not be loaded", async () => {
     const cal = boot();
     await cal.options.eventSources[0].failure(new Error("feed down"));
