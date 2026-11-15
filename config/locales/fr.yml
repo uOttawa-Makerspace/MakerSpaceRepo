@@ -354,6 +354,8 @@ fr:
       # %{room} = the room's name, %{hours} = the room's limit
       maximum_duration: "Vous ne pouvez pas réserver %{room} pour plus de %{hours} heures."
       weekly_hours: "Vous ne pouvez pas réserver %{room} pour plus de %{hours} heures par semaine."
+      # The booking overlaps a block
+      slot_taken: "Cette plage horaire est déjà réservée."
     picker:
       min_length: "Saisissez au moins %{count} caractères pour rechercher une personne."
     rules:

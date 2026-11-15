@@ -431,6 +431,22 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
         expect(SubSpaceBooking.exists?(name: "Taker")).to be(true)
       end
 
+      # The code before the message stays as is: the booking page splits it off.
+      it "words the taken slot in French and keeps the TimeSlot code" do
+        create(:sub_space_booking, sub_space: subspace, user: user,
+                                   start_time: Time.zone.parse("2027-03-03 09:00"),
+                                   end_time: Time.zone.parse("2027-03-03 12:00"),
+                                   name: "Taker", blocking: true)
+        post sub_space_booking_index_path(locale: "fr"), as: :json,
+             params: { sub_space_booking: {
+               sub_space_id: subspace.id, start_time: "2027-03-03 10:00",
+               end_time: "2027-03-03 11:00", name: "Fresh", description: "Desc"
+             } }
+        expect(response.status).to eq(422)
+        expect(response.parsed_body).to eq("errors" => ["TimeSlot Cette plage horaire est déjà réservée."])
+        expect(SubSpaceBooking.where(name: "Fresh")).to be_empty
+      end
+
       # Both bookings are compared as the zoned
       # instants they are stored as, so they collide.
       it "catches an overlap between two controller-created bookings" do

@@ -454,7 +454,7 @@ class SubSpaceBookingController < SessionsController
   end
 
   def slot_taken_failure
-    limit_failure("TimeSlot", "This time slot is already booked.")
+    limit_failure("TimeSlot", t("sub_space_booking.limits.slot_taken"))
   end
 
   # The first of its room's limits the booking breaks, or nil: the maximum
