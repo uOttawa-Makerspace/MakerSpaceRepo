@@ -367,6 +367,12 @@ RSpec.describe Payments::ShopifyAdapter do
       expect(adapter.parse_webhook(**signed({ id: 1 })).cash).to be(false)
     end
 
+    it "reads a signed orders/cancelled delivery as a cancellation (Webhook#event)" do
+      request = signed({ id: 77, financial_status: "voided", tags: ["makerepo_test_locker"] }, topic: "orders/cancelled")
+      event = Payments::ShopifyAdapter::Webhook.new(**request, secrets: [shopify_webhook_secret]).event
+      expect(event).to have_attributes(provider_ref: "77/cancelled", cancelled: true, cash: false, kinds: ["locker"])
+    end
+
     it "marks an orders/cancelled delivery as a cancellation, and no other" do
       cancelled = adapter.parse_webhook(**signed({ id: 1, financial_status: "voided" }, topic: "orders/cancelled"))
       expect([cancelled.cancelled, cancelled.cash]).to eq([true, false])

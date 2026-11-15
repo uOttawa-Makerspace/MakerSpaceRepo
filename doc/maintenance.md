@@ -311,9 +311,11 @@ The release that adds `POST /custom_webhooks/orders_cancelled` needs one manual 
 
 Shopify has no separate void topic: cancelling an order whose payment is pending voids that payment, and it arrives as `orders/cancelled` with `financial_status` `voided`.
 
-What it does for now: a cancelled locker order is stored in `processed_orders` as its own row (`provider_ref` `<order id>/cancelled`, topic `orders/cancelled`) and applied as recorded only. No rental, locker payment, checkout or ledger entry changes and no mail is sent; any other cancelled order is answered and not stored. A redelivery stores nothing more.
+What it does for now: a cancelled order for any product the app tracks (locker, membership, CC Money, job order) is stored in `processed_orders` as its own row (`provider_ref` `<order id>/cancelled`, topic `orders/cancelled`) and recorded only. No rental, membership, locker payment, checkout or ledger entry changes and no mail is sent; a cancelled order that names none of them is answered and not stored. A redelivery stores nothing more.
 
-Verify afterwards (read only): `SELECT status, count(*) FROM processed_orders WHERE topic = 'orders/cancelled' GROUP BY 1;` grows when a locker order is cancelled in Shopify, and its rows reach `applied`.
+The row's status reads `applied` once the apply job has run it, although nothing has acted on it: `processed_orders.status` is limited to `received`, `applied` and `failed` by a check constraint, and a separate status would need a migration. So `applied` on a row with topic `orders/cancelled` means "recorded", not "acted on". The dispatcher and `shop_orders:reapply` treat it like any applied row (never handed out again). The payload purge skips these rows, so their payloads stay until the change that acts on cancellations; that change finds them by topic, not by status, and must be safe to run twice over the same rows.
+
+Verify afterwards (read only): `SELECT status, count(*) FROM processed_orders WHERE topic = 'orders/cancelled' GROUP BY 1;` grows when a tracked order is cancelled in Shopify, and its rows reach `applied` (recorded).
 
 Reversible: deleting the webhook in the Shopify admin stops the deliveries; the stored rows stay.
 

@@ -44,9 +44,11 @@ RSpec.describe ShopOrderApplier do
       expect(described_class.stores?(event("membership", cash: true))).to be(false)
     end
 
-    it "stores the cancellation of a locker order, and of no other order" do
+    it "stores the cancellation of an order for any tracked product, and of no other order" do
+      %w[locker membership cc_money job_order].each do |kind|
+        expect(described_class.stores?(event(kind, cancelled: true))).to be(true), kind
+      end
       expect(described_class.stores?(event("locker", "membership", cancelled: true))).to be(true)
-      expect(described_class.stores?(event("membership", "cc_money", "job_order", cancelled: true))).to be(false)
       expect(described_class.stores?(event(cancelled: true))).to be(false)
     end
   end

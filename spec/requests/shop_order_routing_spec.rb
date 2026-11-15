@@ -238,13 +238,27 @@ RSpec.describe "Shopify order routing", type: :request do
       expect(stored_rows).to eq([row("7001/cancelled", topic: "orders/cancelled")])
     end
 
-    it "membership, CC and job orders: store nothing" do
+    it "membership, CC and job orders: each stored and recorded, nothing applied" do
       pending_membership
       deliver("orders/cancelled", membership_order(financial_status: "voided"))
       deliver("orders/cancelled", cc_order(financial_status: "voided"))
       deliver("orders/cancelled", job_order_order(financial_status: "voided"))
+      expect(stored_rows).to eq(%w[7002 7003 7004].map { |id| row("#{id}/cancelled", topic: "orders/cancelled") })
+      expect([pending_membership.reload.status, CcMoney.count, ActionMailer::Base.deliveries]).to eq(["pending", 0, []])
+    end
+
+    it "a locker and a membership in one order: one recorded row, neither applied" do
+      pending_membership
+      body = locker_order(financial_status: "voided", tags: [locker_tag, membership_tag],
+                          line_items: [{ title: "1 Day Membership", quantity: 1 }], metafields: both_references)
+      deliver("orders/cancelled", body)
+      expect(stored_rows).to eq([row("7001/cancelled", topic: "orders/cancelled")])
+      expect([rental.reload.state, pending_membership.reload.status, LockerPayment.count]).to eq(["await_payment", "pending", 0])
+    end
+
+    it "an order that names no tracked product: stores nothing" do
+      deliver("orders/cancelled", { id: 7013, name: "#7013", line_items: [{ product_id: 1, quantity: 1 }] })
       expect(stored_rows).to be_empty
-      expect([pending_membership.reload.status, CcMoney.count]).to eq(["pending", 0])
     end
   end
 

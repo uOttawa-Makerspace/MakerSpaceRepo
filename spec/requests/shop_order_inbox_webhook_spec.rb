@@ -207,10 +207,18 @@ RSpec.describe "Shopify order webhooks (inbox)", type: :request do
         .to eq([["9030/fulfilled", "orders/fulfilled"], ["9030/cancelled", "orders/cancelled"]])
     end
 
-    it "stores nothing for a cancelled order that is not for a locker" do
+    it "stores a cancelled membership, CC Money and job order too, each as its own unit" do
       signed_orders_cancelled(membership_order(id: 9031))
       signed_orders_cancelled({ id: 9032, line_items: [{ product_id: cc_product_id, quantity: 1 }] })
       signed_orders_cancelled({ id: 9033, tags: [job_order_tag] })
+      expect(response).to have_http_status(:ok)
+      expect(ProcessedOrder.order(:id).pluck(:provider_ref, :topic))
+        .to eq([%w[9031/cancelled orders/cancelled], %w[9032/cancelled orders/cancelled], %w[9033/cancelled orders/cancelled]])
+    end
+
+    it "stores nothing for a cancelled order that names no tracked product" do
+      signed_orders_cancelled({ id: 9034, line_items: [{ product_id: 1, quantity: 1 }] })
+      signed_orders_cancelled({ id: 9035, tags: ["makerepo_locker"] })
       expect(response).to have_http_status(:ok)
       expect(ProcessedOrder.count).to eq(0)
     end

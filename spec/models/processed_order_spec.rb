@@ -131,6 +131,13 @@ RSpec.describe ProcessedOrder do
       expect([reported.message, opts[:context].to_s].join).not_to match(/secret|customer@example\.com/)
     end
 
+    it "reports a failure of an order that no longer exists by its id" do
+      described_class.record_failure!(order.id + 1000, token, ArgumentError.new("bad"))
+      reported, opts = reports.sole
+      expect(reported.message).to include("order #{order.id + 1000} failed")
+      expect(opts[:context]).to include(shopify_order_id: nil, status: nil)
+    end
+
     it "reports, and changes nothing, when the order is already applied" do
       order.update_columns(status: "applied", applied_at: Time.current)
       described_class.record_failure!(order.id, token, ArgumentError.new("bad"))

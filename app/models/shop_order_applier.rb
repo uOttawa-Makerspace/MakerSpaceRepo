@@ -41,20 +41,17 @@ class ShopOrderApplier
     def left_unapplied?(kind) = Array(left_unapplied).include?(kind.to_sym)
   end
 
-  # The kinds whose cancelled orders are stored. A cancellation is only recorded for now: no handler acts on it, so
-  # applying its row changes nothing but the row.
-  CANCELLED_KINDS = %w[locker].freeze
-
   # The handlers that apply the payment of `event`: none for plain merch, job orders, products of another
   # environment and cancellations.
   def self.handlers_for(event)
     HANDLERS.values.select { |handler| handler.applies_to?(event) }
   end
 
-  # Whether the webhook stores `event`: a payment some handler applies, or the cancellation of an order for a kind in
-  # CANCELLED_KINDS.
+  # Whether the webhook stores `event`: a payment some handler applies, or the cancellation of an order for any product
+  # the app tracks. A cancellation is only recorded for now: no handler acts on it, so applying its row changes nothing
+  # but the row (status applied, topic orders/cancelled), and its payload is kept (purge_payloads!).
   def self.stores?(event)
-    event.cancelled ? event.kinds.intersect?(CANCELLED_KINDS) : handlers_for(event).any?
+    event.cancelled ? event.kinds.any? : handlers_for(event).any?
   end
 
   def initialize(record)

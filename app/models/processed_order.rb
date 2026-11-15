@@ -261,12 +261,14 @@ class ProcessedOrder < ApplicationRecord
   # Blanks (payload = '{}') the payload of every order applied more than PAYLOAD_RETENTION ago, in batches of BATCH
   # rows, one UPDATE per batch. The row stays: it is the idempotency key, so a resent order is still skipped. Received
   # and failed orders are never touched (staff re-run a failed one from its payload), and a row already blank is
-  # skipped, so a second run changes nothing. Returns the number of rows blanked.
+  # skipped, so a second run changes nothing. Cancellations (topic orders/cancelled) keep their payload: they are
+  # recorded and nothing has acted on them yet, so the event must still be readable from the row. Returns the number
+  # of rows blanked.
   def self.purge_payloads!(now: Time.current)
     total = 0
     loop do
       ids = where(status: "applied", applied_at: ...(now - PAYLOAD_RETENTION))
-            .where.not(payload: {}).order(:id).limit(BATCH).pluck(:id)
+            .where.not(payload: {}).where.not(topic: "orders/cancelled").order(:id).limit(BATCH).pluck(:id)
       return total if ids.empty?
 
       total += where(id: ids, status: "applied").update_all(payload: {}, updated_at: now)

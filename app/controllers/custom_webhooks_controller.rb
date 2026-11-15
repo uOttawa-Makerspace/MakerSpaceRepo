@@ -38,9 +38,9 @@ class CustomWebhooksController < ApplicationController
   end
 
   # A cancelled order (Shopify sends orders/cancelled; a pending payment voided by the cancellation arrives this way
-  # too, with financial_status "voided"). A locker order is stored as its own unit (provider_ref "<id>/cancelled") and
-  # recorded: applying it changes no rental, payment or ledger entry and sends no mail. Any other order is answered and
-  # not stored.
+  # too, with financial_status "voided"). An order for any product the app tracks (locker, membership, job order,
+  # CC Money) is stored as its own unit (provider_ref "<id>/cancelled") and recorded: applying it changes no rental,
+  # membership, payment or ledger entry and sends no mail. Any other order is answered and not stored.
   def orders_cancelled
     store_order(Payments::ShopifyAdapter::Order.new(verified_body, topic: "orders/cancelled"))
   end
