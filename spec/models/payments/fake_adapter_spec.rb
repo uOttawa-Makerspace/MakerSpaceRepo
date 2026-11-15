@@ -45,9 +45,9 @@ RSpec.describe Payments::FakeAdapter do
   it_behaves_like "a Payments adapter"
 
   it "rejects a notice without a topic, and a body that is not JSON" do
-    expect { adapter.parse_webhook(described_class.request("{}", topic: nil)) }
+    expect { adapter.parse_webhook(**described_class.request("{}", topic: nil)) }
       .to raise_error(Payments::WebhookRejected) { |e| expect(e.reason).to eq(:unsupported_topic) }
-    expect { adapter.parse_webhook(described_class.request("not json")) }
+    expect { adapter.parse_webhook(**described_class.request("not json")) }
       .to raise_error(Payments::WebhookRejected) { |e| expect(e.reason).to eq(:malformed) }
   end
 

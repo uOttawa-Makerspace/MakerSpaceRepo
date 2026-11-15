@@ -256,17 +256,17 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
     it "POST create_multiple only redirects, so it does not ask Shopify for the locker product" do
       allow(LockerOption).to receive(:locker_product_info).and_call_original
       LockerOption.locker_product_link = "gid://shopify/Product/123"
-      allow(ShopifyService).to receive(:product).and_return(nil)
+      allow(Payments::ShopifyCatalog).to receive(:product).and_return(nil)
       size = create(:locker_size)
 
       post create_multiple_lockers_path, params: { range_start: "60", range_end: "61", locker_size_id: size.id }
       expect(response).to redirect_to(lockers_path(anchor: "lockerInventory"))
       post create_multiple_lockers_path, params: { range_start: "9", range_end: "8", locker_size_id: size.id }
       expect(response).to redirect_to(lockers_path(anchor: "lockerInventory"))
-      expect(ShopifyService).not_to have_received(:product)
+      expect(Payments::ShopifyCatalog).not_to have_received(:product)
 
       get locker_path(Locker.find_by!(specifier: "60"))
-      expect(ShopifyService).to have_received(:product).with("gid://shopify/Product/123")
+      expect(Payments::ShopifyCatalog).to have_received(:product).with("gid://shopify/Product/123")
     end
 
     it "POST create_multiple lists the skipped numbers in numeric order" do

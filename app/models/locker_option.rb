@@ -31,7 +31,7 @@ class LockerOption < ApplicationRecord
   def self.locker_product_info
     return unless locker_product_link
 
-    product = ShopifyService.product(locker_product_link)
+    product = Payments::ShopifyCatalog.product(locker_product_link)
     raise LockerProductMissing, "Shopify has no product for the locker product link" unless product
 
     {

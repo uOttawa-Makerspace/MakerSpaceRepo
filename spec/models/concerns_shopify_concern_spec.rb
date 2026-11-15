@@ -15,7 +15,7 @@ RSpec.describe ShopifyConcern do
 
   describe ".target_tag / .draft_order_operating_tag" do
     it "uses makerepo_<env> outside production" do
-      expect(ShopifyConcern.target_tag).to eq("makerepo_test")
+      expect(Payments::ShopifyAdapter.target_tag).to eq("makerepo_test")
       expect(Membership.draft_order_operating_tag).to eq("makerepo_test_membership")
       expect(JobOrder.draft_order_operating_tag).to eq("makerepo_test_job_order")
       expect(LockerRental.draft_order_operating_tag).to eq("makerepo_test_locker")
@@ -23,7 +23,7 @@ RSpec.describe ShopifyConcern do
 
     it "uses the bare 'makerepo' tag in production" do
       allow(Rails.env).to receive(:production?).and_return(true)
-      expect(ShopifyConcern.target_tag).to eq("makerepo")
+      expect(Payments::ShopifyAdapter.target_tag).to eq("makerepo")
     end
 
   end
@@ -51,7 +51,7 @@ RSpec.describe ShopifyConcern do
     it "activates a session for <shop_name>.myshopify.com from the env credentials" do
       expect(Membership).not_to respond_to(:start_shopify_session)
       expect(ShopifyAPI::Clients::Graphql::Admin).to receive(:new).with(session: instance_of(ShopifyAPI::Auth::Session)).and_call_original
-      ShopifyConcern::DraftOrders.client
+      Payments::ShopifyAdapter.admin_client
       session = ShopifyAPI::Context.active_session
       expect(session.shop).to eq("fake-shop.myshopify.com")
       expect(session.access_token == "shpat_test_fake").to be(true)
@@ -103,16 +103,17 @@ RSpec.describe ShopifyConcern do
     end
   end
 
-  describe "#draft_order_metafields" do
-    it "returns the node metafields for a gid, [] for a blank gid, and uses the record's draft id by default" do
+  describe "the metafield lookup (Payments::ShopifyAdapter::Metafields)" do
+    it "returns the node metafields for a gid and [] for a blank gid, without asking Shopify" do
       fake.metafields = [{ "namespace" => "makerepo", "key" => "membership_db_reference", "value" => "7" }]
-      expect(membership.send(:draft_order_metafields, "gid://shopify/Order/1"))
+      expect(Payments::ShopifyAdapter::Metafields.of("gid://shopify/Order/1"))
         .to eq([{ "namespace" => "makerepo", "key" => "membership_db_reference", "value" => "7" }])
-      expect(membership.send(:draft_order_metafields, "")).to eq([])
-      expect(membership.send(:draft_order_metafields)).to eq([]) # no draft id yet
-      membership.update_column(:shopify_draft_order_id, fake.draft_id)
-      expect(membership.send(:draft_order_metafields).size).to eq(1)
-      expect(fake.calls.last[:variables]).to eq({ ownerId: fake.draft_id })
+      expect(fake.calls.last[:variables]).to eq({ ownerId: "gid://shopify/Order/1" })
+      expect { expect(Payments::ShopifyAdapter::Metafields.of("")).to eq([]) }.not_to(change { fake.calls.size })
+    end
+
+    it "is not a model method" do
+      expect(membership.respond_to?(:draft_order_metafields, true)).to be(false)
     end
   end
 end

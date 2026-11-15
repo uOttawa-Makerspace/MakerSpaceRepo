@@ -12,8 +12,6 @@
 # reported for staff, after the commit, so a rolled-back attempt reports nothing. The CC claim mail is queued
 # after the commit as well (Active Job here enqueues at once: enqueue_after_transaction_commit is false).
 class ShopOrderApplier
-  include ShopifyConcern
-
   # Raised only to be reported (Rails.error.report).
   class LockerOrderWithoutReference < StandardError; end
   class UnknownLockerRental < StandardError; end
@@ -122,8 +120,8 @@ class ShopOrderApplier
   end
 
   # The values of the makerepo metafields `keys` of an order: from the payload when it carries them, else from
-  # ONE Shopify lookup of the draft order shared by all the keys. It can raise ShopifyContext::NotConfigured or
-  # ShopifyConcern::MetafieldLookupFailed (the job retries). A lookup Shopify refuses for good yields no values
+  # ONE Shopify lookup of the draft order shared by all the keys (Payments::ShopifyAdapter::Metafields). It can raise
+  # when Shopify is not configured or the lookup must be retried (the job retries). A lookup Shopify refuses for good yields no values
   # and is noted on the plan, so the order proceeds as "no reference".
   def resolve_references(plan)
     keys = []
@@ -147,10 +145,12 @@ class ShopOrderApplier
 
   def fetch_remote_metafields(plan)
     draft_order_metafields(draft_order_gid_from_hook(plan.hook))
-  rescue ShopifyConcern::MetafieldLookupRejected => e
+  rescue Payments::ShopifyAdapter::Metafields::REJECTED => e
     plan.lookup_rejection = e.codes
     nil
   end
+
+  def draft_order_metafields(gid) = Payments::ShopifyAdapter::Metafields.of(gid)
 
   # ---- reports
 

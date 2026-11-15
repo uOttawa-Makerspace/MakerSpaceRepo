@@ -4,9 +4,10 @@ module Payments
   class ShopifyAdapter
     # Turns one Shopify order webhook into a PaymentEvent, or raises WebhookRejected.
     #
-    # Verification is the check CustomWebhooksController runs today (ShopifyApp::WebhookVerification): the
-    # X-Shopify-Hmac-Sha256 header must be the Base64 HMAC-SHA256 of the raw body under the secret or the old secret.
-    # The topic comes from the X-Shopify-Topic header. provider_ref is the key ProcessedOrder stores the order under
+    # `body` is the raw request body and `headers` the request's headers (read by their Rack names, e.g.
+    # HTTP_X_SHOPIFY_HMAC_SHA256). Verification (#verify!, what CustomWebhooksController runs before every webhook):
+    # the X-Shopify-Hmac-Sha256 header must be the Base64 HMAC-SHA256 of the raw body under the secret or the old
+    # secret, the check the shopify_app gem's webhook verification made. The topic comes from the X-Shopify-Topic header. provider_ref is the key ProcessedOrder stores the order under
     # (the order id; "<id>/fulfilled" for an orders/fulfilled delivery). The reference is read from the order's tags:
     # the kind from this environment's operating tag, the record id from the marker tag (lockers and job orders;
     # a membership's id is only in the draft's metafields, so it is nil here) and the checkout id from the checkout tag.
@@ -15,20 +16,15 @@ module Payments
       TOPIC_HEADER = "HTTP_X_SHOPIFY_TOPIC"
       TOPICS = %w[orders/paid orders/fulfilled].freeze
 
-      # A draft's or order's tags as a list of stripped strings, whether Shopify sent an array or a comma-separated string.
-      def self.tag_list(tags)
-        list = tags.is_a?(String) ? tags.split(",") : Array(tags)
-        list.map { |t| t.to_s.strip }
-      end
-
-      def initialize(request, secrets:)
-        @request = request
+      def initialize(body:, headers:, secrets:)
+        @raw_body = body.to_s
+        @headers = headers
         @secrets = Array(secrets).select(&:present?)
       end
 
       def event
         verify!
-        topic = @request.headers[TOPIC_HEADER]
+        topic = @headers[TOPIC_HEADER]
         raise WebhookRejected, :unsupported_topic unless TOPICS.include?(topic)
 
         hook = body
@@ -36,27 +32,28 @@ module Payments
         raise WebhookRejected, :malformed if id.blank?
 
         PaymentEvent.new(provider: PROVIDER, provider_ref: ProcessedOrder.ref_for(id, topic),
-                         reference: reference(self.class.tag_list(hook["tags"])),
+                         reference: reference(ShopifyAdapter.tag_list(hook["tags"])),
                          amount: amount(hook["total_price"]), paid_at: paid_at(hook, topic))
       end
 
-      private
-
+      # Raises WebhookRejected (:not_configured, :unsigned, :bad_signature) unless the body is signed by Shopify.
       def verify!
         raise WebhookRejected, :not_configured if @secrets.empty?
 
-        hmac = @request.headers[HMAC_HEADER]
+        hmac = @headers[HMAC_HEADER]
         raise WebhookRejected, :unsigned if hmac.blank?
         raise WebhookRejected, :bad_signature unless @secrets.any? { |secret| signed_with?(hmac, secret) }
       end
 
+      private
+
       def signed_with?(hmac, secret)
-        expected = Base64.strict_encode64(OpenSSL::HMAC.digest("sha256", secret, @request.raw_post))
+        expected = Base64.strict_encode64(OpenSSL::HMAC.digest("sha256", secret, @raw_body))
         ActiveSupport::SecurityUtils.secure_compare(hmac, expected)
       end
 
       def body
-        hook = JSON.parse(@request.raw_post)
+        hook = JSON.parse(@raw_body)
         raise WebhookRejected, :malformed unless hook.is_a?(Hash)
 
         hook
@@ -65,7 +62,7 @@ module Payments
       end
 
       def reference(tags)
-        kind = Reference::KINDS.find { |k| tags.include?("#{ShopifyConcern.target_tag}_#{k}") }
+        kind = Reference::KINDS.find { |k| tags.include?("#{ShopifyAdapter.target_tag}_#{k}") }
         return nil unless kind
 
         Reference.new(kind: kind, record_id: MARKERS[kind] && tagged_id(tags, "#{MARKERS[kind]}:"),

@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # The one classification of a Shopify draft delete, shared by JobOrder::DraftDeletion and LockerRental.
-RSpec.describe ShopifyConcern::DraftRemoval do
+RSpec.describe Payments::ShopifyAdapter::DraftRemoval do
   let!(:fake) { stub_shopify_admin! }
   let(:gid) { fake.draft_id }
 
@@ -34,7 +34,7 @@ RSpec.describe ShopifyConcern::DraftRemoval do
 
     it "raises Unanswered when the check gets no answer" do
       fake.on_query = ->(query, _) { fake.status = 500 if query.include?("getDraftOrder") }
-      expect { described_class.call(gid) }.to raise_error(described_class::Unanswered, /did not answer/)
+      expect { described_class.call(gid) }.to raise_error(Payments::ShopifyAdapter::DraftOrders::Unanswered, /did not answer/)
     end
   end
 

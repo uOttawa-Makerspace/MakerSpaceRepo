@@ -7,7 +7,7 @@ class Membership
   #
   # Concurrency: the user's row lock serializes claiming a pending membership (Shopify itself is called outside any
   # lock). A new draft is stored under the membership's row lock, read again, only while the membership is pending
-  # and has none (ShopifyConcern#keep_draft_order_id_unless_taken); every other change to its draft id or status is a
+  # and has none (#keep_draft_order_id_unless_taken); every other change to its draft id or status is a
   # conditional UPDATE from the state the caller saw (Membership#change_if_pending), so a request holding an
   # out-of-date view of the row changes nothing and releases only the draft it deleted. A draft that loses such a
   # race is deleted, and the loser serves the winner's draft.
@@ -90,7 +90,7 @@ class Membership
     # a second payable draft would let the member pay twice.
     def reprice?(draft)
       price = draft_price(draft)
-      ShopifyConcern::DraftRemoval.payable?(draft) && price.present? && BigDecimal(price) != membership_tier.price(user)
+      Payments::ShopifyAdapter::DraftStatus.payable?(draft) && price.present? && BigDecimal(price) != membership_tier.price(user)
     end
 
     def draft_price(draft)
@@ -123,7 +123,7 @@ class Membership
     # Deletes the stored draft on Shopify. True when it is deleted or gone. False when it was paid meanwhile, and
     # false (reported) when it is still open or Shopify could not be asked: the draft is then still payable.
     def delete_stale_draft(gid)
-      outcome = ShopifyConcern::DraftRemoval.call(gid).outcome
+      outcome = Payments::ShopifyAdapter::DraftRemoval.call(gid).outcome
       raise "Shopify did not delete the stale draft order #{gid}" if outcome == :open
 
       outcome != :completed

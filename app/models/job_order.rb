@@ -535,15 +535,12 @@ class JobOrder < ApplicationRecord
     stale_draft!("Shopify did not delete the draft order", user_errors)
   end
 
-  # The marker every job-order draft carries (JobOrder#shopify_draft_order_tags): which order it was made for.
-  def self.draft_marker_name = "job_order"
-
   # Shopify's DraftOrderStatus: OPEN and INVOICE_SENT drafts are unpaid and payable (the invoice link works);
   # COMPLETED is paid (it became an order). Every place that decides whether a draft is paid or payable asks here.
-  PAYABLE_DRAFT_STATUSES = ShopifyConcern::DraftRemoval::PAYABLE_STATUSES
-  PAID_DRAFT_STATUS = ShopifyConcern::DraftRemoval::PAID_STATUS
+  PAYABLE_DRAFT_STATUSES = Payments::ShopifyAdapter::DraftStatus::PAYABLE
+  PAID_DRAFT_STATUS = Payments::ShopifyAdapter::DraftStatus::PAID
 
-  def self.draft_paid?(draft) = ShopifyConcern::DraftRemoval.paid?(draft)
+  def self.draft_paid?(draft) = Payments::ShopifyAdapter::DraftStatus.paid?(draft)
 
   # Whether this order's stored Shopify draft `gid` is the invoice the database backs: the order is live, waiting for
   # payment (COMPLETED) and its stored shopify_draft_order_id is this draft. An order without a status (nil id) never
@@ -778,7 +775,7 @@ class JobOrder < ApplicationRecord
   # other than the order's own locked row (the block's writes and the status row come first; after the Shopify call
   # only the order row, already locked, is updated). A database or lock error after a Shopify mutation still rolls
   # the transaction back while Shopify keeps the change (a created draft no order points at). That is not tracked
-  # here: every job-order draft carries a marker naming its order (#shopify_draft_order_tags), and
+  # here: every job-order draft carries a marker naming its order ("job_order:<id>"), and
   # JobOrder::DraftSweep (rake job_orders:sweep_orphan_drafts, run regularly by JobOrderDraftSweepJob) deletes the
   # open drafts the database does not point at.
   # On any refusal made from an exception the record is reloaded (unsaved in-memory changes do not survive it).
@@ -879,11 +876,6 @@ class JobOrder < ApplicationRecord
   end
 
   def shopify_fail_closed(&) = DraftDeletion.fail_closed(&)
-
-  # The environment's operating tag plus the marker that names the order (JobOrder::DraftSweep reconciles by it).
-  def shopify_draft_order_tags
-    [self.class.draft_order_operating_tag, self.class.draft_marker_tag(id)]
-  end
 
   # the draft id and the fingerprint of the quote it was created from are written in one UPDATE. The line
   # items the concern sent were built from the same #quote_snapshot as #quote_fingerprint.

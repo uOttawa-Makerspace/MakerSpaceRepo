@@ -10,7 +10,7 @@ module Payments
   #   :stuck       open, but the provider refuses to cancel it (:failed)
   #   :unanswered  the provider does not answer (status :unknown; cancel raises)
   # #refuse_next_create! makes the next create_checkout raise. Webhooks are JSON bodies signed with SECRET
-  # with the topic "payment" (#signed_request and #request build one).
+  # with the topic "payment" (#signed_request and #request build one: { body:, headers: }, as a controller passes them).
   class FakeAdapter
     PROVIDER = "fake"
     SECRET = "fake-payments-secret"
@@ -67,13 +67,17 @@ module Payments
       entry && Checkout.new(id: entry.id, pay_url: entry.pay_url)
     end
 
-    def parse_webhook(request)
-      signature = request.headers[SIGNATURE_HEADER]
+    def verify_webhook!(body:, headers:)
+      signature = headers[SIGNATURE_HEADER]
       raise WebhookRejected, :unsigned if signature.blank?
-      raise WebhookRejected, :bad_signature unless ActiveSupport::SecurityUtils.secure_compare(signature, self.class.sign(request.raw_post))
-      raise WebhookRejected, :unsupported_topic unless request.headers[TOPIC_HEADER] == TOPIC
+      raise WebhookRejected, :bad_signature unless ActiveSupport::SecurityUtils.secure_compare(signature, self.class.sign(body))
+    end
 
-      event_from(payload(request.raw_post))
+    def parse_webhook(body:, headers:)
+      verify_webhook!(body: body, headers: headers)
+      raise WebhookRejected, :unsupported_topic unless headers[TOPIC_HEADER] == TOPIC
+
+      event_from(payload(body))
     end
 
     # --- spec controls ---
@@ -98,7 +102,8 @@ module Payments
     def self.request(body, signature: :sign, topic: TOPIC)
       headers = { "CONTENT_TYPE" => "application/json", TOPIC_HEADER => topic }.compact
       headers[SIGNATURE_HEADER] = signature == :sign ? sign(body) : signature if signature
-      ActionDispatch::Request.new(Rack::MockRequest.env_for("/payments/fake", method: "POST", input: body, **headers))
+      request = ActionDispatch::Request.new(Rack::MockRequest.env_for("/payments/fake", method: "POST", input: body, **headers))
+      { body: request.raw_post, headers: request.headers }
     end
 
     private

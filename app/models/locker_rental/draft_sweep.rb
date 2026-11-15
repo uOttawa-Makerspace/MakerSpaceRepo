@@ -4,7 +4,7 @@
 #
 # A locker draft is created on Shopify outside any lock and stored afterwards (LockerRental#checkout_link), so a
 # crash between the two, or a checkout that is abandoned, leaves a payable draft no rental points at. Every locker draft
-# carries a marker naming its rental (LockerRental#shopify_draft_order_tags: the environment's operating tag,
+# carries a marker naming its rental (Payments::ShopifyAdapter::MARKERS: the environment's operating tag,
 # e.g. "makerepo_locker", plus "locker_rental:<id>"). Per draft, in ONE locked operation
 # (LockerRental.reconcile_orphan_draft!): the rental is kept as it is, and the draft is fetched and deleted (never when
 # Shopify reports it paid) unless the rental is waiting for payment and stores this draft. A draft younger than MIN_AGE is

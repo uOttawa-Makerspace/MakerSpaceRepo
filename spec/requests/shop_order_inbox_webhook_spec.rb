@@ -261,6 +261,18 @@ RSpec.describe "Shopify order webhooks (inbox)", type: :request do
         expect(Airbrake).to have_received(:notify).with(an_instance_of(ShopifyWebhookSecret::MissingSecret)).twice
       end
 
+      it "still reports to Rails.error and refuses (503) when Airbrake is not configured" do
+        allow(Rails.error).to receive(:report)
+        allow(Airbrake).to receive(:configured?).and_return(false)
+        allow(Airbrake).to receive(:notify)
+
+        signed_orders_paid(forged, secret: "test_secret")
+
+        expect(response).to have_http_status(:service_unavailable)
+        expect(Rails.error).to have_received(:report).with(an_instance_of(ShopifyWebhookSecret::MissingSecret), any_args)
+        expect(Airbrake).not_to have_received(:notify)
+      end
+
       it "also refuses an unsigned request (503) and a blank secret" do
         expect { unsigned_orders_paid(forged) }.not_to change { money_state }
         expect(response).to have_http_status(:service_unavailable)

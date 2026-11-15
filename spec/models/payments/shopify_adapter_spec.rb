@@ -79,7 +79,8 @@ RSpec.describe Payments::ShopifyAdapter do
 
   def shopify_request(body, hmac:, topic: "orders/paid")
     headers = { "CONTENT_TYPE" => "application/json", "HTTP_X_SHOPIFY_TOPIC" => topic, "HTTP_X_SHOPIFY_HMAC_SHA256" => hmac }.compact
-    ActionDispatch::Request.new(Rack::MockRequest.env_for("/custom_webhooks/orders_paid", method: "POST", input: body, **headers))
+    request = ActionDispatch::Request.new(Rack::MockRequest.env_for("/custom_webhooks/orders_paid", method: "POST", input: body, **headers))
+    { body: request.raw_post, headers: request.headers } # what CustomWebhooksController passes
   end
 
   def signed(hook, topic: "orders/paid", secret: shopify_webhook_secret)
@@ -165,9 +166,9 @@ RSpec.describe Payments::ShopifyAdapter do
       QUERY
     end
 
-    it "checkout_status sends the getDraftOrder query of ShopifyConcern::DraftOrders.fetch_result" do
+    it "checkout_status sends the getDraftOrder query of Payments::ShopifyAdapter::DraftOrders.fetch_result" do
       sent = answer("query getDraftOrder", draft("OPEN"))
-      ShopifyConcern::DraftOrders.fetch_result(gid)
+      Payments::ShopifyAdapter::DraftOrders.fetch_result(gid)
       adapter.checkout_status(gid)
 
       expect(sent.size).to eq(2)
@@ -175,10 +176,10 @@ RSpec.describe Payments::ShopifyAdapter do
       expect(JSON.parse(sent.last)).to eq("query" => pinned_get_draft_order, "variables" => { "id" => gid })
     end
 
-    it "cancel_checkout sends the draftOrderDelete of ShopifyConcern::DraftRemoval, then its check after a refusal" do
+    it "cancel_checkout sends the draftOrderDelete of Payments::ShopifyAdapter::DraftRemoval, then its check after a refusal" do
       deletes = answer("mutation draftOrderDelete", refused_delete)
       fetches = answer("query getDraftOrder", draft("OPEN"))
-      expect(ShopifyConcern::DraftRemoval.call(gid).outcome).to eq(:open)
+      expect(Payments::ShopifyAdapter::DraftRemoval.call(gid).outcome).to eq(:open)
       expect(adapter.cancel_checkout(gid)).to eq(:failed)
 
       expect([deletes.size, fetches.size]).to eq([2, 2])
@@ -253,6 +254,13 @@ RSpec.describe Payments::ShopifyAdapter do
       expect { adapter.checkout_status(gid) }.to raise_error(ShopifyAPI::Errors::HttpResponseError)
     end
 
+    it "lets a 200 answer whose body is not a JSON object raise, never reading it as gone or unknown" do
+      stub_request(:post, shopify_graphql_url).to_return(status: 200, body: "[1]", headers: ShopifyHttpHelpers::JSON_HEADERS)
+      expect { Payments::ShopifyAdapter::DraftOrders.fetch_result(gid) }.to raise_error(TypeError)
+      stub_request(:post, shopify_graphql_url).to_return(status: 200, body: '"x"', headers: ShopifyHttpHelpers::JSON_HEADERS)
+      expect { Payments::ShopifyAdapter::DraftOrders.fetch_result(gid) }.to raise_error(NoMethodError)
+    end
+
     it "is :unknown for a 2xx answer other than 200" do
       answer("query getDraftOrder", {}, status: 202)
       expect(adapter.checkout_status(gid)).to eq(:unknown)
@@ -305,50 +313,60 @@ RSpec.describe Payments::ShopifyAdapter do
 
   describe "#parse_webhook" do
     def rejection(request)
-      adapter.parse_webhook(request)
+      adapter.parse_webhook(**request)
     rescue Payments::WebhookRejected => e
       e.reason
     end
 
     it "keys the event as ProcessedOrder stores the order, for both topics and both id spellings" do
-      expect(adapter.parse_webhook(signed({ id: 900 })).provider_ref).to eq(ProcessedOrder.ref_for("900", "orders/paid"))
-      expect(adapter.parse_webhook(signed({ admin_graphql_api_id: "gid://shopify/Order/901" })).provider_ref).to eq("901")
-      expect(adapter.parse_webhook(signed({ id: 902 }, topic: "orders/fulfilled")).provider_ref).to eq("902/fulfilled")
+      expect(adapter.parse_webhook(**signed({ id: 900 })).provider_ref).to eq(ProcessedOrder.ref_for("900", "orders/paid"))
+      expect(adapter.parse_webhook(**signed({ admin_graphql_api_id: "gid://shopify/Order/901" })).provider_ref).to eq("901")
+      expect(adapter.parse_webhook(**signed({ id: 902 }, topic: "orders/fulfilled")).provider_ref).to eq("902/fulfilled")
     end
 
     it "takes paid_at from the latest fulfillment of a cash order, else the time it is read" do
       travel_to(Time.zone.parse("2026-11-05 10:00:00")) do
         hook = { id: 1, fulfillments: [{ created_at: "2026-11-03T09:00:00-05:00" }, { created_at: "2026-11-04T09:00:00-05:00" }, "x"] }
-        expect(adapter.parse_webhook(signed(hook, topic: "orders/fulfilled")).paid_at).to eq(Time.zone.parse("2026-11-04T09:00:00-05:00"))
-        expect(adapter.parse_webhook(signed({ id: 1 }, topic: "orders/fulfilled")).paid_at).to eq(Time.current)
-        expect(adapter.parse_webhook(signed({ id: 1, processed_at: "nonsense" })).paid_at).to eq(Time.current)
+        expect(adapter.parse_webhook(**signed(hook, topic: "orders/fulfilled")).paid_at).to eq(Time.zone.parse("2026-11-04T09:00:00-05:00"))
+        expect(adapter.parse_webhook(**signed({ id: 1 }, topic: "orders/fulfilled")).paid_at).to eq(Time.current)
+        expect(adapter.parse_webhook(**signed({ id: 1, processed_at: "nonsense" })).paid_at).to eq(Time.current)
       end
     end
 
     it "reads the reference from this environment's tags only" do
-      membership = adapter.parse_webhook(signed({ id: 1, tags: ["makerepo_test_membership", "makerepo_test_checkout_3"] }))
+      membership = adapter.parse_webhook(**signed({ id: 1, tags: ["makerepo_test_membership", "makerepo_test_checkout_3"] }))
       expect(membership.reference).to eq(Payments::Reference.new(kind: "membership", record_id: nil, checkout_id: 3))
-      expect(adapter.parse_webhook(signed({ id: 1, tags: "makerepo_locker, locker_rental:5" })).reference).to be_nil
-      expect(adapter.parse_webhook(signed({ id: 1 })).reference).to be_nil
-      two_markers = adapter.parse_webhook(signed({ id: 1, tags: "makerepo_test_locker, locker_rental:5, locker_rental:6" }))
+      expect(adapter.parse_webhook(**signed({ id: 1, tags: "makerepo_locker, locker_rental:5" })).reference).to be_nil
+      expect(adapter.parse_webhook(**signed({ id: 1 })).reference).to be_nil
+      two_markers = adapter.parse_webhook(**signed({ id: 1, tags: "makerepo_test_locker, locker_rental:5, locker_rental:6" }))
       expect(two_markers.reference).to eq(Payments::Reference.new(kind: "locker"))
     end
 
+    it "reads tags sent as a comma-separated string or a list, and names nothing for tags of any other shape" do
+      expect(adapter.parse_webhook(**signed({ id: 1, tags: " makerepo_test_locker ,locker_rental:5" })).reference)
+        .to eq(Payments::Reference.new(kind: "locker", record_id: 5))
+      expect(adapter.parse_webhook(**signed({ id: 1, tags: ["makerepo_test_locker", "locker_rental:5"] })).reference)
+        .to eq(Payments::Reference.new(kind: "locker", record_id: 5))
+      [{ "makerepo_test_locker" => "locker_rental:5" }, 5, nil, true].each do |tags|
+        expect(adapter.parse_webhook(**signed({ id: 1, tags: tags })).reference).to be_nil
+      end
+    end
+
     it "keeps an unreadable or missing amount as nil" do
-      expect(adapter.parse_webhook(signed({ id: 1, total_price: "12,50" })).amount).to be_nil
-      expect(adapter.parse_webhook(signed({ id: 1, total_price: "Infinity" })).amount).to be_nil
-      expect(adapter.parse_webhook(signed({ id: 1 })).amount).to be_nil
-      expect(adapter.parse_webhook(signed({ id: 1, total_price: "40.005" })).amount).to eq(BigDecimal("40.01"))
+      expect(adapter.parse_webhook(**signed({ id: 1, total_price: "12,50" })).amount).to be_nil
+      expect(adapter.parse_webhook(**signed({ id: 1, total_price: "Infinity" })).amount).to be_nil
+      expect(adapter.parse_webhook(**signed({ id: 1 })).amount).to be_nil
+      expect(adapter.parse_webhook(**signed({ id: 1, total_price: "40.005" })).amount).to eq(BigDecimal("40.01"))
     end
 
     it "accepts the old secret during a rotation" do
       rotating = described_class.new(webhook_secrets: ["", "new-secret", "old-secret"])
-      expect(rotating.parse_webhook(signed({ id: 1 }, secret: "old-secret")).provider_ref).to eq("1")
+      expect(rotating.parse_webhook(**signed({ id: 1 }, secret: "old-secret")).provider_ref).to eq("1")
     end
 
     it "rejects every request when no secret is configured" do
       unconfigured = described_class.new(webhook_secrets: [nil, ""])
-      expect { unconfigured.parse_webhook(signed({ id: 1 })) }
+      expect { unconfigured.parse_webhook(**signed({ id: 1 })) }
         .to raise_error(Payments::WebhookRejected) { |e| expect(e.reason).to eq(:not_configured) }
     end
 

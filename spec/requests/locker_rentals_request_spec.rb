@@ -1194,8 +1194,8 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
 
     describe "Shopify sync boundary (cancel path)" do
       # SEAM: LockerRental#sync_shopify_draft_order_after_commit (called by the controller after commit) destroys the Shopify draft
-      # order when state flips to :cancelled. On cancel, the concern calls
-      # start_shopify_session then runs draftOrderDelete GraphQL. Because the
+      # order when state flips to :cancelled. On cancel, Payments::ShopifyAdapter::DraftRemoval starts
+      # the Shopify session then runs draftOrderDelete GraphQL. Because the
       # committed credentials make that call REAL network, we pin the
       # trigger contract at the seam level here and cover the GraphQL side in
       # the MODEL contract spec with a response-object stub.
@@ -1204,7 +1204,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         log_in!(staff)
 
         # no draft order id: nothing to delete, no HTTP
-        expect(ShopifyConcern::DraftRemoval).not_to receive(:call)
+        expect(Payments::ShopifyAdapter::DraftRemoval).not_to receive(:call)
 
         patch locker_rental_path(rental),
               params: { locker_rental: { state: "cancelled" } }
@@ -1255,7 +1255,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         end
 
         before do
-          allow(ShopifyConcern::DraftOrders).to receive(:delete).and_raise("boom")
+          allow(Payments::ShopifyAdapter::DraftOrders).to receive(:delete).and_raise("boom")
           allow(Rails.error).to receive(:report)
           log_in!(owner)
         end
@@ -1279,7 +1279,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         rental = create(:locker_rental, :active)
         log_in!(staff)
 
-        expect(ShopifyConcern::DraftRemoval).not_to receive(:call)
+        expect(Payments::ShopifyAdapter::DraftRemoval).not_to receive(:call)
 
         patch locker_rental_path(rental),
               params: { locker_rental: { owned_until: 50.days.from_now } }
@@ -2008,8 +2008,8 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       log_in!(staff)
       ActionMailer::Base.deliveries.clear
       rental.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/6")
-      expect(ShopifyConcern::DraftRemoval).to receive(:call).with("gid://shopify/DraftOrder/6").once
-        .and_return(ShopifyConcern::DraftRemoval::Result.new(:deleted, []))
+      expect(Payments::ShopifyAdapter::DraftRemoval).to receive(:call).with("gid://shopify/DraftOrder/6").once
+        .and_return(Payments::ShopifyAdapter::DraftRemoval::Result.new(:deleted, []))
       perform_enqueued_jobs do
         patch locker_rental_path(rental), params: { locker_rental: { state: "cancelled" } }
       end

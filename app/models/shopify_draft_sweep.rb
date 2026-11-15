@@ -5,11 +5,11 @@
 #
 # A Shopify mutation cannot be rolled back. When a database or lock error follows a draft create (or the process
 # stops between the create and the store), a payable draft is left that no row points at. Rather than tracking that
-# in memory, every draft carries a marker naming its record (ShopifyConcern#shopify_draft_order_tags: the
+# in memory, every draft carries a marker naming its record (Payments::ShopifyAdapter::MARKERS: the
 # environment's operating tag, e.g. "makerepo_locker", plus "<marker name>:<id>"), and this sweep reconciles the
 # unpaid drafts on Shopify against the database:
 #
-# - listed: the payable (ShopifyConcern::DraftRemoval::PAYABLE_STATUSES: OPEN, INVOICE_SENT) draft orders tagged
+# - listed: the payable (Payments::ShopifyAdapter::DraftStatus::PAYABLE: OPEN, INVOICE_SENT) draft orders tagged
 #   with THIS environment's operating tag of the model (so another environment's drafts, and the other models'
 #   drafts, which carry other operating tags, are never listed), paginated (a repeated cursor or MAX_PAGES ends the
 #   listing, unresolved), and older than #min_age when the kind has one;
@@ -63,23 +63,6 @@ class ShopifyDraftSweep
     def self.refused(reason, error = nil) = new(reason: reason, error: error, value: nil)
     def ok? = reason.nil?
   end
-
-  LIST_QUERY = <<~GRAPHQL
-    query shopifyOpenDrafts($query: String!, $first: Int!, $after: String) {
-      draftOrders(first: $first, after: $after, query: $query) {
-        nodes {
-          id
-          status
-          tags
-          createdAt
-        }
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
-      }
-    }
-  GRAPHQL
 
   def self.run(max_deletes: self::MAX_DELETES) = new(max_deletes: max_deletes).run
 
@@ -275,8 +258,6 @@ class ShopifyDraftSweep
 
   def operating_tag = model.draft_order_operating_tag
 
-  def status_filter = ShopifyConcern::DraftRemoval::PAYABLE_STATUSES.map { |s| "status:#{s.downcase}" }.join(" OR ")
-
   # [[draft gid, record id], ...], each gid once. All pages are read before anything is deleted. A page that cannot
   # be read, a repeated cursor or too many pages ends the listing and is unresolved (the next run reads it again).
   def list_payable_drafts
@@ -284,7 +265,7 @@ class ShopifyDraftSweep
     cursors = Set.new
     cursor = nil
     self.class::MAX_PAGES.times do
-      page = fetch_page(cursor)
+      page = Payments::ShopifyAdapter::DraftOrders.payable_page(tag: operating_tag, first: self.class::PAGE_SIZE, after: cursor)
       page["nodes"].each { |node| (pair = marked(node)) && found[pair.first] ||= pair.last }
       info = page["pageInfo"]
       return found.to_a unless info["hasNextPage"] && info["endCursor"].present?
@@ -303,28 +284,12 @@ class ShopifyDraftSweep
     found.to_a
   end
 
-  def fetch_page(cursor)
-    resp = ShopifyConcern::DraftOrders.client.query(
-      query: LIST_QUERY,
-      variables: { query: "(#{status_filter}) tag:#{operating_tag}", first: self.class::PAGE_SIZE, after: cursor }
-    )
-    raise "Received HTTP #{resp.code} when listing draft orders" unless resp.code == 200
-
-    body = resp.body
-    raise "Shopify errors listing draft orders: #{body['errors']}" if body.is_a?(Hash) && body["errors"].present?
-
-    page = body.is_a?(Hash) ? body.dig("data", "draftOrders") : nil
-    raise "No draftOrders in the answer" unless page.is_a?(Hash) && page["nodes"].is_a?(Array) && page["pageInfo"].is_a?(Hash)
-
-    page
-  end
-
   # [gid, record id] for a payable draft of this environment with exactly one marker of the model, else nil (counted as
   # unmarked when it is payable and this environment's but carries no usable marker). The query is only a filter:
   # what is acted on is re-checked here.
   def marked(node)
     tags = node["tags"]
-    return nil unless ShopifyConcern::DraftRemoval::PAYABLE_STATUSES.include?(node["status"]) && model.draft_order_processable?(tags)
+    return nil unless Payments::ShopifyAdapter::DraftStatus::PAYABLE.include?(node["status"]) && model.draft_order_processable?(tags)
     return nil unless old_enough?(node)
 
     record_id = model.draft_marker_record_id(tags)
@@ -390,7 +355,7 @@ class ShopifyDraftSweep
   # What a kind of sweep (a subclass) supplies. The lock key, the summary message and the constants it overrides
   # (MAX_DELETES ...) are read from the subclass.
 
-  # The model whose drafts are swept: it includes ShopifyConcern and defines the draft marker (draft_marker_name).
+  # The model whose drafts are swept: a model with a draft marker (draft_marker_name).
   def model = raise(NotImplementedError)
 
   # How the records are named in the run's lines, and the key their id has in the error tracker's context.

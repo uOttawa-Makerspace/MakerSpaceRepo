@@ -105,7 +105,7 @@ RSpec.describe "LockerRentals update racing a payment webhook", type: :request d
   it "calls Shopify to remove the draft only after the cancellation committed: no transaction (no row lock) is open" do
     rental.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/9")
     open_during_call = []
-    allow(ShopifyConcern::DraftOrders).to receive(:delete) do |*|
+    allow(Payments::ShopifyAdapter::DraftOrders).to receive(:delete) do |*|
       open_during_call << ActiveRecord::Base.connection.transaction_open?
       # and the cancellation is already visible to another connection
       open_during_call << race_thread { LockerRental.find(rental.id).cancelled? }.value
