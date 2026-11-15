@@ -16,7 +16,9 @@ RSpec.describe "Sortable tables on a page gone back to with Turbo", type: :syste
 
   describe "the admin key list" do
     let(:admin) { create(:user, :admin) }
-    let(:space) { create(:space) }
+    # regular keys show the space keycode in every row: with no digits in it or
+    # in the space name, searching for a key number matches that key only
+    let(:space) { create(:space, name: "Key Room", keycode: "ROOMCODE") }
 
     before do
       15.times { |i| create(:key, :regular_key_type, :unknown_status, number: 100 + i, space: space) }
@@ -35,8 +37,11 @@ RSpec.describe "Sortable tables on a page gone back to with Turbo", type: :syste
         click_button "2"
         expect(page).to have_css(".dt-info", text: "Showing 11 to 15 of 15 entries")
         expect(page).to have_css("tbody tr", count: 5)
+        # the table starts sorted by key number, ascending; DataTables sorts
+        # after a header click returns, so wait for the new order before going on
+        expect(page).to have_css("th.dt-ordering-asc", text: "Key Number")
         find("th", text: "Key Number").click
-        find("th", text: "Key Number").click
+        expect(page).to have_css("th.dt-ordering-desc", text: "Key Number")
         expect(page).to have_css("tbody tr:first-child td:first-child", exact_text: "114")
         find(".dt-search input").fill_in(with: "107")
         expect(page).to have_css("tbody tr", count: 1)
