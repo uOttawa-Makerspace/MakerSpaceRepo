@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { addInputRow } from "../../app/javascript/src/input_rows.js";
 
 beforeEach(() => {
-  document.body.innerHTML = `<div class="wrap"><div class="input-group"><input type="file"><button type="button" id="add" class="btn btn-success"><i class="fa fa-plus"></i></button></div></div>`;
+  document.body.innerHTML = `<div class="wrap"><div class="input-group"><input type="file"><button type="button" id="add" class="btn btn-success" aria-label="Add file" data-remove-label="Remove"><i class="fa fa-plus"></i></button></div></div>`;
 });
 
 const add = () => document.getElementById("add");
@@ -17,6 +17,12 @@ describe("addInputRow", () => {
     expect(rows[1].querySelector("input").value).toBe("");
     expect(remove.className).toBe("btn btn-danger");
     expect(remove.children[0].className).toBe("fa fa-trash");
+  });
+
+  it("labels the remove button as one, from the add button's remove label", () => {
+    const remove = addInputRow(add());
+    expect(remove.getAttribute("aria-label")).toBe("Remove");
+    expect(add().getAttribute("aria-label")).toBe("Add file");
   });
 
   it("leaves the add button the only element with its id", () => {

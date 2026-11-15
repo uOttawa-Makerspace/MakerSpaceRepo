@@ -251,6 +251,18 @@ describe("attachments", () => {
     },
   );
 
+  it("labels an added row's button with the add button's remove label", async () => {
+    await load(
+      `<div class="wrap"><div class="input-group"><input type="file"><button type="button" id="new-file-input" class="btn btn-success" aria-label="Add another file" data-remove-label="Retirer"><i class="fa fa-plus"></i></button></div></div>`,
+    );
+    $("new-file-input").click();
+    const remove = document.querySelector(".btn-danger");
+    expect(remove.getAttribute("aria-label")).toBe("Retirer");
+    expect($("new-file-input").getAttribute("aria-label")).toBe(
+      "Add another file",
+    );
+  });
+
   it("adds one row per click, also after a later load of the same page", async () => {
     await load(
       `<div class="wrap"><div class="input-group"><input type="file"><button type="button" id="new-file-input" class="btn btn-success"><i class="fa fa-plus"></i></button></div></div>`,
