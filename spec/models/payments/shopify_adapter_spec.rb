@@ -88,7 +88,10 @@ RSpec.describe Payments::ShopifyAdapter do
     shopify_request(body, hmac: shopify_hmac_for(body, secret: secret), topic: topic)
   end
 
-  def webhook(signature, provider_ref:, reference:, amount:, paid_at:)
+  def webhook(signature, provider_ref:, references:, amount:, paid_at:, cash: false)
+    raise ArgumentError, "a card payment of one product" if cash || references.size != 1
+
+    reference = references.first
     body = { id: provider_ref.to_i, total_price: amount.to_s, processed_at: paid_at.iso8601,
              tags: "makerepo_test_locker, locker_rental:#{reference.record_id}, makerepo_test_checkout_#{reference.checkout_id}" }.to_json
     hmac = { valid: shopify_hmac_for(body), none: nil, wrong: shopify_hmac_for(body, secret: "another") }.fetch(signature)
@@ -230,7 +233,8 @@ RSpec.describe Payments::ShopifyAdapter do
     end
 
     it "uses the models' kinds and marker names" do
-      expect(Payments::Reference::KINDS).to eq([LockerRental, Membership, JobOrder].map(&:shopify_draft_order_key_name))
+      expect(Payments::ShopifyAdapter::Order::TAGGED_KINDS).to eq([LockerRental, Membership, JobOrder].map(&:shopify_draft_order_key_name))
+      expect(Payments::Reference::KINDS).to eq(Payments::ShopifyAdapter::Order::TAGGED_KINDS + ["cc_money"])
       expect(described_class::MARKERS).to eq("locker" => LockerRental.draft_marker_name, "job_order" => JobOrder.draft_marker_name)
       expect { Membership.draft_marker_name }.to raise_error(NotImplementedError)
     end
@@ -333,22 +337,38 @@ RSpec.describe Payments::ShopifyAdapter do
       end
     end
 
-    it "reads the reference from this environment's tags only" do
+    it "reads the references from this environment's tags only" do
       membership = adapter.parse_webhook(**signed({ id: 1, tags: ["makerepo_test_membership", "makerepo_test_checkout_3"] }))
-      expect(membership.reference).to eq(Payments::Reference.new(kind: "membership", record_id: nil, checkout_id: 3))
-      expect(adapter.parse_webhook(**signed({ id: 1, tags: "makerepo_locker, locker_rental:5" })).reference).to be_nil
-      expect(adapter.parse_webhook(**signed({ id: 1 })).reference).to be_nil
+      expect(membership.references).to eq([Payments::Reference.new(kind: "membership", record_id: nil, checkout_id: 3)])
+      expect(adapter.parse_webhook(**signed({ id: 1, tags: "makerepo_locker, locker_rental:5" })).references).to eq([])
+      expect(adapter.parse_webhook(**signed({ id: 1 })).references).to eq([])
       two_markers = adapter.parse_webhook(**signed({ id: 1, tags: "makerepo_test_locker, locker_rental:5, locker_rental:6" }))
-      expect(two_markers.reference).to eq(Payments::Reference.new(kind: "locker"))
+      expect(two_markers.references).to eq([Payments::Reference.new(kind: "locker")])
     end
 
+    it "names every product of an order, tagged kinds in their order and CC Money last" do
+      hook = { id: 1, tags: "makerepo_test_membership, makerepo_test_job_order, job_order:4, makerepo_test_locker, locker_rental:5",
+               line_items: [{ product_id: 1 }, "x", { product_id: Payments::ShopifyAdapter::Order::CC_PRODUCT_ID.to_s }] }
+      event = adapter.parse_webhook(**signed(hook))
+      expect(event.kinds).to eq(%w[locker membership job_order cc_money])
+      expect(event.references.map(&:record_id)).to eq([5, nil, 4, nil])
+      expect(adapter.parse_webhook(**signed({ id: 1, line_items: [{ product_id: 1 }] })).references).to eq([])
+    end
+
+    it "marks an orders/fulfilled delivery as a cash payment" do
+      expect(adapter.parse_webhook(**signed({ id: 1 }, topic: "orders/fulfilled")).cash).to be(true)
+      expect(adapter.parse_webhook(**signed({ id: 1 })).cash).to be(false)
+    end
+
+    # The order's own tags decide the routing: a value that is neither a string nor a list (Shopify sends one of the
+    # two) names no product, as the routing has always read it (ShopifyAdapter.tag_list).
     it "reads tags sent as a comma-separated string or a list, and names nothing for tags of any other shape" do
-      expect(adapter.parse_webhook(**signed({ id: 1, tags: " makerepo_test_locker ,locker_rental:5" })).reference)
-        .to eq(Payments::Reference.new(kind: "locker", record_id: 5))
-      expect(adapter.parse_webhook(**signed({ id: 1, tags: ["makerepo_test_locker", "locker_rental:5"] })).reference)
-        .to eq(Payments::Reference.new(kind: "locker", record_id: 5))
+      expect(adapter.parse_webhook(**signed({ id: 1, tags: " makerepo_test_locker ,locker_rental:5" })).references)
+        .to eq([Payments::Reference.new(kind: "locker", record_id: 5)])
+      expect(adapter.parse_webhook(**signed({ id: 1, tags: ["makerepo_test_locker", "locker_rental:5"] })).references)
+        .to eq([Payments::Reference.new(kind: "locker", record_id: 5)])
       [{ "makerepo_test_locker" => "locker_rental:5" }, 5, nil, true].each do |tags|
-        expect(adapter.parse_webhook(**signed({ id: 1, tags: tags })).reference).to be_nil
+        expect(adapter.parse_webhook(**signed({ id: 1, tags: tags })).references).to eq([]), tags.inspect
       end
     end
 

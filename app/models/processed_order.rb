@@ -51,6 +51,10 @@ class ProcessedOrder < ApplicationRecord
 
   def applied? = status == "applied"
 
+  # The PaymentEvent of the stored delivery, read from its payload as the webhook read it; an order that names no
+  # time is dated when it was received.
+  def payment_event = Payments::ShopifyAdapter::Order.new(payload, topic: topic, received_at: created_at).event
+
   # The provider_ref of an order's delivery of `topic`.
   def self.ref_for(order_id, topic)
     topic == "orders/fulfilled" ? "#{order_id}/fulfilled" : order_id.to_s

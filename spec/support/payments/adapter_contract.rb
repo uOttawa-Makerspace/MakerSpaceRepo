@@ -10,7 +10,9 @@
 #   expect_provider_received(lines:, reference:)
 #   arrange_open_checkout(reference)          a payable checkout carrying reference.checkout_id; returns its Checkout
 #   arrange_no_open_checkout(reference)
-#   webhook(signature, provider_ref:, reference:, amount:, paid_at:)   a request ({ body:, headers: }), signature :valid, :none or :wrong
+#   webhook(signature, provider_ref:, references:, amount:, paid_at:, cash:)
+#                                             a request ({ body:, headers: }) for a card payment of one product,
+#                                             signature :valid, :none or :wrong
 #   unsupported_topic_webhook                 a signed notice of a kind the adapter does not turn into a payment
 #   malformed_webhook                         a signed notice whose body is not a payment notice
 RSpec.shared_examples "a Payments adapter" do
@@ -74,7 +76,7 @@ RSpec.shared_examples "a Payments adapter" do
   end
 
   describe "#verify_webhook!" do
-    let(:fields) { { provider_ref: "5001", reference: reference, amount: BigDecimal("1"), paid_at: Time.zone.parse("2026-11-02 14:30:00") } }
+    let(:fields) { { provider_ref: "5001", references: [reference], amount: BigDecimal("1"), paid_at: Time.zone.parse("2026-11-02 14:30:00"), cash: false } }
 
     it "accepts a signed request, whatever it is a notice of" do
       expect(adapter.verify_webhook!(**webhook(:valid, **fields))).to be_nil
@@ -92,7 +94,7 @@ RSpec.shared_examples "a Payments adapter" do
 
   describe "#parse_webhook" do
     let(:paid_at) { Time.zone.parse("2026-11-02 14:30:00") }
-    let(:event_fields) { { provider_ref: "5001", reference: reference, amount: BigDecimal("12.5"), paid_at: paid_at } }
+    let(:event_fields) { { provider_ref: "5001", references: [reference], amount: BigDecimal("12.5"), paid_at: paid_at, cash: false } }
 
     it "returns the verified PaymentEvent of a signed request" do
       event = adapter.parse_webhook(**webhook(:valid, **event_fields))
