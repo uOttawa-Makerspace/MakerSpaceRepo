@@ -4,7 +4,7 @@ module Payments
   class ShopifyAdapter
     # THE rule for taking a Shopify draft order away by its gid, shared by JobOrder (JobOrder::DraftDeletion),
     # LockerRental, Membership and #cancel_checkout. It only talks to Shopify and classifies (DraftOrders is the raw
-    # delete/fetch under it); it changes no record: each caller decides what the outcome means for its own stored id
+    # delete/fetch under it, DraftStatus reads the status); it changes no record: each caller decides what the outcome means for its own stored id
     # and for its own failure path.
     #
     #   DraftRemoval.call(gid) -> Result(outcome, user_errors)
@@ -12,41 +12,19 @@ module Payments
     #     :gone       Shopify refused (a 200 with userErrors and no deletedId) and a fetch shows the draft no longer exists
     #     :completed  Shopify refused and the draft is COMPLETED: it is paid, it became an order, nothing to remove
     #     :open       Shopify refused and the draft is still there, unpaid: a real failure
-    #   Raises Unanswered when the follow-up fetch gets no answer, and propagates any HTTP/config exception: the caller
+    #   Raises DraftOrders::Unanswered when the follow-up fetch gets no answer, and propagates any HTTP/config exception: the caller
     #   never learns "gone" or "paid" from an error.
     module DraftRemoval
       Result = Struct.new(:outcome, :user_errors)
 
-      # Shopify did not answer the check that follows a refused delete.
-      class Unanswered < StandardError; end
-
-      # Shopify's DraftOrderStatus: COMPLETED is paid (the draft became an order).
-      PAID_STATUS = "COMPLETED"
-      # OPEN and INVOICE_SENT drafts are unpaid and payable (the invoice link works). The only statuses a link is served for.
-      PAYABLE_STATUSES = %w[OPEN INVOICE_SENT].freeze
-
-      module_function
-
-      def paid?(draft) = draft["status"] == PAID_STATUS
-
-      def payable?(draft) = PAYABLE_STATUSES.include?(draft["status"])
-
-      # [:found | :gone, draft]; Shopify not answering raises Unanswered.
-      def fetch_or_raise(gid)
-        state, draft = DraftOrders.fetch_result(gid)
-        raise Unanswered, "Shopify did not answer the draft order check" if state == :error
-
-        [state, draft]
-      end
-
-      def call(gid)
+      def self.call(gid)
         user_errors = []
         return Result.new(:deleted, user_errors) if DraftOrders.delete(gid, user_errors_out: user_errors)
 
-        state, draft = fetch_or_raise(gid)
+        state, draft = DraftOrders.fetch_or_raise(gid)
         return Result.new(:gone, user_errors) if state == :gone
 
-        Result.new(paid?(draft) ? :completed : :open, user_errors)
+        Result.new(DraftStatus.paid?(draft) ? :completed : :open, user_errors)
       end
     end
   end

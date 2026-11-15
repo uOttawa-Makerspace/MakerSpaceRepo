@@ -16,12 +16,6 @@ module Payments
       TOPIC_HEADER = "HTTP_X_SHOPIFY_TOPIC"
       TOPICS = %w[orders/paid orders/fulfilled].freeze
 
-      # A draft's or order's tags as a list of stripped strings, whether Shopify sent an array or a comma-separated string.
-      def self.tag_list(tags)
-        list = tags.is_a?(String) ? tags.split(",") : Array(tags)
-        list.map { |t| t.to_s.strip }
-      end
-
       def initialize(body:, headers:, secrets:)
         @raw_body = body.to_s
         @headers = headers
@@ -38,7 +32,7 @@ module Payments
         raise WebhookRejected, :malformed if id.blank?
 
         PaymentEvent.new(provider: PROVIDER, provider_ref: ProcessedOrder.ref_for(id, topic),
-                         reference: reference(self.class.tag_list(hook["tags"])),
+                         reference: reference(ShopifyAdapter.tag_list(hook["tags"])),
                          amount: amount(hook["total_price"]), paid_at: paid_at(hook, topic))
       end
 

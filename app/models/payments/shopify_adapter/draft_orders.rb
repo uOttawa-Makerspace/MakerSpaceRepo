@@ -6,6 +6,9 @@ module Payments
     # payable drafts. They check nothing about whose draft it is: the models reach them only through their own rules
     # (ShopifyConcern's record bookkeeping, JobOrder::DraftDeletion, LockerRental, the sweeps), never as model methods.
     module DraftOrders
+      # Shopify did not answer a draft check that must be answered (#fetch_or_raise).
+      class Unanswered < StandardError; end
+
       GET_QUERY = <<~QUERY
         query getDraftOrder($id: ID!) {
           draftOrder(id: $id) {
@@ -90,11 +93,20 @@ module Payments
         answer = Answer.new(ShopifyAdapter.admin_client.query(query: GET_QUERY, variables: { id: gid }))
         return [:error, nil] unless answer.ok?
 
+        # Not Answer#data: a 200 whose body is not a JSON object raises here (pinned), rather than reading as :error.
         draft = answer.body&.dig("data", "draftOrder")
         return [:found, draft] unless draft.nil?
 
         data = answer.clean_data
         [data.is_a?(Hash) && data.key?("draftOrder") ? :gone : :error, nil]
+      end
+
+      # [:found | :gone, draft]; Shopify not answering raises Unanswered.
+      def self.fetch_or_raise(gid)
+        state, draft = fetch_result(gid)
+        raise Unanswered, "Shopify did not answer the draft order check" if state == :error
+
+        [state, draft]
       end
 
       # draftOrderCreate with `variables` ({ input: DraftOrderInput }). Returns [the draft's gid, its invoice URL] and
@@ -123,9 +135,9 @@ module Payments
         resp.body&.dig("data", "draftOrderDelete", "deletedId").present?
       end
 
-      # The search that lists the payable (DraftRemoval::PAYABLE_STATUSES) drafts carrying `tag`.
+      # The search that lists the payable (DraftStatus::PAYABLE) drafts carrying `tag`.
       def self.payable_search(tag)
-        "(#{DraftRemoval::PAYABLE_STATUSES.map { |s| "status:#{s.downcase}" }.join(' OR ')}) tag:#{tag}"
+        "(#{DraftStatus::PAYABLE.map { |s| "status:#{s.downcase}" }.join(' OR ')}) tag:#{tag}"
       end
 
       # One page of the payable drafts carrying `tag`, after the cursor `after` (nil: the first page): the

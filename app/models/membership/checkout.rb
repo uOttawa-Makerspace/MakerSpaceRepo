@@ -90,7 +90,7 @@ class Membership
     # a second payable draft would let the member pay twice.
     def reprice?(draft)
       price = draft_price(draft)
-      Payments::ShopifyAdapter::DraftRemoval.payable?(draft) && price.present? && BigDecimal(price) != membership_tier.price(user)
+      Payments::ShopifyAdapter::DraftStatus.payable?(draft) && price.present? && BigDecimal(price) != membership_tier.price(user)
     end
 
     def draft_price(draft)

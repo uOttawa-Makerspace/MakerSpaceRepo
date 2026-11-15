@@ -23,13 +23,13 @@ class JobOrder
 
     # [:found | :gone, draft]; Shopify not answering raises (fail closed).
     def fetch_or_raise(gid)
-      unanswered_is_stale { Payments::ShopifyAdapter::DraftRemoval.fetch_or_raise(gid) }
+      unanswered_is_stale { Payments::ShopifyAdapter::DraftOrders.fetch_or_raise(gid) }
     end
 
     # The one place the shared rule's "Shopify did not answer" becomes the fail-closed StaleDraftOrderError.
     def unanswered_is_stale
       yield
-    rescue Payments::ShopifyAdapter::DraftRemoval::Unanswered => e
+    rescue Payments::ShopifyAdapter::DraftOrders::Unanswered => e
       JobOrder.stale_draft!(e.message)
     end
 

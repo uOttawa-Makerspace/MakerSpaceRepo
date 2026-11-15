@@ -415,11 +415,11 @@ class LockerRental < ApplicationRecord
   # fetched first and must carry tags the block accepts (this environment's tag and the expected marker, or none); a
   # paid draft is never sent a delete. Refuses (OrphanDraftRefused) anything else.
   def self.settle_orphan_draft(gid, refusal)
-    state, draft = Payments::ShopifyAdapter::DraftRemoval.fetch_or_raise(gid)
+    state, draft = Payments::ShopifyAdapter::DraftOrders.fetch_or_raise(gid)
     return :cleared if state == :gone
     raise OrphanDraftRefused, refusal unless yield(draft['tags'])
-    return :kept if Payments::ShopifyAdapter::DraftRemoval.paid?(draft)
-    raise OrphanDraftRefused, "the draft order has the unknown status #{draft['status'].inspect}" unless Payments::ShopifyAdapter::DraftRemoval.payable?(draft)
+    return :kept if Payments::ShopifyAdapter::DraftStatus.paid?(draft)
+    raise OrphanDraftRefused, "the draft order has the unknown status #{draft['status'].inspect}" unless Payments::ShopifyAdapter::DraftStatus.payable?(draft)
 
     delete_orphan_draft(gid)
   end
@@ -634,10 +634,10 @@ class LockerRental < ApplicationRecord
     return nil if state == :error # Shopify did not answer: no link now, the stored id is untouched
     return :gone unless state == :found
 
-    if Payments::ShopifyAdapter::DraftRemoval.payable?(draft)
+    if Payments::ShopifyAdapter::DraftStatus.payable?(draft)
       @checkout_state = :link
       draft['invoiceUrl']
-    elsif Payments::ShopifyAdapter::DraftRemoval.paid?(draft)
+    elsif Payments::ShopifyAdapter::DraftStatus.paid?(draft)
       @checkout_state = :processing
       nil
     else

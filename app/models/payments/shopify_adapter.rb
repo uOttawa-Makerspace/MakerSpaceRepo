@@ -13,7 +13,7 @@ module Payments
   #   parse_webhook(body:, headers:) -> PaymentEvent        raises WebhookRejected (see ShopifyAdapter::Webhook)
   #
   # The products that still keep their own draft id (lockers, memberships, job orders) call the Shopify-level parts
-  # directly: DraftOrders (fetch, create, delete, list), DraftRemoval (the delete-and-classify rule) and Metafields.
+  # directly: DraftOrders (fetch, create, delete, list), DraftStatus (paid or payable), DraftRemoval (the delete-and-classify rule) and Metafields.
   #
   # checkout_status answers :unknown when Shopify answers with an error (a 2xx other than 200, or GraphQL errors) or
   # with a draft in a status it does not know. cancel_checkout raises when the check after a refused delete gets no
@@ -54,6 +54,18 @@ module Payments
         session = ShopifyAPI::Context.active_session
       end
       ShopifyAPI::Clients::Graphql::Admin.new(session: session)
+    end
+
+    # A draft's or order's tags as a list of stripped strings, whether Shopify gave an array or a comma-separated
+    # string; [] for anything else.
+    def self.tag_list(tags)
+      if tags.is_a?(String)
+        tags.split(',').map(&:strip)
+      elsif tags.is_a?(Array)
+        tags.map(&:to_s).map(&:strip)
+      else
+        []
+      end
     end
 
     # The tag a draft made for a checkout record carries: this environment's prefix and the record's id.
@@ -103,9 +115,9 @@ module Payments
     end
 
     def draft_status(draft)
-      return :paid if DraftRemoval.paid?(draft)
+      return :paid if DraftStatus.paid?(draft)
 
-      DraftRemoval.payable?(draft) ? :open : :unknown
+      DraftStatus.payable?(draft) ? :open : :unknown
     end
 
     # The DraftOrderInput of a checkout; Reference only holds known kinds.
@@ -144,7 +156,7 @@ module Payments
     end
 
     def open_with_tag?(node, tag)
-      DraftRemoval.payable?(node) && Webhook.tag_list(node["tags"]).include?(tag)
+      DraftStatus.payable?(node) && self.class.tag_list(node["tags"]).include?(tag)
     end
   end
 end

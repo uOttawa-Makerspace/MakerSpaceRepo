@@ -9,7 +9,7 @@
 # environment's operating tag, e.g. "makerepo_locker", plus "<marker name>:<id>"), and this sweep reconciles the
 # unpaid drafts on Shopify against the database:
 #
-# - listed: the payable (Payments::ShopifyAdapter::DraftRemoval::PAYABLE_STATUSES: OPEN, INVOICE_SENT) draft orders tagged
+# - listed: the payable (Payments::ShopifyAdapter::DraftStatus::PAYABLE: OPEN, INVOICE_SENT) draft orders tagged
 #   with THIS environment's operating tag of the model (so another environment's drafts, and the other models'
 #   drafts, which carry other operating tags, are never listed), paginated (a repeated cursor or MAX_PAGES ends the
 #   listing, unresolved), and older than #min_age when the kind has one;
@@ -289,7 +289,7 @@ class ShopifyDraftSweep
   # what is acted on is re-checked here.
   def marked(node)
     tags = node["tags"]
-    return nil unless Payments::ShopifyAdapter::DraftRemoval::PAYABLE_STATUSES.include?(node["status"]) && model.draft_order_processable?(tags)
+    return nil unless Payments::ShopifyAdapter::DraftStatus::PAYABLE.include?(node["status"]) && model.draft_order_processable?(tags)
     return nil unless old_enough?(node)
 
     record_id = model.draft_marker_record_id(tags)

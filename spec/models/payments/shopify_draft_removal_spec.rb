@@ -34,7 +34,7 @@ RSpec.describe Payments::ShopifyAdapter::DraftRemoval do
 
     it "raises Unanswered when the check gets no answer" do
       fake.on_query = ->(query, _) { fake.status = 500 if query.include?("getDraftOrder") }
-      expect { described_class.call(gid) }.to raise_error(described_class::Unanswered, /did not answer/)
+      expect { described_class.call(gid) }.to raise_error(Payments::ShopifyAdapter::DraftOrders::Unanswered, /did not answer/)
     end
   end
 

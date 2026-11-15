@@ -254,6 +254,13 @@ RSpec.describe Payments::ShopifyAdapter do
       expect { adapter.checkout_status(gid) }.to raise_error(ShopifyAPI::Errors::HttpResponseError)
     end
 
+    it "lets a 200 answer whose body is not a JSON object raise, never reading it as gone or unknown" do
+      stub_request(:post, shopify_graphql_url).to_return(status: 200, body: "[1]", headers: ShopifyHttpHelpers::JSON_HEADERS)
+      expect { Payments::ShopifyAdapter::DraftOrders.fetch_result(gid) }.to raise_error(TypeError)
+      stub_request(:post, shopify_graphql_url).to_return(status: 200, body: '"x"', headers: ShopifyHttpHelpers::JSON_HEADERS)
+      expect { Payments::ShopifyAdapter::DraftOrders.fetch_result(gid) }.to raise_error(NoMethodError)
+    end
+
     it "is :unknown for a 2xx answer other than 200" do
       answer("query getDraftOrder", {}, status: 202)
       expect(adapter.checkout_status(gid)).to eq(:unknown)
@@ -333,6 +340,16 @@ RSpec.describe Payments::ShopifyAdapter do
       expect(adapter.parse_webhook(**signed({ id: 1 })).reference).to be_nil
       two_markers = adapter.parse_webhook(**signed({ id: 1, tags: "makerepo_test_locker, locker_rental:5, locker_rental:6" }))
       expect(two_markers.reference).to eq(Payments::Reference.new(kind: "locker"))
+    end
+
+    it "reads tags sent as a comma-separated string or a list, and names nothing for tags of any other shape" do
+      expect(adapter.parse_webhook(**signed({ id: 1, tags: " makerepo_test_locker ,locker_rental:5" })).reference)
+        .to eq(Payments::Reference.new(kind: "locker", record_id: 5))
+      expect(adapter.parse_webhook(**signed({ id: 1, tags: ["makerepo_test_locker", "locker_rental:5"] })).reference)
+        .to eq(Payments::Reference.new(kind: "locker", record_id: 5))
+      [{ "makerepo_test_locker" => "locker_rental:5" }, 5, nil, true].each do |tags|
+        expect(adapter.parse_webhook(**signed({ id: 1, tags: tags })).reference).to be_nil
+      end
     end
 
     it "keeps an unreadable or missing amount as nil" do

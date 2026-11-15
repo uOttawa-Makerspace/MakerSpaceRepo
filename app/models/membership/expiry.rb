@@ -56,9 +56,9 @@ class Membership
     def remove_stale_draft(gid)
       return :removed if gid.blank?
 
-      state, draft = Payments::ShopifyAdapter::DraftRemoval.fetch_or_raise(gid)
+      state, draft = Payments::ShopifyAdapter::DraftOrders.fetch_or_raise(gid)
       return :removed if state == :gone
-      return :paid if Payments::ShopifyAdapter::DraftRemoval.paid?(draft)
+      return :paid if Payments::ShopifyAdapter::DraftStatus.paid?(draft)
 
       removal_outcome(Payments::ShopifyAdapter::DraftRemoval.call(gid).outcome)
     end

@@ -29,16 +29,7 @@ module ShopifyConcern
   class_methods do
     def draft_order_processable?(tag) = draft_tag_list(tag).include?(draft_order_operating_tag)
 
-    # A draft's tags as a list of stripped strings, whether Shopify gave an array or a comma-separated string.
-    def draft_tag_list(tag)
-      if tag.is_a?(String)
-        tag.split(',').map(&:strip)
-      elsif tag.is_a?(Array)
-        tag.map(&:to_s).map(&:strip)
-      else
-        []
-      end
-    end
+    def draft_tag_list(tag) = Payments::ShopifyAdapter.tag_list(tag)
 
     def draft_order_operating_tag
       "#{Payments::ShopifyAdapter.target_tag}_#{shopify_draft_order_key_name}"
