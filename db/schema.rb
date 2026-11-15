@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_15_140200) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_15_140400) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1027,6 +1027,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_140200) do
     t.index ["user_id"], name: "index_orders_on_user_id"
   end
 
+  create_table "payment_checkout_backfills", primary_key: "payment_checkout_id", id: :bigint, default: nil, force: :cascade do |t|
+    t.bigint "locker_rental_id", null: false
+    t.string "provider_id", null: false
+    t.string "status", null: false
+    t.datetime "filled_at", precision: nil, default: -> { "now()" }, null: false
+  end
+
   create_table "payment_checkouts", force: :cascade do |t|
     t.string "reference_type", null: false
     t.bigint "reference_id", null: false
@@ -1040,6 +1047,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_140200) do
     t.index ["reference_type", "reference_id"], name: "index_payment_checkouts_on_reference"
     t.index ["reference_type", "reference_id"], name: "index_payment_checkouts_one_open_per_reference", unique: true, where: "((status)::text = 'open'::text)"
     t.check_constraint "status::text = ANY (ARRAY['open'::character varying, 'paid'::character varying, 'void'::character varying]::text[])", name: "payment_checkouts_status_check"
+  end
+
+  create_table "payment_ledger_backfills", primary_key: "payment_ledger_entry_id", id: :bigint, default: nil, force: :cascade do |t|
+    t.bigint "locker_payment_id", null: false
+    t.string "kind", null: false
+    t.datetime "filled_at", precision: nil, default: -> { "now()" }, null: false
   end
 
   create_table "payment_ledger_entries", force: :cascade do |t|
