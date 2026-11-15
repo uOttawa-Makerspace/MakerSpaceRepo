@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-# Solid Cache's table (Rails.cache in production and staging), in the primary
-# database: no extra database to create. The columns and indexes are the ones
+# Solid Cache's table (Rails.cache in production and staging), first kept in the
+# primary database; since 20261115100000 it lives in the cache database instead. The columns and indexes are the ones
 # solid_cache's own install template defines (cache_schema.rb). New table,
 # reversible. Needs owner approval before it runs in production.
 class CreateSolidCacheEntries < ActiveRecord::Migration[8.1]

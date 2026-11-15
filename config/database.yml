@@ -42,6 +42,10 @@ staging:
     <<: *default
     database: makerspacerepo_cable_staging
     migrations_paths: db/cable_migrate
+  cache:
+    <<: *default
+    database: makerspacerepo_cache_staging
+    migrations_paths: db/cache_migrate
 
 production:
   primary:
@@ -55,3 +59,7 @@ production:
     <<: *default
     database: makerspacerepo_cable
     migrations_paths: db/cable_migrate
+  cache:
+    <<: *default
+    database: makerspacerepo_cache
+    migrations_paths: db/cache_migrate
