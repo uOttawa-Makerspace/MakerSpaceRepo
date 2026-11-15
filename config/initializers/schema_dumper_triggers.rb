@@ -1,16 +1,17 @@
 # frozen_string_literal: true
 
 # db/schema.rb does not record PostgreSQL functions or triggers, so a database built from it (test databases,
-# a fresh setup) would lack them. This writes every function and trigger the app defined in the public schema
-# (not those of extensions, not the internal ones behind foreign keys) at the end of schema.rb, as SQL that
-# loading the schema runs again.
+# a fresh setup) would lack them. This writes every function and trigger the app defined in the public schema at
+# the end of schema.rb, as SQL that loading the schema runs again: plain functions and procedures (not aggregates
+# or window functions, not those of extensions) ordered by signature, then triggers (not the internal ones behind
+# foreign keys) ordered by table and name.
 module SchemaDumperTriggers
   FUNCTIONS = <<~SQL.squish
     SELECT pg_get_functiondef(p.oid) FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public'
+    WHERE n.nspname = 'public' AND p.prokind IN ('f', 'p')
       AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.objid = p.oid AND d.deptype = 'e')
-    ORDER BY p.proname
+    ORDER BY p.oid::regprocedure::text
   SQL
 
   TRIGGERS = <<~SQL.squish
