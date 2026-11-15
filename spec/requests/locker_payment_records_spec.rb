@@ -214,6 +214,17 @@ RSpec.describe "Locker payment records", type: :request do
     expect(checkouts(rental).map(&:third)).to eq(%w[void])
   end
 
+  it "opens a checkout with no term for a rental without an end date, and pays nothing for a rental without a draft" do
+    rental = create(:locker_rental, :await_payment)
+    rental.update_column(:owned_until, nil)
+    with_draft(rental.reload)
+    expect(checkouts(rental)).to eq([["shopify", gid, "open", nil]])
+
+    no_draft = create(:locker_rental, :active)
+    no_draft.record_payment(shopify_order_id: "5008")
+    expect(checkouts(no_draft)).to be_empty
+  end
+
   describe "the ledger writers on a retry" do
     let(:payment) do
       rental = create(:locker_rental, :active).tap { |r| r.update!(state: :cancelled) }

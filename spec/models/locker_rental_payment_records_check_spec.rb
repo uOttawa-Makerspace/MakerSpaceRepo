@@ -92,18 +92,28 @@ RSpec.describe LockerRental::PaymentRecordsCheck, type: :model do
     it "is reported, and not recorded, when Shopify's answer is unclear" do
       allow(adapter).to receive(:checkout_status).with(gid).and_return(:unknown)
       cancelled = create(:locker_rental, :active).tap { |r| r.update!(state: :cancelled) }
-      cancelled.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/31")
+      cancelled.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/31", owned_until: nil)
       allow(adapter).to receive(:checkout_status).with("gid://shopify/DraftOrder/31").and_return(:paid)
       rental
       run
       expect(reported).to eq("checkout_status_unclear" => [rental.id])
       expect(PaymentCheckout.where(reference: rental)).to be_empty
-      expect(PaymentCheckout.where(reference: cancelled).pluck(:status)).to eq(%w[paid])
+      expect(PaymentCheckout.where(reference: cancelled).pluck(:status, :term)).to eq([["paid", nil]])
     end
 
     it "is left for the next run when the rental changed after it was listed" do
       allow(adapter).to receive(:checkout_status).with(gid) do
         LockerRental.where(id: rental.id).update_all(shopify_draft_order_id: nil)
+        :paid
+      end
+      rental
+      expect(run).to be_empty
+      expect(PaymentCheckout.count).to eq(0)
+    end
+
+    it "is left alone when the rental is gone after it was listed" do
+      allow(adapter).to receive(:checkout_status).with(gid) do
+        LockerRental.where(id: rental.id).delete_all
         :paid
       end
       rental
