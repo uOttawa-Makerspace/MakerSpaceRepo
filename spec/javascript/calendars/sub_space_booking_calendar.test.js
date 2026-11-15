@@ -818,6 +818,15 @@ describe("leaving the page", () => {
     made.forEach((picker) => expect(picker.destroy).toHaveBeenCalledTimes(1));
   });
 
+  it("takes away the open modal's backdrop when the modal leaves a page that stays", async () => {
+    const cal = await boot();
+    cal.options.customButtons.book.click();
+    expect(document.getElementById("book-modal-backdrop")).not.toBeNull();
+    $("bookModal").remove();
+    await settle();
+    expect(document.getElementById("book-modal-backdrop")).toBeNull();
+  });
+
   it("ignores a save answer that comes after the page was left", async () => {
     const cal = await boot();
     let answer;
