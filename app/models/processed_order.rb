@@ -2,8 +2,9 @@
 
 # The inbox of payment-provider orders (see CreateProcessedOrders): the webhook stores the verified body with
 # `receive!` and answers, ApplyProcessedOrderJob applies it. The unique key (provider, provider_ref) means one row
-# per unit of work: the provider order for orders/paid, and a separate "<id>/fulfilled" unit for the cash-locker
-# orders/fulfilled delivery of the same order (see ref_for). `topic` records which delivery the row came from.
+# per unit of work: the provider order for orders/paid, a separate "<id>/fulfilled" unit for the cash-locker
+# orders/fulfilled delivery of the same order, and a "<id>/cancelled" unit for its orders/cancelled delivery (see
+# ref_for). `topic` records which delivery the row came from.
 # status: received (still to apply), applied, or failed (retries exhausted; staff re-run it with
 # shop_orders:reapply). Rows are never deleted.
 #
@@ -55,10 +56,11 @@ class ProcessedOrder < ApplicationRecord
   # time is dated when it was received.
   def payment_event = Payments::ShopifyAdapter::Order.new(payload, topic: topic, received_at: created_at).event
 
+  # The suffix of the provider_ref of each topic stored apart from the order's orders/paid delivery.
+  REF_SUFFIXES = { "orders/fulfilled" => "/fulfilled", "orders/cancelled" => "/cancelled" }.freeze
+
   # The provider_ref of an order's delivery of `topic`.
-  def self.ref_for(order_id, topic)
-    topic == "orders/fulfilled" ? "#{order_id}/fulfilled" : order_id.to_s
-  end
+  def self.ref_for(order_id, topic) = "#{order_id}#{REF_SUFFIXES[topic]}"
 
   # Stores the delivery with INSERT ... ON CONFLICT DO NOTHING and returns [row, inserted]: the new row, or the
   # row a first delivery stored (inserted false), whatever its status.

@@ -305,6 +305,18 @@ Checking the records: the recurring task `locker_payment_records_check` (`Locker
 
 Reversible: rolling back removes exactly the recorded checkouts and ledger entries and clears the links, then drops the new columns, the tables, the trigger and its function. It refuses, changing nothing, if a recorded row changed since, and the table and column migrations refuse while anything not written by the copy is left in them (export and settle those rows first). Once the app has written its own rows there, the rollback refuses until they are exported and settled.
 
+### Deploy step: Shopify cancelled-order webhook
+
+The release that adds `POST /custom_webhooks/orders_cancelled` needs one manual step after the deploy: in the Shopify admin (Settings, Notifications, Webhooks), create a webhook for the event **Order cancellation** (topic `orders/cancelled`), format JSON, with the URL `https://makerepo.com/custom_webhooks/orders_cancelled` on the production store and `https://staging.makerepo.com/custom_webhooks/orders_cancelled` on the staging one, next to the existing `orders/paid` and `orders/fulfilled` webhooks. It is signed with the same webhook secret, so no credential changes. Until it is registered the endpoint simply receives nothing.
+
+Shopify has no separate void topic: cancelling an order whose payment is pending voids that payment, and it arrives as `orders/cancelled` with `financial_status` `voided`.
+
+What it does for now: a cancelled locker order is stored in `processed_orders` as its own row (`provider_ref` `<order id>/cancelled`, topic `orders/cancelled`) and applied as recorded only. No rental, locker payment, checkout or ledger entry changes and no mail is sent; any other cancelled order is answered and not stored. A redelivery stores nothing more.
+
+Verify afterwards (read only): `SELECT status, count(*) FROM processed_orders WHERE topic = 'orders/cancelled' GROUP BY 1;` grows when a locker order is cancelled in Shopify, and its rows reach `applied`.
+
+Reversible: deleting the webhook in the Shopify admin stops the deliveries; the stored rows stay.
+
 ### Failed and overdue job alerts
 
 The `job_alerts` task (`JobAlertJob`, every 5 minutes, production and staging) mails the maintenance address (the one set on the printer issues page, `Setting.maintenance_email`) when a background job needs attention. It reports, once each:

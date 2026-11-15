@@ -55,6 +55,7 @@ RSpec.describe "Removed routes", type: :routing do
     it "keeps the Shopify webhooks" do
       expect(post: "/custom_webhooks/orders_paid").to route_to("custom_webhooks#orders_paid")
       expect(post: "/custom_webhooks/orders_fulfilled").to route_to("custom_webhooks#orders_fulfilled")
+      expect(post: "/custom_webhooks/orders_cancelled").to route_to("custom_webhooks#orders_cancelled")
     end
 
     it "keeps the staff space bulk upload" do

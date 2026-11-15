@@ -10,11 +10,13 @@ module Payments
     # whose operating tag (this environment's) the order carries, its record id from the marker tag (lockers and job
     # orders; a membership's id is only in the draft's metafields, so it is nil here) and the checkout id from the
     # checkout tag; and CC Money when a line item is the CC product. An orders/fulfilled delivery is a cash payment
-    # (staff fulfil a cash order without marking it paid).
+    # (staff fulfil a cash order without marking it paid). An orders/cancelled delivery is a cancellation, not a
+    # payment.
     class Order
       CC_PRODUCT_ID = 4_359_597_129_784
       TAGGED_KINDS = %w[locker membership job_order].freeze
       FULFILLED = "orders/fulfilled"
+      CANCELLED = "orders/cancelled"
 
       # `received_at`: when the order was received, the paid_at of an order that names no time (else the time it is
       # read).
@@ -28,7 +30,8 @@ module Payments
 
       def event
         @event ||= PaymentEvent.new(provider: PROVIDER, provider_ref: id && ProcessedOrder.ref_for(id, @topic),
-                                    references: references, amount: amount, paid_at: paid_at, cash: @topic == FULFILLED)
+                                    references: references, amount: amount, paid_at: paid_at, cash: @topic == FULFILLED,
+                                    cancelled: @topic == CANCELLED)
       end
 
       def id = self.class.order_id(@hook)

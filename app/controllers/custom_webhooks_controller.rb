@@ -12,7 +12,7 @@ class CustomWebhooksController < ApplicationController
   # time) so unsigned webhooks can be replayed locally (e.g. with curl) without the secret.
   before_action :verify_webhook! unless Rails.env.development?
 
-  # Both order webhooks are an inbox: the verified body is stored (ProcessedOrder) and ApplyProcessedOrderJob applies
+  # The order webhooks are an inbox: the verified body is stored (ProcessedOrder) and ApplyProcessedOrderJob applies
   # it, so the webhook itself never calls Shopify and never touches memberships, CC Money or lockers, and answers
   # fast. A delivery of an order already stored inserts nothing and changes nothing: the stored order's own schedule
   # (ProcessedOrder.dispatch_due) decides when it is applied.
@@ -35,6 +35,14 @@ class CustomWebhooksController < ApplicationController
     return head :ok unless hook["financial_status"] == "pending"
 
     store_order(Payments::ShopifyAdapter::Order.new(hook, topic: "orders/fulfilled"))
+  end
+
+  # A cancelled order (Shopify sends orders/cancelled; a pending payment voided by the cancellation arrives this way
+  # too, with financial_status "voided"). A locker order is stored as its own unit (provider_ref "<id>/cancelled") and
+  # recorded: applying it changes no rental, payment or ledger entry and sends no mail. Any other order is answered and
+  # not stored.
+  def orders_cancelled
+    store_order(Payments::ShopifyAdapter::Order.new(verified_body, topic: "orders/cancelled"))
   end
 
   # Raised only to be reported (Rails.error.report).
@@ -94,10 +102,11 @@ class CustomWebhooksController < ApplicationController
     )
   end
 
-  # Stores the order when a handler applies its payment (ShopOrderApplier.handlers_for).
+  # Stores the order when a handler applies its payment, or when it is a cancellation the app records
+  # (ShopOrderApplier.stores?).
   def store_order(order)
     event = order.event
-    return head :ok if ShopOrderApplier.handlers_for(event).empty?
+    return head :ok unless ShopOrderApplier.stores?(event)
     return report_order_without_id(order) if event.provider_ref.blank?
 
     hook = order.hook

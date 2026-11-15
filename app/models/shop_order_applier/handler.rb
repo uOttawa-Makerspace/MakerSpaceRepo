@@ -10,9 +10,9 @@ class ShopOrderApplier
     # Whether a cash payment (an orders/fulfilled delivery) applies this product.
     def self.takes_cash? = false
 
-    # Whether this handler applies (part of) the payment of `event`: the event names its kind, and a cash payment
-    # only when the handler takes cash.
-    def self.applies_to?(event) = event.kinds.include?(kind) && (takes_cash? || !event.cash)
+    # Whether this handler applies (part of) the payment of `event`: the event is a payment (not a cancellation) and
+    # names its kind, and a cash payment only when the handler takes cash.
+    def self.applies_to?(event) = !event.cancelled && event.kinds.include?(kind) && (takes_cash? || !event.cash)
 
     # The makerepo metafield that names this product's record in `hook`, when the handler needs one.
     def self.metafield_key(_hook) = nil
