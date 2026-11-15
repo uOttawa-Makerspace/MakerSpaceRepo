@@ -294,14 +294,30 @@ Reversible: rolling it back drops the table and every uOEng profile record; repo
 
 ### Deploy step: payments checkout records and ledger
 
-The release that adds `payment_checkouts`, `payment_ledger_entries` and two columns on `locker_payments` (migrations `20261115140000` to `20261115140400`) needs no manual step; `web` runs them on boot. Nothing in the app reads or writes these tables yet; locker payments still run on `locker_rentals.shopify_draft_order_id` and `locker_payments`, which are not changed.
+The release that adds `payment_checkouts`, `payment_ledger_entries` and two columns on `locker_payments` (migrations `20261115140000` to `20261115140400`) needs no manual step; `web` runs them on boot. Locker payments still run on `locker_rentals.shopify_draft_order_id` and `locker_payments`; the app writes the new tables beside them (a stored, replaced or removed draft, a recorded payment, a refund) and reads them for no decision.
 
 - `payment_ledger_entries` is append-only: a trigger refuses every UPDATE, DELETE and TRUNCATE on it. A reversal entry must point at a payment entry with the same provider and provider reference (a composite foreign key). `db/schema.rb` carries the trigger and its function as SQL, so a database built from the schema has them too.
 - The migrations copy, never move. A rental awaiting payment with a draft id becomes an `open` checkout; an active rental with a draft id and a payment time becomes a `paid` one; an active rental with a draft id but no payment time is skipped (its draft is checked at Shopify later). Every locker payment gets a `payment` ledger entry and points at it (`ledger_entry_id`); a refunded one also gets a `reversal` entry. The rows written are listed in `payment_checkout_backfills` and `payment_ledger_backfills`. On the 2026-11-14 backup this wrote 1 open and 4 paid checkouts, skipped 4 rentals, and wrote no ledger entries (no locker payments yet).
 
 Verify afterwards (read only): `SELECT status, count(*) FROM payment_checkouts GROUP BY 1;` matches the migration log line; `SELECT count(*) FROM payment_ledger_entries;` equals the number of locker payments plus the refunded ones; `SELECT tgname FROM pg_trigger WHERE tgrelid = 'payment_ledger_entries'::regclass AND NOT tgisinternal;` lists `payment_ledger_entries_no_change` and `payment_ledger_entries_no_truncate`.
 
-Reversible: rolling back removes exactly the recorded checkouts and ledger entries and clears the links, then drops the new columns, the tables, the trigger and its function. It refuses, changing nothing, if a recorded row changed since, and the table and column migrations refuse while anything not written by the copy is left in them (export and settle those rows first).
+Checking the records: the recurring task `locker_payment_records_check` (`LockerPaymentRecordsCheckJob`, daily at 4:30am) compares the old columns with the new tables and reports each kind of difference to the error tracker as `locker payment records differ: <check>`, with the row ids. It changes nothing, except that it asks Shopify about each stored draft whose state the rental does not settle (the rentals the copy skipped, among others) and records that checkout when Shopify's answer is clear (paid, open, or gone: void); any other answer is reported as `checkout_status_unclear`. Refunded payments copied at migration have no `reversed_at` and are reported as `reversal_differs` until that is filled. To run it once by hand in the `web` container: `bin/rails runner 'LockerPaymentRecordsCheckJob.perform_now'`.
+
+Reversible: rolling back removes exactly the recorded checkouts and ledger entries and clears the links, then drops the new columns, the tables, the trigger and its function. It refuses, changing nothing, if a recorded row changed since, and the table and column migrations refuse while anything not written by the copy is left in them (export and settle those rows first). Once the app has written its own rows there, the rollback refuses until they are exported and settled.
+
+### Deploy step: Shopify cancelled-order webhook
+
+The release that adds `POST /custom_webhooks/orders_cancelled` needs one manual step after the deploy: in the Shopify admin (Settings, Notifications, Webhooks), create a webhook for the event **Order cancellation** (topic `orders/cancelled`), format JSON, with the URL `https://makerepo.com/custom_webhooks/orders_cancelled` on the production store and `https://staging.makerepo.com/custom_webhooks/orders_cancelled` on the staging one, next to the existing `orders/paid` and `orders/fulfilled` webhooks. It is signed with the same webhook secret, so no credential changes. Until it is registered the endpoint simply receives nothing.
+
+Shopify has no separate void topic: cancelling an order whose payment is pending voids that payment, and it arrives as `orders/cancelled` with `financial_status` `voided`.
+
+What it does for now: a cancelled order for any product the app tracks (locker, membership, CC Money, job order) is stored in `processed_orders` as its own row (`provider_ref` `<order id>/cancelled`, topic `orders/cancelled`) and recorded only. No rental, membership, locker payment, checkout or ledger entry changes and no mail is sent; a cancelled order that names none of them is answered and not stored. A redelivery stores nothing more.
+
+The row's status reads `applied` once the apply job has run it, although nothing has acted on it: `processed_orders.status` is limited to `received`, `applied` and `failed` by a check constraint, and a separate status would need a migration. So `applied` on a row with topic `orders/cancelled` means "recorded", not "acted on". The dispatcher and `shop_orders:reapply` treat it like any applied row (never handed out again). The payload purge skips these rows, so their payloads stay until the change that acts on cancellations; that change finds them by topic, not by status, and must be safe to run twice over the same rows.
+
+Verify afterwards (read only): `SELECT status, count(*) FROM processed_orders WHERE topic = 'orders/cancelled' GROUP BY 1;` grows when a tracked order is cancelled in Shopify, and its rows reach `applied` (recorded).
+
+Reversible: deleting the webhook in the Shopify admin stops the deliveries; the stored rows stay.
 
 ### Deploy step: Shopify Admin API version
 

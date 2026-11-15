@@ -14,10 +14,11 @@ RSpec.describe ProcessedOrder do
     expect(first).to have_attributes(status: "received", attempts: 0, last_error: nil, applied_at: nil, order_name: "#9")
   end
 
-  it "keys the fulfilment of an order apart from its paid delivery" do
+  it "keys the fulfilment and the cancellation of an order apart from its paid delivery" do
     paid, = store
     fulfilled, = store(topic: "orders/fulfilled")
-    expect([paid.provider_ref, fulfilled.provider_ref]).to eq(%w[5001 5001/fulfilled])
+    cancelled, = store(topic: "orders/cancelled")
+    expect([paid.provider_ref, fulfilled.provider_ref, cancelled.provider_ref]).to eq(%w[5001 5001/fulfilled 5001/cancelled])
   end
 
   describe "#payment_event" do
@@ -36,6 +37,11 @@ RSpec.describe ProcessedOrder do
       fulfilled.update!(created_at: Time.utc(2026, 10, 1, 8))
       expect(fulfilled.payment_event)
         .to have_attributes(provider_ref: "5003/fulfilled", paid_at: Time.utc(2026, 10, 1, 8), cash: true)
+    end
+
+    it "reads a stored cancellation as one" do
+      cancelled, = store(5004, topic: "orders/cancelled")
+      expect(cancelled.payment_event).to have_attributes(provider_ref: "5004/cancelled", cancelled: true, cash: false)
     end
   end
 
@@ -123,6 +129,13 @@ RSpec.describe ProcessedOrder do
       expect(opts[:severity]).to eq(:warning)
       expect(opts[:context]).to include(shopify_order_id: "5001", status: "received", error_class: "ArgumentError")
       expect([reported.message, opts[:context].to_s].join).not_to match(/secret|customer@example\.com/)
+    end
+
+    it "reports a failure of an order that no longer exists by its id" do
+      described_class.record_failure!(order.id + 1000, token, ArgumentError.new("bad"))
+      reported, opts = reports.sole
+      expect(reported.message).to include("order #{order.id + 1000} failed")
+      expect(opts[:context]).to include(shopify_order_id: nil, status: nil)
     end
 
     it "reports, and changes nothing, when the order is already applied" do

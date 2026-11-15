@@ -7,6 +7,7 @@ resources :custom_webhooks, only: [] do
   collection do
     post :orders_paid
     post :orders_fulfilled
+    post :orders_cancelled
   end
 end
 

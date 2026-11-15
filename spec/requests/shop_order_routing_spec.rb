@@ -4,7 +4,7 @@ require "rails_helper"
 
 # Where a Shopify order webhook goes, end to end: the signed delivery, the stored processed_orders row and what
 # ApplyProcessedOrderJob then does with it, for each product a payment can be for (locker rental, membership, job
-# order, shop order with the CC Money product). Each example compares the whole stored row and the effects, in the
+# order, shop order with the CC Money product), and of a cancelled order. Each example compares the whole stored row and the effects, in the
 # order they happen.
 RSpec.describe "Shopify order routing", type: :request do
   include ActiveJob::TestHelper
@@ -58,7 +58,11 @@ RSpec.describe "Shopify order routing", type: :request do
 
   def deliver(topic, body)
     perform_enqueued_jobs(only: [ApplyProcessedOrderJob, ApplicationMailer.delivery_job]) do
-      topic == "orders/fulfilled" ? signed_orders_fulfilled(body) : signed_orders_paid(body)
+      case topic
+      when "orders/fulfilled" then signed_orders_fulfilled(body)
+      when "orders/cancelled" then signed_orders_cancelled(body)
+      else signed_orders_paid(body)
+      end
     end
     expect(response).to have_http_status(:ok)
   end
@@ -186,6 +190,75 @@ RSpec.describe "Shopify order routing", type: :request do
       deliver("orders/paid", locker_order)
       expect(stored_rows).to eq([row("7001/fulfilled", topic: "orders/fulfilled"), row(7001)])
       expect(LockerPayment.where(locker_rental: rental).count).to eq(1)
+    end
+  end
+
+  describe "a cancelled order (orders/cancelled)" do
+    def cancelled_order(**extra) = locker_order(financial_status: "voided", cancel_reason: "customer", **extra)
+
+    # Everything a reversal could change, apart from the stored row.
+    def locker_state
+      [rental.reload.attributes, LockerPayment.order(:id).map(&:attributes), PaymentLedgerEntry.count,
+       PaymentCheckout.order(:id).map(&:attributes)]
+    end
+
+    it "locker rental awaiting payment: stores its own cancelled unit, records it and changes nothing else" do
+      body = cancelled_order
+      csrf_token # the page the token comes from is fetched before the writes are counted
+      before = locker_state
+      writes = writes_during { deliver("orders/cancelled", body) }
+      expect(stored_rows).to eq([row("7001/cancelled", topic: "orders/cancelled")])
+      expect(writes).to eq(%w[processed_orders])
+      expect(locker_state).to eq(before)
+      expect([ActionMailer::Base.deliveries, @reports]).to eq([[], []])
+    end
+
+    it "locker rental paid in cash: records the cancellation, the payment and the rental stay as they are" do
+      deliver("orders/fulfilled", locker_order(financial_status: "pending"))
+      ActionMailer::Base.deliveries.clear
+      before = locker_state
+      deliver("orders/cancelled", cancelled_order)
+      expect(stored_rows).to eq([row("7001/fulfilled", topic: "orders/fulfilled"),
+                                 row("7001/cancelled", topic: "orders/cancelled")])
+      expect(rental.reload).to be_active
+      expect(locker_state).to eq(before)
+      expect(LockerPayment.where(locker_rental: rental).pluck(:shopify_order_id, :status)).to eq([%w[7001 applied]])
+      expect([ActionMailer::Base.deliveries, @reports]).to eq([[], []])
+    end
+
+    it "a duplicate delivery: stored once, recorded once" do
+      deliver("orders/cancelled", cancelled_order)
+      deliver("orders/cancelled", cancelled_order)
+      expect(stored_rows).to eq([row("7001/cancelled", topic: "orders/cancelled")])
+    end
+
+    it "never asks Shopify for the record a cancellation names" do
+      expect_any_instance_of(ShopOrderApplier).not_to receive(:draft_order_metafields)
+      deliver("orders/cancelled", cancelled_order(metafields: nil, draft_order_id: 3))
+      expect(stored_rows).to eq([row("7001/cancelled", topic: "orders/cancelled")])
+    end
+
+    it "membership, CC and job orders: each stored and recorded, nothing applied" do
+      pending_membership
+      deliver("orders/cancelled", membership_order(financial_status: "voided"))
+      deliver("orders/cancelled", cc_order(financial_status: "voided"))
+      deliver("orders/cancelled", job_order_order(financial_status: "voided"))
+      expect(stored_rows).to eq(%w[7002 7003 7004].map { |id| row("#{id}/cancelled", topic: "orders/cancelled") })
+      expect([pending_membership.reload.status, CcMoney.count, ActionMailer::Base.deliveries]).to eq(["pending", 0, []])
+    end
+
+    it "a locker and a membership in one order: one recorded row, neither applied" do
+      pending_membership
+      body = locker_order(financial_status: "voided", tags: [locker_tag, membership_tag],
+                          line_items: [{ title: "1 Day Membership", quantity: 1 }], metafields: both_references)
+      deliver("orders/cancelled", body)
+      expect(stored_rows).to eq([row("7001/cancelled", topic: "orders/cancelled")])
+      expect([rental.reload.state, pending_membership.reload.status, LockerPayment.count]).to eq(["await_payment", "pending", 0])
+    end
+
+    it "an order that names no tracked product: stores nothing" do
+      deliver("orders/cancelled", { id: 7013, name: "#7013", line_items: [{ product_id: 1, quantity: 1 }] })
+      expect(stored_rows).to be_empty
     end
   end
 

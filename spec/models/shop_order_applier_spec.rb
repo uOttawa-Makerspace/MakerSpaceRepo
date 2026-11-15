@@ -5,10 +5,10 @@ require "rails_helper"
 # The handler registry: which handlers apply a PaymentEvent (what applying does: apply_processed_order_job_spec.rb and
 # shop_order_routing_spec.rb).
 RSpec.describe ShopOrderApplier do
-  def event(*kinds, cash: false)
+  def event(*kinds, cash: false, cancelled: false)
     references = kinds.map { |k| Payments::Reference.new(kind: k) }
     Payments::PaymentEvent.new(provider: "shopify", provider_ref: "1", references: references,
-                               amount: nil, paid_at: Time.current, cash: cash)
+                               amount: nil, paid_at: Time.current, cash: cash, cancelled: cancelled)
   end
 
   describe ".handlers_for" do
@@ -28,8 +28,28 @@ RSpec.describe ShopOrderApplier do
       expect(described_class.handlers_for(event("membership", cash: true))).to eq([])
     end
 
+    it "has no handler for a cancellation, whatever it names" do
+      expect(described_class.handlers_for(event("locker", "membership", "cc_money", cancelled: true))).to eq([])
+    end
+
     it "has a handler for every kind but job orders" do
       expect(described_class::HANDLERS.keys).to eq(Payments::Reference::KINDS - ["job_order"])
+    end
+  end
+
+  describe ".stores?" do
+    it "stores a payment some handler applies, and no other" do
+      expect(described_class.stores?(event("membership"))).to be(true)
+      expect(described_class.stores?(event("job_order"))).to be(false)
+      expect(described_class.stores?(event("membership", cash: true))).to be(false)
+    end
+
+    it "stores the cancellation of an order for any tracked product, and of no other order" do
+      %w[locker membership cc_money job_order].each do |kind|
+        expect(described_class.stores?(event(kind, cancelled: true))).to be(true), kind
+      end
+      expect(described_class.stores?(event("locker", "membership", cancelled: true))).to be(true)
+      expect(described_class.stores?(event(cancelled: true))).to be(false)
     end
   end
 

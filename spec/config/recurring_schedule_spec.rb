@@ -59,6 +59,14 @@ RSpec.describe "config/recurring.yml" do
     expect(Fugit.parse("every 15 minutes", multi: :fail)).to be_a(Fugit::Cron)
   end
 
+  it "checks the locker payment records once a day in production and staging" do
+    %w[production staging].each do |env|
+      expect(config.dig(env, "locker_payment_records_check"))
+        .to include("class" => "LockerPaymentRecordsCheckJob", "schedule" => "every day at 4:30am")
+    end
+    expect(Fugit.parse("every day at 4:30am", multi: :fail)).to be_a(Fugit::Cron)
+  end
+
   it "queues unfinished help requests again every 15 minutes in production and staging" do
     %w[production staging].each do |env|
       expect(config.dig(env, "help_filing_sweep")).to include("class" => "HelpFilingSweepJob", "schedule" => "every 15 minutes")

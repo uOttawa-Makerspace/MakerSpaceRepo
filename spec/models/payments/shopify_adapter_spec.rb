@@ -328,10 +328,11 @@ RSpec.describe Payments::ShopifyAdapter do
       e.reason
     end
 
-    it "keys the event as ProcessedOrder stores the order, for both topics and both id spellings" do
+    it "keys the event as ProcessedOrder stores the order, for every topic and both id spellings" do
       expect(adapter.parse_webhook(**signed({ id: 900 })).provider_ref).to eq(ProcessedOrder.ref_for("900", "orders/paid"))
       expect(adapter.parse_webhook(**signed({ admin_graphql_api_id: "gid://shopify/Order/901" })).provider_ref).to eq("901")
       expect(adapter.parse_webhook(**signed({ id: 902 }, topic: "orders/fulfilled")).provider_ref).to eq("902/fulfilled")
+      expect(adapter.parse_webhook(**signed({ id: 903 }, topic: "orders/cancelled")).provider_ref).to eq("903/cancelled")
     end
 
     it "takes paid_at from the latest fulfillment of a cash order, else the time it is read" do
@@ -365,6 +366,19 @@ RSpec.describe Payments::ShopifyAdapter do
     it "marks an orders/fulfilled delivery as a cash payment" do
       expect(adapter.parse_webhook(**signed({ id: 1 }, topic: "orders/fulfilled")).cash).to be(true)
       expect(adapter.parse_webhook(**signed({ id: 1 })).cash).to be(false)
+    end
+
+    it "reads a signed orders/cancelled delivery as a cancellation (Webhook#event)" do
+      request = signed({ id: 77, financial_status: "voided", tags: ["makerepo_test_locker"] }, topic: "orders/cancelled")
+      event = Payments::ShopifyAdapter::Webhook.new(**request, secrets: [shopify_webhook_secret]).event
+      expect(event).to have_attributes(provider_ref: "77/cancelled", cancelled: true, cash: false, kinds: ["locker"])
+    end
+
+    it "marks an orders/cancelled delivery as a cancellation, and no other" do
+      cancelled = adapter.parse_webhook(**signed({ id: 1, financial_status: "voided" }, topic: "orders/cancelled"))
+      expect([cancelled.cancelled, cancelled.cash]).to eq([true, false])
+      expect(adapter.parse_webhook(**signed({ id: 1 })).cancelled).to be(false)
+      expect(adapter.parse_webhook(**signed({ id: 1 }, topic: "orders/fulfilled")).cancelled).to be(false)
     end
 
     # The order's own tags decide the routing: a value that is neither a string nor a list (Shopify sends one of the

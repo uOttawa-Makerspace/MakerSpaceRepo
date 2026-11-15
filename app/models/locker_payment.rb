@@ -4,9 +4,12 @@
 # (applied | held | refunded | dismissed). A held payment is one that could not be applied to the
 # rental (see HOLD_REASONS); it stays held until staff settle it (the rental is assigned active, or
 # they mark it refunded or dismissed). Never deleted. Created only through LockerRental#record_payment.
+# Each one also has a payment entry in the payments ledger (ledger_entry), and a refunded one a reversal entry
+# (reversed_at), written beside these columns, which stay what every decision reads.
 class LockerPayment < ApplicationRecord
   belongs_to :locker_rental
   belongs_to :resolved_by, class_name: "User", optional: true
+  belongs_to :ledger_entry, class_name: "PaymentLedgerEntry", optional: true
 
   enum :status,
        { applied: "applied", held: "held", refunded: "refunded", dismissed: "dismissed" },
@@ -53,19 +56,56 @@ class LockerPayment < ApplicationRecord
 
     reload
     locker_rental.stamp_paid_at(paid_at)
+    locker_rental.record_checkout_paid
     true
   end
 
   # Staff decision on a held payment. One conditional UPDATE, so it cannot race with the payment being
-  # settled by an assignment (whichever commits first wins, the other returns false).
+  # settled by an assignment (whichever commits first wins, the other returns false). A refund also sets
+  # reversed_at and writes the reversal of the payment's ledger entry, in the same transaction.
   def resolve!(resolution, by:, note: nil)
     raise ArgumentError, "unknown resolution #{resolution.inspect}" unless RESOLUTIONS.include?(resolution.to_s)
 
-    now = Time.current
-    changed = self.class.held.where(id: id).update_all(
-      status: resolution.to_s, resolved_at: now, resolved_by_id: by.id, resolution_note: note.to_s.delete("\u0000").strip.first(NOTE_MAX_LENGTH).presence, updated_at: now
+    transaction do
+      changed = self.class.held.where(id: id).update_all(resolution_columns(resolution.to_s, by, note)) == 1
+      reload if changed
+      record_reversal_in_ledger if changed && refunded?
+      changed
+    end
+  end
+
+  # This payment's entry in the payments ledger, written and linked (ledger_entry_id) the first time. Safe to call
+  # again, and never raises on a row already there: the entry is written with ON CONFLICT DO NOTHING
+  # (PaymentLedgerEntry.record_payment), and linked only while this payment has no entry and no other payment has
+  # that one. nil when it could not be linked; LockerRental::PaymentRecordsCheck reports the payment then.
+  def record_in_ledger
+    return ledger_entry if ledger_entry_id
+
+    entry = PaymentLedgerEntry.record_payment(
+      provider: Payments::ShopifyAdapter::PROVIDER, provider_ref: shopify_order_id, amount: amount
     )
-    reload if changed == 1
-    changed == 1
+    entry if entry && link_ledger_entry(entry)
+  end
+
+  private
+
+  def resolution_columns(resolution, by, note)
+    now = Time.current
+    columns = { status: resolution, resolved_at: now, resolved_by_id: by.id, updated_at: now,
+                resolution_note: note.to_s.delete("\u0000").strip.first(NOTE_MAX_LENGTH).presence }
+    resolution == "refunded" ? columns.merge(reversed_at: now) : columns
+  end
+
+  def link_ledger_entry(entry)
+    linked = self.class.where(id: id, ledger_entry_id: nil)
+                 .where("NOT EXISTS (SELECT 1 FROM locker_payments other WHERE other.ledger_entry_id = ?)", entry.id)
+                 .update_all(ledger_entry_id: entry.id) == 1
+    @attributes.write_from_database("ledger_entry_id", entry.id) if linked
+    linked
+  end
+
+  def record_reversal_in_ledger
+    entry = record_in_ledger
+    PaymentLedgerEntry.record_reversal(entry) if entry
   end
 end

@@ -12,7 +12,7 @@ module Payments
     class Webhook
       HMAC_HEADER = "HTTP_X_SHOPIFY_HMAC_SHA256"
       TOPIC_HEADER = "HTTP_X_SHOPIFY_TOPIC"
-      TOPICS = %w[orders/paid orders/fulfilled].freeze
+      TOPICS = %w[orders/paid orders/fulfilled orders/cancelled].freeze
 
       def initialize(body:, headers:, secrets:)
         @raw_body = body.to_s
