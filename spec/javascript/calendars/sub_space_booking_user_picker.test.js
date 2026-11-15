@@ -48,7 +48,12 @@ beforeEach(async () => {
         pending[decodeURIComponent(url.split("query=")[1])] = resolve;
       }),
   );
-  document.body.innerHTML = `<form><select id="user_booking_select" data-controller="booking-user-picker" data-min-length="3" data-hint="Type at least 3 characters."></select></form>`;
+  document.body.innerHTML = `<form><select id="user_booking_select" data-min-length="3" data-hint="Type at least 3 characters."></select></form>`;
+  await vi.advanceTimersByTimeAsync(0);
+  // Named once the select is on the page: happy-dom reports a select set
+  // through innerHTML as added a second time once Tom Select changes it.
+  document.getElementById("user_booking_select").dataset.controller =
+    "booking-user-picker";
   await vi.advanceTimersByTimeAsync(0);
   picker = document.getElementById("user_booking_select").tomselect;
 });
@@ -56,13 +61,24 @@ beforeEach(async () => {
 afterEach(() => vi.useRealTimers());
 
 describe("admin user picker", () => {
-  it("keeps its one picker when its select is connected again", async () => {
+  it("removes its picker when it disconnects, leaving the plain select", async () => {
     const select = document.getElementById("user_booking_select");
-    const form = select.closest("form");
-    form.append(select);
+    delete select.dataset.controller;
     await vi.advanceTimersByTimeAsync(0);
-    expect(select.tomselect).toBe(picker);
-    expect(form.querySelectorAll(".ts-wrapper")).toHaveLength(1);
+    expect(select.tomselect).toBeUndefined();
+    expect(select.classList).not.toContain("tomselected");
+    expect(document.querySelectorAll(".ts-wrapper")).toHaveLength(0);
+  });
+
+  it("has one picker again when it connects again", async () => {
+    const select = document.getElementById("user_booking_select");
+    delete select.dataset.controller;
+    await vi.advanceTimersByTimeAsync(0);
+    select.dataset.controller = "booking-user-picker";
+    await vi.advanceTimersByTimeAsync(0);
+    expect(select.tomselect).toBeDefined();
+    expect(select.tomselect).not.toBe(picker);
+    expect(document.querySelectorAll(".ts-wrapper")).toHaveLength(1);
   });
 
   it("lists the server's answer for the typed text, matches by username included", async () => {

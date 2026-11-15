@@ -10,7 +10,6 @@ import { newTomSelect } from "../src/tom_select.js";
 //    selection, close or clear) the options are dropped before anything is shown.
 // `score` always 1 keeps Tom Select from filtering the server's matches again by name.
 function userPicker(select) {
-  if (select.tomselect) return; // made by an earlier load of the same page
   const minLength = Number(select.dataset.minLength);
   const hint = select.dataset.hint;
   let answeredQuery = null;
@@ -65,6 +64,11 @@ function userPicker(select) {
 // The admin panel's "Permit Access" user search on its select.
 export default class extends Controller {
   connect() {
-    userPicker(this.element);
+    this.picker = userPicker(this.element);
+  }
+
+  // Also leaves the plain select in the copy Turbo caches of the page.
+  disconnect() {
+    this.picker.destroy();
   }
 }

@@ -11,6 +11,7 @@ export default class extends Controller {
     );
   }
 
+  // Leaves a plain input in the copy Turbo caches, so a restore makes one picker.
   disconnect() {
     this.picker.destroy();
   }
