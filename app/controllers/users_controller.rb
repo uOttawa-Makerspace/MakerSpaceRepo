@@ -48,6 +48,9 @@ class UsersController < SessionsController
 
   before_action :refuse_when_signed_in, only: %i[new create]
 
+  rate_limit(**StaticPagesController::RESET_PASSWORD_RATE_LIMIT, only: :reset_password_confirmation,
+                                                                with: -> { reset_password_throttled })
+
   rate_limit to: 30, within: 1.hour, only: :create, name: 'sign-up-ip',
              by: -> { request.remote_ip }, with: -> { sign_up_throttled }
 
@@ -566,6 +569,12 @@ class UsersController < SessionsController
 
   # The refusal of a password reset before its strength check: a link that does not
   # resolve, then a confirmation mismatch.
+  # The answer of a throttled reset request (StaticPagesController#reset_password).
+  def reset_password_throttled
+    flash.now[:notice] = StaticPagesController::RESET_PASSWORD_NOTICE
+    render 'static_pages/forgot_password'
+  end
+
   def reset_password_alert(user)
     return LINK_EXPIRED_ALERT if user.nil?
 
