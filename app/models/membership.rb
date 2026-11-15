@@ -2,6 +2,7 @@ class Membership < ApplicationRecord
   include ShopifyConcern
   include Checkout
   include Expiry
+  include Deduplication
 
   belongs_to :user
   belongs_to :membership_tier
@@ -9,7 +10,8 @@ class Membership < ApplicationRecord
   enum :status, {
          pending: 'pending',
          paid: 'paid',
-         # Legacy rows may be failed; nothing sets it now. Kept so those rows load.
+         # Legacy rows may be failed. The duplicate checkout cleanup (Membership::Deduplication) marks older duplicate
+         # pending rows failed.
          failed: 'failed',
          # A checkout never paid, closed by Membership::Expiry. Treated like failed everywhere.
          expired: 'expired',

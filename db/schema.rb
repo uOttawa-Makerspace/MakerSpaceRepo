@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_15_130100) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_15_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -925,6 +925,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_130100) do
     t.datetime "updated_at", null: false
     t.index ["locker_size_id"], name: "index_lockers_on_locker_size_id"
     t.index ["specifier"], name: "index_lockers_on_specifier"
+  end
+
+  create_table "membership_duplicate_closures", force: :cascade do |t|
+    t.datetime "closed_at", default: -> { "now()" }, null: false
+    t.bigint "kept_membership_id", null: false
+    t.bigint "membership_id", null: false
+    t.datetime "marked_updated_at", null: false
+    t.string "previous_status", null: false
+    t.datetime "previous_updated_at", null: false
+    t.datetime "restored_at"
+    t.string "shopify_draft_order_id"
+    t.index ["kept_membership_id"], name: "index_membership_duplicate_closures_on_kept_membership_id"
+    t.index ["membership_id"], name: "index_membership_duplicate_closures_open", unique: true, where: "(restored_at IS NULL)"
   end
 
   create_table "membership_tiers", force: :cascade do |t|

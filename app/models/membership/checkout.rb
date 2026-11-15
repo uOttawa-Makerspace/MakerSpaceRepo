@@ -18,13 +18,6 @@ class Membership
     class CheckoutClosed < StandardError; end
 
     class_methods do
-      # Member and tier pairs that have more than one pending membership, as [user_id, tier_id, [membership ids]],
-      # ordered by member, then tier, with the ids ascending. Reads only.
-      def pending_duplicates
-        pending.group(:user_id, :membership_tier_id).having('count(*) > 1').order(:user_id, :membership_tier_id)
-               .pluck(:user_id, :membership_tier_id, Arel.sql('array_agg(id ORDER BY id)'))
-      end
-
       # The Shopify invoice URL that pays the user's pending membership for the tier (made now if there is none).
       # Shopify not answering raises.
       def begin_purchase(user, tier_id)
@@ -35,12 +28,18 @@ class Membership
         claim_pending(user, tier_id).checkout_link
       end
 
+      # The pending membership checkout serves the member for the tier: the oldest (lowest id). Its draft is the link the
+      # member holds, so it is also the row the duplicate cleanup keeps (Membership::Deduplication).
+      def served_pending(user_id, tier_id)
+        pending.where(user_id: user_id, membership_tier_id: tier_id).order(:id).first
+      end
+
       # The user's pending membership for the tier, or a new one. Under the user's row lock, so repeated or
       # simultaneous purchases share one row. A pending membership has no dates: they are set when it is paid. A
       # reused row is touched: buying again is checkout activity, so it is not expired while the member uses it.
       def claim_pending(user, tier_id)
         user.with_lock do
-          existing = user.memberships.pending.where(membership_tier_id: tier_id).order(:id).first
+          existing = served_pending(user.id, tier_id)
           existing&.touch
           existing || user.memberships.create!(membership_tier_id: tier_id)
         end

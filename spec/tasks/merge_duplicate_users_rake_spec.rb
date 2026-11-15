@@ -459,4 +459,115 @@ RSpec.describe "users:merge_duplicates" do
     merge
     expect(key.reload.supervisor_id).to eq(other.id)
   end
+
+  describe "pending checkouts for the same tier on both accounts" do
+    include ShopSpecHelpers
+
+    let!(:fake) { stub_shopify_admin! }
+    let(:tier) { create(:membership_tier) }
+    let(:other_tier) { create(:membership_tier, title_en: "Other tier") }
+
+    def pending(user, tier_for = tier, draft:)
+      create(:membership, user: user, membership_tier: tier_for, status: "pending", start_date: nil, end_date: nil,
+                          shopify_draft_order_id: draft, updated_at: 2.days.ago)
+    end
+
+    def merge_with_checkouts
+      send(:close_pending_conflicts, primary, duplicate)
+      merge
+    end
+
+    it "keeps the kept user's row, closes the duplicate's like the cleanup does, moves the rest and deletes nothing" do
+      kept = pending(primary, draft: "gid://shopify/DraftOrder/1")
+      closed = pending(duplicate, draft: "gid://shopify/DraftOrder/2")
+      moved = pending(duplicate, other_tier, draft: "gid://shopify/DraftOrder/3")
+      count = Membership.count
+
+      merge_with_checkouts
+
+      expect(fake.deleted_ids).to eq(["gid://shopify/DraftOrder/2"])
+      expect(Membership.count).to eq(count)
+      expect(closed.reload).to have_attributes(user_id: primary.id, status: "failed")
+      expect([kept.reload, moved.reload].map { |m| [m.user_id, m.status] }).to eq([[primary.id, "pending"], [primary.id, "pending"]])
+      expect(Membership::DuplicateClosure.find_by!(membership_id: closed.id)).to have_attributes(kept_membership_id: kept.id, restored_at: nil)
+      expect(User.unscoped.exists?(duplicate.id)).to be(false)
+    end
+
+    it "refuses the merge when the duplicate's draft is paid, changing nothing" do
+      pending(primary, draft: "gid://shopify/DraftOrder/1")
+      paid = pending(duplicate, draft: "gid://shopify/DraftOrder/2")
+      fake.draft_statuses["gid://shopify/DraftOrder/2"] = "COMPLETED"
+
+      expect { merge_with_checkouts }.to raise_error(UserMergeRefused, %r{memberships rows #{paid.id} .*Shopify draft gid://shopify/DraftOrder/2 is paid})
+
+      expect(fake.deleted_ids).to be_empty
+      expect(paid.reload).to have_attributes(user_id: duplicate.id, status: "pending")
+      expect(Membership::DuplicateClosure.count).to eq(0)
+      expect(User.unscoped.exists?(duplicate.id)).to be(true)
+    end
+
+    it "lets memberships:restore_duplicate_closures put the closed row back, as it was, on the kept user" do
+      pending(primary, draft: "gid://shopify/DraftOrder/1")
+      closed = pending(duplicate, draft: "gid://shopify/DraftOrder/2")
+      before = closed.reload.attributes.except("user_id")
+      merge_with_checkouts
+      ActiveRecord::Base.connection.remove_index(:memberships, name: Membership::DuplicateClosure::PENDING_UNIQUE_INDEX, if_exists: true)
+      stub_const("ENV", ENV.to_h.merge("CONFIRM_MAX_RESTORES" => "1"))
+
+      Rake::Task["memberships:restore_duplicate_closures"].reenable
+      Rake::Task["memberships:restore_duplicate_closures"].invoke("apply")
+
+      expect(closed.reload.attributes.except("user_id")).to eq(before)
+      expect(closed.user_id).to eq(primary.id)
+      expect(Membership::DuplicateClosure.find_by!(membership_id: closed.id).restored_at).to be_present
+    end
+
+    it "lists the closed rows in the summary even when the pair is then refused, with a plain paid-draft note" do
+      pending(primary, draft: "gid://shopify/DraftOrder/1")
+      pending(primary, other_tier, draft: "gid://shopify/DraftOrder/3")
+      closed = pending(duplicate, draft: "gid://shopify/DraftOrder/2")
+      paid = pending(duplicate, other_tier, draft: "gid://shopify/DraftOrder/4")
+      fake.draft_statuses["gid://shopify/DraftOrder/4"] = "COMPLETED"
+      merged = []
+      skipped = []
+
+      send(:merge_users_into_one, [duplicate, primary], merged, skipped)
+      send(:print_merge_summary, merged, skipped)
+
+      expect(merged).to be_empty
+      expect($stdout.string).to include("skipped: user #{duplicate.id} into #{primary.id} (memberships rows #{paid.id} is a pending checkout " \
+                                        "with a paid draft); pending memberships closed (restorable): #{closed.id}")
+      expect(closed.reload).to be_failed
+      expect(paid.reload).to be_pending
+    end
+
+    it "refuses the pair, and goes on, when Shopify fails while a draft is closed" do
+      pending(primary, draft: "gid://shopify/DraftOrder/1")
+      row = pending(duplicate, draft: "gid://shopify/DraftOrder/2")
+      fake.status = 500
+      skipped = []
+
+      send(:merge_users_into_one, [duplicate, primary], [], skipped)
+
+      expect(skipped).to contain_exactly(include(table: "memberships", row_ids: [row.id], note: match(/Shopify failed/)))
+      expect(row.reload).to have_attributes(status: "pending", user_id: duplicate.id)
+      expect(User.unscoped.exists?(duplicate.id)).to be(true)
+    end
+
+    it "leaves the duplicate's row pending when the kept user's row vanished before it could be closed" do
+      kept = pending(primary, draft: "gid://shopify/DraftOrder/1")
+      row = pending(duplicate, draft: "gid://shopify/DraftOrder/2")
+      # The kept row is closed elsewhere between finding the conflict and closing it.
+      allow(Membership).to receive(:served_pending).and_wrap_original do |original, user_id, tier_id|
+        kept.update_columns(status: "expired") if user_id == primary.id
+        original.call(user_id, tier_id)
+      end
+
+      merge_with_checkouts
+
+      expect(fake.calls).to be_empty
+      expect(row.reload).to have_attributes(status: "pending", user_id: primary.id)
+      expect($stdout.string).to include("Pending membership #{row.id} of the duplicate, closed in favour of the kept user's: vanished")
+    end
+  end
 end
