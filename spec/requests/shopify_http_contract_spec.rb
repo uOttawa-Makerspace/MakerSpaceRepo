@@ -19,7 +19,7 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
   it "runs against the fake Shopify credentials, never the real token" do
     expect(Rails.application.credentials.dig(:test, :shopify, :password) == "shpat_test_fake").to be(true) # boolean: a failure must not print the real token
     expect(Rails.application.credentials[:test][:shopify][:password] == "shpat_test_fake").to be(true)
-    expect(ShopifyAPI::Context.api_version).to eq("2025-01")
+    expect(ShopifyAPI::Context.api_version).to eq("2026-10")
     expect(ShopifyAPI::Context.active_session.access_token == "shpat_test_fake").to be(true)
     expect(ShopifyAPI::Context.active_session.shop).to eq("fake-shop.myshopify.com")
   end
@@ -207,7 +207,7 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
 
     it "reads the homepage collections from the makerspace store with the access token only" do
       seen = []
-      stub_request(:post, "https://uottawa-makerspace.myshopify.com/admin/api/2025-01/graphql.json")
+      stub_request(:post, "https://uottawa-makerspace.myshopify.com/admin/api/2026-10/graphql.json")
         .with { |req| seen << { body: JSON.parse(req.body), token: req.headers["X-Shopify-Access-Token"] } }
         .to_return(status: 200, headers: ShopifyHttpHelpers::JSON_HEADERS, body: { data: { collections: { nodes: [
                      { id: "gid://shopify/Collection/1", handle: "kits", title: "Kits", image: { url: "https://cdn.example.test/k.png" } }
@@ -220,7 +220,7 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
     end
 
     it "shows no homepage collections when the store answers with anything but 200" do
-      stub_request(:post, "https://uottawa-makerspace.myshopify.com/admin/api/2025-01/graphql.json")
+      stub_request(:post, "https://uottawa-makerspace.myshopify.com/admin/api/2026-10/graphql.json")
         .to_return(status: 202, headers: ShopifyHttpHelpers::JSON_HEADERS, body: { data: { collections: { nodes: [{ title: "Kits" }] } } }.to_json)
       expect(StaticPagesController.new.send(:home_makerstore_links)).to eq([])
     end
@@ -345,8 +345,8 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
       expect(membership_for_checkout.checkout_link).to eq(invoice_url)
 
       expect(creates.size).to eq(1)
-      expect(creates.first[:url]).to eq("https://fake-shop.myshopify.com/admin/api/2025-01/graphql.json")
-      expect(ShopifyAPI::Context.api_version).to eq("2025-01")
+      expect(creates.first[:url]).to eq("https://fake-shop.myshopify.com/admin/api/2026-10/graphql.json")
+      expect(ShopifyAPI::Context.api_version).to eq("2026-10")
     end
 
     it "heals a failed boot setup: the next draft order still goes to the versioned URL" do
@@ -361,7 +361,7 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
 
       creates = stub_draft_order_create(draft_id, invoice_url: invoice_url)
       expect(membership_for_checkout.checkout_link).to eq(invoice_url)
-      expect(creates.first[:url]).to eq("https://fake-shop.myshopify.com/admin/api/2025-01/graphql.json")
+      expect(creates.first[:url]).to eq("https://fake-shop.myshopify.com/admin/api/2026-10/graphql.json")
     end
 
     it "a missing api_key reports and does not raise at boot" do

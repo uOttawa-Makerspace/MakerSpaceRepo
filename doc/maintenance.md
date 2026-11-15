@@ -303,6 +303,20 @@ Verify afterwards (read only): `SELECT status, count(*) FROM payment_checkouts G
 
 Reversible: rolling back removes exactly the recorded checkouts and ledger entries and clears the links, then drops the new columns, the tables, the trigger and its function. It refuses, changing nothing, if a recorded row changed since, and the table and column migrations refuse while anything not written by the copy is left in them (export and settle those rows first).
 
+### Deploy step: Shopify Admin API version
+
+The app sends every Shopify Admin GraphQL request to `/admin/api/<version>/graphql.json`, and the version comes only from the credential `production.shopify.api_version` (`staging.`, `development.` and `test.` for the other environments) in `config/credentials.yml.enc`. Specs use their own fake value, `2026-10`. `web` and `worker` log the value at boot as `[shopify_context] Shopify Admin API version <version>`.
+
+Shopify supports each version for a year. A request for a version it no longer supports is answered with the oldest version it still supports, and the `X-Shopify-API-Version` response header shows which one answered. The release that moves to 2026-10 changes no query and no mutation text: every field the app reads and writes exists, not deprecated, in 2026-10, and none was removed in 2026-04, 2026-07 or 2026-10. The membership line item now sends its price as `originalUnitPriceWithCurrency` (amount and `CAD`, as the locker and job order line items already do), in place of the deprecated `originalUnitPrice`. The amount charged does not change, because the store's currency is CAD.
+
+Order:
+
+1. Deploy the release with the current credential. It works on the current version and on 2026-10.
+2. Then change the credential: `bin/rails credentials:edit`, set `api_version: "2026-10"` under `production.shopify` (and under `staging.shopify` and `development.shopify`), save, and deploy again so `web` and `worker` restart with it. The value must be one the `shopify_api` gem lists in `ShopifyAPI::AdminVersions::SUPPORTED_ADMIN_VERSIONS`; any other value makes the Shopify setup fail at boot, and every Shopify call then fails with `ShopifyContext::NotConfigured`.
+3. Check the boot log line in both containers (`docker compose -f docker-compose.production.yml logs web worker | grep "Shopify Admin API version"`) and pay one test draft order.
+
+To go back, set the old value again and restart.
+
 ### Failed and overdue job alerts
 
 The `job_alerts` task (`JobAlertJob`, every 5 minutes, production and staging) mails the maintenance address (the one set on the printer issues page, `Setting.maintenance_email`) when a background job needs attention. It reports, once each:

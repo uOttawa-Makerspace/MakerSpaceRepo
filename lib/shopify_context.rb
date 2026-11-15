@@ -49,6 +49,17 @@ module ShopifyContext
 
   REQUIRED_KEYS = %i[api_key password shop_name api_version].freeze
 
+  # The Admin API version the credentials give (credentials.<env>.shopify.api_version); "" when it is not set.
+  # Every request goes to /admin/api/<this version>/graphql.json.
+  def self.configured_api_version
+    (Rails.application.credentials.dig(Rails.env.to_sym, :shopify) || {})[:api_version].to_s
+  end
+
+  # Logs the configured Admin API version (the boot initializer calls it).
+  def self.log_api_version
+    Rails.logger.info("[shopify_context] Shopify Admin API version #{configured_api_version.presence || '(not set)'}")
+  end
+
   # Makes sure the Context is set up. Never raises: a failure is logged (and reported in
   # production/staging) and this returns false.
   def self.ensure_setup!

@@ -13,7 +13,7 @@ module ShopifyHttpHelpers
   # logs. Every example sees these values instead (see the before hook below), and the
   # real credential is never read, asserted against or printed.
   FAKE_SHOPIFY_CONFIG = {
-    shop_name: "fake-shop", api_key: "fake_api_key", password: "shpat_test_fake", api_version: "2025-01"
+    shop_name: "fake-shop", api_key: "fake_api_key", password: "shpat_test_fake", api_version: "2026-10"
   }.freeze
 
   def shopify_test_config
