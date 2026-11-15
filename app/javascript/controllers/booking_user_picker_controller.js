@@ -67,8 +67,9 @@ export default class extends Controller {
     this.picker = userPicker(this.element);
   }
 
-  // Also leaves the plain select in the copy Turbo caches of the page.
+  // Also leaves the plain select in the copy Turbo caches of the page. There is no
+  // picker to remove when connect() could not build one.
   disconnect() {
-    this.picker.destroy();
+    this.picker?.destroy();
   }
 }
