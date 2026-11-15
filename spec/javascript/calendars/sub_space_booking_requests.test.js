@@ -310,6 +310,21 @@ describe("the answer to a save", () => {
     },
   );
 
+  it.each([
+    ["Recurring Choose an end date.", "book-recurring", "Choose an end date."],
+    ["Start time is in the past", "book-start", "time is in the past"],
+  ])(
+    "an error coded %s marks the field of that name",
+    async (error, field, text) => {
+      const cal = await book(json(422, { errors: [error] }));
+      expect(feedback()).toEqual([[field, text]]);
+      expect($(field).classList.contains("is-invalid")).toBe(true);
+      expect(modalOpen()).toBe(true);
+      expect(toasts).toHaveLength(0);
+      expect(cal.refetched).toBe(0);
+    },
+  );
+
   it("does nothing more for an empty error list", async () => {
     const cal = await book(json(422, { errors: [] }));
     expect(modalOpen()).toBe(true);

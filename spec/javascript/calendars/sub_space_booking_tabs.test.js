@@ -81,6 +81,14 @@ describe("tab routing", () => {
     expect(activeButtons()).toEqual(["booking-admin-tab-btn"]);
   });
 
+  it("finds the tab of a button without a target from the button's id", async () => {
+    await load("http://localhost/sub_space_booking");
+    const button = document.getElementById("booking-tab-btn");
+    button.removeAttribute("data-bs-target");
+    button.click();
+    expect(active()).toEqual(["booking-tab"]);
+  });
+
   it("re-reads the address after a Turbo render", async () => {
     await load("http://localhost/sub_space_booking");
     window.happyDOM.setURL("http://localhost/sub_space_booking#booking-tab");
