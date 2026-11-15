@@ -2,8 +2,9 @@ import "flatpickr";
 import { DATE_TIME, flatpickrOptions } from "../src/page_locale.js";
 import { newTomSelect } from "../src/tom_select.js";
 
-// The calendar, its modal and toast, the recurring approval and the select-all
-// boxes are Stimulus controllers; what stays here has no controller of its own.
+// The calendar, its modal and toast, the tabs, the recurring approval and the
+// select-all boxes are Stimulus controllers; what stays here has no controller
+// of its own.
 
 // The admin user picker. The server does the matching (name or username, at least `minLength`
 // characters), and the list always obeys one rule: it holds only the server's answer for exactly the text
@@ -86,87 +87,3 @@ document.addEventListener("turbo:load", function () {
       ?.flatpickr(flatpickrOptions(document, DATE_TIME, "date_time")),
   );
 });
-
-// ─── Tab routing (turbo:render + initial load) ────────────────────────────────
-
-function makeActive(tab, param) {
-  let tabContent = document.getElementById(tab);
-  let tabButton = document.getElementById(tab + "-btn");
-  let tabButtons = document.getElementsByClassName("nav-link");
-  if (!(tabContent && tabButton && tabButtons)) {
-    return;
-  }
-  [...tabButtons].forEach((button) => {
-    button.classList.remove("active");
-  });
-  tabButton.classList.add("active");
-  let tabContents = document.getElementsByClassName("tab-pane");
-  [...tabContents].forEach((content) => {
-    content.classList.remove("active");
-    content.classList.remove("show");
-  });
-  tabContent.classList.add("active");
-  tabContent.classList.add("show");
-
-  if (param && tab === "booking-admin-tab") {
-    let table = document.getElementById(param);
-    // SAFETY CHECK: Prevents JS from crashing if the ID isn't found
-    if (table) {
-      table.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-        inline: "nearest",
-      });
-      window.scrollBy(
-        0,
-        -7 * parseFloat(getComputedStyle(document.documentElement).fontSize),
-      );
-    }
-  }
-}
-
-function ready() {
-  const anchor = window.location.hash.replace("#", "");
-  const params = new URLSearchParams(window.location.search);
-
-  const paramToSection = {
-    pending_page: "pendingBody",
-    approved_page: "approvedBody",
-    denied_page: "declinedBody",
-    old_pending_page: "pastPendingBody",
-    old_approved_page: "pastApprovedBody",
-    old_denied_page: "pastDeclinedBody",
-  };
-
-  let scrollTarget = null;
-  for (const [key, sectionId] of Object.entries(paramToSection)) {
-    if (params.has(key)) {
-      scrollTarget = sectionId;
-      break;
-    }
-  }
-
-  if (anchor) {
-    makeActive(anchor, null);
-  } else if (scrollTarget) {
-    makeActive("booking-admin-tab", scrollTarget);
-  } else {
-    makeActive("booking-calendar-tab", null);
-  }
-}
-
-// Wire up tab buttons (outside turbo:load so they survive re-renders)
-document.querySelectorAll(".tab-link").forEach((btn) => {
-  btn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // id is e.g. "booking-calendar-tab-btn" → target is "booking-calendar-tab"
-    const target =
-      btn.getAttribute("data-bs-target")?.replace("#", "") ??
-      btn.id.replace("-btn", "");
-    makeActive(target, null);
-  });
-});
-
-document.addEventListener("turbo:render", ready);
-ready();

@@ -3,10 +3,8 @@
 require "rails_helper"
 
 # Which booking tab opens on each way of reaching the page, and how a tab click
-# shows its pane. Bootstrap's tab plugin handles every click. On the page the
-# browser loaded in full, the page script also shows the clicked pane at once,
-# so it appears without Bootstrap's fade; on a page Turbo rendered later in the
-# same document the pane fades in.
+# shows its pane: Bootstrap's tab plugin handles every click and fades the pane
+# in, on a full page load and on a page Turbo renders later alike.
 RSpec.describe "Sub-space booking: tabs", :booking_clock, type: :system do
   before do
     create(:booking_status, :pending)
@@ -41,12 +39,6 @@ RSpec.describe "Sub-space booking: tabs", :booking_clock, type: :system do
     JS
   end
 
-  def expect_click_shows_at_once
-    expect(pane_classes_on_click.split).to include("active", "show")
-    expect_open("booking-tab")
-    expect(page).to have_css("#booking-tab-btn[aria-selected='true']")
-  end
-
   def expect_click_fades_in
     classes = pane_classes_on_click.split
     expect(classes).to include("active", "fade")
@@ -56,10 +48,10 @@ RSpec.describe "Sub-space booking: tabs", :booking_clock, type: :system do
   end
 
   describe "on a full page load", js: true, skip_bullet: true do
-    it "opens Book Room and shows a clicked tab at once" do
+    it "opens Book Room and fades a clicked tab in" do
       log_in_as(admin, to: booking_path)
       expect_open("booking-calendar-tab")
-      expect_click_shows_at_once
+      expect_click_fades_in
     end
 
     it "opens the tab of the anchor, which wins over a page parameter" do
