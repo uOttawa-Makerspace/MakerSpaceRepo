@@ -38,7 +38,7 @@ Instructions for anyone, human or AI agent, changing this repository. MakerRepo 
 
 ## Tests
 
-- Run the whole suite in parallel: `bundle exec rake parallel:setup` once, then `bin/parallel_rspec`. CI runs `CI=1 COVERAGE=1 bin/parallel_rspec`.
+- Run the whole suite in parallel: `bundle exec rake parallel:setup` once, then `bin/parallel_rspec`. CI runs `CI=1 COVERAGE=1 bin/parallel_rspec` split into three shards (`SPEC_SHARD=1/3` to `3/3`) and merges their coverage; see `doc/maintenance.md`.
 - Run targeted specs with `bundle exec rspec <paths>`.
 - JavaScript: `yarn test:js`, `yarn lint:js`, `yarn typecheck:js`. ERB: `bin/erb-lint`.
 - Security checks CI also runs: `bundle exec brakeman -w2`, `bundle exec bundle-audit check --update`, `bundle exec ruby-audit check`.
