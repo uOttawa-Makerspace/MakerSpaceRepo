@@ -112,6 +112,12 @@ class LockerRental
     # there already]. That is the open checkout it has (another request's, or a claim an earlier attempt left), the
     # stored draft when no checkout record names it yet (it opens its checkout, as storing it does), or else a new
     # claim with no draft. nil when the rental may no longer take a draft.
+    #
+    # Two first views at the same moment can race: the second finds the first's claim (so it looks up the tag, and
+    # Shopify may not list the first's draft yet), creates a second draft, and #take_draft discards it because the claim
+    # already has the first's draft. This is tolerated: the one claim stays the only checkout the link is served from,
+    # the extra draft is deleted at once (or by the hourly sweep if that delete fails), and serialising the Shopify call
+    # would hold the row lock across HTTP.
     def claim_checkout
       with_lock do
         next nil unless may_take_draft_order?
@@ -127,12 +133,16 @@ class LockerRental
 
     # Opens the checkout of the stored draft when no checkout record names it (call it under the row lock).
     def open_unrecorded_draft
-      open_checkout if unrecorded_draft? && open_checkout_record(shopify_draft_order_id)
+      return unless unrecorded_draft?
+
+      open_checkout_record(shopify_draft_order_id)
+      open_checkout
     end
 
     # Makes the claim's draft on Shopify (no lock held), tagged with the claim's id. A claim that was there already
     # first looks for an open draft with that tag (made by an attempt that stopped before the claim took it) and
-    # reuses it. Then the claim takes the draft (#take_draft) or the draft is removed again.
+    # reuses it. Then the claim takes the draft (#take_draft) or the draft is removed again (two first views racing:
+    # see #claim_checkout).
     def draft_claimed_checkout(claim, retried)
       adapter = Payments::ShopifyAdapter.new
       reference = Payments::Reference.new(kind: shopify_draft_order_key_name, record_id: id, checkout_id: claim.id)

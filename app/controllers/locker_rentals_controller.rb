@@ -252,11 +252,8 @@ class LockerRentalsController < SessionsController
     @locker_product_info = LockerOption.locker_product_info || { variants: {} }
   end
 
-  # Everything here runs on the row locked FOR UPDATE and reloaded: the guards, the save and the settlement of
-  # held payments all see the CURRENT state (a webhook payment may have activated or the other staff member
-  # cancelled it since this page was rendered), and a concurrent webhook waits for the commit. Returns the
-  # outcome: :saved, :invalid or :not_renewable. Locked and reloaded first, so renewable? and the save see the current
-  # row; the renewal voids last term's open checkout in the same transaction.
+  # Locked and reloaded, then the renewal voids last term's open checkout in the same transaction.
+  # Returns :saved, :invalid or :not_renewable.
   def renew_under_lock
     LockerRental.transaction do
       @locker_rental.lock!
@@ -268,8 +265,11 @@ class LockerRentalsController < SessionsController
     end
   end
 
-  # outcome: :stale, :state_refused, :saved or :invalid. A save that starts a new term voids last term's open checkout,
-  # and assigning the rental active settles a held payment, in the same transaction.
+  # Everything here runs on the row locked FOR UPDATE and reloaded: the guards, the save and the settlement of
+  # held payments all see the CURRENT state (a webhook payment may have activated or the other staff member
+  # cancelled it since this page was rendered), and a concurrent webhook waits for the commit. A save that starts a
+  # new term voids last term's open checkout in the same transaction. Returns the outcome: :stale, :state_refused,
+  # :saved or :invalid.
   def update_under_lock
     LockerRental.transaction do
       @locker_rental.lock!

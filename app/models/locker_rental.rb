@@ -653,8 +653,8 @@ class LockerRental < ApplicationRecord
     end
   end
 
-  # THE place a link is served from: fetch the open checkout's draft `gid`, classify it, serve it only when payable. The url, nil
-  # (no link; #checkout_state says why) or :gone (Shopify no longer has it).
+  # THE place a link is served from: fetch the open checkout's draft `gid`, classify it, serve it only when payable.
+  # The url, nil (no link; #checkout_state says why) or :gone (Shopify no longer has it).
   #   payable (OPEN, INVOICE_SENT)  the invoice url
   #   COMPLETED                     the payment was received and is being processed (webhook lag, or a held payment):
   #                                 no link, never a second invoice, never deleted
@@ -678,7 +678,8 @@ class LockerRental < ApplicationRecord
   end
 
   # Reported once per draft per day. The throttle only ever skips a report it has seen recorded: a cache that cannot
-  # be read or written reports every time.
+  # be read or written reports every time. Two views at the same moment can both report (read, then write): a duplicate
+  # report is the price of never losing one when the cache fails.
   def report_unknown_draft_status(gid, draft)
     key = "locker_unknown_draft_status:#{gid}"
     return if Rails.cache.read(key)

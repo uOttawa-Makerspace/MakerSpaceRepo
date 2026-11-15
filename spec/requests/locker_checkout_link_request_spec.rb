@@ -96,6 +96,48 @@ RSpec.describe "Locker checkout link", type: :request do
       expect(checkouts(rental)).to eq([[old_id, "open"]])
     end
 
+    it "a retried claim whose lookup fails creates nothing, reports, and keeps the claim" do
+      claim = claim!(rental)
+      fake.on_query = ->(query, _) { raise Errno::ECONNRESET if query.include?("paymentsOpenCheckout") }
+      reports = []
+      allow(Rails.error).to receive(:report) { |error, **| reports << error }
+
+      expect(rental.checkout_link).to be_nil
+      expect(rental.checkout_state).to eq(:unavailable)
+      expect(reports).to contain_exactly(be_a(Errno::ECONNRESET))
+      expect(fake.created_ids).to be_empty
+      expect(PaymentCheckout.where(reference: rental).pluck(:id, :provider_id, :status)).to eq([[claim.id, nil, "open"]])
+    end
+
+    it "an error inside the lock that takes the draft leaves the claim without it, the draft at Shopify, and no stored id" do
+      allow_any_instance_of(LockerRental).to receive(:store_shopify_draft_order_id).and_raise(RuntimeError, "write failed")
+      reports = []
+      allow(Rails.error).to receive(:report) { |error, **| reports << error.message }
+
+      expect(rental.checkout_link).to be_nil
+      expect(reports).to eq(["write failed"])
+      expect(checkouts(rental)).to eq([[nil, "open"]]) # the claim's update rolled back with the failed write
+      expect(fake.created_ids).to eq([new_id])
+      expect(fake.deleted_ids).to be_empty # left for the next attempt, which finds it by its tag
+      expect(rental.reload.shopify_draft_order_id).to be_nil
+    end
+
+    it "an open claim left on a rental that is cancelled or active serves nothing, asks Shopify nothing, and is not reported" do
+      claim = claim!(rental)
+      check_adapter = instance_double(Payments::ShopifyAdapter)
+      reports = []
+      allow(Rails.error).to receive(:report) { |error, **| reports << error }
+
+      %w[cancelled active].each do |state|
+        LockerRental.where(id: rental.id).update_all(state: state, cancelled_at: (Time.current if state == "cancelled"))
+        expect(LockerRental.find(rental.id).checkout_link).to be_nil
+      end
+      expect(LockerRental::PaymentRecordsCheck.run(adapter: check_adapter)).to eq({})
+      expect(fake.calls).to be_empty
+      expect(reports).to be_empty
+      expect(claim.reload).to have_attributes(status: "open", provider_id: nil)
+    end
+
     it "a rental cancelled since it was loaded claims nothing and asks Shopify nothing" do
       stale = LockerRental.find(rental.id)
       LockerRental.where(id: rental.id).update_all(state: "cancelled", cancelled_at: Time.current)
