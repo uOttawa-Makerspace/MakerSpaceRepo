@@ -31,6 +31,9 @@ export function dataTableOptions(target, options = {}) {
 // date_time), which the page's language words.
 const FLATPICKR_LOCALES = { fr: { ...French, firstDayOfWeek: 0 } };
 
+// A date and time picker on the 24-hour clock; flatpickrOptions copies these.
+export const DATE_TIME = { enableTime: true, time_24hr: true, altInput: true };
+
 export function flatpickrOptions(target, options = {}, altFormat = null) {
   const locale = FLATPICKR_LOCALES[pageLanguage(target)] ?? "default";
   const format = widgetTexts(target).flatpickr?.[altFormat];

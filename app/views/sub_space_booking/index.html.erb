@@ -2,7 +2,7 @@
 <section class="container-fluid mt-4">
   <!-- Toast Container -->
   <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1060">
-    <div id="booking_toast" role="alert" aria-live="assertive" aria-atomic="true" class="toast text-bg-danger border-0 shadow" data-bs-autohide="true" data-bs-delay="5000"
+    <div id="booking_toast" data-controller="booking-toast" role="alert" aria-live="assertive" aria-atomic="true" class="toast text-bg-danger border-0 shadow" data-bs-autohide="true" data-bs-delay="5000"
          data-failed-title="<%= t('errors.bookings.js.failed_title') %>"
          data-updated-title="<%= t('errors.bookings.js.updated_title') %>"
          data-partly-done-title="<%= t('errors.bookings.js.partly_done_title') %>"
@@ -11,10 +11,10 @@
          data-unavailable-title="<%= t('errors.bookings.js.unavailable_title') %>"
          data-unavailable="<%= t('errors.bookings.js.unavailable') %>">
       <div class="toast-header text-bg-danger border-bottom border-danger-subtle">
-        <strong id="toast_title" class="me-auto fw-bold"><i class="fa fa-exclamation-triangle"></i> Error</strong>
+        <strong id="toast_title" data-booking-toast-target="title" class="me-auto fw-bold"><i class="fa fa-exclamation-triangle"></i> Error</strong>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="<%= t('common.close') %>"></button>
       </div>
-      <div id="toast_text" class="toast-body fs-6"></div>
+      <div id="toast_text" data-booking-toast-target="text" class="toast-body fs-6"></div>
     </div>
   </div>
 
@@ -61,7 +61,7 @@
                   <% end %>
                 </div>
                 <div class="col-md-10">
-                  <div id="booked-calendar" class="bg-body p-2 rounded" <%= tag.attributes(data: calendar_texts_data) %>></div>
+                  <div id="booked-calendar" class="bg-body p-2 rounded" <%= tag.attributes(data: calendar_texts_data.merge(controller: "booking-calendar", booking_calendar_booking_modal_outlet: "#bookModal", booking_calendar_booking_toast_outlet: "#booking_toast")) %>></div>
                 </div>
               </div>
               <%= render partial: 'book_modal' %>
