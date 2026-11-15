@@ -760,10 +760,10 @@ class SubSpaceBookingController < SessionsController
   end
 
   def feed_title(booking)
-    return "Space Blocked" if blocked_for_viewer?(booking)
+    return t("sub_space_booking.feed.blocked") if blocked_for_viewer?(booking)
 
-    title = details_visible?(booking) ? "#{booking.name} - #{booking.description}" : "Space Booked"
-    title += " (Pending)" if booking.pending?
+    title = details_visible?(booking) ? "#{booking.name} - #{booking.description}" : t("sub_space_booking.feed.booked")
+    title = t("sub_space_booking.feed.pending", title: title) if booking.pending?
     owner = feed_owner_name(booking)
     title += " - #{owner}" if owner
     title

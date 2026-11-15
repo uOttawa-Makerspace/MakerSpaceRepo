@@ -504,7 +504,8 @@ function setUpBookingCalendar(bookedCalendarEl) {
   }
 
   // "<Type> <message>": a booking rule (duration, slot) is a toast that closes
-  // the modal; anything else marks the field "book-<type>" once.
+  // the modal; an error about a field marks the field "book-<type>" once; any
+  // other error (a refused block) is a toast that keeps the modal open.
   function showError(error) {
     const [type, ...rest] = error.split(" ");
     const message = rest.join(" ");
@@ -515,7 +516,11 @@ function setUpBookingCalendar(bookedCalendarEl) {
       return;
     }
     const field = document.getElementById("book-" + type.toLowerCase());
-    if (!field || field.classList.contains("is-invalid")) return;
+    if (!field) {
+      showToast(bookingText("failedTitle"), error);
+      return;
+    }
+    if (field.classList.contains("is-invalid")) return;
     const feedback = document.createElement("div");
     feedback.className = "invalid-feedback";
     feedback.innerText = message || error;

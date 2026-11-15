@@ -1,4 +1,4 @@
-import { addInputRow } from "../src/input_rows.js";
+import { bindInputRows } from "../src/input_rows.js";
 import { oncePerElement, onEveryPageLoad } from "../src/on_page.js";
 import { tomSelectFor } from "../src/tom_select.js";
 import "../src/file_upload.js";
@@ -86,26 +86,6 @@ const bindSubmitChecks = oncePerElement((form) =>
     }
   }),
 );
-
-// The add buttons of the file and photo inputs: each adds another input row
-// with a button that removes it.
-const bindAddInputRow = oncePerElement((addButton) =>
-  addButton.addEventListener("click", () => addInputRow(addButton)),
-);
-
-// The remove buttons of the added input rows, listened to on the rows' parent,
-// so the rows of a page Turbo restores from its cache can be removed too.
-const bindRemoveInputRow = oncePerElement((rows) =>
-  rows.addEventListener("click", (event) => {
-    const remove = event.target.closest(".input-group > .btn-danger");
-    if (remove && rows.contains(remove)) remove.parentElement.remove();
-  }),
-);
-
-function bindInputRows(addButton) {
-  bindAddInputRow(addButton);
-  bindRemoveInputRow(addButton?.parentElement.parentElement);
-}
 
 // The links saved with the proposal, shown as link fields. A page Turbo
 // restores from its cache already shows them, so they are added only to an

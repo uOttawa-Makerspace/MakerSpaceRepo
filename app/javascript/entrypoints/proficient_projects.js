@@ -1,5 +1,5 @@
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
-import { addInputRow } from "../src/input_rows.js";
+import { bindInputRows } from "../src/input_rows.js";
 import { oncePerElement, onEveryPageLoad } from "../src/on_page.js";
 import { pageTable } from "../src/page_table.js";
 // Colours each status button by its status.
@@ -57,26 +57,6 @@ const bindImageRemove = oncePerElement((el) => {
     el.parentElement.remove();
   });
 });
-
-// The add button of a file or photo input: each click adds another input row
-// with a button that removes it.
-const bindAddInputRow = oncePerElement((addButton) =>
-  addButton.addEventListener("click", () => addInputRow(addButton)),
-);
-
-// The remove buttons of the added input rows, listened to on the rows' parent,
-// so the rows of a page Turbo restores from its cache can be removed too.
-const bindRemoveInputRow = oncePerElement((rows) =>
-  rows.addEventListener("click", (event) => {
-    const remove = event.target.closest(".input-group > .btn-danger");
-    if (remove && rows.contains(remove)) remove.parentElement.remove();
-  }),
-);
-
-function bindInputRows(addButton) {
-  bindAddInputRow(addButton);
-  bindRemoveInputRow(addButton?.parentElement.parentElement);
-}
 
 onEveryPageLoad(() => {
   [...document.getElementsByClassName("pp-status-button")].forEach(

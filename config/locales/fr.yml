@@ -380,6 +380,11 @@ fr:
       staff_required: "Vous devez être administrateur ou membre du personnel pour voir cette page."
       admin_required: "Vous devez être administrateur pour voir cette page."
       owner_required: "Vous devez être le propriétaire de cette réservation ou un administrateur pour la supprimer."
+    # Titles of the booking calendar's entries; %{title} = the entry's title
+    feed:
+      blocked: "Espace bloqué"
+      booked: "Espace réservé"
+      pending: "%{title} (en attente)"
     access_status:
       none: "Vous n'avez pas encore demandé l'accès aux réservations."
       pending: "Votre demande est en attente depuis le %{date}."

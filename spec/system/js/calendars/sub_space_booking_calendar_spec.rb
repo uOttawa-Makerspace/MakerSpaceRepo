@@ -237,6 +237,23 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(page).to have_no_css("#bookModal.show", visible: :all)
       expect(SubSpaceBooking.find_by!(name: "Closed").blocking).to be(true)
     end
+
+    # The browser logs the 403 itself, inside this example.
+    it "shows the server's reason in a toast when a block is refused, and keeps the modal open", js: true, skip_bullet: true,
+                                                                                                 js_errors: :allow do
+      open_calendar(admin)
+      open_book_modal
+      fill_booking(name: "Closed")
+      check "book-blocking"
+      admin.update!(role: "regular_user") # no longer an admin when the block is sent
+      click_button "bookSave"
+
+      expect(page).to have_css("#booking_toast.show", text: "Booking failed")
+      expect(page).to have_css("#toast_text", text: "You do not have permission to block a space.")
+      expect(page).to have_css("#bookModal.show", visible: :all)
+      expect(page).to have_no_css("#bookSave[disabled]")
+      expect(SubSpaceBooking.where(name: "Closed")).to be_empty
+    end
   end
 
   describe "an existing booking" do
