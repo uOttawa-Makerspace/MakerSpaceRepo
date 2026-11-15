@@ -89,6 +89,19 @@ RSpec.describe LockerRental::PaymentRecordsCheck, type: :model do
       end
     end
 
+    it "is recorded open after voiding the rental's other open checkout, and the run goes on to the next rental" do
+      allow(adapter).to receive(:checkout_status).with(gid).and_return(:open)
+      stray = PaymentCheckout.create!(reference: rental, provider: "shopify", provider_id: "gid://shopify/DraftOrder/35")
+      later = create(:locker_rental, :active).tap { |r| r.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/36") }
+      allow(adapter).to receive(:checkout_status).with("gid://shopify/DraftOrder/36").and_return(:paid)
+
+      expect { run }.not_to raise_error
+      expect(PaymentCheckout.where(reference: rental).order(:id).pluck(:provider_id, :status))
+        .to eq([[stray.provider_id, "void"], [gid, "open"]])
+      expect(PaymentCheckout.where(reference: later).pluck(:status)).to eq(%w[paid])
+      expect(reported).to eq("open_checkout_not_stored" => [stray.id])
+    end
+
     it "is reported, and not recorded, when Shopify's answer is unclear" do
       allow(adapter).to receive(:checkout_status).with(gid).and_return(:unknown)
       cancelled = create(:locker_rental, :active).tap { |r| r.update!(state: :cancelled) }

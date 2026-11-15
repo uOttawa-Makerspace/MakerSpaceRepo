@@ -96,14 +96,16 @@ class LockerRental
     end
 
     # Under the row lock, only while the rental still stores `gid` without a checkout record and its data still does
-    # not settle it (a rental changed since is looked at again next run). True when recorded or no longer due.
+    # not settle it (a rental changed since is looked at again next run). An open checkout is recorded the way a
+    # stored draft opens one (#open_checkout_record: any other open checkout of the rental is voided first, one open
+    # checkout per rental). True when recorded or no longer due.
     def record_checkout(rental_id, gid, status)
       LockerRental.transaction do
-        due = LockerRental.with_unrecorded_draft_status.where(id: rental_id, shopify_draft_order_id: gid).lock
-        owned_until = due.pluck(:owned_until)
-        next true if owned_until.empty?
+        rental = LockerRental.with_unrecorded_draft_status.lock.find_by(id: rental_id, shopify_draft_order_id: gid)
+        next true unless rental
+        next rental.open_checkout_record(gid) if status == 'open'
 
-        LockerRental.insert_checkout_record(rental_id, gid, status: status, term: owned_until.first&.to_date)
+        LockerRental.insert_checkout_record(rental_id, gid, status: status, term: rental.owned_until&.to_date)
       end
     end
 
