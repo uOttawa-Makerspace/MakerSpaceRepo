@@ -125,7 +125,7 @@ export default class extends TypedController {
   // redirected to an HTML page, a server error) is shown as the server's reason, not parsed.
   fetchBooking(id) {
     return requestJson(
-      `/sub_space_booking/get_sub_space_booking?id=${id}`,
+      `/sub_space_booking/get_sub_space_booking?id=${encodeURIComponent(id)}`,
       { headers: JSON_HEADERS },
       { fallback: this.toast.text("unavailable"), requireBody: true },
     );
@@ -226,7 +226,7 @@ export default class extends TypedController {
     if (!this.datesValid()) return;
     this.send(
       "PATCH",
-      `/sub_space_booking/${this.idTarget.value}/update`,
+      `/sub_space_booking/${encodeURIComponent(this.idTarget.value)}/update`,
       this.updateTarget,
       this.payload(this.subspaceTarget.value),
       this.toast.text("updated"),
@@ -234,12 +234,12 @@ export default class extends TypedController {
   }
 
   delete() {
-    const id = this.idTarget.value;
+    const id = encodeURIComponent(this.idTarget.value);
     this.send("DELETE", `/sub_space_booking/${id}/delete/${id}`);
   }
 
   deleteRest() {
-    const id = this.idTarget.value;
+    const id = encodeURIComponent(this.idTarget.value);
     this.send("DELETE", `/sub_space_booking/${id}/delete_remaining_recurring`);
   }
 

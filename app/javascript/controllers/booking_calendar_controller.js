@@ -89,7 +89,7 @@ export default class extends TypedController {
       eventSources: [
         {
           id: "booked",
-          url: `/sub_space_booking/bookings?room=${params.get("room")}`,
+          url: `/sub_space_booking/bookings?room=${encodeURIComponent(params.get("room"))}`,
           failure: (error) => this.showFeedError(error),
         },
       ],

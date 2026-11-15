@@ -221,6 +221,13 @@ describe("calendar page", () => {
     },
   );
 
+  it("encodes the room in the bookings address", async () => {
+    const cal = await boot("http://localhost/sub_space_booking?room=4%26x%3D1");
+    expect(cal.options.eventSources[0].url).toBe(
+      "/sub_space_booking/bookings?room=4%26x%3D1",
+    );
+  });
+
   it("says when the bookings could not be loaded", async () => {
     const cal = await boot();
     await cal.options.eventSources[0].failure(new Error("feed down"));
@@ -498,6 +505,29 @@ describe("existing booking", () => {
     expect(pickers["book-start"].setDate).toHaveBeenCalledWith(
       Date.parse("2026-11-02T10:00:00"),
     );
+  });
+
+  it("encodes the booking id in the addresses it sends to", async () => {
+    const cal = await boot();
+    stubFetch(() => reply(JSON.stringify(booking())));
+    cal.options.eventClick({
+      event: { id: "booking_1#2", extendedProps: { viewable: true } },
+    });
+    await flush();
+    expect(requests[0].url).toBe(
+      "/sub_space_booking/get_sub_space_booking?id=1%232",
+    );
+    requests.length = 0;
+    stubFetch(() => reply("{}"));
+    $("bookUpdate").click();
+    confirmed("bookDelete");
+    confirmed("bookRecurringDeleteRest");
+    await flush();
+    expect(requests.map((r) => r.url).sort()).toEqual([
+      "/sub_space_booking/1%232/delete/1%232",
+      "/sub_space_booking/1%232/delete_remaining_recurring",
+      "/sub_space_booking/1%232/update",
+    ]);
   });
 
   it("offers the series delete for a recurring booking", async () => {
