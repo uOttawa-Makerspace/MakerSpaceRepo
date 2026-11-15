@@ -671,10 +671,13 @@ class LockerRental < ApplicationRecord
     end
   end
 
+  # Reported once per draft per day. The throttle only ever skips a report it has seen recorded: a cache that cannot
+  # be read or written reports every time.
   def report_unknown_draft_status(draft)
-    first = Rails.cache.write("locker_unknown_draft_status:#{shopify_draft_order_id}", true, expires_in: 1.day, unless_exist: true)
-    return unless first
+    key = "locker_unknown_draft_status:#{shopify_draft_order_id}"
+    return if Rails.cache.read(key)
 
+    Rails.cache.write(key, true, expires_in: 1.day)
     report_checkout_failure(
       UnknownDraftStatus.new("draft order #{shopify_draft_order_id} has status #{draft['status'].inspect}"), 'serve_draft'
     )

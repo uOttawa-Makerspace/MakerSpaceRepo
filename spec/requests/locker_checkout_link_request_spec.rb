@@ -78,6 +78,7 @@ RSpec.describe "Locker checkout link", type: :request do
 
     expect(rental.checkout_link).to be_nil
     expect(rental.checkout_state).to eq(:unexpected_status)
-    expect(reports).to be_empty
+    expect(rental.checkout_link).to be_nil
+    expect(reports).to contain_exactly(be_a(LockerRental::UnknownDraftStatus), be_a(LockerRental::UnknownDraftStatus))
   end
 end
