@@ -36,7 +36,7 @@ RSpec.describe "Admin report generator", type: :request do
   # One record per report-relevant model, all created on 2026-03-10.
   let!(:world) do
     space = create(:space, name: "Report Space")
-    visitor = create(:user, :student, name: "Vera Visitor", email: "vera@example.test",
+    visitor = create(:user, :student, name: "Vera Visitor", email: "vera@uottawa.ca",
                      created_at: march_10)
     create(:lab_session, space: space, user: visitor, created_at: march_10,
                          sign_in_time: march_10, sign_out_time: march_10 + 2.hours)

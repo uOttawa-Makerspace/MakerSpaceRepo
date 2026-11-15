@@ -292,6 +292,12 @@ Verify afterwards (read only): `SELECT source, count(*) FROM uoeng_profiles GROU
 
 Reversible: rolling it back drops the table and every uOEng profile record; reports then show the users' own faculty, and the next check after a redeploy fetches the answers again.
 
+### Deploy step: proof for uOttawa identities
+
+From this release, a uOttawa student, faculty or staff identity (the identities that get internal prices) can be chosen at sign-up or on the profile only with a confirmed `@uottawa.ca` email or a student number that matches the user's uOEng profile record. Existing accounts keep their identity; nothing is rewritten, and no manual step is needed.
+
+To list the existing accounts with an internal identity and no such proof, by id only (read only, changes nothing): `docker compose -f docker-compose.production.yml exec web bin/rails users:internal_without_proof`. The last line gives the count.
+
 ### Deploy step: payments checkout records and ledger
 
 The release that adds `payment_checkouts`, `payment_ledger_entries` and two columns on `locker_payments` (migrations `20261115140000` to `20261115140400`) needs no manual step; `web` runs them on boot. Nothing in the app reads or writes these tables yet; locker payments still run on `locker_rentals.shopify_draft_order_id` and `locker_payments`, which are not changed.

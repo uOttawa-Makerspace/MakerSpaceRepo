@@ -148,6 +148,9 @@ RSpec.describe User, type: :model do
     end
 
     context "identity" do
+      # A new account with a uOttawa email may choose any identity (see user_uottawa_affiliation_spec.rb).
+      subject { build(:user) }
+
       it { should validate_presence_of(:identity) }
       it { should_not allow_value("Something else").for(:identity) }
       it do

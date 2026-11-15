@@ -20,6 +20,16 @@ RSpec.describe JobOrdersHelper, type: :helper do
       expect(helper.job_service_label(service, user)).to eq("PLA ($1234.5/g)")
     end
 
+    it "follows the identity proof rule: a refused faculty identity keeps the external price" do
+      outsider = create(:user, identity: "community_member", email: "outsider@example.com")
+      expect(outsider.update(identity: "faculty_member")).to be(false)
+      faculty = create(:user, identity: "community_member", email: "prof@uottawa.ca")
+      expect(faculty.update(identity: "faculty_member")).to be(true)
+
+      expect(helper.job_service_label(service, outsider.reload)).to eq("PLA ($1234.5/g)")
+      expect(helper.job_service_label(service, faculty.reload)).to eq("PLA ($10.0/g)")
+    end
+
     it "writes the price the French way in French" do
       user = build(:user)
       allow(user).to receive(:internal?).and_return(false)

@@ -272,6 +272,8 @@ fr:
                 has_one: "Cet utilisateur a une carte RFID et ne peut pas être supprimé."
             name:
               special_html_characters: "ne doit pas contenir de caractères HTML spéciaux"
+            identity:
+              needs_uottawa_proof: "ne peut être une identité d'étudiant, de professeur ou d'employé de uOttawa qu'avec une adresse courriel @uottawa.ca confirmée ou un numéro d'étudiant confirmé par les dossiers étudiants de uOttawa. Veuillez choisir une autre identité ou contacter le personnel du Makerspace."
             student_id:
               wrong_digit_count: "doit contenir entre 7 et 12 chiffres"
             url:
