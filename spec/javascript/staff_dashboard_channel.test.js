@@ -52,6 +52,25 @@ describe("staffDashboardChannelConnection", () => {
     expect(latest).toHaveBeenCalledWith({ add_user: 2 });
   });
 
+  it("subscribes again on the next load after the server refused the subscription", () => {
+    subscribeOnDashboard("7");
+    const refused = create.mock.results[0].value;
+    create.mock.calls[0][1].rejected.call(refused);
+    subscribeOnDashboard("7");
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(refused.unsubscribe).not.toHaveBeenCalled();
+  });
+
+  it("ignores a refusal of a subscription it no longer holds", () => {
+    subscribeOnDashboard("7");
+    const old = create.mock.results[0].value;
+    const oldHandlers = create.mock.calls[0][1];
+    subscribeOnDashboard("8");
+    oldHandlers.rejected.call(old);
+    subscribeOnDashboard("8");
+    expect(create).toHaveBeenCalledTimes(2);
+  });
+
   it("ends the previous space's subscription before following another space", () => {
     subscribeOnDashboard("7");
     const first = create.mock.results[0].value;

@@ -31,6 +31,12 @@ export function staffDashboardChannelConnection(modalCallback) {
       received(data) {
         onMessage(data);
       },
+      // A refused subscription is forgotten, so the next load of the page subscribes again.
+      rejected() {
+        if (subscription !== this) return;
+        subscription = null;
+        subscribedSpaceId = null;
+      },
     },
   );
 }

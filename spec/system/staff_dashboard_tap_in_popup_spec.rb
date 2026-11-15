@@ -92,9 +92,11 @@ RSpec.describe "Staff dashboard tap-in popup after visiting the dashboard again"
     open_dashboard
 
     turbo_visit(staff_dashboard_index_path(again: 1))
+    expect_each_tap_shown_once
+
+    # The taps reached the page, so the server has handled every request the
+    # visit sent: still one subscription, never confirmed a second time.
     expect(dashboard_subscriptions).to eq(1)
     expect(confirmations.size).to eq(1)
-
-    expect_each_tap_shown_once
   end
 end
