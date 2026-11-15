@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# The room booking calendar and its modal (entrypoints/sub_space_booking.js):
+# The room booking calendar and its modal (booking_calendar and booking_modal controllers):
 # create one booking or a series, conflicts and limits, edit, update, delete.
 # The server clock is fixed (:booking_clock, Dec 2026); the week shown is the
 # one containing 2027-03-16 (the page's own ?start= parameter).

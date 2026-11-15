@@ -151,28 +151,28 @@
             <div class="card-body p-4 bg-body">
               <p class="text-body-secondary text-center mb-4">You do not have permission to book rooms yet. Please request access below.</p>
               
-              <%= form_with url: request_access_sub_space_booking_index_path, method: :put do |f| %>
+              <%= form_with url: request_access_sub_space_booking_index_path, method: :put, data: { controller: 'supervisor-field' } do |f| %>
                 <div class="mb-4">
                   <%= f.label :identity, 'Please select which best describes you:', class: 'form-label fw-bold' %>
                   <div class="form-check">
-                    <%= f.radio_button :identity, 'JMTS', class: 'form-check-input identity-button', required: true %>
+                    <%= f.radio_button :identity, 'JMTS', class: 'form-check-input identity-button', required: true, data: { action: 'click->supervisor-field#toggle' } %>
                     <%= f.label :identity_jmts, 'JMTS team member', class: 'form-check-label' %>
                   </div>
                   <div class="form-check">
-                    <%= f.radio_button :identity, 'Staff', class: 'form-check-input identity-button', required: true %>
+                    <%= f.radio_button :identity, 'Staff', class: 'form-check-input identity-button', required: true, data: { action: 'click->supervisor-field#toggle' } %>
                     <%= f.label :identity_staff, 'Staff member', class: 'form-check-label' %>
                   </div>
                   <div class="form-check">
-                    <%= f.radio_button :identity, 'GNG', class: 'form-check-input identity-button', required: true %>
+                    <%= f.radio_button :identity, 'GNG', class: 'form-check-input identity-button', required: true, data: { action: 'click->supervisor-field#toggle' } %>
                     <%= f.label :identity_gng, 'Student involved with GNG courses', class: 'form-check-label' %>
                   </div>
                   <div class="form-check">
-                    <%= f.radio_button :identity, 'Other', class: 'form-check-input identity-button', required: true %>
+                    <%= f.radio_button :identity, 'Other', class: 'form-check-input identity-button', required: true, data: { action: 'click->supervisor-field#toggle' } %>
                     <%= f.label :identity_other, 'Other', class: 'form-check-label' %>
                   </div>
                 </div>
 
-                <div class="mb-4" id="supervisor-select" style="display: none;">
+                <div class="mb-4" id="supervisor-select" style="display: none;" data-supervisor-field-target="supervisor">
                   <%= label_tag :supervisor, 'Supervisor', class: 'form-label fw-bold' %>
                   <%= select_tag :supervisor, options_for_select(@supervisors), class: 'form-select form-control' %>
                 </div>

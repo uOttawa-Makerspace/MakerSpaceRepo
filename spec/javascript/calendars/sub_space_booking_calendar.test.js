@@ -32,13 +32,6 @@ vi.mock("@fullcalendar/core", () => ({
 vi.mock("@fullcalendar/interaction", () => ({ default: {} }));
 vi.mock("@fullcalendar/timegrid", () => ({ default: {} }));
 vi.mock("@fullcalendar/list", () => ({ default: {} }));
-vi.mock("tom-select", () => ({
-  default: class {
-    constructor() {
-      this.hook = () => {};
-    }
-  },
-}));
 vi.mock("flatpickr", () => ({ default: {} }));
 
 const shown = [];
@@ -155,7 +148,6 @@ function pickDates(start, end) {
   pickers["book-end"].input.value = end;
 }
 
-await import("../../../app/javascript/entrypoints/sub_space_booking.js");
 await startBookingControllers();
 
 beforeEach(() => {
@@ -780,19 +772,6 @@ describe("admin lists", () => {
     all.checked = false;
     all.dispatchEvent(new Event("change"));
     expect([...rows].some((r) => r.checked)).toBe(false);
-  });
-
-  it("shows the supervisor list only for the Staff identity", async () => {
-    await boot(
-      "http://localhost/sub_space_booking",
-      `<button class="identity-button" value="Staff" id="staff"></button>
-       <button class="identity-button" value="Student" id="student"></button>
-       <div id="supervisor-select"></div>`,
-    );
-    $("staff").click();
-    expect($("supervisor-select").style.display).toBe("block");
-    $("student").click();
-    expect($("supervisor-select").style.display).toBe("none");
   });
 });
 

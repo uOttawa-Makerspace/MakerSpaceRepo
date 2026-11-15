@@ -1,19 +1,24 @@
 // @vitest-environment happy-dom
 // Drives the real Tom Select: the picker lists only the server's answer for the text now in the box.
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Application } from "@hotwired/stimulus";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
-vi.mock("@fullcalendar/core", () => ({ Calendar: class {} }));
-vi.mock("@fullcalendar/interaction", () => ({ default: {} }));
-vi.mock("@fullcalendar/timegrid", () => ({ default: {} }));
-vi.mock("@fullcalendar/list", () => ({ default: {} }));
-vi.mock("flatpickr", () => ({ default: {} }));
-vi.mock("bootstrap", () => ({
-  Toast: { getOrCreateInstance: () => ({ show() {} }) },
-}));
-vi.mock("../../../app/javascript/src/csrf", () => ({ csrfHeaders: (h) => h }));
+import BookingUserPicker from "../../../app/javascript/controllers/booking_user_picker_controller.js";
 
 const RITA = { id: 1, name: "Rita Requester" };
 const BOB = { id: 2, name: "Bob Brown" };
+
+beforeAll(() => {
+  Application.start().register("booking-user-picker", BookingUserPicker);
+});
 
 let picker;
 let pending;
@@ -43,16 +48,23 @@ beforeEach(async () => {
         pending[decodeURIComponent(url.split("query=")[1])] = resolve;
       }),
   );
-  document.body.innerHTML = `<form><select id="user_booking_select" data-min-length="3" data-hint="Type at least 3 characters."></select></form>`;
-  vi.resetModules();
-  await import("../../../app/javascript/entrypoints/sub_space_booking.js");
-  document.dispatchEvent(new Event("turbo:load"));
+  document.body.innerHTML = `<form><select id="user_booking_select" data-controller="booking-user-picker" data-min-length="3" data-hint="Type at least 3 characters."></select></form>`;
+  await vi.advanceTimersByTimeAsync(0);
   picker = document.getElementById("user_booking_select").tomselect;
 });
 
 afterEach(() => vi.useRealTimers());
 
 describe("admin user picker", () => {
+  it("keeps its one picker when its select is connected again", async () => {
+    const select = document.getElementById("user_booking_select");
+    const form = select.closest("form");
+    form.append(select);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(select.tomselect).toBe(picker);
+    expect(form.querySelectorAll(".ts-wrapper")).toHaveLength(1);
+  });
+
   it("lists the server's answer for the typed text, matches by username included", async () => {
     type("quokka");
     await settle();
