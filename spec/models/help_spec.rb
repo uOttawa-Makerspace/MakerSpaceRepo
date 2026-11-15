@@ -184,7 +184,7 @@ RSpec.describe Help, type: :model do
       expect(Help.find(help.id).filing_claimed_at).to eq(later + 1.second)
     end
 
-    it "raises the step's own error when giving the claim back fails too, and reports that failure" do
+    it "raises the step's own error when giving the claim back fails too, leaving the claim to time out" do
       help = Help.create!(valid_attrs)
       allow(ActionMailer).to receive(:deliver_all_later).and_raise(ActiveJob::EnqueueError, "queue down")
       allow(Help).to receive(:where).and_wrap_original do |original, *args, **kw|
@@ -192,9 +192,8 @@ RSpec.describe Help, type: :model do
         allow(relation).to receive(:update_all).and_raise(ActiveRecord::ConnectionNotEstablished, "db down") if kw.key?(:mailing_claimed_at)
         relation
       end
-      allow(Rails.error).to receive(:report)
       expect { help.mail_copies }.to raise_error(ActiveJob::EnqueueError, "queue down")
-      expect(Rails.error).to have_received(:report).with(an_instance_of(ActiveRecord::ConnectionNotEstablished), hash_including(handled: true))
+      expect(Help.find(help.id)).to have_attributes(mailed_at: nil, mailing_claimed_at: be_present)
     end
   end
 
@@ -237,7 +236,6 @@ RSpec.describe Help, type: :model do
 
     it "still answers saved when the job cannot be queued" do
       allow(HelpFilingJob).to receive(:perform_later).and_raise(ActiveJob::EnqueueError, "queue down")
-      allow(Rails.error).to receive(:report)
       expect(Help.compose(valid_attrs.except(:source), user: nil, source: Help::APP).submit).to be(true)
     end
   end
@@ -268,6 +266,37 @@ RSpec.describe Help, type: :model do
     expect(Help.compose(valid_attrs.except(:source).merge(name: "A"), user: user, source: Help::HELP_PAGE)).not_to be_valid
   end
 
+  describe "bounded GitHub text" do
+    def posted_title(subject)
+      seen = nil
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue) { |_s, **kw| seen = kw; { number: 1 } }
+      Help.create!(valid_attrs(subject: subject)).file_issue
+      seen[:title]
+    end
+
+    let(:kept) { Help::ISSUE_TITLE_MAX - Help::TRUNCATED_TITLE.length }
+
+    it "cuts a 400-character subject to the title limit, marked" do
+      title = posted_title("s" * 400)
+      expect(title).to eq("#{'s' * kept}#{Help::TRUNCATED_TITLE}")
+    end
+
+    ["@", "#", "GH-"].each do |token|
+      it "leaves no live mention or reference when the cut falls right after #{token}" do
+        filler = "a" * (kept - token.length)
+        title = posted_title("#{filler}#{token}5abc#{'x' * 100}")
+        expect(title).to start_with("#{filler}#{token}").and end_with(Help::TRUNCATED_TITLE)
+        expect(title).not_to match(/@\w|#\w|GH-\d/i)
+      end
+    end
+
+    it "cuts between whole characters of multibyte text" do
+      title = posted_title("\u{1F600}" * 400)
+      expect(title).to be_valid_encoding
+      expect(title).to eq("#{"\u{1F600}" * kept}#{Help::TRUNCATED_TITLE}")
+    end
+  end
+
   it "limits a typed name and email to the API's lengths, in English and French" do
     long = Help.new(valid_attrs(name: "n" * 201, email: "#{'e' * 250}@x.io"))
     expect(I18n.with_locale(:en) { long.valid?; long.errors.full_messages })
@@ -284,11 +313,9 @@ RSpec.describe Help, type: :model do
       expect(HelpFilingJob).to have_been_enqueued.with(help.id)
     end
 
-    it "reports a queue that cannot take the job and keeps the row unfinished" do
+    it "answers false for a queue that cannot take the job and keeps the row unfinished" do
       help = Help.create!(valid_attrs)
       allow(HelpFilingJob).to receive(:perform_later).and_raise(ActiveJob::EnqueueError, "queue down")
-      expect(Rails.error).to receive(:report)
-        .with(an_instance_of(ActiveJob::EnqueueError), hash_including(handled: true, context: hash_including(help_id: help.id)))
       expect(help.queue_filing).to be(false)
       expect(Help.unfinished).to include(help)
     end

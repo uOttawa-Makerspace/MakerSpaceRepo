@@ -183,6 +183,12 @@ RSpec.describe "POST /api/v1/support_requests", type: :request do
       expect(response).to have_http_status(:accepted)
     end
 
+    it "counts comments as posted (the API takes plain text; markup is not stripped before counting)" do
+      post_request(payload.merge(comments: "<b>#{'c' * 4993}</b>"))
+      expect(response).to have_http_status(:accepted)
+      expect_rejected(payload.merge(comments: "<b>#{'c' * 4994}</b>"), "comments")
+    end
+
     it "treats non-string values as missing" do
       expect_rejected(payload.merge(subject: { a: 1 }, comments: ["x"]), "subject", "comments")
     end
