@@ -86,8 +86,7 @@ class SubSpaceBooking < ApplicationRecord
   # (no validations), so a past pending booking can still be approved.
   def approve_if_pending!(by:)
     claimed = self.class.pending.where(id: id).update_all(
-      booking_status_id: BookingStatus.approved.id, approved_at: Time.current, approved_by_id: by.id,
-      updated_at: Time.current
+      booking_status_id: BookingStatus.approved.id, **approval_stamp(by), updated_at: Time.current
     )
     return false if claimed.zero?
 
@@ -247,7 +246,8 @@ class SubSpaceBooking < ApplicationRecord
       .any?
   end
 
-  # The booking's length in hours, or nil while a time is missing.
+  # The booking's length in hours, or nil while a time is missing (every limit check below reads it, so a
+  # booking with a missing time breaks no limit).
   def duration_hours
     (end_time - start_time) / 1.hour if times_present?
   end
@@ -267,26 +267,26 @@ class SubSpaceBooking < ApplicationRecord
   # time is missing.
   def exceeds_maximum_duration?
     max_duration = sub_space.maximum_booking_duration
-    !max_duration.nil? && times_present? && duration_hours > max_duration
+    hours = duration_hours
+    !max_duration.nil? && !hours.nil? && hours > max_duration
   end
 
   # Whether the booking takes its owner past the room's maximum hours that week, counting the owner's other
   # bookings in the room. False when the room has no weekly maximum or a time is missing.
   def exceeds_weekly_hours?
     max_per_week = sub_space.maximum_booking_hours_per_week
-    !max_per_week.nil? && times_present? && owner_hours_that_week + duration_hours > max_per_week
+    hours = duration_hours
+    !max_per_week.nil? && !hours.nil? && owner_hours_that_week + hours > max_per_week
   end
 
   # Sets what a new booking starts with when the user books it: its first status (see initial_status), the
   # room's default visibility and, when an admin books it, the approval stamp (an admin booking is always
   # approved). Sets only the booking's own attributes; the caller saves it.
   def apply_initial_state(by:)
-    self.booking_status_id = initial_status(booked_by_admin: by.admin?).id
+    admin = by.admin?
+    self.booking_status_id = initial_status(booked_by_admin: admin).id
     self.public = sub_space.default_public
-    return unless by.admin?
-
-    self.approved_at = Time.current
-    self.approved_by_id = by.id
+    assign_attributes(approval_stamp(by)) if admin
   end
 
   # The status a new booking starts with: approved when an admin books it or its room needs no approval;
@@ -302,7 +302,12 @@ class SubSpaceBooking < ApplicationRecord
   def times_present?
     [start_time, end_time].none?(nil)
   end
-  private :times_present?
+
+  # Who approved the booking, and when: written by approve_if_pending! and by apply_initial_state.
+  def approval_stamp(by)
+    { approved_at: Time.current, approved_by_id: by.id }
+  end
+  private :times_present?, :approval_stamp
 
   def minute_changed?(attribute)
     to_minute = ->(time) { time&.change(sec: 0) }

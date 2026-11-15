@@ -147,7 +147,7 @@ class SubSpaceBookingController < SessionsController
     # A recurring series skips its past occurrences instead of failing, so a
     # past first occurrence is not an error yet (see book_series).
     booking.errors.delete(:start_time, :in_the_past) if recurring
-    return render_booking_failure(invalid_booking_failure(booking)) if booking.errors.any?
+    return render_booking_failure(SubSpaceBooking::Refusal.invalid(booking)) if booking.errors.any?
 
     recurring ? create_series(attrs, booking, now) : create_single(booking)
   end
@@ -353,14 +353,10 @@ class SubSpaceBookingController < SessionsController
 
   def series_refusal(first, end_date, frequency)
     if end_date.nil? || frequency.blank?
-      series_failure(t("errors.bookings.recurring_invalid"))
+      SubSpaceBooking::Refusal.coded("Recurring", t("errors.bookings.recurring_invalid"))
     elsif end_date > first.start_time.to_date + SERIES_MAX_DAYS.days
-      series_failure(I18n.t("sub_space_booking.series.too_long", days: SERIES_MAX_DAYS))
+      SubSpaceBooking::Refusal.coded("Recurring", I18n.t("sub_space_booking.series.too_long", days: SERIES_MAX_DAYS))
     end
-  end
-
-  def series_failure(message)
-    { errors: ["Recurring #{message}"], alert: message }
   end
 
   # A booking for one occurrence, owned by the current user, whose past-date
@@ -420,7 +416,7 @@ class SubSpaceBookingController < SessionsController
       render_series_failure(failures, booked)
     elsif booked.zero? # every occurrence was in the past
       message = SubSpaceBooking.past_start_message
-      render_booking_failure(errors: [message], alert: message)
+      render_booking_failure(SubSpaceBooking::Refusal.new(errors: [message], alert: message))
     else
       render_booking_success(last_booked.sub_space)
     end
@@ -431,7 +427,7 @@ class SubSpaceBookingController < SessionsController
   # The record's own checks already passed in create: a series occurrence
   # differs from the first only by its date, and past ones are skipped; save!
   # still runs them. Renders nothing:
-  # returns nil when booked, or a failure ({ errors:, alert: }) for
+  # returns nil when booked, or a SubSpaceBooking::Refusal for
   # the caller to render.
   def book_occurrence(booking, recurring_booking: nil, send_email: true)
     failure = occurrence_refusal(booking)
@@ -444,7 +440,7 @@ class SubSpaceBookingController < SessionsController
     send_booking_created_mail(booking) if send_email
     nil
   rescue ActiveRecord::RecordInvalid => e
-    invalid_booking_failure(e.record)
+    SubSpaceBooking::Refusal.invalid(e.record)
   end
 
   # A new booking may not overlap a block unless it is a block itself, and only
@@ -456,7 +452,7 @@ class SubSpaceBookingController < SessionsController
   end
 
   def slot_taken_failure
-    limit_failure("TimeSlot", t("sub_space_booking.limits.slot_taken"))
+    SubSpaceBooking::Refusal.coded("TimeSlot", t("sub_space_booking.limits.slot_taken"))
   end
 
   # The first of its room's limits the booking breaks, or nil: the maximum
@@ -464,20 +460,12 @@ class SubSpaceBookingController < SessionsController
   def room_limit_failure(booking)
     room = booking.sub_space
     if booking.exceeds_maximum_duration?
-      limit_failure("DurationHour",
-                    t("sub_space_booking.limits.maximum_duration", room: room.name, hours: room.maximum_booking_duration))
+      SubSpaceBooking::Refusal.coded("DurationHour", t("sub_space_booking.limits.maximum_duration",
+                                                       room: room.name, hours: room.maximum_booking_duration))
     elsif booking.exceeds_weekly_hours?
-      limit_failure("DurationWeek", t("sub_space_booking.limits.weekly_hours",
-                                      room: room.name, hours: room.maximum_booking_hours_per_week))
+      SubSpaceBooking::Refusal.coded("DurationWeek", t("sub_space_booking.limits.weekly_hours",
+                                                       room: room.name, hours: room.maximum_booking_hours_per_week))
     end
-  end
-
-  def invalid_booking_failure(record)
-    { errors: record.errors.full_messages, alert: record.errors.full_messages.join(", ") }
-  end
-
-  def limit_failure(code, message)
-    { errors: ["#{code} #{message}"], alert: message }
   end
 
   def send_booking_created_mail(booking)
@@ -504,9 +492,9 @@ class SubSpaceBookingController < SessionsController
   def render_booking_failure(failure)
     respond_to do |format|
       format.json do
-        render json: { errors: failure[:errors] }, status: :unprocessable_content
+        render json: { errors: failure.errors }, status: :unprocessable_content
       end
-      format.html { redirect_to booking_calendar_path, alert: failure[:alert] }
+      format.html { redirect_to booking_calendar_path, alert: failure.alert }
     end
   end
 
@@ -515,10 +503,10 @@ class SubSpaceBookingController < SessionsController
   # series was not created.
   def render_first_occurrence_refused(booking, failure)
     summary = I18n.t("sub_space_booking.series.first_failed",
-                     date: booking.start_time.to_date.iso8601, reason: failure[:alert])
+                     date: booking.start_time.to_date.iso8601, reason: failure.alert)
     respond_to do |format|
       format.json do
-        render json: { errors: failure[:errors], summary: summary }, status: :unprocessable_content
+        render json: { errors: failure.errors, summary: summary }, status: :unprocessable_content
       end
       format.html { redirect_to booking_calendar_path, alert: summary }
     end
@@ -533,7 +521,7 @@ class SubSpaceBookingController < SessionsController
                      booked: booked, total: booked + failures.size, failed: failed_dates.join(", "))
     respond_to do |format|
       format.json do
-        render json: { errors: failures.first.last[:errors], booked: booked, failed: failed_dates,
+        render json: { errors: failures.first.last.errors, booked: booked, failed: failed_dates,
                        summary: summary },
                status: :unprocessable_content
       end
@@ -554,11 +542,11 @@ class SubSpaceBookingController < SessionsController
   def render_update_limit_error(failure)
     respond_to do |format|
       format.json do
-        render json: { errors: failure[:errors] },
+        render json: { errors: failure.errors },
                status: :unprocessable_content
       end
       format.html do
-        redirect_to sub_space_booking_edit_path, alert: failure[:alert]
+        redirect_to sub_space_booking_edit_path, alert: failure.alert
       end
     end
   end
@@ -569,7 +557,7 @@ class SubSpaceBookingController < SessionsController
   # matter when the booking's times move; renaming a booking must not be
   # blocked because a room's limits were lowered since. Minute precision, the
   # same test as the model's past-date rule. A missing time is no refusal: the
-  # model's presence check answers it. Returns a failure ({ errors:, alert: }) or nil.
+  # model's presence check answers it. Returns a SubSpaceBooking::Refusal or nil.
   def update_refusal(booking)
     return slot_taken_failure if booking.moving? && booking.overlaps_block?
 
