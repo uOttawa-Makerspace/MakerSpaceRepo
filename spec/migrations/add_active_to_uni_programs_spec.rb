@@ -4,7 +4,8 @@ require "rails_helper"
 require Rails.root.join("db/migrate/20261112160000_add_active_to_uni_programs")
 
 # CREATE INDEX CONCURRENTLY cannot run in a transaction, so this spec runs outside the transactional wrapper.
-# It takes the column and index away to recreate the table as it was before, and puts them back afterwards.
+# It takes the column and index away to recreate the table as it was before, and puts them back afterwards. The
+# example that stops on duplicates leaves the column without the index, so `after` always runs the (repeatable) `up`.
 RSpec.describe AddActiveToUniPrograms do
   self.use_transactional_tests = false
 
@@ -16,7 +17,7 @@ RSpec.describe AddActiveToUniPrograms do
 
   after do
     conn.execute("DELETE FROM uni_programs WHERE program = #{conn.quote(marker)}")
-    migrate(:up) unless column?
+    migrate(:up)
   end
 
   def column? = conn.column_exists?(:uni_programs, :active)
