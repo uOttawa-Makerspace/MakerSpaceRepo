@@ -36,7 +36,7 @@ class ShopOrderApplier
   # metafield values that name the records, and a refused lookup, are filled in by the Shopify lookup
   # (resolve_references).
   Plan = Struct.new(:hook, :id, :event, :handlers, :metafields, :lookup_rejection, :left_unapplied, keyword_init: true) do
-    def metafield(key) = metafields&.[](key)
+    def metafield(key) = metafields[key]
     def left_unapplied?(product) = Array(left_unapplied).include?(product)
   end
 

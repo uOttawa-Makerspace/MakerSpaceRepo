@@ -223,6 +223,14 @@ RSpec.describe "Shopify order routing", type: :request do
       expect(Membership.where(user: user).pluck(:status)).to eq(["paid"])
     end
 
+    it "membership with no line item that names a tier: applied, nothing granted, and reported" do
+      deliver("orders/paid", { id: 7002, name: "#7002", tags: [membership_tag], customer: { email: user.email },
+                               line_items: ["1 Day Membership", { title: "Mystery Box" }] })
+      expect(stored_rows).to eq([row(7002)])
+      expect(Membership.where(user: user)).to be_empty
+      expect(@reports).to eq(["ShopOrderApplier::UnresolvedMembershipOrder"])
+    end
+
     it "a reference to a membership that is not pending: applied, refusal stored on the row and reported" do
       pending_membership.update!(status: "revoked")
       deliver("orders/paid", membership_order)
