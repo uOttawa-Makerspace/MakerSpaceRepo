@@ -30,7 +30,8 @@ class Membership < ApplicationRecord
   end
 
   def shopify_draft_order_line_items
-    [{ originalUnitPrice: membership_tier.price(user).to_s, quantity: 1, title: membership_title }]
+    [{ originalUnitPriceWithCurrency: { amount: membership_tier.price(user).to_s, currencyCode: 'CAD' }, quantity: 1,
+       title: membership_title }]
   end
 
   # Pending -> paid in one conditional UPDATE, so it holds against a concurrent revoke or a second payment. The
