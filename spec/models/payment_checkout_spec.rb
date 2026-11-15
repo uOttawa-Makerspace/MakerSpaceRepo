@@ -16,11 +16,19 @@ RSpec.describe PaymentCheckout do
     expect(record.reload).to have_attributes(status: "open", reference: rental, term: Date.new(2026, 12, 31))
   end
 
-  it "needs a reference, a provider, a provider id and a known status" do
+  it "needs a reference, a provider and a known status" do
     record = described_class.new(status: "gone")
 
     expect(record).not_to be_valid
-    expect(record.errors.attribute_names).to include(:reference, :provider, :provider_id, :status)
+    expect(record.errors.attribute_names).to include(:reference, :provider, :status)
+  end
+
+  it "needs a provider id only once paid (a claim has none yet)" do
+    claim = checkout(provider_id: nil)
+    expect(claim).to be_valid
+    claim.status = "paid"
+    expect(claim).not_to be_valid
+    expect(claim.errors.attribute_names).to eq([:provider_id])
   end
 
   it "allows one row per provider id" do
