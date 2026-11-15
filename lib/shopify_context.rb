@@ -3,9 +3,9 @@
 # The ONE place that configures ShopifyAPI::Context (api key/secret, shop host, API version).
 #
 # The Shopify Admin client builds /admin/api/<version>/graphql.json from the Context, so a
-# process that never ran Context.setup posts to /admin/api//graphql.json. Production's master
-# set it up on every start_shopify_session; 3358306d0 dropped that and left only a
-# ShopifyService call that staff lockers pages happened to trigger.
+# process that never ran Context.setup posts to /admin/api//graphql.json. It used to be set up
+# on every Shopify session; when that was dropped, only the locker product lookup on the staff
+# lockers pages happened to set it up.
 #
 # Called at boot (config/initializers/shopify_api.rb) AND before every Shopify session
 # (via start_session!: Payments::ShopifyAdapter.admin_client; the homepage collections call ensure_setup!), so a failed boot setup heals on the

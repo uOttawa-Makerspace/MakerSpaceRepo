@@ -1194,8 +1194,8 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
 
     describe "Shopify sync boundary (cancel path)" do
       # SEAM: LockerRental#sync_shopify_draft_order_after_commit (called by the controller after commit) destroys the Shopify draft
-      # order when state flips to :cancelled. On cancel, the concern calls
-      # start_shopify_session then runs draftOrderDelete GraphQL. Because the
+      # order when state flips to :cancelled. On cancel, Payments::ShopifyAdapter::DraftRemoval starts
+      # the Shopify session then runs draftOrderDelete GraphQL. Because the
       # committed credentials make that call REAL network, we pin the
       # trigger contract at the seam level here and cover the GraphQL side in
       # the MODEL contract spec with a response-object stub.
