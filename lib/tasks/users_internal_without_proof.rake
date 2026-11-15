@@ -2,7 +2,7 @@
 
 namespace :users do
   # Lists, by id only, the accounts whose identity is internal (uOttawa student, faculty or staff)
-  # but which have neither a confirmed @uottawa.ca email nor a student number confirmed by uOEng.
+  # but which have no confirmed @uottawa.ca email, the only proof of a uOttawa affiliation.
   # It reads only and changes nothing.
   desc "List the ids of accounts with an internal identity and no proof of a uOttawa affiliation"
   task internal_without_proof: :environment do

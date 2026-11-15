@@ -294,9 +294,9 @@ Reversible: rolling it back drops the table and every uOEng profile record; repo
 
 ### Deploy step: proof for uOttawa identities
 
-From this release, a uOttawa student, faculty or staff identity (the identities that get internal prices) can be chosen at sign-up or on the profile only with a confirmed `@uottawa.ca` email or a student number that matches the user's uOEng profile record. Existing accounts keep their identity; nothing is rewritten, and no manual step is needed.
+From this release, a uOttawa student, faculty or staff identity (the identities that get internal prices) can be chosen at sign-up or on the profile only with a confirmed `@uottawa.ca` email (the exact domain, in any case; a new account with one may choose before confirming, as it cannot sign in until then). Switching from one such identity to another needs the same proof. Existing accounts keep their identity; nothing is rewritten, and no manual step is needed.
 
-To list the existing accounts with an internal identity and no such proof, by id only (read only, changes nothing): `docker compose -f docker-compose.production.yml exec web bin/rails users:internal_without_proof`. The last line gives the count.
+To list the existing accounts with an internal identity and no confirmed uOttawa email, by id only (read only, changes nothing): `docker compose -f docker-compose.production.yml exec web bin/rails users:internal_without_proof`. The last line gives the count.
 
 ### Deploy step: payments checkout records and ledger
 

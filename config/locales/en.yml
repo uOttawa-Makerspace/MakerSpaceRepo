@@ -126,7 +126,7 @@ en:
         other: "Other"
         no_specify: "I prefer not to specify"
         i_am: "I am..."
-        internal_proof_hint: "The uOttawa student, faculty and staff choices need a confirmed @uottawa.ca email address or a student number confirmed by uOttawa."
+        internal_proof_hint: "The uOttawa student, faculty and staff choices need a confirmed @uottawa.ca email address."
         undergrad: "an undergraduate student at uOttawa"
         international_undergrad: "an international undergraduate student at uOttawa"
         grad: "a graduate student at uOttawa"

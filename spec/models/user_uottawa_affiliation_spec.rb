@@ -7,8 +7,9 @@ RSpec.describe User::UottawaAffiliation do
     create(:user, identity: "community_member", email: "member#{SecureRandom.hex(3)}@example.com", **attrs)
   end
 
-  def confirm_by_uoeng!(user, emplid)
-    UoengProfile.record!(user, { "emplid" => emplid }, source: "student_number")
+  # Stores the address as given, as an older row may hold it.
+  def member_with_email(email, **attrs)
+    member(**attrs).tap { |u| u.update_columns(email: email) }
   end
 
   describe "choosing an internal identity" do
@@ -24,11 +25,24 @@ RSpec.describe User::UottawaAffiliation do
       end
     end
 
-    it "is accepted with a confirmed uOttawa email, whatever its case" do
-      user = member(email: "Prof@UOttawa.ca")
-      user.update_columns(email: "Prof@UOttawa.ca")
+    it "is accepted with a confirmed uOttawa email" do
+      expect(member_with_email("prof@uottawa.ca").update(identity: "staff_member")).to be(true)
+    end
 
-      expect(user.update(identity: "staff_member")).to be(true)
+    it "is accepted with a confirmed uOttawa email in capitals" do
+      expect(member_with_email("PROF@UOTTAWA.CA").update(identity: "staff_member")).to be(true)
+    end
+
+    it "is refused when uottawa.ca is only the start of another domain" do
+      expect(member_with_email("prof@uottawa.ca.evil.com").update(identity: "staff_member")).to be(false)
+    end
+
+    it "is refused for a subdomain of uottawa.ca" do
+      expect(member_with_email("prof@eng.uottawa.ca").update(identity: "staff_member")).to be(false)
+    end
+
+    it "is refused for an address without an @" do
+      expect(member_with_email("uottawa.ca").update(identity: "staff_member")).to be(false)
     end
 
     it "is refused with a uOttawa email the account has not confirmed" do
@@ -38,37 +52,27 @@ RSpec.describe User::UottawaAffiliation do
     end
 
     it "is accepted on a new account with a uOttawa email, which must be confirmed before signing in" do
-      user = build(:user, identity: "staff_member", email: "new@uottawa.ca", confirmed: false)
-
-      expect(user).to be_valid
+      expect(build(:user, identity: "staff_member", email: "new@uottawa.ca", confirmed: false)).to be_valid
     end
 
     it "is refused on a new account with an outside email" do
-      user = build(:user, identity: "staff_member", email: "new@example.com")
-
-      expect(user).not_to be_valid
+      expect(build(:user, identity: "staff_member", email: "new@example.com")).not_to be_valid
     end
 
-    it "is accepted with the student number uOEng confirmed" do
+    it "is refused with an outside email even when uOEng has a record with the same student number" do
       user = member(student_id: "1234567")
-      confirm_by_uoeng!(user, "1234567")
-
-      expect(user.update(identity: "grad", program: "X", faculty: "Engineering", year_of_study: 1)).to be(true)
-    end
-
-    it "is refused when uOEng confirmed a different student number" do
-      user = member(student_id: "1234567")
-      confirm_by_uoeng!(user, "7654321")
+      UoengProfile.record!(user, { "emplid" => "1234567" }, source: "student_number")
 
       expect(user.update(identity: "grad", program: "X", faculty: "Engineering", year_of_study: 1)).to be(false)
       expect(user.errors.details[:identity]).to include(error: :needs_uottawa_proof)
     end
 
-    it "is refused when the uOEng record has no student number" do
+    it "is refused when switching between two internal identities without proof" do
       user = member(student_id: "1234567")
-      confirm_by_uoeng!(user, nil)
+      user.update_columns(identity: "undergrad", program: "X", faculty: "Engineering")
 
-      expect(user.update(identity: "staff_member")).to be(false)
+      expect(user.update(identity: "grad")).to be(false)
+      expect(user.reload.identity).to eq("undergrad")
     end
   end
 
@@ -87,29 +91,22 @@ RSpec.describe User::UottawaAffiliation do
   end
 
   describe ".internal_without_proof" do
-    it "lists internal accounts with neither a confirmed uOttawa email nor a uOEng-confirmed student number" do
+    it "lists internal accounts without a confirmed uOttawa email, and agrees with the per-account check" do
       no_proof = member.tap { |u| u.update_columns(identity: "staff_member") }
-      unconfirmed = member(email: "a@uottawa.ca").tap { |u| u.update_columns(identity: "grad", confirmed: false) }
-      mismatch = member(student_id: "1111111").tap { |u| u.update_columns(identity: "undergrad") }
-      confirm_by_uoeng!(mismatch, "2222222")
-
-      by_email = create(:user, identity: "faculty_member", email: "b@uottawa.ca")
-      by_email.update_columns(email: "B@UOTTAWA.CA")
-      by_uoeng = member(student_id: "3333333").tap { |u| u.update_columns(identity: "undergrad") }
-      confirm_by_uoeng!(by_uoeng, "3333333")
+      unconfirmed = member_with_email("a@uottawa.ca").tap { |u| u.update_columns(identity: "grad", confirmed: false) }
+      lookalike = member_with_email("b@uottawa.ca.evil.com").tap { |u| u.update_columns(identity: "grad") }
+      subdomain = member_with_email("c@eng.uottawa.ca").tap { |u| u.update_columns(identity: "grad") }
+      with_uoeng = member(student_id: "3333333").tap { |u| u.update_columns(identity: "undergrad") }
+      UoengProfile.record!(with_uoeng, { "emplid" => "3333333" }, source: "student_number")
+      by_email = member_with_email("D@UOTTAWA.CA").tap { |u| u.update_columns(identity: "faculty_member") }
       external = member
 
       ids = User.internal_without_proof.pluck(:id)
-      expect(ids).to contain_exactly(no_proof.id, unconfirmed.id, mismatch.id)
-      expect(ids).not_to include(by_email.id, by_uoeng.id, external.id)
-    end
-
-    it "agrees with the per-account check" do
-      users = [member.tap { |u| u.update_columns(identity: "staff_member") },
-               create(:user, identity: "faculty_member", email: "c@uottawa.ca")]
-
-      listed = User.internal_without_proof.pluck(:id)
-      users.each { |u| expect(listed.include?(u.id)).to eq(!u.reload.uottawa_affiliation_proven?) }
+      expect(ids).to contain_exactly(no_proof.id, unconfirmed.id, lookalike.id, subdomain.id, with_uoeng.id)
+      [no_proof, unconfirmed, lookalike, subdomain, with_uoeng, by_email].each do |u|
+        expect(ids.include?(u.id)).to eq(!u.reload.uottawa_affiliation_proven?)
+      end
+      expect(ids).not_to include(external.id)
     end
   end
 end

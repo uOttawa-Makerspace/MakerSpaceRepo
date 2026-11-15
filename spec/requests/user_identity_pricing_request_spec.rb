@@ -5,8 +5,7 @@ require "rails_helper"
 # Who can set a user's identity, and so whether the internal or the external
 # price applies to them. A uOttawa student, faculty or staff identity can be
 # chosen at sign-up or on the profile form only with a confirmed @uottawa.ca
-# email or a student number uOEng confirmed. The admin user form and the API do
-# not write the identity.
+# email. The admin user form and the API do not write the identity.
 RSpec.describe "User identity and membership price", type: :request do
   let(:password) { "asa32A353#" }
   let(:tier) { create(:membership_tier, internal_price: 10, external_price: 50) }
@@ -34,7 +33,7 @@ RSpec.describe "User identity and membership price", type: :request do
       expect(tier.price(member)).to eq(50)
     end
 
-    it "refuses a student identity with a student number uOEng has not confirmed" do
+    it "refuses a student identity for a member with an outside email, whatever the student number" do
       member = outside_member
       login!(member)
 
@@ -56,7 +55,7 @@ RSpec.describe "User identity and membership price", type: :request do
       expect(tier.price(member)).to eq(10)
     end
 
-    it "accepts a student identity with the student number uOEng confirmed" do
+    it "refuses a student identity even when uOEng has a record with the same student number" do
       member = outside_member(student_id: "1234567")
       UoengProfile.record!(member, { "emplid" => "1234567" }, source: "student_number")
       login!(member)
@@ -64,9 +63,19 @@ RSpec.describe "User identity and membership price", type: :request do
       patch user_path(member.username),
             params: { user: { identity: "undergrad", student_id: "1234567", **student_fields } }
 
-      expect(flash[:notice]).to eq("Profile updated successfully.")
+      expect(flash[:alert]).to include("confirmed @uottawa.ca email address")
+      expect(member.reload.identity).to eq("community_member")
+    end
+
+    it "refuses a switch from one internal identity to another for an account without proof" do
+      member = outside_member(student_id: "1234567")
+      member.update_columns(identity: "undergrad", program: "X", faculty: "Engineering")
+      login!(member)
+
+      patch user_path(member.username), params: { user: { identity: "grad", **student_fields } }
+
+      expect(flash[:alert]).to include("confirmed @uottawa.ca email address")
       expect(member.reload.identity).to eq("undergrad")
-      expect(tier.price(member)).to eq(10)
     end
 
     it "keeps an existing internal identity without proof while other fields change" do
