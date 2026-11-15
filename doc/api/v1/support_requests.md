@@ -24,7 +24,7 @@ Request:
 | `comments`    | required, max 5000 chars (plain text)      |
 | `app_version` | optional, max 50 chars; shown in the email |
 
-Unknown fields are ignored. Values must be strings (an object or array counts as missing). Fields are trimmed.
+Unknown fields are ignored. Values must be strings (an object or array counts as missing). Fields are trimmed. The lengths above are counted on the posted (trimmed) text, before it is stored as rich text; the web Help form and `PUT /send_email` do not cap the subject, comments or app version, and the GitHub issue of any request gets a title of at most 250 and a body of at most 60000 characters, marked as truncated.
 
 When the caller is signed in, `name` and `email` are taken from the account and the posted values are ignored (they may be omitted); the account's own name and email are not checked against the rules above. Anonymous callers' `email` is used as given, but only as Reply-To and in the email body (never as a recipient).
 

@@ -169,8 +169,11 @@ RSpec.describe Help, type: :model do
         Help.where(id: help.id).update_all(filing_claimed_at: later)
         { number: 9 }
       end
+      allow(Rails.error).to receive(:report)
       help.file_issue
       expect(Help.find(help.id)).to have_attributes(filed_at: nil, gh_issue_number: nil, filing_claimed_at: later)
+      expect(Rails.error).to have_received(:report)
+        .with(an_instance_of(RuntimeError), handled: true, context: { help_id: help.id, step: "filed_at" }).once
 
       allow_any_instance_of(GithubIssuesService).to receive(:create_issue) do
         Help.where(id: help.id).update_all(filing_claimed_at: later + 1.second)
@@ -239,13 +242,23 @@ RSpec.describe Help, type: :model do
     end
   end
 
-  it "limits comments (as plain text) and the app version to the API's lengths, in English and French" do
-    long = Help.new(valid_attrs(comments: "c" * 5001, app_version: "v" * 51))
-    expect(I18n.with_locale(:en) { long.valid?; long.errors.full_messages })
-      .to include("Comments is too long (maximum is 5000 characters)", "App version is too long (maximum is 50 characters)")
-    expect(I18n.with_locale(:fr) { long.valid?; long.errors.full_messages })
-      .to include(a_string_starting_with("Commentaires "), a_string_matching(/version/i))
-    expect(Help.new(valid_attrs(comments: "<b>#{'c' * 5000}</b>", app_version: "v" * 50))).to be_valid
+  it "keeps a long subject, comments and app version in full" do
+    help = Help.create!(valid_attrs(subject: "s" * 300, comments: "c" * 70_000, app_version: "v" * 80))
+    expect(Help.find(help.id)).to have_attributes(subject: "s" * 300, app_version: "v" * 80)
+    expect(Help.find(help.id).comments.to_plain_text.length).to eq(70_000)
+  end
+
+  it "bounds the GitHub title and body and says so, and leaves short text untouched" do
+    seen = []
+    allow_any_instance_of(GithubIssuesService).to receive(:create_issue) { |_s, **kw| seen << kw; { number: 1 } }
+    Help.create!(valid_attrs(subject: "s" * 300, comments: "c" * 70_000)).file_issue
+    Help.create!(valid_attrs).file_issue
+    long, short = seen
+    expect(long[:title].length).to be <= Help::ISSUE_TITLE_MAX
+    expect(long[:title]).to end_with(Help::TRUNCATED_TITLE)
+    expect(long[:body].length).to be <= Help::ISSUE_BODY_MAX
+    expect(long[:body]).to end_with(Help::TRUNCATED_BODY)
+    expect(short).to include(title: "A long enough subject", body: "Something broke")
   end
 
   it "does not check an account's own name and email as if they were typed" do
@@ -255,14 +268,13 @@ RSpec.describe Help, type: :model do
     expect(Help.compose(valid_attrs.except(:source).merge(name: "A"), user: user, source: Help::HELP_PAGE)).not_to be_valid
   end
 
-  it "limits name, email and subject to the API's lengths, in English and French" do
-    long = Help.new(valid_attrs(name: "n" * 201, subject: "s" * 201, email: "#{'e' * 250}@x.io"))
+  it "limits a typed name and email to the API's lengths, in English and French" do
+    long = Help.new(valid_attrs(name: "n" * 201, email: "#{'e' * 250}@x.io"))
     expect(I18n.with_locale(:en) { long.valid?; long.errors.full_messages })
-      .to include("Name is too long (maximum is 200 characters)", "Subject is too long (maximum is 200 characters)",
-                  "Email is too long (maximum is 254 characters)")
+      .to include("Name is too long (maximum is 200 characters)", "Email is too long (maximum is 254 characters)")
     expect(I18n.with_locale(:fr) { long.valid?; long.errors.full_messages })
-      .to include(a_string_starting_with("Nom "), a_string_starting_with("Sujet "), a_string_starting_with("Courriel "))
-    expect(Help.new(valid_attrs(name: "n" * 200, subject: "s" * 200))).to be_valid
+      .to include(a_string_starting_with("Nom "), a_string_starting_with("Courriel "))
+    expect(Help.new(valid_attrs(name: "n" * 200))).to be_valid
   end
 
   describe "#queue_filing" do

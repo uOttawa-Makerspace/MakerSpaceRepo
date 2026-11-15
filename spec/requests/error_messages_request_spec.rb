@@ -180,22 +180,28 @@ RSpec.describe "Error messages", type: :request do
       expect(flash[:alert]).to start_with("Votre demande n'a pas été soumise. ")
     end
 
-    it "refuses a name, email or subject longer than the stored limit, in English and French" do
-      long = { help: form[:help].merge(name: "n" * 201, subject: "s" * 201) }
+    it "refuses a typed name longer than the stored limit, in English and French" do
+      long = { help: form[:help].merge(name: "n" * 201) }
       expect { post help_path, params: long }.not_to change(Help, :count)
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to include("Name is too long (maximum is 200 characters)", "Subject is too long")
+      expect(flash[:alert]).to include("Name is too long (maximum is 200 characters)")
       post help_path, params: long.merge(fr)
-      expect(flash[:alert]).to start_with("Votre demande n'a pas été soumise. ").and include("Nom ", "Sujet ")
+      expect(flash[:alert]).to start_with("Votre demande n'a pas été soumise. ").and include("Nom ")
     end
 
-    it "refuses comments longer than 5000 characters, in English and French" do
-      long = { help: form[:help].merge(comments: "c" * 5001) }
-      expect { post help_path, params: long }.not_to change(Help, :count)
-      expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to include("Comments is too long (maximum is 5000 characters)")
-      post help_path, params: long.merge(fr)
-      expect(flash[:alert]).to include("Commentaires ")
+    it "accepts a long subject and comments as before: stored in full, mailed in full, GitHub text bounded" do
+      posted = nil
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue) { |_s, **kw| posted = kw; { number: 5 } }
+      ActionMailer::Base.deliveries.clear
+      long = { help: form[:help].merge(subject: "S" * 300, comments: "#{'c' * 70_000} end-marker") }
+      perform_enqueued_jobs { expect { post help_path, params: long }.to change(Help, :count).by(1) }
+      expect(response).to redirect_to(help_path)
+      expect(flash[:notice]).to eq("Your issue has been submitted.")
+      expect(Help.last.subject).to eq("S" * 300)
+      expect(Help.last.comments.to_plain_text).to end_with("end-marker")
+      expect(posted[:title]).to end_with(Help::TRUNCATED_TITLE)
+      expect(posted[:body]).to end_with(Help::TRUNCATED_BODY)
+      expect(ActionMailer::Base.deliveries.last.body.decoded).to include("end-marker", "S" * 300)
     end
 
     it "keeps a saved report whose job cannot be queued, says it was submitted and reports the queue failure" do

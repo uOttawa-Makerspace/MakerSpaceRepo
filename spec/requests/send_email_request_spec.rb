@@ -119,14 +119,30 @@ RSpec.describe "PUT /send_email (React Help form)", type: :request do
     expect(user.reload.name).to eq("Original Name")
   end
 
-  it "refuses an app version or comments longer than the API allows, in English" do
-    expect do
-      put "/send_email", params: payload.merge(app_version: "v" * 51, comments: "c" * 5001).to_json,
+  it "accepts a long subject, comments and app version as before: stored in full, mailed in full, GitHub text bounded" do
+    posted = nil
+    allow_any_instance_of(GithubIssuesService).to receive(:create_issue) { |_s, **kw| posted = kw; { number: 5 } }
+    long = payload.merge(subject: "S" * 300, comments: "#{'c' * 6000} end-marker", app_version: "v" * 80)
+    perform_enqueued_jobs { put "/send_email", params: long.to_json, headers: headers.merge("Content-Type" => "application/json") }
+    expect(response).to have_http_status(:ok)
+    expect(Help.last).to have_attributes(subject: "S" * 300, app_version: "v" * 80)
+    expect(Help.last.comments.to_plain_text).to end_with("end-marker")
+    expect(posted[:title]).to end_with(Help::TRUNCATED_TITLE)
+    expect(posted[:body]).not_to end_with(Help::TRUNCATED_BODY) # 6000 characters fit GitHub's body
+    deliveries.each { |mail| expect(mail.body.encoded).to include("end-marker", "v" * 80) }
+    expect(deliveries.size).to eq(2)
+  end
+
+  it "sends a body GitHub would refuse as a bounded issue, with the full text in the mails" do
+    posted = nil
+    allow_any_instance_of(GithubIssuesService).to receive(:create_issue) { |_s, **kw| posted = kw; { number: 5 } }
+    perform_enqueued_jobs do
+      put "/send_email", params: payload.merge(comments: "#{'c' * 70_000} end-marker").to_json,
                          headers: headers.merge("Content-Type" => "application/json")
-    end.not_to change(Help, :count)
-    expect(response).to have_http_status(:unprocessable_content)
-    expect(JSON.parse(response.body)["errors"])
-      .to include("App version is too long (maximum is 50 characters)", "Comments is too long (maximum is 5000 characters)")
+    end
+    expect(response).to have_http_status(:ok)
+    expect(posted[:body]).to end_with(Help::TRUNCATED_BODY)
+    expect(deliveries.map { |m| m.body.decoded.include?("end-marker") }).to eq([true, true])
   end
 
   it "sends for an account whose saved name is shorter than a typed name may be" do

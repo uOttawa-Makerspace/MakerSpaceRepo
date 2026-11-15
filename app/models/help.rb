@@ -16,8 +16,15 @@ class Help < ApplicationRecord
   APP = "app"
   ZWJ = "‍"
 
-  # Longest values kept, on every path (comments counted as plain text); the /api/v1 contract uses the same limits.
-  MAX_LENGTH = { name: 200, email: 254, subject: 200, comments: 5000, app_version: 50 }.freeze
+  # Longest typed name and address kept (the /api/v1 contract uses the same limits). Subject, comments and app version
+  # are kept in full on every path; /api/v1 caps them itself, and the GitHub issue gets a bounded copy.
+  MAX_LENGTH = { name: 200, email: 254 }.freeze
+  # GitHub refuses a title over 256 or a body over 65536 characters; the issue text is cut below that (after
+  # defanging, which lengthens it) and says so. The mails always carry the full text.
+  ISSUE_TITLE_MAX = 250
+  ISSUE_BODY_MAX = 60_000
+  TRUNCATED_TITLE = " (truncated)"
+  TRUNCATED_BODY = "\n\n(truncated; full text in the team mail)"
   # A claim on a step is taken again after this long: longer than the GitHub calls can take (see GithubIssuesService).
   CLAIM_TIMEOUT = 5.minutes
   # The sweep queues an unfinished request again when the row has not changed for this long.
@@ -36,10 +43,8 @@ class Help < ApplicationRecord
     validates :email, presence: true, length: { maximum: MAX_LENGTH[:email] },
                       format: { with: URI::MailTo::EMAIL_REGEXP }
   end
-  validates :subject, presence: true, length: { minimum: 10, maximum: MAX_LENGTH[:subject] }
+  validates :subject, presence: true, length: { minimum: 10 }
   validates :comments, presence: true
-  validate :comments_fit
-  validates :app_version, length: { maximum: MAX_LENGTH[:app_version] }
   validates :source, inclusion: { in: [HELP_PAGE, APP] }
 
   scope :unfinished, -> { where(UNFINISHED) }
@@ -116,11 +121,10 @@ class Help < ApplicationRecord
     end
   end
 
-  # Opens the public GitHub issue (text defanged) and stores its number; once. Returns whether the issue exists.
+  # Opens the public GitHub issue (text defanged, title and body bounded) and stores its number; once. Returns whether the issue exists.
   def file_issue
     run_once(:filed_at, :filing_claimed_at) do
-      issue = GithubIssuesService.new.create_issue(reporter: self.class.defang(name), title: self.class.defang(subject),
-                                                   body: self.class.defang(comments.to_plain_text))
+      issue = GithubIssuesService.new.create_issue(**issue_fields)
       number = issue && issue[:number]
       { gh_issue_number: number } if number.present?
     end
@@ -137,13 +141,15 @@ class Help < ApplicationRecord
 
   private
 
-  def sender_from_account?
-    user.present? && source == APP
+  def issue_fields
+    defang = self.class.method(:defang)
+    { reporter: defang.(name),
+      title: defang.(subject).truncate(ISSUE_TITLE_MAX, omission: TRUNCATED_TITLE),
+      body: defang.(comments.to_plain_text).truncate(ISSUE_BODY_MAX, omission: TRUNCATED_BODY) }
   end
 
-  def comments_fit
-    max = MAX_LENGTH[:comments]
-    errors.add(:comments, :too_long, count: max) if comments.to_plain_text.length > max
+  def sender_from_account?
+    user.present? && source == APP
   end
 
   # Claims the step, runs the block outside any transaction and records what it returns with the step's time
@@ -183,10 +189,15 @@ class Help < ApplicationRecord
     refresh(done)
   end
 
+  # A step done after its claim was taken over is not recorded and is reported: the run holding the claim does it
+  # again, so a second issue or a second set of mails may follow.
   def record_owned(done, claim, mine, recorded)
     now = Time.current
     owned = self.class.where(id: id, claim => mine)
-    assign_attributes(recorded) if owned.update_all(recorded.merge(done => now, claim => nil, updated_at: now)) == 1
+    return assign_attributes(recorded) if owned.update_all(recorded.merge(done => now, claim => nil, updated_at: now)) == 1
+
+    Rails.error.report(RuntimeError.new("Help request step was done after its claim was taken over"),
+                       handled: true, context: { help_id: id, step: done.to_s })
   end
 
   # Gives this run's claim back, if it still holds it. A failure here is reported, not raised: the claim then times
