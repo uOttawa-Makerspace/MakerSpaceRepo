@@ -23,8 +23,13 @@ export async function startBookingControllers() {
 
 const modal = (target, action = "") =>
   `data-booking-modal-target="${target}"${action && ` data-action="${action}"`}`;
-const confirmed = (method) =>
-  `data-action="confirmation:confirmed->booking-modal#${method}"`;
+const part = (modes, target = "part") =>
+  `data-booking-modal-target="${target}" data-modes="${modes}"`;
+const request = (method, url, more = "") =>
+  `data-booking-modal-method-param="${method}" data-booking-modal-url-param="${url}"${more}`;
+const removal = (url) =>
+  `data-action="confirmation:confirmed->booking-modal#request" ${request("DELETE", url)}`;
+const DELETE_ONE = "/sub_space_booking/:id/delete/:id";
 
 const ATTRIBUTES = {
   "booked-calendar":
@@ -41,21 +46,23 @@ const ATTRIBUTES = {
   "book-start": modal("start"),
   "book-end": modal("end"),
   "end-date-validation": modal("endValidation"),
-  subspace: modal("subspace"),
-  subspace_header: modal("subspaceLabel"),
-  "book-recurring": modal("recurring", "change->booking-modal#toggleRecurring"),
-  "book-recurring-label": modal("recurringLabel"),
+  subspace: part("edit series", "subspace part"),
+  subspace_header: part("edit series"),
+  "book-recurring": `${part("new", "recurring part")} data-action="change->booking-modal#toggleRecurring"`,
+  "book-recurring-label": part("new"),
   "book-recurring-end": modal("recurringField recurringEnd"),
   "book-recurring-end-label": modal("recurringField"),
   "book-recurring-type": modal("recurringField recurringType"),
   "book-recurring-type-label": modal("recurringField"),
   "book-blocking": modal("blocking"),
-  bookSave: modal("save", "booking-modal#book"),
-  bookUpdate: modal("update", "booking-modal#update"),
-  bookDelete: `${modal("delete")} ${confirmed("delete")}`,
-  bookDeleteRecurringDropdown: modal("deleteSeries"),
-  bookRecurringDeleteOne: confirmed("delete"),
-  bookRecurringDeleteRest: confirmed("deleteRest"),
+  bookSave: `${part("new", "submit part")} data-action="booking-modal#request" ${request("POST", "/sub_space_booking")}`,
+  bookUpdate: `${part("edit series", "submit part")} data-action="booking-modal#request" ${request("PATCH", "/sub_space_booking/:id/update", ' data-booking-modal-success-param="updated"')}`,
+  bookDelete: `${part("edit")} ${removal(DELETE_ONE)}`,
+  bookDeleteRecurringDropdown: part("series"),
+  bookRecurringDeleteOne: removal(DELETE_ONE),
+  bookRecurringDeleteRest: removal(
+    "/sub_space_booking/:id/delete_remaining_recurring",
+  ),
   bookCancel: 'data-action="booking-modal#close"',
   bookClose: 'data-action="booking-modal#close"',
   approveRecurringModal:

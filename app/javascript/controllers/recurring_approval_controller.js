@@ -1,9 +1,4 @@
-import { Controller } from "@hotwired/stimulus";
-
-// Stimulus defines the target accessors at runtime; this tells the type checker.
-const TypedController = /** @type {new () => Controller<HTMLElement> & {
-  datesTarget: HTMLElement,
-}} */ (/** @type {unknown} */ (Controller));
+import { AccessorController } from "../src/accessor_controller.js";
 
 // One row of the modal: a checked box for the booking and the date as its label, in plain text.
 /** @param {[string | number, string]} date */
@@ -28,7 +23,7 @@ function dateRow([id, label]) {
 // The modal that approves chosen dates of a recurring series: when it opens it
 // lists the dates of the series whose button opened it (that button's
 // data-dates), each with a checked box, and its buttons tick or clear them all.
-export default class extends TypedController {
+export default class extends AccessorController {
   static targets = ["dates"];
 
   /** @param {Event & { relatedTarget: HTMLElement }} event */

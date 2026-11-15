@@ -23,12 +23,12 @@
                     <span class="invalid-feedback d-none" id="end-date-validation" data-booking-modal-target="endValidation">The End Date needs to be greater than the Start Date.</span>
                     <br>
                     <div class="mb-3">
-                        <label for="subspace" id="subspace_header" data-booking-modal-target="subspaceLabel">Subspace</label>
-                        <%= select_tag 'sub_space_booking', options_from_collection_for_select(SubSpace.all.where(space_id: @subspace.space_id), 'id', 'name'), id: "subspace", class: "form-control", data: { booking_modal_target: "subspace" } %>
+                        <label for="subspace" id="subspace_header" data-booking-modal-target="part" data-modes="edit series">Subspace</label>
+                        <%= select_tag 'sub_space_booking', options_from_collection_for_select(SubSpace.all.where(space_id: @subspace.space_id), 'id', 'name'), id: "subspace", class: "form-control", data: { booking_modal_target: "subspace part", modes: "edit series" } %>
                     </div>
 
-                    <input type="checkbox" id="book-recurring" class="form-check-input" data-booking-modal-target="recurring" data-action="change->booking-modal#toggleRecurring">
-                    <label for="book-recurring" id="book-recurring-label" data-booking-modal-target="recurringLabel">Is this a recurring booking?</label>
+                    <input type="checkbox" id="book-recurring" class="form-check-input" data-booking-modal-target="recurring part" data-modes="new" data-action="change->booking-modal#toggleRecurring">
+                    <label for="book-recurring" id="book-recurring-label" data-booking-modal-target="part" data-modes="new">Is this a recurring booking?</label>
                     <br>
                     <div class="flatpickr" data-booking-modal-target="recurringField">
                         <label for="book-recurring-end" id="book-recurring-end-label" data-booking-modal-target="recurringField">Recurring End Date</label>
@@ -46,19 +46,19 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <%= button_tag "Delete", type: "button", id: "bookDelete", class: "btn btn-danger", disabled: true, data: confirmation_data(t("confirmations.bookings.delete")).merge(booking_modal_target: "delete", action: "click->confirmation#ask confirmation:confirmed->booking-modal#delete") %>
-                <div class="dropdown" id="bookDeleteRecurringDropdown" data-booking-modal-target="deleteSeries">
+                <%= button_tag "Delete", type: "button", id: "bookDelete", class: "btn btn-danger", disabled: true, data: confirmation_data(t("confirmations.bookings.delete")).merge(booking_modal_target: "part", modes: "edit", action: "click->confirmation#ask confirmation:confirmed->booking-modal#request", booking_modal_method_param: "DELETE", booking_modal_url_param: "/sub_space_booking/:id/delete/:id") %>
+                <div class="dropdown" id="bookDeleteRecurringDropdown" data-booking-modal-target="part" data-modes="series">
                     <button class="btn btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         Delete...
                     </button>
                     <ul class="dropdown-menu">
-                        <li><%= button_tag "This only", type: "button", id: "bookRecurringDeleteOne", class: "dropdown-item", disabled: true, data: confirmation_data(t("confirmations.bookings.delete")).merge(action: "click->confirmation#ask confirmation:confirmed->booking-modal#delete") %></li>
-                        <li><%= button_tag "This and rest", type: "button", id: "bookRecurringDeleteRest", class: "dropdown-item", disabled: true, data: confirmation_data(t("confirmations.bookings.delete_remaining")).merge(action: "click->confirmation#ask confirmation:confirmed->booking-modal#deleteRest") %></li>
+                        <li><%= button_tag "This only", type: "button", id: "bookRecurringDeleteOne", class: "dropdown-item", disabled: true, data: confirmation_data(t("confirmations.bookings.delete")).merge(action: "click->confirmation#ask confirmation:confirmed->booking-modal#request", booking_modal_method_param: "DELETE", booking_modal_url_param: "/sub_space_booking/:id/delete/:id") %></li>
+                        <li><%= button_tag "This and rest", type: "button", id: "bookRecurringDeleteRest", class: "dropdown-item", disabled: true, data: confirmation_data(t("confirmations.bookings.delete_remaining")).merge(action: "click->confirmation#ask confirmation:confirmed->booking-modal#request", booking_modal_method_param: "DELETE", booking_modal_url_param: "/sub_space_booking/:id/delete_remaining_recurring") %></li>
                     </ul>
                 </div>
                 <button type="button" id="bookCancel" data-action="booking-modal#close" class="btn btn-secondary ms-auto" data-bs-dismiss="modal">Close</button>
-                <button type="button" id="bookSave" data-booking-modal-target="save" data-action="booking-modal#book" class="btn btn-primary">Book</button>
-                <button type="button" id="bookUpdate" data-booking-modal-target="update" data-action="booking-modal#update" class="btn btn-primary">Update</button>
+                <button type="button" id="bookSave" data-booking-modal-target="submit part" data-modes="new" data-action="booking-modal#request" data-booking-modal-method-param="POST" data-booking-modal-url-param="/sub_space_booking" class="btn btn-primary">Book</button>
+                <button type="button" id="bookUpdate" data-booking-modal-target="submit part" data-modes="edit series" data-action="booking-modal#request" data-booking-modal-method-param="PATCH" data-booking-modal-url-param="/sub_space_booking/:id/update" data-booking-modal-success-param="updated" class="btn btn-primary">Update</button>
             </div>
         </div>
     </div>

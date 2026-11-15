@@ -255,12 +255,13 @@ describe("new booking", () => {
 
     expect($("bookModal").classList.contains("show")).toBe(true);
     expect($("bookingModalLabel").innerText).toBe("New Booking");
-    expect($("bookSave").style.display).toBe("block");
-    expect($("bookUpdate").style.display).toBe("none");
-    expect($("bookDelete").style.display).toBe("none");
-    expect($("subspace").style.display).toBe("none");
+    expect($("bookModal").dataset.bookingModalModeValue).toBe("new");
+    expect($("bookSave").hidden).toBe(false);
+    expect($("bookUpdate").hidden).toBe(true);
+    expect($("bookDelete").hidden).toBe(true);
+    expect($("subspace").hidden).toBe(true);
     expect(document.getElementById("book-modal-backdrop")).not.toBeNull();
-    expect($("book-recurring-end").style.display).toBe("none");
+    expect($("book-recurring-end").hidden).toBe(true);
   });
 
   it("selecting a range fills the start and end", async () => {
@@ -282,9 +283,9 @@ describe("new booking", () => {
     cal.options.customButtons.book.click();
     $("book-recurring").checked = true;
     $("book-recurring").dispatchEvent(new Event("change"));
-    expect($("book-recurring-end").style.display).toBe("block");
-    expect($("book-recurring-type").style.display).toBe("block");
-    expect(document.querySelector(".flatpickr").style.display).toBe("block");
+    expect($("book-recurring-end").hidden).toBe(false);
+    expect($("book-recurring-type").hidden).toBe(false);
+    expect(document.querySelector(".flatpickr").hidden).toBe(false);
   });
 
   it("refuses an end before the start and sends nothing", async () => {
@@ -497,10 +498,10 @@ describe("existing booking", () => {
     expect($("book-blocking").checked).toBe(true);
     expect($("subspace").value).toBe("9");
     expect($("bookingModalLabel").innerText).toBe("Update Booking");
-    expect($("bookUpdate").style.display).toBe("block");
-    expect($("bookSave").style.display).toBe("none");
-    expect($("bookDelete").style.display).toBe("block");
-    expect($("bookDeleteRecurringDropdown").style.display).toBe("none");
+    expect($("bookUpdate").hidden).toBe(false);
+    expect($("bookSave").hidden).toBe(true);
+    expect($("bookDelete").hidden).toBe(false);
+    expect($("bookDeleteRecurringDropdown").hidden).toBe(true);
     expect($("bookModal").classList.contains("show")).toBe(true);
     expect(pickers["book-start"].setDate).toHaveBeenCalledWith(
       Date.parse("2026-11-02T10:00:00"),
@@ -537,8 +538,9 @@ describe("existing booking", () => {
     );
     click(cal);
     await flush();
-    expect($("bookDelete").style.display).toBe("none");
-    expect($("bookDeleteRecurringDropdown").style.display).toBe("block");
+    expect($("bookModal").dataset.bookingModalModeValue).toBe("series");
+    expect($("bookDelete").hidden).toBe(true);
+    expect($("bookDeleteRecurringDropdown").hidden).toBe(false);
   });
 
   it.each([

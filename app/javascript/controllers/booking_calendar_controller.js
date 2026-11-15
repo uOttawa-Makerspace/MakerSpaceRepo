@@ -1,17 +1,9 @@
-import { Controller } from "@hotwired/stimulus";
 import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 
+import { AccessorController } from "../src/accessor_controller.js";
 import { calendarTexts, pageCalendar } from "../src/page_calendar.js";
 import { serverError } from "../src/request_error";
-
-/** @typedef {{ startStr: string, endStr: string }} Range */
-
-// Stimulus defines the outlet accessors at runtime; this tells the type checker.
-const TypedController = /** @type {new () => Controller<HTMLElement> & {
-  bookingModalOutlet: { openNew(range?: Range): void, openBooking(event: any): void },
-  bookingToastOutlet: { text(name: string): string, show(titleName: string, text: string): void },
-}} */ (/** @type {unknown} */ (Controller));
 
 // The day the address names (start=2026-03-02), or today when it names none
 // or no real day.
@@ -23,7 +15,7 @@ function firstDay(params) {
 // A week of a room's bookings (the room and the first day come from the
 // address). Selecting a range or pressing Book opens the booking modal for a
 // new booking, and clicking a booking opens it there.
-export default class extends TypedController {
+export default class extends AccessorController {
   static outlets = ["booking-modal", "booking-toast"];
 
   connect() {

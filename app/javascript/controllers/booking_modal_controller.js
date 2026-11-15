@@ -1,6 +1,6 @@
-import { Controller } from "@hotwired/stimulus";
 import "flatpickr";
 
+import { AccessorController } from "../src/accessor_controller.js";
 import { csrfHeaders } from "../src/csrf";
 import { DATE_TIME, flatpickrOptions } from "../src/page_locale.js";
 import {
@@ -10,21 +10,6 @@ import {
   requestResult,
   resultError,
 } from "../src/request_error";
-
-/** @typedef {HTMLInputElement & { flatpickr(options: object): any }} PickerInput */
-
-// Stimulus defines the target and outlet accessors at runtime; this tells the
-// type checker.
-const TypedController = /** @type {new () => Controller<HTMLElement> & {
-  titleTarget: HTMLElement, endValidationTarget: HTMLElement,
-  idTarget: HTMLInputElement, nameTarget: HTMLInputElement, descriptionTarget: HTMLInputElement,
-  startTarget: PickerInput, endTarget: PickerInput, recurringEndTarget: PickerInput,
-  subspaceTarget: HTMLSelectElement, recurringTypeTarget: HTMLSelectElement,
-  recurringTarget: HTMLInputElement, blockingTarget: HTMLInputElement, hasBlockingTarget: boolean,
-  saveTarget: HTMLButtonElement, updateTarget: HTMLButtonElement,
-  bookingCalendarOutlet: { refetch(): void },
-  bookingToastOutlet: { text(name: string): string, show(titleName: string, text: string, success?: boolean): void },
-}} */ (/** @type {unknown} */ (Controller));
 
 const JSON_TYPE = "application/json";
 const JSON_HEADERS = { "Content-Type": JSON_TYPE, Accept: JSON_TYPE };
@@ -37,14 +22,14 @@ const RULE_CODES = ["DurationHour", "DurationWeek", "TimeSlot"];
 // saves, updates or deletes with JSON requests. A save that worked closes the
 // modal and draws the calendar again; a refusal is shown on the form or in the
 // page's toast.
-export default class extends TypedController {
+export default class extends AccessorController {
   // prettier-ignore
   static targets = [
     "title", "id", "name", "description", "start", "end", "endValidation",
-    "subspace", "subspaceLabel", "recurring", "recurringLabel", "recurringField",
-    "recurringEnd", "recurringType", "blocking", "save", "update", "delete",
-    "deleteSeries",
+    "subspace", "recurring", "recurringField", "recurringEnd", "recurringType",
+    "blocking", "submit", "part", "feedback",
   ];
+  static values = { mode: String };
   static outlets = ["booking-calendar", "booking-toast"];
 
   connect() {
@@ -78,21 +63,21 @@ export default class extends TypedController {
     return this.bookingToastOutlet;
   }
 
-  // Shows every target of those names (space-separated) with that display.
-  show(display, names) {
-    const elements = /** @type {HTMLElement[]} */ (
-      names.split(" ").flatMap((name) => this.targets.findAll(name))
+  // The modal shows a new booking ("new"), a booking ("edit") or a booking of a
+  // series ("series"); each part lists the modes it shows in, in data-modes.
+  showMode(mode) {
+    this.modeValue = mode;
+    this.titleTarget.innerText =
+      mode === "new" ? "New Booking" : "Update Booking";
+    this.partTargets.forEach(
+      (part) => (part.hidden = !part.dataset.modes.split(" ").includes(mode)),
     );
-    elements.forEach((el) => (el.style.display = display));
+    this.toggleRecurring();
   }
 
   // A new booking, of the range selected on the calendar when there is one.
   openNew(range) {
-    this.show("block", "save");
-    this.show("none", "update subspace subspaceLabel delete deleteSeries");
-    this.show("inline-block", "recurring recurringLabel");
-    this.titleTarget.innerText = "New Booking";
-    this.toggleRecurring();
+    this.showMode("new");
     this.open();
     if (range) {
       this.startPicker.setDate(Date.parse(range.startStr));
@@ -105,9 +90,6 @@ export default class extends TypedController {
   // opens once its details came from the server.
   openBooking(event) {
     if (!event.extendedProps.viewable) return;
-    this.show("none", "save recurring recurringLabel");
-    this.show("block", "update subspace subspaceLabel");
-    this.titleTarget.innerText = "Update Booking";
     this.idTarget.value = event.id.split("_")[1];
     this.fetchBooking(this.idTarget.value)
       .then(this.whileOnPage((booking) => this.fill(booking)))
@@ -139,11 +121,8 @@ export default class extends TypedController {
     this.endPicker.setDate(Date.parse(booking.end_time.slice(0, -6)));
     this.recurringTarget.checked = false;
     if (this.hasBlockingTarget) this.blockingTarget.checked = booking.blocking;
-    const series = booking.recurring_booking_id != null;
-    this.show(series ? "none" : "block", "delete");
-    this.show(series ? "block" : "none", "deleteSeries");
     this.subspaceTarget.value = booking.sub_space_id;
-    this.toggleRecurring();
+    this.showMode(booking.recurring_booking_id == null ? "edit" : "series");
     this.open();
   }
 
@@ -163,22 +142,17 @@ export default class extends TypedController {
     this.nameTarget.value = "";
     this.descriptionTarget.value = "";
     this.recurringEndPicker.setDate(null);
-    this.saveTarget.removeAttribute("disabled");
-    this.updateTarget.removeAttribute("disabled");
+    this.submitTargets.forEach((button) => button.removeAttribute("disabled"));
+    this.feedbackTargets.forEach((feedback) => feedback.remove());
     this.element
       .querySelectorAll(".is-invalid")
-      .forEach((el) => el.classList.remove("is-invalid"));
-    this.element
-      .querySelectorAll(".invalid-feedback")
-      .forEach((el) => el !== this.endValidationTarget && el.remove());
+      .forEach((field) => field.classList.remove("is-invalid"));
     this.endValidationTarget.classList.add("d-none");
   }
 
   toggleRecurring() {
-    this.show(
-      this.recurringTarget.checked ? "block" : "none",
-      "recurringField",
-    );
+    const recurring = this.recurringTarget.checked;
+    this.recurringFieldTargets.forEach((field) => (field.hidden = !recurring));
   }
 
   // The end must come after the start; the end field says so when it does not.
@@ -206,41 +180,34 @@ export default class extends TypedController {
     };
   }
 
-  // A new booking is in the room the address names.
-  book() {
+  // The request of the pressed button, from its action params: the method and
+  // the url, where ":id" stands for the booking's id, and the name of the
+  // page's text to show once the save worked. A save checks the dates first,
+  // sends the booking and disables its button while it runs; a delete sends
+  // no body.
+  request({ currentTarget, params: { method, url, success } }) {
+    const id = encodeURIComponent(this.idTarget.value);
+    const path = url.replaceAll(":id", id);
+    if (method === "DELETE") return this.send(method, path);
     if (!this.datesValid()) return;
-    const room = new URLSearchParams(window.location.search).get("room");
-    this.send(
-      "POST",
-      "/sub_space_booking",
-      this.saveTarget,
-      this.payload(room, {
+    const booking =
+      method === "POST"
+        ? this.newBooking()
+        : this.payload(this.subspaceTarget.value);
+    const successText = success && this.toast.text(success);
+    this.send(method, path, currentTarget, booking, successText);
+  }
+
+  // A new booking is in the room the address names, and may start a series.
+  newBooking() {
+    return this.payload(
+      new URLSearchParams(window.location.search).get("room"),
+      {
         recurring: this.recurringTarget.checked,
         recurring_end: this.recurringEndPicker.selectedDates[0],
         recurring_frequency: this.recurringTypeTarget.value,
-      }),
+      },
     );
-  }
-
-  update() {
-    if (!this.datesValid()) return;
-    this.send(
-      "PATCH",
-      `/sub_space_booking/${encodeURIComponent(this.idTarget.value)}/update`,
-      this.updateTarget,
-      this.payload(this.subspaceTarget.value),
-      this.toast.text("updated"),
-    );
-  }
-
-  delete() {
-    const id = encodeURIComponent(this.idTarget.value);
-    this.send("DELETE", `/sub_space_booking/${id}/delete/${id}`);
-  }
-
-  deleteRest() {
-    const id = encodeURIComponent(this.idTarget.value);
-    this.send("DELETE", `/sub_space_booking/${id}/delete_remaining_recurring`);
   }
 
   // A JSON request with the CSRF token; a delete has no data, so no body. The
@@ -314,6 +281,7 @@ export default class extends TypedController {
     if (field.classList.contains("is-invalid")) return;
     const feedback = this.element.ownerDocument.createElement("div");
     feedback.className = "invalid-feedback";
+    feedback.dataset.bookingModalTarget = "feedback";
     feedback.innerText = message || error;
     field.classList.add("is-invalid");
     field.after(feedback);

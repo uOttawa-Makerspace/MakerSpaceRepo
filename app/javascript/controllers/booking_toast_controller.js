@@ -1,16 +1,11 @@
-import { Controller } from "@hotwired/stimulus";
 import { Toast } from "bootstrap";
 
-// Stimulus defines the target accessors at runtime; this tells the type checker.
-const TypedController = /** @type {new () => Controller<HTMLElement> & {
-  titleTarget: HTMLElement,
-  textTarget: HTMLElement,
-}} */ (/** @type {unknown} */ (Controller));
+import { AccessorController } from "../src/accessor_controller.js";
 
 // The booking page's toast. Its data attributes hold the page's translated
 // texts (data-failed-title="Booking failed"); it is red for a problem and green
 // for a success.
-export default class extends TypedController {
+export default class extends AccessorController {
   static targets = ["title", "text"];
 
   // The page's text of that name, or "" when it has none.

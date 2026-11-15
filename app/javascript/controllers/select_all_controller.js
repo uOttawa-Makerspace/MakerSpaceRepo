@@ -1,12 +1,7 @@
-import { Controller } from "@hotwired/stimulus";
-
-// Stimulus defines the target accessors at runtime; this tells the type checker.
-const TypedController = /** @type {new () => Controller<HTMLElement> & {
-  rowTargets: HTMLInputElement[],
-}} */ (/** @type {unknown} */ (Controller));
+import { AccessorController } from "../src/accessor_controller.js";
 
 // A select-all box that ticks or clears every row box of its table.
-export default class extends TypedController {
+export default class extends AccessorController {
   static targets = ["row"];
 
   /** @param {Event & { currentTarget: HTMLInputElement }} event */
