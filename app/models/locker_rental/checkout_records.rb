@@ -82,10 +82,12 @@ class LockerRental
       checkout_records_of(gid).open.update_all(status: 'paid', updated_at: Time.current)
     end
 
-    # A payment was applied to the rental: the open checkout of the draft the row stores now (read again, so a stale
-    # instance cannot name another draft; the callers hold the row lock) is paid, for the term the rental now ends.
-    def record_checkout_paid
-      gid = self.class.where(id: id).pick(:shopify_draft_order_id)
+    # A payment was applied to the rental: the open checkout of the draft it was paid through is paid, for the term the
+    # rental now ends. That draft is `paid_gid` when the order named it (only that draft's checkout, never another's),
+    # else the draft the row stores now (read again, so a stale instance cannot name another draft; the callers hold
+    # the row lock).
+    def record_checkout_paid(paid_gid = nil)
+      gid = paid_gid || self.class.where(id: id).pick(:shopify_draft_order_id)
       return if gid.blank?
 
       checkout_records_of(gid).open.update_all(status: 'paid', term: checkout_term, updated_at: Time.current)

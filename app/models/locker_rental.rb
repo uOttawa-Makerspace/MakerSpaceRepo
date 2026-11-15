@@ -224,7 +224,10 @@ class LockerRental < ApplicationRecord
   # `malformed_amounts`: names of the figures the caller could not read (it stored nil for them); reported once,
   # after the commit, only for a new payment row (a replay reports nothing), like a held payment.
   # Serialised per rental by the row lock, so two simultaneous deliveries cannot both apply.
-  def record_payment(shopify_order_id:, paid_at: Time.current, amount: nil, currency: nil, order_total: nil, malformed_amounts: [])
+  # `draft_gid`: the draft the order was paid through, when the order names it; an applied payment pays that draft's
+  # checkout (#record_checkout_paid).
+  def record_payment(shopify_order_id:, paid_at: Time.current, amount: nil, currency: nil, order_total: nil, malformed_amounts: [],
+                     draft_gid: nil)
     payment = nil
     transaction do
       lock!
@@ -233,7 +236,7 @@ class LockerRental < ApplicationRecord
         shopify_order_id: shopify_order_id.to_s, paid_at: paid_at, amount: amount,
         currency: currency, order_total: order_total, status: status, hold_reason: reason
       )
-      payment = apply_new_payment(payment, status, paid_at, malformed_amounts) if payment
+      payment = apply_new_payment(payment, status, paid_at, malformed_amounts, draft_gid) if payment
     end
     payment
   end
@@ -561,13 +564,13 @@ class LockerRental < ApplicationRecord
 
   # What a NEW payment row does to the rental, in #record_payment's transaction. Returns the payment, which is
   # held as not_activatable when the rental could not be activated.
-  def apply_new_payment(payment, status, paid_at, malformed_amounts)
+  def apply_new_payment(payment, status, paid_at, malformed_amounts, draft_gid)
     payment = activate_and_notify(payment) if status == 'applied' && !active?
     # Display-only "latest payment", moved only by an APPLIED payment: a held one (cancelled rental,
     # ineligible renter) must not show the renter "Paid on".
     if payment.applied?
       stamp_paid_at(paid_at)
-      record_checkout_paid
+      record_checkout_paid(draft_gid)
     end
     report_held_payment(payment) if payment.held?
     report_malformed_amounts(payment, malformed_amounts)

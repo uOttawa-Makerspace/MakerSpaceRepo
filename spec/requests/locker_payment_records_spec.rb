@@ -90,6 +90,24 @@ RSpec.describe "Locker payment records", type: :request do
       expect(payment.ledger_entry_id).to be_present
     end
 
+    it "pays the checkout of the draft the order names, never the rental's newer open one" do
+      rental = with_draft(create(:locker_rental, :await_payment), "gid://shopify/DraftOrder/9002")
+      PaymentCheckout.create!(reference: rental, provider: "shopify", provider_id: "gid://shopify/DraftOrder/9001",
+                              status: :void, term: rental.owned_until.to_date) # last term's, voided at the new term
+      deliver(:paid, payload(rental, id: 5015, draft_order_id: 9001))
+
+      expect(rental.reload.state).to eq("active")
+      expect(checkouts(rental).map { |c| c.values_at(1, 2) })
+        .to contain_exactly(["gid://shopify/DraftOrder/9002", "open"], ["gid://shopify/DraftOrder/9001", "void"])
+    end
+
+    it "pays the checkout of the draft the order names when that is the open one" do
+      rental = with_draft(create(:locker_rental, :await_payment))
+      deliver(:paid, payload(rental, id: 5016, draft_order_id: 9001))
+
+      expect(checkouts(rental).map(&:third)).to eq(%w[paid])
+    end
+
     it "delivered twice records one payment" do
       rental = with_draft(create(:locker_rental, :await_payment))
       2.times { deliver(:paid, payload(rental, id: 5003)) }
