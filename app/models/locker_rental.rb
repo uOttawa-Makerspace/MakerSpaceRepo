@@ -401,7 +401,10 @@ class LockerRental < ApplicationRecord
       outcome = settle_orphan_draft(gid, "the draft order is not marked for locker rental ##{rental_id} of this environment") do |tags|
         marked_for?(tags, rental_id)
       end
-      rental.forget_draft_order_id(gid) if rental && outcome != :kept
+      if rental && outcome != :kept
+        rental.forget_draft_order_id(gid)
+        rental.void_checkout_record(gid)
+      end
       ShopifyDraftSweep::Outcome.done(outcome)
     end
   rescue ActiveRecord::LockWaitTimeout => e
@@ -433,14 +436,10 @@ class LockerRental < ApplicationRecord
   end
   private_class_method :delete_orphan_draft
 
-  # Forgets the stored draft id, only if it is still `gid` (a conditional UPDATE, never over a newer draft), and
-  # closes the draft's checkout record as `checkout_status` in the same transaction. Public for
-  # .reconcile_orphan_draft!.
-  def forget_draft_order_id(gid, checkout_status = 'void')
-    transaction do
-      self.class.where(id: id, shopify_draft_order_id: gid).update_all(shopify_draft_order_id: nil)
-      close_checkout_record(gid, checkout_status)
-    end
+  # Forgets the stored draft id, only if it is still `gid` (a conditional UPDATE, never over a newer draft).
+  # Public for .reconcile_orphan_draft!.
+  def forget_draft_order_id(gid)
+    self.class.where(id: id, shopify_draft_order_id: gid).update_all(shopify_draft_order_id: nil)
     @attributes.write_from_database('shopify_draft_order_id', nil) if shopify_draft_order_id == gid
   end
 
@@ -463,7 +462,7 @@ class LockerRental < ApplicationRecord
       link = served_link
       return link unless link == :gone
 
-      forget_draft_order_id(shopify_draft_order_id)
+      forget_gone_draft(shopify_draft_order_id)
     end
     create_checkout_draft
   rescue StandardError => e
@@ -496,8 +495,7 @@ class LockerRental < ApplicationRecord
     end
   end
 
-  # Display-only "latest applied payment" (GREATEST), written only when a payment becomes applied, with the
-  # stored draft's checkout record (#record_checkout_paid).
+  # Display-only "latest applied payment" (GREATEST), written only when a payment becomes applied.
   # One UPDATE with GREATEST in SQL (never the in-memory value, which may be stale).
   def stamp_paid_at(time)
     sql = self.class.sanitize_sql_array(
@@ -507,7 +505,6 @@ class LockerRental < ApplicationRecord
     # same request must see the new paid_at)
     row = self.class.connection.exec_query(sql).first
     @attributes.write_from_database('paid_at', row && row['paid_at'])
-    record_checkout_paid
   end
 
   # Sets the end date on a saved rental. A later date (or one side being open-ended) makes the earlier expiry
@@ -565,7 +562,10 @@ class LockerRental < ApplicationRecord
     payment = activate_and_notify(payment) if status == 'applied' && !active?
     # Display-only "latest payment", moved only by an APPLIED payment: a held one (cancelled rental,
     # ineligible renter) must not show the renter "Paid on".
-    stamp_paid_at(paid_at) if payment.applied?
+    if payment.applied?
+      stamp_paid_at(paid_at)
+      record_checkout_paid
+    end
     report_held_payment(payment) if payment.held?
     report_malformed_amounts(payment, malformed_amounts)
     payment
@@ -622,7 +622,7 @@ class LockerRental < ApplicationRecord
   # What the stored draft id becomes after Shopify's answer to the delete (see #sync_shopify_draft_order_after_commit).
   def settle_removed_draft(gid, result, new_term:)
     case result.outcome
-    when :deleted, :gone then forget_draft_order_id(gid)
+    when :deleted, :gone then forget_gone_draft(gid)
     when :completed then settle_paid_draft(gid, new_term:)
     else
       raise DraftOrderNotDeleted,
@@ -630,10 +630,21 @@ class LockerRental < ApplicationRecord
     end
   end
 
-  # A paid draft is never deleted: its checkout record is paid. Ending a rental keeps the id (the record of the
+  # Shopify deleted the draft or no longer has it: the id is forgotten and its checkout record voided, together.
+  def forget_gone_draft(gid)
+    transaction do
+      forget_draft_order_id(gid)
+      void_checkout_record(gid)
+    end
+  end
+
+  # A paid draft is never deleted, and its checkout record is paid. Ending a rental keeps the id (the record of the
   # payment); a rental that starts a new term forgets it.
   def settle_paid_draft(gid, new_term:)
-    new_term ? forget_draft_order_id(gid, 'paid') : close_checkout_record(gid, 'paid')
+    transaction do
+      forget_draft_order_id(gid) if new_term
+      pay_checkout_record(gid)
+    end
   end
 
   # THE place a link is served from: fetch the stored draft, classify it, serve it only when payable. The url, nil
@@ -669,17 +680,11 @@ class LockerRental < ApplicationRecord
     )
   end
 
-  # Stores a new draft's id (#keep_draft_order_id_unless_taken, under the row lock) and opens its
-  # checkout record in the same transaction.
-  def store_shopify_draft_order_id(new_id)
-    super
-    open_checkout_record(new_id)
-  end
-
   def create_checkout_draft
     ensure_can_use_draft_order
     new_id, = create_remote_draft_order # Shopify, no lock
-    keep_draft_order_id_unless_taken(new_id)
+    # Stored under the row lock with its open checkout record, in the same transaction.
+    keep_draft_order_id_unless_taken(new_id) { open_checkout_record(new_id) }
     # Kept: this draft is the invoice. Lost the race: another request stored its draft, which is. Either way the link
     # goes through the same fetch -> classify -> payable path.
     return nil unless shopify_draft_order_id.present? && await_payment? && renter_eligible?(lock: false)

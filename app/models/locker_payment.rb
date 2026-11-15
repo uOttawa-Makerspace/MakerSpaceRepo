@@ -56,6 +56,7 @@ class LockerPayment < ApplicationRecord
 
     reload
     locker_rental.stamp_paid_at(paid_at)
+    locker_rental.record_checkout_paid
     true
   end
 
@@ -73,16 +74,17 @@ class LockerPayment < ApplicationRecord
     end
   end
 
-  # The id of this payment's entry in the payments ledger, written and linked (ledger_entry_id) the first time.
-  # Safe to call again: the entry is written with ON CONFLICT DO NOTHING (PaymentLedgerEntry.record_payment).
+  # This payment's entry in the payments ledger, written and linked (ledger_entry_id) the first time. Safe to call
+  # again, and never raises on a row already there: the entry is written with ON CONFLICT DO NOTHING
+  # (PaymentLedgerEntry.record_payment), and linked only while this payment has no entry and no other payment has
+  # that one. nil when it could not be linked; LockerRental::PaymentRecordsCheck reports the payment then.
   def record_in_ledger
-    return ledger_entry_id if ledger_entry_id
+    return ledger_entry if ledger_entry_id
 
-    entry_id = PaymentLedgerEntry.record_payment(
+    entry = PaymentLedgerEntry.record_payment(
       provider: Payments::ShopifyAdapter::PROVIDER, provider_ref: shopify_order_id, amount: amount
     )
-    update_columns(ledger_entry_id: entry_id)
-    entry_id
+    entry if entry && link_ledger_entry(entry)
   end
 
   private
@@ -94,7 +96,16 @@ class LockerPayment < ApplicationRecord
     resolution == "refunded" ? columns.merge(reversed_at: now) : columns
   end
 
+  def link_ledger_entry(entry)
+    linked = self.class.where(id: id, ledger_entry_id: nil)
+                 .where("NOT EXISTS (SELECT 1 FROM locker_payments other WHERE other.ledger_entry_id = ?)", entry.id)
+                 .update_all(ledger_entry_id: entry.id) == 1
+    @attributes.write_from_database("ledger_entry_id", entry.id) if linked
+    linked
+  end
+
   def record_reversal_in_ledger
-    PaymentLedgerEntry.record_reversal(PaymentLedgerEntry.find(record_in_ledger))
+    entry = record_in_ledger
+    PaymentLedgerEntry.record_reversal(entry) if entry
   end
 end

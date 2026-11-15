@@ -16,36 +16,37 @@ class LockerRental
 
     MAX_IDS = 100
     RECORDED_STATUS = { paid: 'paid', open: 'open', gone: 'void' }.freeze
+    REFERENCE_TYPE = LockerRental.polymorphic_name
+    PROVIDER = CheckoutRecords::PROVIDER
+    SETTLED = CheckoutRecords::DRAFT_STATUS_SETTLED_SQL
 
-    # The stored draft's checkout record of rental r (alias c), and the rental states whose own data settles it.
+    # The stored draft's checkout record (alias c) of the outer locker_rentals row.
     CHECKOUT_OF_STORED_DRAFT = <<~SQL.squish
-      c.reference_type = 'LockerRental' AND c.reference_id = r.id AND c.provider = 'shopify'
-      AND c.provider_id = r.shopify_draft_order_id
+      c.reference_type = '#{REFERENCE_TYPE}' AND c.reference_id = locker_rentals.id AND c.provider = '#{PROVIDER}'
+      AND c.provider_id = locker_rentals.shopify_draft_order_id
     SQL
-    SETTLED_BY_RENTAL = "(r.state = 'await_payment' OR (r.state = 'active' AND r.paid_at IS NOT NULL))"
 
     # check name => the query of the ids that differ
     CHECKS = {
       # rental ids: a stored draft the rental's data settles, without a checkout record
       'checkout_missing' => <<~SQL.squish,
-        SELECT r.id FROM locker_rentals r
-        WHERE r.shopify_draft_order_id IS NOT NULL AND #{SETTLED_BY_RENTAL}
+        SELECT locker_rentals.id FROM locker_rentals
+        WHERE locker_rentals.shopify_draft_order_id IS NOT NULL AND #{SETTLED}
           AND NOT EXISTS (SELECT 1 FROM payment_checkouts c WHERE #{CHECKOUT_OF_STORED_DRAFT})
-        ORDER BY r.id
+        ORDER BY locker_rentals.id
       SQL
       # checkout ids: the stored draft's checkout is not open while the rental awaits payment, or not paid while it is
       # active with a paid_at
       'checkout_status_differs' => <<~SQL.squish,
-        SELECT c.id FROM locker_rentals r JOIN payment_checkouts c ON #{CHECKOUT_OF_STORED_DRAFT}
-        WHERE (r.state = 'await_payment' AND c.status <> 'open')
-           OR (r.state = 'active' AND r.paid_at IS NOT NULL AND c.status <> 'paid')
+        SELECT c.id FROM locker_rentals JOIN payment_checkouts c ON #{CHECKOUT_OF_STORED_DRAFT}
+        WHERE #{SETTLED} AND c.status <> CASE locker_rentals.state WHEN 'await_payment' THEN 'open' ELSE 'paid' END
         ORDER BY c.id
       SQL
       # checkout ids: an open checkout of a draft its rental does not store (or of a rental that is gone)
       'open_checkout_not_stored' => <<~SQL.squish,
-        SELECT c.id FROM payment_checkouts c LEFT JOIN locker_rentals r ON r.id = c.reference_id
-        WHERE c.reference_type = 'LockerRental' AND c.status = 'open'
-          AND r.shopify_draft_order_id IS DISTINCT FROM c.provider_id
+        SELECT c.id FROM payment_checkouts c LEFT JOIN locker_rentals ON locker_rentals.id = c.reference_id
+        WHERE c.reference_type = '#{REFERENCE_TYPE}' AND c.status = 'open'
+          AND locker_rentals.shopify_draft_order_id IS DISTINCT FROM c.provider_id
         ORDER BY c.id
       SQL
       # locker payment ids: no ledger entry
@@ -55,7 +56,7 @@ class LockerRental
       # locker payment ids: the linked entry is not this payment's (kind, provider, order id or amount)
       'ledger_entry_differs' => <<~SQL.squish,
         SELECT lp.id FROM locker_payments lp JOIN payment_ledger_entries e ON e.id = lp.ledger_entry_id
-        WHERE e.kind <> 'payment' OR e.provider <> 'shopify' OR e.provider_ref <> lp.shopify_order_id
+        WHERE e.kind <> 'payment' OR e.provider <> '#{PROVIDER}' OR e.provider_ref <> lp.shopify_order_id
            OR e.amount IS DISTINCT FROM lp.amount
         ORDER BY lp.id
       SQL
@@ -68,14 +69,6 @@ class LockerRental
         ORDER BY lp.id
       SQL
     }.freeze
-
-    # rental id and stored draft of each draft the rental's data does not settle, with no checkout record yet
-    UNRECORDED = <<~SQL.squish
-      SELECT r.id, r.shopify_draft_order_id FROM locker_rentals r
-      WHERE r.shopify_draft_order_id IS NOT NULL AND NOT #{SETTLED_BY_RENTAL}
-        AND NOT EXISTS (SELECT 1 FROM payment_checkouts c WHERE #{CHECKOUT_OF_STORED_DRAFT})
-      ORDER BY r.id
-    SQL
 
     def self.run(adapter: Payments::ShopifyAdapter.new) = new(adapter).run
 
@@ -96,7 +89,7 @@ class LockerRental
 
     # The rental ids whose draft could not be recorded.
     def record_unrecorded_checkouts
-      connection.select_rows(UNRECORDED).reject do |rental_id, gid|
+      LockerRental.with_unrecorded_draft_status.order(:id).pluck(:id, :shopify_draft_order_id).reject do |rental_id, gid|
         status = RECORDED_STATUS[@adapter.checkout_status(gid)]
         status && record_checkout(rental_id, gid, status)
       end.map(&:first)
@@ -106,13 +99,11 @@ class LockerRental
     # not settle it (a rental changed since is looked at again next run). True when recorded or no longer due.
     def record_checkout(rental_id, gid, status)
       LockerRental.transaction do
-        rental = LockerRental.lock.find_by(id: rental_id)
-        next true unless rental&.unsettled_draft?(gid)
+        due = LockerRental.with_unrecorded_draft_status.where(id: rental_id, shopify_draft_order_id: gid).lock
+        owned_until = due.pluck(:owned_until)
+        next true if owned_until.empty?
 
-        PaymentCheckout.insert(
-          { reference_type: 'LockerRental', reference_id: rental_id, provider: Payments::ShopifyAdapter::PROVIDER,
-            provider_id: gid, status: status, term: rental.owned_until&.to_date }
-        ).rows.any?
+        LockerRental.insert_checkout_record(rental_id, gid, status: status, term: owned_until.first&.to_date)
       end
     end
 

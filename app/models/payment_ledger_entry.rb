@@ -21,14 +21,15 @@ class PaymentLedgerEntry < ApplicationRecord
     persisted? || super
   end
 
-  # The id of the payment entry for (provider, provider_ref): written now, or the one already there. The insert is
-  # ON CONFLICT DO NOTHING on the one-payment-per-provider_ref index, so a retried write adds nothing.
+  # The payment entry for (provider, provider_ref): written now, or the one already there (which keeps its own
+  # amount). The insert is ON CONFLICT DO NOTHING on the one-payment-per-provider_ref index, so a retried or
+  # repeated write adds nothing and never raises.
   def self.record_payment(provider:, provider_ref:, amount:)
-    inserted = insert(
+    insert(
       { provider: provider, provider_ref: provider_ref, amount: amount, kind: "payment" },
-      unique_by: :index_payment_ledger_entries_one_payment_per_provider_ref, returning: %w[id]
+      unique_by: :index_payment_ledger_entries_one_payment_per_provider_ref
     )
-    inserted.rows.first&.first || payment.find_by!(provider: provider, provider_ref: provider_ref).id
+    payment.find_by(provider: provider, provider_ref: provider_ref)
   end
 
   # Writes the reversal of the payment entry `entry` once (ON CONFLICT DO NOTHING on reversed_entry_id: a payment has

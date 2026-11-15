@@ -81,9 +81,10 @@ module ShopifyConcern
   # (another request stored its draft first, the record moved on, or storing failed) is deleted on Shopify once the
   # lock is released, so a record is never left with a second payable draft; a stored draft is never deleted here.
   # Afterwards the record holds the row's draft id: this one when kept, else the winner's (or none). True when kept;
-  # a failure to store re-raises after the delete.
-  def keep_draft_order_id_unless_taken(new_id)
-    kept = store_draft_order_id_unless_taken(new_id)
+  # a failure to store re-raises after the delete. A block, when given, runs right after the store, under the same
+  # lock and in the same transaction (a record written beside the stored id).
+  def keep_draft_order_id_unless_taken(new_id, &after_store)
+    kept = store_draft_order_id_unless_taken(new_id, &after_store)
     discard_unused_draft(new_id) unless kept
     kept
   end
@@ -93,6 +94,7 @@ module ShopifyConcern
       next false unless shopify_draft_order_id.blank? && may_take_draft_order?
 
       store_shopify_draft_order_id(new_id)
+      yield if block_given?
       true
     end
   rescue StandardError
