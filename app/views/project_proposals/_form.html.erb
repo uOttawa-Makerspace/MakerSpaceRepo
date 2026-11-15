@@ -112,7 +112,7 @@
     <div class="mb-3">
         <div class="input-group mb-3">
             <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control files_', aria: { label: t('project_proposal.new.project_files') } %>
-            <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-file-input" aria-label="<%= t('common.names.add_file') %>">
+            <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-file-input" aria-label="<%= t('common.names.add_file') %>" data-remove-label="<%= t('common.remove') %>">
                 <i class="fa fa-plus"></i>
             </button>
         </div>

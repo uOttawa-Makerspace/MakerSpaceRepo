@@ -1,6 +1,7 @@
 import DataTable from "datatables.net-bs5";
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
-import { dataTableOptions } from "../src/page_locale.js";
+import { onEveryPageLoad } from "../src/on_page.js";
+import { pageTable } from "../src/page_table.js";
 
 // Hides rows submitted more than the computed number of days ago. Registered
 // once per admin page visit; it reads the current value on every redraw.
@@ -23,15 +24,20 @@ function removeDateFilter() {
   if (index !== -1) DataTable.ext.search.splice(index, 1);
 }
 
-document.addEventListener("turbo:load", () => {
+// Builds each job order table of the page and, on the admin page, the filters
+// of its one table. Tables already built are left as they are, with the
+// filters they were given.
+onEveryPageLoad(() => {
+  const [dt] = [...document.querySelectorAll(".table:not(.notDataTable)")]
+    .map((table) =>
+      pageTable(table, {
+        order: [[3, "desc"]], // sorts by id on /admin and submitted date on client view
+        pageLength: 25,
+      }),
+    )
+    .filter(Boolean);
+  if (!dt) return;
   removeDateFilter();
-  const dt = new DataTable(
-    ".table:not(.notDataTable)",
-    dataTableOptions(document, {
-      order: [[3, "desc"]], // sorts by id on /admin and submitted date on client view
-      pageLength: 25,
-    }),
-  );
 
   if (window.location.pathname !== "/job_orders/admin") return; // only filter on admin page
 

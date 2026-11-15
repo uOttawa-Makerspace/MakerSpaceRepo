@@ -3,9 +3,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const tables = [];
 const searchFilters = [];
+const { exemptPageFromCache } = vi.hoisted(() => ({
+  exemptPageFromCache: vi.fn(),
+}));
+vi.mock("@hotwired/turbo-rails", () => ({
+  Turbo: { cache: { exemptPageFromCache } },
+}));
 vi.mock("datatables.net-bs5", () => {
   class DataTable {
     static ext = { search: searchFilters };
+    static isDataTable(el) {
+      return tables.some((t) => t.selector === el);
+    }
     // Stands in for the public cell lookup: settings carry the cells by row.
     static Api = class {
       constructor(settings) {
@@ -40,6 +49,7 @@ const checkbox = (name, value, checked = false) =>
   `<input type="checkbox" name="${name}[]" value="${value}" ${checked ? "checked" : ""}>`;
 
 const PAGE = `
+<table class="table"></table>
 <select id="date_range">
   <option value="30">Last 30</option><option value="all">All</option><option value="semester">Term</option>
 </select>
@@ -58,6 +68,7 @@ function load(path = "/job_orders/admin", page = PAGE) {
   document.body.innerHTML = page;
   tables.length = 0;
   searchFilters.length = 0;
+  exemptPageFromCache.mockClear();
   document.dispatchEvent(new Event("turbo:load"));
   return tables[0];
 }
@@ -75,9 +86,36 @@ afterEach(() => vi.useRealTimers());
 
 describe("job order tables", () => {
   it("makes each table sortable by newest first, 25 to a page", () => {
-    const dt = load("/job_orders", "<table class='table'></table>");
-    expect(dt.selector).toBe(".table:not(.notDataTable)");
+    const dt = load(
+      "/job_orders",
+      "<table class='table notDataTable'></table><table class='table' id='list'></table>",
+    );
+    expect(dt.selector).toBe($("list"));
     expect(dt.options).toEqual({ order: [[3, "desc"]], pageLength: 25 });
+    expect(exemptPageFromCache).toHaveBeenCalledTimes(1);
+  });
+
+  it("builds every job order table of the page", () => {
+    load(
+      "/job_orders",
+      "<table class='table' id='a'></table><table class='table notDataTable'></table><table class='table' id='b'></table>",
+    );
+    expect(tables.map((t) => t.selector)).toEqual([$("a"), $("b")]);
+  });
+
+  it("builds nothing on a page without a job order table", () => {
+    load("/job_orders/settings", "<table class='table notDataTable'></table>");
+    expect(tables).toEqual([]);
+    expect(exemptPageFromCache).not.toHaveBeenCalled();
+  });
+
+  it("leaves the table and its filters as they are on a second load over the same page", () => {
+    load();
+    document.dispatchEvent(new Event("turbo:load"));
+    expect(tables).toHaveLength(1);
+    tick(box("job_type_filter", "Laser"));
+    expect(tables[0].draws).toBe(1);
+    expect(searchFilters).toHaveLength(1);
   });
 
   it("adds no filters outside the admin page", () => {
@@ -200,6 +238,7 @@ describe("date range", () => {
 
   it("replaces the date filter when the admin page is visited again", () => {
     load();
+    document.body.innerHTML = PAGE;
     document.dispatchEvent(new Event("turbo:load"));
     expect(searchFilters).toHaveLength(1);
   });

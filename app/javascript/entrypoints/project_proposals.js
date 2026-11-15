@@ -1,3 +1,4 @@
+import { addInputRow } from "../src/input_rows.js";
 import { oncePerElement, onEveryPageLoad } from "../src/on_page.js";
 import { tomSelectFor } from "../src/tom_select.js";
 import "../src/file_upload.js";
@@ -88,16 +89,8 @@ const bindSubmitChecks = oncePerElement((form) =>
 
 // The add buttons of the file and photo inputs: each adds another input row
 // with a button that removes it.
-const bindAddInputRow = oncePerElement((cloneButton) =>
-  cloneButton.addEventListener("click", () => {
-    let parent = cloneButton.parentElement;
-    let clone = parent.cloneNode(true);
-    clone.children[0].value = null;
-    clone.children[1].removeAttribute("id");
-    clone.children[1].className = "btn btn-danger";
-    clone.children[1].children[0].className = "fa fa-trash";
-    parent.parentElement.appendChild(clone);
-  }),
+const bindAddInputRow = oncePerElement((addButton) =>
+  addButton.addEventListener("click", () => addInputRow(addButton)),
 );
 
 // The remove buttons of the added input rows, listened to on the rows' parent,
