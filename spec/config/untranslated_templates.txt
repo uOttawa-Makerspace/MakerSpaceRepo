@@ -121,7 +121,7 @@ app/views/repositories/edit.html.erb
 app/views/repositories/new.html.erb
 app/views/repositories/password_entry.html.erb
 app/views/saml/_header.html.erb
-app/views/saml/saml_post.html.erb
+app/views/saml/staff_only.html.erb
 app/views/sessions/resend_email_confirmation.html.erb
 app/views/settings/admin.html.erb
 app/views/settings/profile.html.erb

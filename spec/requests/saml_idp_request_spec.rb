@@ -442,6 +442,80 @@ RSpec.describe "SAML IdP", type: :request do
       end
     end
 
+    context "a service provider marked staff_only (the wiki server)" do
+      let(:wiki_server_acs) { "https://wiki-server.makerepo.com/saml/acs" }
+
+      def post_wiki_server(user_record)
+        post "/saml/auth", params: { SAMLRequest: authn_request(issuer: "wiki-server.makerepo.com", acs: wiki_server_acs),
+                                     RelayState: "rs1", submit: "sign_in", username: user_record.username, password: password }
+      end
+
+      it "is the only staff_only entry in the registry" do
+        issuers = ["wiki.makerepo.com", "https://en.wiki.makerepo.com/simplesamlphp", "https://fr.wiki.makerepo.com/simplesamlphp",
+                   "rooms.makerepo.com", "print.makerepo.com", "wiki-server.makerepo.com", "wikijs.makerepo.com",
+                   "sedt-wikijs.makerepo.com", "staff-wikijs.makerepo.com"]
+        staff_only = issuers.select { |issuer| SamlIdp.config.service_provider.finder.call(issuer)[:staff_only] }
+        expect(staff_only).to eq(["wiki-server.makerepo.com"])
+      end
+
+      it "refuses a non-staff user with the notice page, building no assertion and embedding no SAMLResponse" do
+        expect_any_instance_of(SamlIdpController).not_to receive(:encode_response)
+        post_wiki_server(user)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("you are not habilitated to login to the wiki",
+                                         "Please note that you can still use the wiki without logging in.")
+        expect(response.body).not_to include("SAMLResponse")
+        expect(c18_form_action).to be_nil
+      end
+
+      it "refuses a volunteer the same way" do
+        volunteer = create(:user, :volunteer, password: BCrypt::Password.create(password))
+        post_wiki_server(volunteer)
+        expect(response.body).to include("you are not habilitated to login to the wiki")
+        expect(response.body).not_to include("SAMLResponse")
+      end
+
+      it "still signs a staff user in with a signed assertion for the wiki server" do
+        staff = create(:user, :staff, password: BCrypt::Password.create(password))
+        post_wiki_server(staff)
+        expect(c18_form_action).to eq(wiki_server_acs)
+        doc = Nokogiri::XML(c18_saml_response_xml)
+        doc.remove_namespaces!
+        expect(doc.at_xpath("//Assertion/Signature")).to be_present
+        expect(doc.at_xpath("//Assertion/Conditions/AudienceRestriction/Audience").text).to eq("wiki-server.makerepo.com")
+        expect(doc.at_xpath("//Assertion/Subject/NameID").text).to eq(staff.id.to_s)
+        expect(response.body).not_to include("habilitated")
+      end
+
+      it "still signs an admin in" do
+        admin = create(:user, :admin, password: BCrypt::Password.create(password))
+        post_wiki_server(admin)
+        expect(c18_saml_response_xml).to be_present
+        expect(response.body).not_to include("habilitated")
+      end
+
+      {
+        "wiki.makerepo.com" => "https://en.wiki.makerepo.com/saml/acs",
+        "https://en.wiki.makerepo.com/simplesamlphp" => "https://en.wiki.makerepo.com/saml/acs",
+        "https://fr.wiki.makerepo.com/simplesamlphp" => "https://fr.wiki.makerepo.com/saml/acs",
+        "rooms.makerepo.com" => "https://rooms.makerepo.com/users/auth/saml/callback",
+        "print.makerepo.com" => "https://print.makerepo.com/saml/acs",
+        "wikijs.makerepo.com" => "https://wikijs.makerepo.com/login/258365f7-0b23-403c-817a-5d1ca2be771f/callback",
+        "sedt-wikijs.makerepo.com" => "https://sedt-wikijs.makerepo.com/login/f0ee7ebd-2077-4a5d-aff0-553705102005/callback",
+        "staff-wikijs.makerepo.com" => "https://staff-wikijs.makerepo.com/login/c62ffc7e-7a59-4e3a-8f78-9d07bedafa30/callback"
+      }.each do |issuer, acs|
+        it "still gives a non-staff user an assertion for #{issuer}" do
+          post "/saml/auth", params: { SAMLRequest: authn_request(issuer: issuer, acs: acs), RelayState: "rs1",
+                                       submit: "sign_in", username: user.username, password: password }
+          expect(c18_form_action).to eq(acs)
+          doc = Nokogiri::XML(c18_saml_response_xml)
+          doc.remove_namespaces!
+          expect(doc.at_xpath("//Assertion/Conditions/AudienceRestriction/Audience").text).to eq(issuer)
+          expect(response.body).not_to include("habilitated")
+        end
+      end
+    end
+
     context "submit=current_user" do
       it "signed in: issues a signed assertion for the session user" do
         signed_in = c18_sign_in(:staff)
