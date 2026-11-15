@@ -1,17 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const selects = [];
-vi.mock("tom-select", () => ({
-  default: class {
-    constructor(el, config) {
-      this.el = typeof el === "string" ? document.querySelector(el) : el;
-      this.config = config;
-      this.el.tomselect = this;
-      selects.push(this);
-    }
-  },
-}));
 vi.mock("datatables.net-bs5", () => ({ default: class {} }));
 
 const $ = (id) => document.getElementById(id);
@@ -22,7 +11,6 @@ const $ = (id) => document.getElementById(id);
 const documentListeners = [];
 async function importOver(html) {
   document.body.innerHTML = html;
-  selects.length = 0;
   vi.resetModules();
   const listen = vi.spyOn(document, "addEventListener");
   await import("../../../app/javascript/entrypoints/proficient_projects.js");
@@ -39,7 +27,6 @@ afterEach(() => {
 
 const form = `
   <button class="pp-status-button">Awarded</button>
-  <select id="training_requirements"></select>
   <div id="photos">
     <div class="input-group">
       <input type="file" id="images_">
@@ -62,7 +49,6 @@ describe("proficient project page script reached by a Turbo visit", () => {
     expect(document.querySelector(".pp-status-button").className).toContain(
       "btn-success",
     );
-    expect(selects.map((s) => s.el)).toEqual([$("training_requirements")]);
     $("new-photo-input").click();
     expect($("photos").children).toHaveLength(2);
     $("new-tr").click();
@@ -73,7 +59,6 @@ describe("proficient project page script reached by a Turbo visit", () => {
     await importOver(form);
     turboLoad();
 
-    expect(selects).toHaveLength(1);
     $("new-photo-input").click();
     expect($("photos").children).toHaveLength(2);
     $("new-tr").click();
@@ -117,7 +102,6 @@ describe("proficient project page script reached by a Turbo visit", () => {
     await importOver("<p>another page</p>");
     document.body.innerHTML = form;
     turboLoad();
-    expect(selects).toHaveLength(1);
     $("new-photo-input").click();
     expect($("photos").children).toHaveLength(2);
   });

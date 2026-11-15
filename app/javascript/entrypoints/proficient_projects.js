@@ -1,5 +1,3 @@
-import TomSelect from "tom-select";
-import { tomSelectOptions } from "../src/page_locale.js";
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
 import { addInputRow } from "../src/input_rows.js";
 import { oncePerElement, onEveryPageLoad } from "../src/on_page.js";
@@ -80,23 +78,10 @@ function bindInputRows(addButton) {
   bindRemoveInputRow(addButton?.parentElement.parentElement);
 }
 
-function buildTrainingPicker() {
-  const select = document.getElementById("training_requirements");
-  if (!select || select.tomselect) return;
-  new TomSelect(
-    "#training_requirements",
-    tomSelectOptions(document, {
-      plugins: ["remove_button"],
-      maxItems: null,
-    }),
-  );
-}
-
 onEveryPageLoad(() => {
   [...document.getElementsByClassName("pp-status-button")].forEach(
     colourStatusButton,
   );
-  buildTrainingPicker();
   bindImageCheck(
     document.getElementById("new_proficient_project") ||
       document.getElementsByClassName("edit_proficient_project")[0],
