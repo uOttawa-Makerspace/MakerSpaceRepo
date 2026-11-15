@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_15_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_15_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1478,6 +1478,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_100000) do
     t.integer "max_capacity"
     t.string "name"
     t.datetime "updated_at", precision: nil, null: false
+    t.index "lower((name)::text)", name: "index_spaces_on_lower_name", unique: true
   end
 
   create_table "spaces_trainings", id: false, force: :cascade do |t|

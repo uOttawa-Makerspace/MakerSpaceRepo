@@ -33,9 +33,23 @@ RSpec.describe Space, type: :model do
                )
       end
       it do
-        should validate_uniqueness_of(:name).with_message(
+        should validate_uniqueness_of(:name).case_insensitive.with_message(
                  "Space already exists"
                )
+      end
+
+      it "refuses a name that differs from another space's only in case" do
+        create(:space, name: "Makerspace")
+        space = Space.new(name: "MAKERSPACE")
+        expect(space).not_to be_valid
+        expect(space.errors[:name]).to eq(["Space already exists"])
+      end
+
+      it "has the database refuse a name repeated in another case" do
+        create(:space, name: "Makerspace")
+        now = Time.current
+        expect { Space.insert_all!([{ name: "makerSPACE", created_at: now, updated_at: now }]) }
+          .to raise_error(ActiveRecord::RecordNotUnique)
       end
     end
   end

@@ -71,6 +71,7 @@ SELECT volunteer_task_id, user_id, array_agg(id) FROM volunteer_task_joins WHERE
 SELECT user_id, space_id FROM staff_spaces GROUP BY 1,2 HAVING count(*)>1;
 SELECT count(*) FROM design_days;                -- at most 1
 SELECT count(*) FROM printer_sessions WHERE printer_id IS NULL;
+SELECT lower(name), array_agg(id) FROM spaces GROUP BY 1 HAVING count(*)>1;
 SELECT job_task_quote_id, job_option_id FROM job_task_quote_options GROUP BY 1,2 HAVING count(*)>1;
 SELECT b.id FROM sub_space_bookings b WHERE (SELECT count(*) FROM sub_space_booking_statuses s WHERE s.sub_space_booking_id = b.id) <> 1 OR NOT EXISTS (SELECT 1 FROM sub_space_booking_statuses s WHERE s.id = b.sub_space_booking_status_id AND s.sub_space_booking_id = b.id AND s.booking_status_id IS NOT NULL);  -- bookings without exactly one status row linked both ways
 SELECT max(version) FROM schema_migrations;      -- expected to be 20261106200000; confirm before the merge
@@ -459,6 +460,14 @@ The body of each imported calendar link (staff external unavailabilities, a spac
 ## Staff space unique index
 
 The release that adds `index_staff_spaces_on_user_id_and_space_id` (unique over user and space) needs no manual step; `web` runs the migration on boot. It makes the database refuse a second assignment of one staff member to one space. The migration first looks for duplicates; if any exist it changes nothing and stops with a message listing the key and the row ids. Settle those rows by hand (keep one, decide with the maintainers what happens to the others), then deploy again. The 2026-11-01 backup had no duplicates. The index is built concurrently, and `down` only drops the index and keeps every row. A repeated insert that hits the index raises `ActiveRecord::RecordNotUnique`; the staff assignment form looks the row up first, so a repeat is the normal outcome.
+
+## Space names and space managers
+
+The release with migration `20261115130000` needs no manual step; `web` runs it on boot.
+
+- `20261115130000` adds the unique index `index_spaces_on_lower_name` on `lower(name)`, so the database refuses two spaces whose names differ only in case (the model check is case-insensitive too). It first looks for names used more than once, ignoring case; if any exist it changes nothing and stops with a message listing each name and its space ids. Rename those spaces by hand, then deploy again. The table is small, so the index is built inside the migration's transaction. `down` drops the index and keeps every row.
+
+The 2026-11-14 backup had 12 spaces with 12 distinct names ignoring case. Run the query in "Before merging to master" on production before the merge.
 
 ## Kiosk sign-in log
 
