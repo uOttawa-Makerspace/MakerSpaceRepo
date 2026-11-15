@@ -1,5 +1,6 @@
 import { Tooltip } from "bootstrap";
-import { dataTableOptions } from "../src/page_locale.js";
+import { onEveryPageLoad } from "../src/on_page.js";
+import { pageTable } from "../src/page_table.js";
 import { newTomSelect } from "../src/tom_select.js";
 import DataTable from "datatables.net-bs5";
 import "datatables.net-select-bs5";
@@ -285,38 +286,38 @@ document.addEventListener("turbo:load", function () {
   }
 });
 
-// Initialize DataTable with select plugin
-document.addEventListener("turbo:load", function () {
-  const locker_inventory_table = /** @type {HTMLTableElement} */ (
+// The inventory table, with a select column, built when the page is loaded
+// and on every later Turbo load (see pageTable).
+onEveryPageLoad(() => {
+  const table = /** @type {HTMLTableElement} */ (
     document.querySelector("#locker_inventory_table")
   );
-  if (
-    locker_inventory_table &&
-    !DataTable.isDataTable(locker_inventory_table)
-  ) {
-    new DataTable(
-      locker_inventory_table,
-      dataTableOptions(locker_inventory_table, {
-        language: {
-          search: "_INPUT_",
-          searchPlaceholder: locker_inventory_table.dataset.searchPlaceholder,
-        },
-        columnDefs: [
-          {
-            orderable: false,
-            render: DataTable.render.select(),
-            targets: 0,
-          },
-        ],
-        select: {
-          style: "os",
-          selector: "td:first-child",
-        },
-        order: [[1, "asc"]],
-      }),
-    );
-  }
+  if (!table) return;
+  pageTable(table, {
+    language: {
+      search: "_INPUT_",
+      searchPlaceholder: table.dataset.searchPlaceholder,
+    },
+    columnDefs: [
+      {
+        orderable: false,
+        render: DataTable.render.select(),
+        targets: 0,
+      },
+    ],
+    select: {
+      style: "os",
+      selector: "td:first-child",
+    },
+    order: [[1, "asc"]],
+  });
+});
 
+// The bulk edit dialog lists the lockers selected in the inventory table
+document.addEventListener("turbo:load", function () {
+  const locker_inventory_table = document.querySelector(
+    "#locker_inventory_table",
+  );
   const lockerBulkEditList = document.querySelector("#lockerBulkEditList");
   const lockerBulkEditModal = document.querySelector("#lockerBulkEditModal");
 

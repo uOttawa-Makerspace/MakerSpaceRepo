@@ -1,7 +1,8 @@
 import TomSelect from "tom-select";
-import { dataTableOptions, tomSelectOptions } from "../src/page_locale.js";
-import DataTable from "datatables.net-bs5";
+import { tomSelectOptions } from "../src/page_locale.js";
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
+import { onEveryPageLoad } from "../src/on_page.js";
+import { pageTable } from "../src/page_table.js";
 document.addEventListener("turbo:load", () => {
   [...document.getElementsByClassName("pp-status-button")].forEach(
     function (element) {
@@ -123,4 +124,6 @@ document.addEventListener("turbo:load", () => {
   }
 });
 
-new DataTable("#prof-proj-requests", dataTableOptions(document));
+onEveryPageLoad(() => {
+  pageTable(document.getElementById("prof-proj-requests"));
+});
