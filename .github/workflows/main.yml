@@ -25,14 +25,53 @@ jobs:
   # ==========================================
   # STAGE 1: TESTS & SECURITY
   # ==========================================
-  test:
+  # The RSpec suite runs as three shards (the test matrix below). This job picks the runtime log
+  # the shards split by, once, so all three read the same log even when another run saves a newer
+  # one meanwhile: with different logs the shards could skip or repeat spec files.
+  test-plan:
     # Skip pull_request jobs if the branch being pushed is 'staging' or 'master'
     # (because the 'push' event below is already running the test suite for it)
     if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || (github.head_ref != 'staging' && github.head_ref != 'master'))
     runs-on: ubuntu-latest
-    # Parallel suite: ~2 min on 8 cores locally; GitHub runners have 2-4 cores,
-    # so allow for the slower runner plus ~3 min of setup (Ruby/Node caches, Vite build).
+    timeout-minutes: 5
+
+    steps:
+      # Per-file runtimes saved by the coverage job of an earlier run. The first run, or a
+      # cache miss, leaves an empty log, and the specs are then split by file size.
+      - name: Restore parallel runtime log
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: tmp/parallel_runtime_rspec.log
+          key: parallel-runtime-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: parallel-runtime-
+
+      - name: Make sure the log exists
+        run: |
+          mkdir -p tmp
+          touch tmp/parallel_runtime_rspec.log
+          echo "Runtime log: $(wc -l < tmp/parallel_runtime_rspec.log) files"
+
+      - name: Upload the runtime log for the shards
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: parallel-runtime-base
+          path: tmp/parallel_runtime_rspec.log
+          if-no-files-found: error
+          retention-days: 1
+
+  test:
+    needs: test-plan
+    name: test (shard ${{ matrix.shard }}/3)
+    runs-on: ubuntu-latest
+    # Each shard runs a third of the spec files, one rspec process per core (GitHub runners have
+    # 4 cores), plus ~3 min of setup (Ruby/Node caches, Vite build).
     timeout-minutes: 15
+    strategy:
+      # a failing shard does not cancel the others, so one run reports every failure
+      fail-fast: false
+      matrix:
+        # the 3 also appears in SPEC_SHARD below and in the coverage job
+        shard: [1, 2, 3]
 
     services:
       postgres:
@@ -116,44 +155,48 @@ jobs:
       - name: Prepare Databases
         run: bundle exec rake parallel:setup
 
-      # Per-file runtimes from the previous run balance the parallel groups
-      # (the first run, or a cache miss, falls back to balancing by file size).
-      - name: Restore parallel runtime log
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      # The same log on every shard (see test-plan); the shard split and the per-core groups
+      # inside the shard both balance by it.
+      - name: Download parallel runtime log
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          path: tmp/parallel_runtime_rspec.log
-          key: parallel-runtime-${{ github.run_id }}
-          restore-keys: parallel-runtime-
+          name: parallel-runtime-base
+          path: tmp
 
-      # bin/parallel_rspec prebuilds the Vite test assets once (rails vite:build),
-      # runs one rspec process per core, and merges the per-worker coverage.
-      # CI=1 -> eager_load + Bullet (raise); COVERAGE=1 -> SimpleCov.
+      # SPEC_SHARD makes bin/parallel_rspec run only this shard's spec files
+      # (.github/scripts/spec-shard.rb). It prebuilds the Vite test assets once (rails vite:build),
+      # runs one rspec process per core, and merges the per-worker coverage into
+      # coverage/.resultset.json. CI=1 -> eager_load + Bullet (raise); COVERAGE=1 -> SimpleCov.
+      # The shard's coverage is partial; the coverage job merges the three.
       - name: Run RSpec (parallel)
-        run: CI=1 COVERAGE=1 bin/parallel_rspec
+        run: CI=1 COVERAGE=1 SPEC_SHARD=${{ matrix.shard }}/3 bin/parallel_rspec
 
-      # Saved even when the specs fail, so the next run still balances by runtime.
-      # Skipped when the run died before any spec wrote the log.
-      - name: Save parallel runtime log
+      # Uploaded even when the specs fail, so the next run still balances by runtime.
+      # The coverage job merges the three parts and saves them for the next run.
+      - name: Upload parallel runtime log
         if: always() && hashFiles('tmp/parallel_runtime_rspec.log') != ''
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
+          name: parallel-runtime-shard-${{ matrix.shard }}
           path: tmp/parallel_runtime_rspec.log
-          key: parallel-runtime-${{ github.run_id }}
+          retention-days: 1
 
-      - name: Upload coverage report
+      # .resultset.json is a hidden file, which upload-artifact skips unless told otherwise.
+      - name: Upload coverage results
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: coverage
-          path: coverage
+          name: coverage-shard-${{ matrix.shard }}
+          path: coverage/.resultset.json
+          include-hidden-files: true
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 1
 
       - name: Upload accessibility report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: axe-report
+          name: axe-report-shard-${{ matrix.shard }}
           path: tmp/axe
           if-no-files-found: ignore
           retention-days: 7
@@ -162,8 +205,74 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: capybara-failures
+          name: capybara-failures-shard-${{ matrix.shard }}
           path: tmp/capybara
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # Merges the three shards' coverage into one report (the `coverage` artifact) and their runtime
+  # logs into the log the next run splits by. It runs when a shard failed too, so the log is still
+  # saved, but the image builds wait for it only after every shard passed. It fails when a shard's
+  # coverage is missing or cannot be merged, which holds back the builds, as a failed merge inside
+  # the single test job did before the split.
+  coverage:
+    needs: [test-plan, test]
+    if: ${{ !cancelled() && (needs.test.result == 'success' || needs.test.result == 'failure') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Download runtime logs
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: tmp/runtime-logs
+          pattern: parallel-runtime-*
+
+      # Fresh shard times replace the times this run started from; files a shard did not
+      # record (it stopped early) keep their earlier time.
+      - name: Merge runtime logs
+        run: |
+          .github/scripts/runtime-log-merge.rb tmp/runtime-logs/parallel-runtime-base/parallel_runtime_rspec.log tmp/runtime-logs/parallel-runtime-shard-*/parallel_runtime_rspec.log > tmp/parallel_runtime_rspec.log
+          echo "Runtime log: $(wc -l < tmp/parallel_runtime_rspec.log) files"
+
+      - name: Save parallel runtime log
+        if: hashFiles('tmp/parallel_runtime_rspec.log') != ''
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: tmp/parallel_runtime_rspec.log
+          key: parallel-runtime-${{ github.run_id }}-${{ github.run_attempt }}
+
+      # Each part lands in coverage/coverage-shard-<n>/.resultset.json, which bin/coverage_collate reads.
+      - name: Download coverage results
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: coverage
+          pattern: coverage-shard-*
+
+      - name: Merge coverage
+        run: |
+          shopt -s nullglob
+          parts=(coverage/coverage-shard-*/.resultset.json)
+          if [ "${#parts[@]}" -ne 3 ]; then
+            echo "::error::Found coverage results for ${#parts[@]} of 3 shards."
+            exit 1
+          fi
+          bin/coverage_collate | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage
+          path: coverage
           if-no-files-found: ignore
           retention-days: 7
 
@@ -317,9 +426,9 @@ jobs:
   # STAGE 2: PARALLEL NATIVE DOCKER BUILDS
   # ==========================================
   build-staging-images:
-    needs: [test, js, erb-lint, security, changelog]
+    needs: [test, coverage, js, erb-lint, security, changelog]
     # the changelog job only adds CHANGELOG.md; its result is deliberately not checked
-    if: ${{ !cancelled() && needs.test.result == 'success' && needs.js.result == 'success' && needs.erb-lint.result == 'success' && needs.security.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/staging' }}
+    if: ${{ !cancelled() && needs.test.result == 'success' && needs.coverage.result == 'success' && needs.js.result == 'success' && needs.erb-lint.result == 'success' && needs.security.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/staging' }}
     name: Build (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -386,9 +495,9 @@ jobs:
           retention-days: 1
 
   build-production-images:
-    needs: [test, js, erb-lint, security, changelog]
+    needs: [test, coverage, js, erb-lint, security, changelog]
     # the changelog job only adds CHANGELOG.md; its result is deliberately not checked
-    if: ${{ !cancelled() && needs.test.result == 'success' && needs.js.result == 'success' && needs.erb-lint.result == 'success' && needs.security.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+    if: ${{ !cancelled() && needs.test.result == 'success' && needs.coverage.result == 'success' && needs.js.result == 'success' && needs.erb-lint.result == 'success' && needs.security.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
     name: Build Production (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     strategy:
