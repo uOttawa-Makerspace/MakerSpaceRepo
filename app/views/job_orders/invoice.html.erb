@@ -140,7 +140,8 @@
             </td>
 
             <td>
-              <%= t('job_orders.invoice_page.client', name: @job_order.user.name) %>
+              <%# A deleted customer account is hidden from user lookups, so the order may have no customer to name. %>
+              <%= t('job_orders.invoice_page.client', name: @job_order.user&.name || t('job_orders.order.deleted_user')) %>
               <br>
               <%# The day of the latest status; an order without any status row has only its own creation day. %>
               <%= t('job_orders.invoice_page.date', date: l((@job_order.latest_status || @job_order).created_at, format: :job_order_invoice)) %>

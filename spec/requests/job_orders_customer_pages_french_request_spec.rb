@@ -127,6 +127,34 @@ RSpec.describe "Job order customer pages in English and French", type: :request 
       )
       expect(page_text).not_to include("Invoice #", "Base Fee", "CAD", "Payment Method")
     end
+
+    # A deleted account is hidden from every user lookup, so the order has no customer to name.
+    it "names a deleted customer in each language" do
+      order
+      owner.soft_delete!
+      session_login!(staff)
+
+      get job_order_invoice_path(order)
+      expect(response).to have_http_status(:ok)
+      expect(page_text).to include("Client : [DELETED USER]", "Total: CAD $65.50")
+
+      get job_order_invoice_path(order), params: fr
+      expect(response).to have_http_status(:ok)
+      expect(page_text).to include("Client : [UTILISATEUR SUPPRIMÉ]", "Total : 65,50 $ CA")
+    end
+
+    it "names a customer whose account is gone in each language" do
+      order.update_column(:user_id, nil) # rubocop:disable Rails/SkipsModelValidations
+      session_login!(staff)
+
+      get job_order_invoice_path(order)
+      expect(response).to have_http_status(:ok)
+      expect(page_text).to include("Client : [DELETED USER]")
+
+      get job_order_invoice_path(order), params: fr
+      expect(response).to have_http_status(:ok)
+      expect(page_text).to include("Client : [UTILISATEUR SUPPRIMÉ]")
+    end
   end
 
   describe "order list" do
