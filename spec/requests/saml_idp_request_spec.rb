@@ -789,6 +789,13 @@ RSpec.describe "SAML IdP", type: :request do
             expect(response.body).to include('value="sign_in"')
             expect(response.body).not_to include('value="current_user"')
           end
+
+          # The controller base64-encodes the gem's LogoutResponse for the POST binding,
+          # so a gem release that encodes it already must fail here, not double-encode.
+          it "relies on the gem returning the signed LogoutResponse as XML" do
+            xml = SamlIdp::LogoutResponseBuilder.new("r1", "https://idp.test", "https://sp.test/logout", "_lo1", OpenSSL::Digest::SHA256).signed
+            expect(xml).to start_with("<LogoutResponse")
+          end
         end
 
         it "accepts a LogoutRequest whose root element is signed (control for the wrapping examples)" do
