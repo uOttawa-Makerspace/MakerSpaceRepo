@@ -1,7 +1,17 @@
+import { pageLanguage } from "../src/page_locale.js";
+
 function parseVal(el) {
   const valStr = el.value !== undefined ? el.value : el.textContent;
   const val = parseFloat(valStr);
   return isNaN(val) ? 0.0 : val;
+}
+
+// The running total as the page's language writes it, rounded by toFixed and
+// without thousands separators: "1234.50" on an English page, "1234,50" on a
+// French one.
+function totalText(total, target) {
+  const text = total.toFixed(2);
+  return pageLanguage(target) === "fr" ? text.replace(".", ",") : text;
 }
 
 function calculateTotal() {
@@ -29,7 +39,8 @@ function calculateTotal() {
     }
   });
 
-  document.getElementById("quote-total-value").textContent = total.toFixed(2);
+  const totalValue = document.getElementById("quote-total-value");
+  totalValue.textContent = totalText(total, totalValue);
 }
 
 function initEventListeners() {

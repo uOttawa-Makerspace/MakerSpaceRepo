@@ -34,7 +34,7 @@ class SubSpaceBookingController < SessionsController
 
   def request_access
     if params[:comments].blank?
-      flash[:alert] = "Please provide a reason for booking access."
+      flash[:alert] = t("sub_space_booking.messages.reason_missing")
       redirect_to root_path
       return
     end
@@ -48,7 +48,7 @@ class SubSpaceBookingController < SessionsController
     booking_approval = current_user.request_booking_access(comments: params[:comments], identity: params[:identity])
     if booking_approval.persisted?
       BookingMailer.send_booking_approval_request_sent(booking_approval.id, emails).deliver_later
-      flash[:notice] = "Access request submitted successfully."
+      flash[:notice] = t("sub_space_booking.messages.access_requested")
     else
       flash[:alert] = access_request_refusal(booking_approval)
     end
@@ -59,16 +59,16 @@ class SubSpaceBookingController < SessionsController
     if params[:id].nil?
       user = User.find(params[:user_id])
       id = user.approve_booking_access(by: current_user)
-      granted_notice = "Access granted successfully."
+      granted_notice = t("sub_space_booking.messages.access_granted")
     else
       request = UserBookingApproval.find(params[:id])
       user = request.user
       id = user.approve_booking_access(by: current_user, request_id: request.id)
-      granted_notice = "Access request approved successfully."
+      granted_notice = t("sub_space_booking.messages.access_request_approved")
     end
     if id.nil?
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  notice: "#{user.name} already has booking access."
+                  notice: t("sub_space_booking.messages.already_has_access", name: user.name)
     else
       BookingMailer.send_booking_approval_request_approved(id).deliver_later
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"), notice: granted_notice
@@ -84,7 +84,8 @@ class SubSpaceBookingController < SessionsController
     approval.user.deny_booking_access(approval, by: current_user, reason: params[:reason].to_s.strip.presence)
     BookingMailer.send_booking_access_denied(approval.id).deliver_later
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                notice: approval.revoked? ? "Booking access revoked successfully." : "Access request declined successfully."
+                notice: t(approval.revoked? ? "sub_space_booking.messages.access_revoked" :
+                                              "sub_space_booking.messages.access_request_declined")
   rescue ActiveRecord::RecordInvalid => e
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 alert: validation_message(e.record, "failed_saves.booking_decline")
@@ -93,7 +94,7 @@ class SubSpaceBookingController < SessionsController
   def bulk_approve_access
     if params[:user_booking_approval_ids].blank?
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  alert: "No approvals selected."
+                  alert: t("sub_space_booking.messages.no_approvals_selected")
       return
     end
 
@@ -159,7 +160,7 @@ class SubSpaceBookingController < SessionsController
            !@user.eql?(@sub_space_booking.user)
        ) || (@sub_space_booking.approved? && !@user.admin?)
       redirect_to sub_space_booking_index_path,
-                  alert: "You can't access this subspace booking."
+                  alert: t("sub_space_booking.messages.edit_refused")
     end
   end
 
@@ -188,14 +189,14 @@ class SubSpaceBookingController < SessionsController
 
     unless sub_space_booking.approve_if_pending!(by: current_user)
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  alert: "Booking for #{sub_space_booking.sub_space.name} is no longer pending."
+                  alert: t("sub_space_booking.messages.no_longer_pending", room: sub_space_booking.sub_space.name)
       return
     end
 
     BookingMailer.send_booking_approved(sub_space_booking.id).deliver_later
 
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                notice: "Booking for #{sub_space_booking.sub_space.name} approved successfully."
+                notice: t("sub_space_booking.messages.approved", room: sub_space_booking.sub_space.name)
   end
 
   def decline
@@ -203,19 +204,20 @@ class SubSpaceBookingController < SessionsController
 
     unless sub_space_booking.decline_if_pending!
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  alert: "Booking for #{sub_space_booking.sub_space.name} is no longer pending."
+                  alert: t("sub_space_booking.messages.no_longer_pending", room: sub_space_booking.sub_space.name)
       return
     end
 
     BookingMailer.send_booking_declined(sub_space_booking.id).deliver_later
 
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                notice: "Booking for #{sub_space_booking.sub_space.name} declined successfully."
+                notice: t("sub_space_booking.messages.declined", room: sub_space_booking.sub_space.name)
   end
 
   def bulk_approve_decline
     if params[:sub_space_booking_ids].blank?
-      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"), alert: "No bookings selected."
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                  alert: t("sub_space_booking.messages.no_bookings_selected")
       return
     end
 
@@ -246,8 +248,8 @@ class SubSpaceBookingController < SessionsController
     booking.public = !booking.public
     booking.save
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                notice:
-                  "Booking made #{booking.public ? "public" : "private"} successfully."
+                notice: t(booking.public ? "sub_space_booking.messages.made_public" :
+                                           "sub_space_booking.messages.made_private")
   end
 
   # Only the owner or an admin gets here (user_booking_belongs).
@@ -255,7 +257,7 @@ class SubSpaceBookingController < SessionsController
     booking = SubSpaceBooking.find(params[:sub_space_booking_id])
     subspaceName = booking.sub_space.name
     booking.destroy_with_status!
-    render_deleted("Booking for #{subspaceName} deleted successfully.")
+    render_deleted(t("sub_space_booking.messages.deleted", room: subspaceName))
   end
 
   def delete_remaining_recurring
@@ -263,14 +265,14 @@ class SubSpaceBookingController < SessionsController
     unless current_user.admin? || booking.user_id == current_user.id
       return(
         redirect_to root_path,
-                    alert: "You are not authorized to view this page."
+                    alert: t("sub_space_booking.messages.not_authorized")
       )
     end
 
     unless booking.recurring_booking.present?
       return(
         redirect_to sub_space_booking_index_path(anchor: "booking-tab"),
-                    notice: "Booking is not attached to a recurring booking."
+                    notice: t("sub_space_booking.messages.not_recurring")
       )
     end
 
@@ -286,7 +288,7 @@ class SubSpaceBookingController < SessionsController
     ActiveRecord::Base.transaction do
       remaining_bookings.each(&:destroy_with_status!)
     end
-    render_deleted("Remaining bookings for #{subspaceName} deleted successfully.")
+    render_deleted(t("sub_space_booking.messages.remaining_deleted", room: subspaceName))
   end
 
   def get_sub_space_booking
@@ -317,7 +319,7 @@ class SubSpaceBookingController < SessionsController
   end
 
   def refuse_blocking
-    message = "You do not have permission to block a space."
+    message = t("sub_space_booking.messages.blocking_refused")
     respond_to do |format|
       format.json do
         render json: { errors: [message] }, status: :forbidden
@@ -542,7 +544,7 @@ class SubSpaceBookingController < SessionsController
   # JSON: an empty 204, as before (the page reloads to show the notice). HTML:
   # back to the room's calendar with the notice (there is no create template).
   def render_booking_success(sub_space)
-    flash[:notice] = "Booking for #{sub_space.name} created successfully."
+    flash[:notice] = t("sub_space_booking.messages.created", room: sub_space.name)
     respond_to do |format|
       format.json { head :no_content }
       format.html { redirect_to booking_calendar_path }
@@ -579,7 +581,7 @@ class SubSpaceBookingController < SessionsController
                   anchor: "booking-calendar-tab",
                   room: @sub_space_booking.sub_space_id
                 ),
-                alert: "You do not have permission to edit this booking"
+                alert: t("sub_space_booking.messages.approved_edit_refused")
   end
 
   def render_updated
@@ -590,7 +592,7 @@ class SubSpaceBookingController < SessionsController
                       anchor: "booking-calendar-tab",
                       room: @sub_space_booking.sub_space_id
                     ),
-                    notice: "Successfully updated booking"
+                    notice: t("sub_space_booking.messages.updated")
       end
     end
   end
@@ -634,7 +636,7 @@ class SubSpaceBookingController < SessionsController
   def staff_access_request_recipients
     supervisor = User.find_by(id: params[:supervisor]) if params[:supervisor].present?
     if supervisor.nil? || !supervisor.staff?
-      flash[:alert] = "Please choose a staff member as your supervisor."
+      flash[:alert] = t("sub_space_booking.messages.supervisor_missing")
       return nil
     end
     [supervisor.email]
@@ -812,24 +814,24 @@ class SubSpaceBookingController < SessionsController
 
   def user_account
     return if signed_in?
-      redirect_to login_path, alert: "You must be logged in to view this page."
+      redirect_to login_path, alert: t("sub_space_booking.messages.login_required")
     
   end
   def user_approved
     return if current_user.booking_approval || current_user.admin?
       redirect_to root_path,
-                  alert: "You must be approved to book to view this page."
+                  alert: t("sub_space_booking.messages.approval_required")
     
   end
   def user_admin_or_staff
     return if current_user.admin? || current_user.staff?
       redirect_to root_path,
-                  alert: "You must be an admin or staff to view this page."
+                  alert: t("sub_space_booking.messages.staff_required")
     
   end
   def user_admin
     return if current_user.admin?
-      redirect_to root_path, alert: "You must be an admin to view this page."
+      redirect_to root_path, alert: t("sub_space_booking.messages.admin_required")
     
   end
   def user_booking_belongs
@@ -837,7 +839,7 @@ class SubSpaceBookingController < SessionsController
              current_user.id || current_user.admin?
       redirect_to root_path,
                   alert:
-                    "You must be the owner of this booking or an admin to delete it."
+                    t("sub_space_booking.messages.owner_required")
     end
   end
 

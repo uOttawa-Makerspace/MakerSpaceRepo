@@ -39,10 +39,11 @@
             <!-- Service -->
             <% if task.job_service.present? %>
               <% default_service_price = @job_order.user.internal? ? task.job_service.internal_price : task.job_service.external_price %>
+              <% service_unit = task.job_service.unit.presence || t(".unit") %>
               <div class="row">
                 <div class="col-md-6">
                   <div class="form-group">
-                    <%= label_tag "task_#{task.id}_service_qty", t(".service_quantity", unit: task.job_service.unit || t(".unit")) %>
+                    <%= label_tag "task_#{task.id}_service_qty", t(".service_quantity", unit: service_unit) %>
                     <%= number_field_tag "task_#{task.id}_service_qty",
                           (task.job_task_quote.service_quantity.presence || 0),
                           placeholder: t(".value"), 
@@ -51,7 +52,7 @@
                 </div>
                 <div class="col-md-6">
                   <div class="form-group">
-                    <%= label_tag "task_#{task.id}_service_price", t(".service_price", unit: task.job_service.unit || t(".unit")) %>
+                    <%= label_tag "task_#{task.id}_service_price", t(".service_price", unit: service_unit) %>
                     <div class="input-group mb-3">
                       <div class="input-group-prepend">
                         <span class="input-group-text">$</span>
@@ -145,7 +146,7 @@
 
       <!-- Total Display -->
       <div class="alert alert-info text-end fw-bold" id="quote-total">
-        <%= t(".total_html", amount: tag.span("0.00", id: "quote-total-value")) %>
+        <%= t(".total_html", amount: tag.span(number_with_precision(0, precision: 2), id: "quote-total-value")) %>
       </div>
 
       <%= f.submit t(".approve"), class: 'btn btn-primary' %>
