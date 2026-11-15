@@ -52,16 +52,33 @@ RSpec.describe HelpFilingSweepJob, type: :job do
     expect(deliveries.map(&:to)).to eq([["uottawa.makerepo@gmail.com"]])
   end
 
-  it "stops after the last resend and reports it" do
+  it "queues the last resend without a report, then reports a row still unfinished once and stops" do
     help = help_request
     help.update_columns(resends: Help::MAX_RESENDS - 1, updated_at: 1.hour.ago)
-    expect(Rails.error).to receive(:report)
-      .with(an_instance_of(RuntimeError), hash_including(handled: true, context: hash_including(help_id: help.id)))
+    allow(Rails.error).to receive(:report)
     expect { described_class.perform_now }.to have_enqueued_job(HelpFilingJob).with(help.id)
+    expect(Rails.error).not_to have_received(:report)
 
     help.update_columns(updated_at: 1.hour.ago)
     expect { described_class.perform_now }.not_to have_enqueued_job(HelpFilingJob)
-    expect(help.reload.resends).to eq(Help::MAX_RESENDS)
+    expect(Rails.error).to have_received(:report)
+      .with(an_instance_of(RuntimeError), hash_including(handled: true, context: hash_including(help_id: help.id))).once
+
+    help.update_columns(updated_at: 1.hour.ago)
+    expect { described_class.perform_now }.not_to have_enqueued_job(HelpFilingJob)
+    expect(Rails.error).to have_received(:report).once
+    expect(help.reload.resends).to eq(Help::MAX_RESENDS + 1)
+  end
+
+  it "does not report a request that its last resend finished" do
+    help = help_request
+    help.update_columns(resends: Help::MAX_RESENDS - 1, updated_at: 1.hour.ago)
+    allow(Rails.error).to receive(:report)
+    perform_enqueued_jobs { described_class.perform_now }
+    expect(help.reload).to be_finished
+
+    travel(1.hour) { described_class.perform_now }
+    expect(Rails.error).not_to have_received(:report)
   end
 
   it "counts the resend even when the queue cannot take the job" do

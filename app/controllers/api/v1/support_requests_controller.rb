@@ -14,7 +14,7 @@ module Api
     class SupportRequestsController < BaseController
       skip_authorization only: :create, reason: "Public by contract: anyone may send a support request (rate limited)"
 
-      MAX = { name: 200, email: 254, subject: 200, comments: 5000, app_version: 50 }.freeze
+      MAX = Help::MAX_LENGTH.merge(comments: 5000, app_version: 50).freeze
 
       rate_limit to: 5, within: 1.minute, only: :create, scope: "api-support", name: "ip-minute",
                  by: -> { request.remote_ip }, with: :rate_limited
@@ -27,25 +27,16 @@ module Api
 
       def create
         attrs = support_params
-        help = build_help(attrs)
+        fields = attrs.slice(:name, :email, :subject, :comments).merge(app_version: attrs[:app_version].presence)
+        help = Help.compose(fields, user: current_user, source: Help::APP)
         errors = request_errors(help, attrs)
         return render_error(:validation_failed, "Validation failed", status: :unprocessable_content, fields: errors) if errors.any?
 
-        help.save!
-        help.queue_filing
+        help.submit
         render json: { status: "accepted" }, status: :accepted
       end
 
       private
-
-      # A signed-in caller's name and email come from the account.
-      def build_help(attrs)
-        Help.new(attrs.slice(:subject, :comments).merge(
-                   user: current_user, name: current_user&.name || attrs[:name],
-                   email: current_user&.email || attrs[:email], app_version: attrs[:app_version].presence,
-                   source: Help::APP
-                 ))
-      end
 
       def request_errors(help, attrs)
         help.valid?

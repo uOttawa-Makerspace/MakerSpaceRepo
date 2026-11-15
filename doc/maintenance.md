@@ -393,15 +393,15 @@ The cache lives in the `repository_zips` Docker volume (`staging_repository_zips
 
 ## Help requests
 
-A help request (the web help form, `PUT /send_email`, `POST /api/v1/support_requests`) is saved as a `helps` row and the request answers at once. `HelpFilingJob` then queues the mails and opens the public GitHub issue. Each step is recorded on the row: `mailed_at`, and `filed_at` with `gh_issue_number`. Each is done under the row's lock, so a job that runs twice sends and files once. When GitHub opens no issue or cannot be reached, the job runs again after a growing wait (5 attempts in about 6 minutes), then reports the failure.
+A help request (the web help form, `PUT /send_email`, `POST /api/v1/support_requests`) is saved as a `helps` row and the request answers at once. `HelpFilingJob` then queues the mails and opens the public GitHub issue. Each step is done once: the run first claims it on the row (`mailing_claimed_at`, `filing_claimed_at`) in one update, does it with no transaction or lock open, and only then records it (`mailed_at`, and `filed_at` with `gh_issue_number`). A step that fails gives its claim back; a claim left by a run that died is taken again after 5 minutes (`Help::CLAIM_TIMEOUT`). The GitHub calls wait at most 5 seconds to connect and 20 seconds for each answer (`GithubIssuesService::CONNECTION_OPTIONS`).
 
-The recurring task `help_filing_sweep` (`HelpFilingSweepJob`, every 15 minutes) queues the job again for every row that is not filed or not mailed and has not changed for 15 minutes: a row whose job could not be queued when it was saved (that failure is reported and the sender still sees success), and a row whose job gave up. Each row is queued again at most 12 times (`resends`, about three hours); the last time is reported and the row is left for staff. Running the sweep twice queues nothing twice.
+Retry budget: a job runs at most 3 times (`HelpFilingJob::ATTEMPTS`, a growing wait between runs, the last failure reported). The recurring task `help_filing_sweep` (`HelpFilingSweepJob`, every 15 minutes) queues the job again for every row that is not filed or not mailed and has not changed for 15 minutes: a row whose job could not be queued when it was saved (that failure is reported and the sender still sees success), and a row whose job gave up. Each row is queued again at most 6 times (`Help::MAX_RESENDS`, about an hour and a half), so a request makes at most 21 GitHub calls. The sweep after the sixth resend reports a row that is still unfinished, once, and leaves it for staff; a row that one of the resends finished is never reported. Running the sweep twice queues nothing twice. A run that stops between GitHub's answer (or the mail insert) and the row update repeats that step after the claim times out: a second issue or a second set of mails is possible in that case only.
 
 In a console:
 
 ```ruby
 Help.unfinished                                 # not filed or not mailed yet
-Help.unfinished.where(resends: Help::MAX_RESENDS) # given up
+Help.unfinished.where("resends > ?", Help::MAX_RESENDS) # given up and reported
 HelpFilingJob.perform_now(help_id)             # file and mail one now (does only what is missing)
 ```
 

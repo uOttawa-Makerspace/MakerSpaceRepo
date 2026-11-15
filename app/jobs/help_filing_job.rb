@@ -1,19 +1,20 @@
 # frozen_string_literal: true
 
-# Mails the copies of a saved help request and opens its public GitHub issue (Help#mail_copies, Help#file_issue).
-# Queued by the request that saved the row (Help#queue_filing) and again by HelpFilingSweepJob. Each step is
-# recorded on the row and done under its lock, so a second run, or two runs at once, mail and file once.
+# Mails the copies of a saved help request and opens its public GitHub issue (Help#file!). Queued by the request
+# that saved the row (Help#submit) and again by HelpFilingSweepJob. Each step is claimed on the row before it is
+# done and recorded after, so a second run, or two runs at once, mail and file once.
 #
-# The mails go first: they do not depend on GitHub. When GitHub opens no issue, or cannot be reached, the job runs
-# again after a growing wait; after the last attempt the failure is reported and the row is left for the sweep.
-# A job that dies between GitHub's answer and the row's update would open a second issue on its next run (GitHub
-# takes no key that would let it recognise the first).
+# When the request is not finished (GitHub opened no issue or could not be reached, or another run holds a step),
+# the job runs again after a growing wait, ATTEMPTS runs in all; after the last one the failure is reported and the
+# row is left for the sweep. A run that dies between GitHub's answer (or the mail insert) and the row update repeats
+# that step once its claim times out (Help::CLAIM_TIMEOUT): GitHub takes no key that would let it recognise the
+# first issue.
 class HelpFilingJob < ApplicationJob
   queue_as :default
 
-  ATTEMPTS = 5
+  ATTEMPTS = 3
 
-  # Raised when GitHub answered without an issue number (GithubIssuesService#create_issue returned false).
+  # Raised when a run leaves the request unfinished.
   class IssueNotFiled < StandardError; end
 
   retry_on IssueNotFiled, Faraday::Error, wait: :polynomially_longer, attempts: ATTEMPTS do |job, error|
@@ -24,7 +25,6 @@ class HelpFilingJob < ApplicationJob
     help = Help.find_by(id: help_id)
     return unless help
 
-    help.mail_copies
-    raise IssueNotFiled, "GitHub opened no issue for help request #{help_id}" unless help.file_issue
+    help.file! or raise IssueNotFiled, "Help request #{help_id} is not filed and mailed yet"
   end
 end

@@ -90,6 +90,122 @@ RSpec.describe Help, type: :model do
     end
   end
 
+  describe "steps run outside the row's transaction" do
+    # The queue may take a job only once the current transaction commits; the mail time must not be recorded first.
+    it "records no mail time when the mails fail to reach the queue after the caller's transaction" do
+      help = Help.create!(valid_attrs)
+      allow(ActionMailer).to receive(:deliver_all_later) do
+        ActiveRecord.after_all_transactions_commit { raise ActiveRecord::ConnectionNotEstablished, "queue down" }
+      end
+      expect { help.mail_copies }.to raise_error(ActiveRecord::ConnectionNotEstablished)
+      expect(Help.find(help.id).mailed_at).to be_nil
+    end
+
+    it "calls GitHub with no transaction or row lock of its own open" do
+      help = Help.create!(valid_attrs)
+      outside = Help.connection.open_transactions
+      inside = nil
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue) do
+        inside = Help.connection.open_transactions
+        { number: 3 }
+      end
+      help.file_issue
+      expect(inside).to eq(outside)
+    end
+
+    it "queues the mails with no transaction of its own open" do
+      help = Help.create!(valid_attrs)
+      outside = Help.connection.open_transactions
+      inside = nil
+      allow(ActionMailer).to receive(:deliver_all_later) { inside = Help.connection.open_transactions }
+      help.mail_copies
+      expect(inside).to eq(outside)
+    end
+  end
+
+  describe "step claims" do
+    it "does not run a step another run holds, and takes it again once the claim is stale" do
+      help = Help.create!(valid_attrs)
+      help.update_columns(filing_claimed_at: 1.minute.ago)
+      expect_any_instance_of(GithubIssuesService).not_to receive(:create_issue)
+      expect(help.file_issue).to be(false)
+      expect(help.reload.filed_at).to be_nil
+      RSpec::Mocks.space.proxy_for(GithubIssuesService).reset
+    end
+
+    it "takes a claim older than the timeout (a run that died) and finishes the step" do
+      help = Help.create!(valid_attrs)
+      help.update_columns(filing_claimed_at: (Help::CLAIM_TIMEOUT + 1.minute).ago)
+      expect(help.file_issue).to be(true)
+      expect(help.reload).to have_attributes(gh_issue_number: "111", filing_claimed_at: nil)
+    end
+
+    it "gives the claim back when the step fails or raises, so the next run can do it" do
+      help = Help.create!(valid_attrs)
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return(false)
+      expect(help.file_issue).to be(false)
+      expect(help.reload.filing_claimed_at).to be_nil
+
+      allow(ActionMailer).to receive(:deliver_all_later).and_raise(ActiveJob::EnqueueError, "queue down")
+      expect { help.mail_copies }.to raise_error(ActiveJob::EnqueueError)
+      expect(help.reload).to have_attributes(mailing_claimed_at: nil, mailed_at: nil)
+    end
+  end
+
+  describe "#file!" do
+    it "mails, then files, and says whether the request is finished" do
+      help = Help.create!(valid_attrs)
+      order = []
+      allow(ActionMailer).to receive(:deliver_all_later).and_wrap_original { |m, *a| order << :mail; m.call(*a) }
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue) { order << :issue; { number: 4 } }
+      expect(help.file!).to be(true)
+      expect(order).to eq(%i[mail issue])
+    end
+
+    it "is not finished while the issue is missing" do
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return(false)
+      help = Help.create!(valid_attrs)
+      expect(help.file!).to be(false)
+      expect(help.mailed_at).to be_present
+    end
+  end
+
+  describe ".compose and #submit" do
+    let(:user) { create(:user, :regular_user, name: "Account Name", email: "account@example.test") }
+
+    it "takes an app sender's name and email from the account, and keeps the typed ones on the web form" do
+      expect(Help.compose(valid_attrs.except(:source), user: user, source: Help::APP))
+        .to have_attributes(name: "Account Name", email: "account@example.test", user: user, source: "app")
+      expect(Help.compose(valid_attrs.except(:source), user: user, source: Help::HELP_PAGE))
+        .to have_attributes(name: "Pat", email: "pat@example.test", user: user, source: "help_page")
+      expect(Help.compose(valid_attrs.except(:source), user: nil, source: Help::APP)).to have_attributes(name: "Pat", user: nil)
+    end
+
+    it "saves and queues the job, or saves and queues nothing when invalid" do
+      help = Help.compose(valid_attrs.except(:source), user: nil, source: Help::APP)
+      expect(help.submit).to be(true)
+      expect(HelpFilingJob).to have_been_enqueued.with(help.id)
+      expect(Help.compose(valid_attrs(subject: "short").except(:source), user: nil, source: Help::APP).submit).to be(false)
+      expect(HelpFilingJob).to have_been_enqueued.exactly(:once)
+    end
+
+    it "still answers saved when the job cannot be queued" do
+      allow(HelpFilingJob).to receive(:perform_later).and_raise(ActiveJob::EnqueueError, "queue down")
+      allow(Rails.error).to receive(:report)
+      expect(Help.compose(valid_attrs.except(:source), user: nil, source: Help::APP).submit).to be(true)
+    end
+  end
+
+  it "limits name, email and subject to the API's lengths, in English and French" do
+    long = Help.new(valid_attrs(name: "n" * 201, subject: "s" * 201, email: "#{'e' * 250}@x.io"))
+    expect(I18n.with_locale(:en) { long.valid?; long.errors.full_messages })
+      .to include("Name is too long (maximum is 200 characters)", "Subject is too long (maximum is 200 characters)",
+                  "Email is too long (maximum is 254 characters)")
+    expect(I18n.with_locale(:fr) { long.valid?; long.errors.full_messages })
+      .to include(a_string_starting_with("Nom "), a_string_starting_with("Sujet "), a_string_starting_with("Courriel "))
+    expect(Help.new(valid_attrs(name: "n" * 200, subject: "s" * 200))).to be_valid
+  end
+
   describe "#queue_filing" do
     it "queues the filing job" do
       help = Help.create!(valid_attrs)

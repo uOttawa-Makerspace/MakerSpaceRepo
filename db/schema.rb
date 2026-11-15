@@ -443,8 +443,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_120000) do
     t.datetime "created_at", null: false
     t.string "email"
     t.datetime "filed_at"
+    t.datetime "filing_claimed_at"
     t.string "gh_issue_number"
     t.datetime "mailed_at"
+    t.datetime "mailing_claimed_at"
     t.string "name"
     t.integer "resends", default: 0, null: false
     t.boolean "share_email"

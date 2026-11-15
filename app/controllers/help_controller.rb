@@ -28,16 +28,15 @@ class HelpController < SessionsController
   # request is recorded once the row is saved, so the user is told it was submitted even when the job cannot be
   # queued: Help#queue_filing reports that, and the sweep queues the job again.
   def create
-    @help = Help.new(help_params.merge(user: (current_user if signed_in?), share_email: params[:share_email],
-                                       source: Help::HELP_PAGE))
+    @help = Help.compose(help_params.merge(share_email: params[:share_email]), user: (current_user if signed_in?),
+                         source: Help::HELP_PAGE)
 
     unless verify_turnstile
       flash[:alert] = 'Captcha check failed, please try again.'
       render :show, status: :unprocessable_entity and return
     end
 
-    if @help.save
-      @help.queue_filing
+    if @help.submit
       redirect_to help_path, notice: 'Your issue has been submitted.'
     else
       flash.now[:alert] = validation_message(@help, 'errors.help.not_received')
@@ -60,12 +59,10 @@ class HelpController < SessionsController
     end
 
     attrs = params.slice(:subject, :comments).permit(:subject, :comments)
-    @help = Help.new(attrs.merge(name: current_user.name, email: current_user.email, user: current_user,
-                                 share_email: params[:share_email], app_version: params[:app_version].to_s.presence,
-                                 source: Help::APP))
+    fields = attrs.merge(share_email: params[:share_email], app_version: params[:app_version].to_s.presence)
+    @help = Help.compose(fields, user: current_user, source: Help::APP)
 
-    if @help.save
-      @help.queue_filing
+    if @help.submit
       render json: { status: 'sent' }
     else
       render json: { errors: @help.errors.full_messages }, status: :unprocessable_content

@@ -2,10 +2,12 @@
 
 # A help request sent from the web help form (source help_page) or from the apps (PUT /send_email and
 # POST /api/v1/support_requests, source app). The request that sends it only saves the row and queues
-# HelpFilingJob; the job then mails the copies (mail_copies) and opens the public GitHub issue (file_issue). Each
-# step is recorded on the row (mailed_at, filed_at) and done under a row lock, so a job that runs twice does
-# neither step twice. A job that could not be queued, or that gave up, leaves the row unfinished, and
-# HelpFilingSweepJob queues it again (queue_unfinished).
+# HelpFilingJob (submit); the job then mails the copies and opens the public GitHub issue (file!).
+#
+# Each step is done once: a run first claims the step in one UPDATE, does it with no transaction or lock open, and
+# only then records it (mailed_at, filed_at). A step that fails gives its claim back; a claim older than
+# CLAIM_TIMEOUT (a run that died) can be taken again. A job that could not be queued, or that gave up, leaves the
+# row unfinished, and HelpFilingSweepJob queues it again (queue_unfinished).
 class Help < ApplicationRecord
   has_rich_text :comments
   belongs_to :user, optional: true
@@ -14,22 +16,29 @@ class Help < ApplicationRecord
   APP = "app"
   ZWJ = "‍"
 
+  # Longest values kept; the /api/v1 contract uses the same limits.
+  MAX_LENGTH = { name: 200, email: 254, subject: 200 }.freeze
+  # A claim on a step is taken again after this long: longer than the GitHub calls can take (see GithubIssuesService).
+  CLAIM_TIMEOUT = 5.minutes
   # The sweep queues an unfinished request again when the row has not changed for this long.
   RESEND_AFTER = 15.minutes
-  # Queued again this many times at most (about three hours); a request still unfinished is then reported.
-  MAX_RESENDS = 12
+  # Queued again this many times at most (about an hour and a half); the claim after the last one reports the
+  # request and leaves it for staff. With HelpFilingJob::ATTEMPTS that is at most 21 runs per request.
+  MAX_RESENDS = 6
   # Failures of the queue (its database being down, the queue refusing the job).
   QUEUE_ERRORS = [ActiveRecord::ActiveRecordError, ActiveJob::EnqueueError].freeze
+  # Rows saved before the filing job existed have no source; the request that saved them did their work.
+  UNFINISHED = "source IS NOT NULL AND (filed_at IS NULL OR mailed_at IS NULL)"
 
-  validates :name, presence: true, length: { minimum: 2 }
-  validates :email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP }
-  validates :subject, presence: true, length: { minimum: 10 }
+  validates :name, presence: true, length: { minimum: 2, maximum: MAX_LENGTH[:name] }
+  validates :email, presence: true, length: { maximum: MAX_LENGTH[:email] },
+                    format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :subject, presence: true, length: { minimum: 10, maximum: MAX_LENGTH[:subject] }
   # I'd add a length check to comments but this would count HTML characters too
   validates :comments, presence: true
   validates :source, inclusion: { in: [HELP_PAGE, APP] }
 
-  # Rows saved before the filing job existed have no source; the request that saved them did their work.
-  scope :unfinished, -> { where.not(source: nil).merge(where(filed_at: nil).or(where(mailed_at: nil))) }
+  scope :unfinished, -> { where(UNFINISHED) }
 
   # Keeps the text readable: a zero-width joiner after @ and # (and GH-) stops GitHub from
   # linking, and < > & are escaped so no raw HTML gets through.
@@ -38,28 +47,44 @@ class Help < ApplicationRecord
         .gsub(/@(?=\w)/, "@#{ZWJ}").gsub(/#(?=\w)/, "##{ZWJ}").gsub(/\bGH-(?=\d)/i) { |m| "#{m}#{ZWJ}" }
   end
 
-  # Queues HelpFilingJob for every unfinished request whose row has not changed for RESEND_AFTER and that was
-  # queued again fewer than MAX_RESENDS times; returns how many were queued. The rows are claimed first, in one
-  # statement that counts the resend and moves the row out of the due window, so an overlapping run claims none of
-  # them.
+  # A request from +user+ (nil for a guest). From the apps a signed-in sender's name and email are the account's;
+  # on the web form the typed ones are kept as the contact details.
+  def self.compose(fields, user:, source:)
+    fields = fields.merge(name: user.name, email: user.email) if user && source == APP
+    new(fields.merge(user: user, source: source))
+  end
+
+  # Queues HelpFilingJob for every unfinished request whose row has not changed for RESEND_AFTER, at most
+  # MAX_RESENDS times each, and reports the ones claimed once more after that; returns how many were queued.
+  # The rows are claimed first, in one statement that counts the claim and moves the row out of the due window,
+  # so an overlapping run claims none of them.
   def self.queue_unfinished
-    claim_unfinished.sort_by(&:id).count(&:resend)
+    given_up, due = claim_unfinished.sort_by(&:id).partition { |help| help.resends > MAX_RESENDS }
+    given_up.each(&:report_given_up)
+    due.count(&:requeue)
   end
 
   def self.claim_unfinished
     sql = <<~SQL.squish
       UPDATE #{table_name} SET resends = resends + 1, updated_at = :now
-      WHERE source IS NOT NULL AND (filed_at IS NULL OR mailed_at IS NULL)
-        AND updated_at < :due_before AND resends < :max_resends
+      WHERE #{UNFINISHED} AND updated_at < :due_before AND resends <= :max_resends
       RETURNING *
     SQL
     find_by_sql([sql, { now: Time.current, due_before: RESEND_AFTER.ago, max_resends: MAX_RESENDS }])
   end
   private_class_method :claim_unfinished
 
-  # Queues the job that files and mails this saved request. The request is already recorded, so a queue that
-  # cannot take the job is reported, not raised: the caller still answers success and the sweep queues the job
-  # again. Returns whether the job was queued.
+  # Saves the request and queues its job. Returns whether it was saved: a job that cannot be queued does not
+  # change that (queue_filing reports it and the sweep queues it again).
+  def submit
+    return false unless save
+
+    queue_filing
+    true
+  end
+
+  # Queues the job that files and mails this saved request. Returns whether the job was queued; a queue that
+  # cannot take it is reported, not raised.
   def queue_filing
     HelpFilingJob.perform_later(id)
     true
@@ -67,20 +92,31 @@ class Help < ApplicationRecord
     Rails.error.report(e, handled: true, context: { job: "HelpFilingJob", help_id: id })
     false
   end
+  alias requeue queue_filing
 
-  # Opens the public GitHub issue (text defanged) and stores its number, once. Returns whether the issue exists.
-  # When GitHub does not answer with an issue number nothing is stored and false is returned.
-  def file_issue
-    with_lock { filed_at.present? || store_issue_number }
+  # Does what is left: the mails first (they do not wait for GitHub), then the GitHub issue. Returns whether the
+  # request is finished.
+  def file!
+    mail_copies
+    file_issue
+    finished?
   end
 
-  # Queues the mails of the request, once: both or none, in one insert into the queue, the team's copy first.
+  # Queues the mails, both or none, in one insert into the queue, the team's copy first; once.
   def mail_copies
-    with_lock do
-      next if mailed_at
-
+    run_once(:mailed_at, :mailing_claimed_at) do
       ActionMailer.deliver_all_later(*mails)
-      update!(mailed_at: Time.current)
+      {}
+    end
+  end
+
+  # Opens the public GitHub issue (text defanged) and stores its number; once. Returns whether the issue exists.
+  def file_issue
+    run_once(:filed_at, :filing_claimed_at) do
+      issue = GithubIssuesService.new.create_issue(reporter: self.class.defang(name), title: self.class.defang(subject),
+                                                   body: self.class.defang(comments.to_plain_text))
+      number = issue && issue[:number]
+      { gh_issue_number: number } if number.present?
     end
   end
 
@@ -88,24 +124,46 @@ class Help < ApplicationRecord
     filed_at.present? && mailed_at.present?
   end
 
-  # Queues the job again for a row whose resend claim_unfinished already counted; the last one is reported as the
-  # one after which staff have to look.
-  def resend
-    report_given_up if resends >= MAX_RESENDS
-    queue_filing
+  def report_given_up
+    Rails.error.report(RuntimeError.new("Help request was not filed and mailed after #{MAX_RESENDS} resends"),
+                       handled: true, context: { help_id: id, filed: filed_at.present?, mailed: mailed_at.present? })
   end
 
   private
 
-  def store_issue_number
-    issue = GithubIssuesService.new.create_issue(reporter: self.class.defang(name), title: self.class.defang(subject),
-                                                 body: self.class.defang(comments.to_plain_text))
-    number = issue && issue[:number]
-    number.present? && update!(gh_issue_number: number, filed_at: Time.current)
+  # Claims the step, runs the block outside any transaction and records what it returns with the step's time
+  # (nil: not done, the claim is given back). Returns whether the step is done; false also when another run holds
+  # the claim.
+  def run_once(done, claim, &)
+    return true if self[done]
+    return false unless claim_step(done, claim)
+
+    record_step(done, claim, run_claimed(claim, &))
+  end
+
+  def claim_step(done, claim)
+    now = Time.current
+    column = self.class.arel_table[claim]
+    open = self.class.where(id: id, done => nil).where(column.eq(nil).or(column.lt(now - CLAIM_TIMEOUT)))
+    open.update_all(claim => now) == 1
+  end
+
+  # A step that raises gives its claim back, so the next run does not wait for CLAIM_TIMEOUT; the error is raised.
+  def run_claimed(claim)
+    yield
+  rescue StandardError
+    update_columns(claim => nil)
+    raise
+  end
+
+  def record_step(done, claim, recorded)
+    recorded ? update!(recorded.merge(done => Time.current, claim => nil)) : update_columns(claim => nil)
+    self[done].present?
   end
 
   # Signed in: a copy to the team (first) and one to the account's own address, never the typed one, which is
-  # only the contact address. Guest: one mail to the team, the typed address in Reply-To.
+  # only the contact address. Guest (or an account deleted since): one mail to the team, the typed address in
+  # Reply-To.
   def mails
     text = comments.to_plain_text
     return [MsrMailer.issue_email_to_team(name, email, subject, text, app_version, via: via)] unless user
@@ -121,10 +179,5 @@ class Help < ApplicationRecord
 
   def via
     source == HELP_PAGE ? "the MakerRepo help page" : "the MakerRepo app"
-  end
-
-  def report_given_up
-    Rails.error.report(RuntimeError.new("Help request was not filed and mailed after #{MAX_RESENDS} resends"),
-                       handled: true, context: { help_id: id, filed: filed_at.present?, mailed: mailed_at.present? })
   end
 end
