@@ -337,6 +337,18 @@ fr:
       page: "Réservation MakerRepo"
       why_received: "Vous avez reçu ce courriel parce que votre demande d'accès aux réservations a été approuvée."
   sub_space_booking:
+    # Results of the bulk approve and decline buttons on the admin tab; %{count} = how many were skipped
+    bulk:
+      access_approved: "Les demandes d'accès sélectionnées ont été approuvées."
+      access_all_approved: "Toutes les demandes d'accès sélectionnées ont été approuvées."
+      access_skipped:
+        one: "%{count} demande sélectionnée était déjà approuvée et a été ignorée."
+        other: "%{count} demandes sélectionnées étaient déjà approuvées et ont été ignorées."
+      bookings_approved: "Les réservations ont été approuvées."
+      bookings_declined: "Les réservations ont été refusées."
+      bookings_skipped:
+        one: "%{count} réservation sélectionnée n'était plus en attente et a été ignorée."
+        other: "%{count} réservations sélectionnées n'étaient plus en attente et ont été ignorées."
     access_status:
       none: "Vous n'avez pas encore demandé l'accès aux réservations."
       pending: "Votre demande est en attente depuis le %{date}."
