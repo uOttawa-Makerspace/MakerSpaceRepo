@@ -40,6 +40,14 @@ RSpec.describe AddLedgerEntryToLockerPayments do
     expect(connection.foreign_keys(:locker_payments).map(&:to_table)).to include("payment_ledger_entries")
   end
 
+  it "refuses down, changing nothing, while a locker payment has a link or a reversal time" do
+    migrate(:up)
+    LockerPayment.first.update_columns(reversed_at: Time.zone.parse("2026-11-20 10:00"))
+
+    expect { migrate(:down) }.to raise_error(/1 locker payments have a ledger entry or a reversal time/)
+    expect(columns).to include("ledger_entry_id", "reversed_at")
+  end
+
   it "rolls back to the original columns with every row kept, and runs again" do
     migrate(:up)
     before_rows = rows

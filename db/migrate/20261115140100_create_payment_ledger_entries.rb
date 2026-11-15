@@ -11,7 +11,7 @@
 # unique index on (id, provider, provider_ref, kind); it is unique because id is.
 #
 # Append-only: a trigger refuses every UPDATE, DELETE and TRUNCATE. A correction is a new row. down removes the
-# triggers, their function and the table.
+# triggers, their function and the table, and refuses while the table holds any entry.
 class CreatePaymentLedgerEntries < ActiveRecord::Migration[8.1]
   FUNCTION = "payment_ledger_entries_append_only"
   REVERSAL_COLUMNS = %i[reversed_entry_id provider provider_ref reversed_entry_kind].freeze
@@ -58,7 +58,12 @@ class CreatePaymentLedgerEntries < ActiveRecord::Migration[8.1]
     SQL
   end
 
+  # Refuses while the ledger holds any entry: the backfill's own entries are removed by its down first, so any left
+  # were written after deploy, and dropping the table would lose them.
   def down
+    entries = select_value("SELECT COUNT(*) FROM payment_ledger_entries").to_i
+    raise "payment_ledger_entries holds #{entries} entries; export them before rolling back, nothing was changed" if entries.positive?
+
     drop_table :payment_ledger_entries
     execute "DROP FUNCTION #{FUNCTION}()"
   end

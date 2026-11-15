@@ -36,6 +36,14 @@ RSpec.describe CreatePaymentCheckouts do
     expect(connection.select_value("SELECT COUNT(*) FROM payment_checkouts").to_i).to eq(3)
   end
 
+  it "refuses down, changing nothing, while the table holds a checkout" do
+    migrate(:up)
+    insert(reference_id: 1, provider_id: "gid://shopify/DraftOrder/1")
+
+    expect { migrate(:down) }.to raise_error(/payment_checkouts holds 1 rows/)
+    expect(connection.select_value("SELECT COUNT(*) FROM payment_checkouts").to_i).to eq(1)
+  end
+
   it "drops only the new table on down" do
     rentals = LockerRental.count
     migrate(:up)

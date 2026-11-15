@@ -62,6 +62,14 @@ RSpec.describe CreatePaymentLedgerEntries do
     expect(connection.select_value("SELECT COUNT(*) FROM payment_ledger_entries WHERE kind = 'reversal'").to_i).to eq(1)
   end
 
+  it "refuses down, changing nothing, while the table holds an entry" do
+    migrate(:up)
+    insert("1001")
+
+    expect { connection.transaction(requires_new: true) { migrate(:down) } }.to raise_error(/holds 1 entries/)
+    expect(count).to eq(1)
+  end
+
   it "refuses every update, delete and truncate, leaving the rows as they were" do
     migrate(:up)
     id = insert("1001")
