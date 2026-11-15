@@ -5,6 +5,11 @@ require "rails_helper"
 # The staff work calendar must be drawn exactly once whether the page is
 # entered by a Turbo visit from another staff page or restored by the back
 # button from Turbo's page cache.
+#
+# The server clock is frozen with travel_to; the browser keeps its real clock,
+# so the visible week (Sun 2026-11-08 .. Sat 2026-11-14) is chosen through the
+# page's own "recall dates on refresh" localStorage key
+# (fullCalendarDefaultDateStaffCalendar), set at login before any page loads.
 
 RSpec.describe "Staff calendar under Turbo navigation", type: :system do
   include ActiveSupport::Testing::TimeHelpers
@@ -20,7 +25,7 @@ RSpec.describe "Staff calendar under Turbo navigation", type: :system do
   around { |ex| travel_to(Time.zone.local(2026, 11, 11, 12)) { ex.run } }
 
   def start_on(path)
-    log_in_as(staff, to: path)
+    log_in_as(staff, to: path, local_storage: { fullCalendarDefaultDateStaffCalendar: "2026-11-11T12:00:00.000Z" })
     expect(page).to have_current_path(path)
   end
 
@@ -30,7 +35,7 @@ RSpec.describe "Staff calendar under Turbo navigation", type: :system do
   end
 
   def expect_drawn_once
-    expect(page).to have_css("#calendar .fc-toolbar-title")
+    expect(page).to have_css("#calendar .fc-toolbar-title", text: "Nov 8 – 14, 2026")
     expect(page).to have_css(".fc-toggleOthersShifts-button", count: 1)
     expect(page).to have_css(".fc-timegrid-event", text: "Team sync", visible: :all)
     expect(page).to have_css("#calendar .fc-toolbar", count: 1)
