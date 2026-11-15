@@ -431,13 +431,14 @@ Everything in it is throwaway: entries expire after at most seven days, the tabl
 No manual step. On the first boot of the new image, `web` runs `bin/rails db:prepare` (`bin/docker-entrypoint`), which creates `makerspacerepo_cache` and loads `db/cache_schema.rb`; later boots find it and leave it alone. The compose file connects as `postgres`, which may create databases. After the deploy:
 
 - [ ] `docker compose -f docker-compose.production.yml logs web` shows `Created database 'makerspacerepo_cache'` once.
+- [ ] Only `web` runs `db:prepare`; the `worker` does not. If the worker started before `web` created the cache database, its first jobs ran without a cache (Solid Cache reports the error and carries on; a locker draft-status alert may have been skipped once). Restart the worker after `web` is up: `docker compose -f docker-compose.production.yml restart worker`.
 - [ ] In a console, `SolidCache::Entry.connection_db_config.database` is `"makerspacerepo_cache"`, and `Rails.cache.write("deploy-check", 1)` then `Rails.cache.read("deploy-check")` returns 1 (`Rails.cache.delete("deploy-check")` afterwards).
 
 The cache starts empty, so the first page loads after the deploy rebuild their fragments and fetch imported calendars again. Rehearsed on a copy of the 2026-11-14 backup: the cache database was created and loaded, the primary schema dump and the row count of every primary table were the same before and after, and a cache write and read went to the new database.
 
-The old `solid_cache_entries` table in the primary database (migration `20261031000002`) is no longer used: nothing reads or writes it after this release, and it keeps the rows it held at the deploy. It is left in place; removing it is a separate change that needs the maintainers' approval.
+The old `solid_cache_entries` table in the primary database (created by `20261031000002`) is dropped by migration `20261115100000` in the same release (owner approval 2026-11-15). Its rows were cache only and are not kept. Rolling that migration back recreates the table empty, with the same columns and indexes.
 
-Rollback: remove the `database: cache` lines from `config/cache.yml` (production and staging) and deploy. `Rails.cache` then uses the old table in the primary database again (with the entries it held at the switch); run `Rails.cache.clear` in a console right after, so no entry from before the switch is served. The `cache` entry in `config/database.yml` and the cache database can stay; drop the database by hand only if it is not wanted. Redeploying an older image has the same effect.
+Rollback: first roll back `20261115100000` (`bin/rails db:migrate:down:primary VERSION=20261115100000`) so the primary table exists again (empty), then remove the `database: cache` lines from `config/cache.yml` (production and staging) and deploy. `Rails.cache` then uses the primary table again, starting empty. The `cache` entry in `config/database.yml` and the cache database can stay; drop the database by hand only if it is not wanted. Redeploying an older image has the same effect.
 
 ## Imported calendar (ICS) cache
 
