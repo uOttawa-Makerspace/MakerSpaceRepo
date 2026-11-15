@@ -3,6 +3,11 @@
 // page, and what every Turbo visit sets up again.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { textsAttribute } from "./calendar_texts_fixture.js";
+import {
+  settle,
+  startBookingControllers,
+  withControllers,
+} from "./booking_page_fixture.js";
 
 const calendars = [];
 vi.mock("@fullcalendar/core", () => ({
@@ -65,8 +70,8 @@ const PAGE = `
 <div id="booked-calendar" ${textsAttribute()}></div>
 <div id="booking_toast" data-failed-title="Booking failed"
   data-updated-title="Booking updated" data-updated="Saved."
-  data-feed="Not loaded"><div class="toast-header"></div></div>
-<span id="toast_title"></span><span id="toast_text"></span>
+  data-feed="Not loaded"><div class="toast-header"></div>
+<span id="toast_title"></span><span id="toast_text"></span></div>
 <div id="bookModal" style="display:none">
   <h5 id="bookingModalLabel"></h5>
   <input id="sub_space_booking_id" value="12">
@@ -125,18 +130,19 @@ const feedback = () =>
     el.innerText,
   ]);
 
-function boot(url = "http://localhost/sub_space_booking?room=4") {
+async function boot(url = "http://localhost/sub_space_booking?room=4") {
   window.happyDOM.setURL(url);
-  document.body.innerHTML = PAGE;
+  document.body.innerHTML = withControllers(PAGE);
   calendars.length = 0;
   document.dispatchEvent(new Event("turbo:load"));
+  await settle();
   return calendars[0];
 }
 
 let reload;
 // Opens the new-booking modal with valid dates and clicks Book.
 async function book(response) {
-  const cal = boot();
+  const cal = await boot();
   cal.options.customButtons.book.click();
   pickers["book-start"].setDate("2026-11-02T10:00");
   pickers["book-end"].setDate("2026-11-02T11:00");
@@ -150,6 +156,7 @@ async function book(response) {
 }
 
 await import("../../../app/javascript/entrypoints/sub_space_booking.js");
+await startBookingControllers();
 
 beforeEach(() => {
   vi.restoreAllMocks();
@@ -190,7 +197,7 @@ describe("the requests the modal sends", () => {
   });
 
   it("patches an update with JSON headers and the chosen room", async () => {
-    boot();
+    await boot();
     pickers["book-start"].setDate("2026-11-02T10:00");
     pickers["book-end"].setDate("2026-11-02T11:00");
     answerWith(json(200, {}));
@@ -223,7 +230,7 @@ describe("the requests the modal sends", () => {
       "/sub_space_booking/12/delete_remaining_recurring",
     ],
   ])("%s sends a DELETE with no body", async (button, url) => {
-    boot();
+    await boot();
     answerWith(json(200, {}));
     $(button).dispatchEvent(new CustomEvent("confirmation:confirmed"));
     await flush();
@@ -335,7 +342,7 @@ describe("the answer to a save", () => {
 
   it("shows the generic text when handling the answer fails", async () => {
     document.documentElement.dataset.requestFailed = "No reason given";
-    const cal = boot();
+    const cal = await boot();
     cal.refetchEvents = () => {
       throw new Error("calendar gone");
     };
@@ -353,8 +360,8 @@ describe("each Turbo visit", () => {
   // The shown format and the locale now come from the page's language (page_locale.js).
   const DATE_TIME = { enableTime: true, time_24hr: true, altInput: true };
 
-  it("sets up the pickers with their options", () => {
-    boot();
+  it("sets up the pickers with their options", async () => {
+    await boot();
     expect(pickerOptions["book-start"]).toMatchObject(DATE_TIME);
     expect(pickerOptions["book-end"]).toMatchObject(DATE_TIME);
     expect(pickerOptions["book-recurring-end"]).toMatchObject({
@@ -377,8 +384,8 @@ describe("each Turbo visit", () => {
     expect(calendars).toHaveLength(0);
   });
 
-  it("builds the calendar in the Toronto time zone with the page's options", () => {
-    const cal = boot(
+  it("builds the calendar in the Toronto time zone with the page's options", async () => {
+    const cal = await boot(
       "http://localhost/sub_space_booking?room=4&start=2026-03-02",
     );
     const { options } = cal;
@@ -420,8 +427,8 @@ describe("each Turbo visit", () => {
   });
 
   it("builds a fresh calendar and sends to it after a new visit", async () => {
-    const first = boot();
-    const second = boot();
+    const first = await boot();
+    const second = await boot();
     expect(second).not.toBe(first);
     second.options.customButtons.book.click();
     answerWith(json(200, {}));
@@ -431,9 +438,12 @@ describe("each Turbo visit", () => {
     expect(first.refetched).toBe(0);
   });
 
-  it("fills the recurring approval modal when it has no select buttons", () => {
-    document.body.innerHTML = `<div id="approveRecurringModal"><div id="recurring-checkboxes"></div></div>`;
+  it("fills the recurring approval modal when it has no select buttons", async () => {
+    document.body.innerHTML = withControllers(
+      `<div id="approveRecurringModal"><div id="recurring-checkboxes"></div></div>`,
+    );
     document.dispatchEvent(new Event("turbo:load"));
+    await settle();
     const trigger = document.createElement("button");
     trigger.dataset.dates = JSON.stringify([[5, "Fri"]]);
     const event = new Event("show.bs.modal");

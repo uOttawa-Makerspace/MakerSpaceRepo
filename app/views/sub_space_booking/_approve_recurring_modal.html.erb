@@ -1,4 +1,4 @@
-<div class="modal fade" tabindex="-1" id="approveRecurringModal">
+<div class="modal fade" tabindex="-1" id="approveRecurringModal" data-controller="recurring-approval" data-action="show.bs.modal->recurring-approval#fill">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow bg-body">
       <div class="modal-header text-bg-primary">
@@ -9,10 +9,10 @@
         <%= f.hidden_field :bulk_status, value: 'approve' %>
         <div class="modal-body p-4">
           <div class="d-flex gap-2 mb-3">
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="recurringSelectAll">Select all</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="recurringSelectNone">Select none</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="recurringSelectAll" data-action="recurring-approval#tick" data-recurring-approval-checked-param="true">Select all</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="recurringSelectNone" data-action="recurring-approval#tick" data-recurring-approval-checked-param="false">Select none</button>
           </div>
-          <div id="recurring-checkboxes" class="d-grid gap-2"></div>
+          <div id="recurring-checkboxes" data-recurring-approval-target="dates" class="d-grid gap-2"></div>
         </div>
         <div class="modal-footer bg-body-tertiary border-top border-secondary-subtle">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>

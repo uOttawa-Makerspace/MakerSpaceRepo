@@ -2,6 +2,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { textsAttribute } from "./calendar_texts_fixture.js";
+import {
+  settle,
+  startBookingControllers,
+  withControllers,
+} from "./booking_page_fixture.js";
 
 // A stand-in for FullCalendar: records the options and counts refetches.
 const calendars = [];
@@ -62,7 +67,7 @@ const PAGE = `
   data-partly-done-title="Booking partly done"
   data-feed="The bookings could not be loaded."
   data-unavailable-title="Booking unavailable"
-  data-unavailable="This booking could not be opened."></div><span id="toast_title"></span><span id="toast_text"></span>
+  data-unavailable="This booking could not be opened."><span id="toast_title"></span><span id="toast_text"></span></div>
 <div id="bookModal" style="display:none">
   <h5 id="bookingModalLabel"></h5>
   <input id="sub_space_booking_id">
@@ -127,11 +132,15 @@ function confirmed(id) {
 }
 const $ = (id) => document.getElementById(id);
 
-function boot(url = "http://localhost/sub_space_booking?room=4", page = PAGE) {
+async function boot(
+  url = "http://localhost/sub_space_booking?room=4",
+  page = PAGE,
+) {
   window.happyDOM.setURL(url);
-  document.body.innerHTML = page;
+  document.body.innerHTML = withControllers(page);
   calendars.length = 0;
   document.dispatchEvent(new Event("turbo:load"));
+  await settle();
   return calendars[0];
 }
 
@@ -143,6 +152,7 @@ function pickDates(start, end) {
 }
 
 await import("../../../app/javascript/entrypoints/sub_space_booking.js");
+await startBookingControllers();
 
 beforeEach(() => {
   requests.length = 0;
@@ -153,16 +163,16 @@ beforeEach(() => {
 });
 
 describe("calendar page", () => {
-  it("renders the calendar for the room in the address", () => {
-    const cal = boot("http://localhost/sub_space_booking?room=4");
+  it("renders the calendar for the room in the address", async () => {
+    const cal = await boot("http://localhost/sub_space_booking?room=4");
     expect(cal.rendered).toBe(true);
     expect(cal.options.eventSources[0].url).toBe(
       "/sub_space_booking/bookings?room=4",
     );
   });
 
-  it("opens on the date named by the start parameter", () => {
-    const cal = boot(
+  it("opens on the date named by the start parameter", async () => {
+    const cal = await boot(
       "http://localhost/sub_space_booking?room=4&start=2026-03-02",
     );
     expect(cal.options.initialDate.toISOString()).toBe(
@@ -174,41 +184,44 @@ describe("calendar page", () => {
     "http://localhost/sub_space_booking?room=4&restart=1",
     "http://localhost/sub_space_booking?room=4&starts_on=2026-03-02",
     "http://localhost/sub_space_booking?room=4#start",
-  ])("opens on today when the address has no start parameter: %s", (url) => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-11-15T12:00:00Z"));
-    try {
-      expect(boot(url).options.initialDate.toISOString()).toBe(
-        "2026-11-15T12:00:00.000Z",
-      );
-    } finally {
-      vi.useRealTimers();
-    }
-  });
+  ])(
+    "opens on today when the address has no start parameter: %s",
+    async (url) => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-15T12:00:00Z"));
+      try {
+        expect((await boot(url)).options.initialDate.toISOString()).toBe(
+          "2026-11-15T12:00:00.000Z",
+        );
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
 
   it("says when the bookings could not be loaded", async () => {
-    const cal = boot();
+    const cal = await boot();
     await cal.options.eventSources[0].failure(new Error("feed down"));
     expect($("toast_title").innerText).toBe("Booking failed");
     expect($("toast_text").innerText).toBe("The bookings could not be loaded.");
   });
 
-  it("names the Book button in the page's language", () => {
-    expect(boot().options.customButtons.book.text).toBe("Book");
+  it("names the Book button in the page's language", async () => {
+    expect((await boot()).options.customButtons.book.text).toBe("Book");
     const french = PAGE.replace(textsAttribute(), textsAttribute("fr"));
-    const cal = boot("http://localhost/sub_space_booking?room=4", french);
+    const cal = await boot("http://localhost/sub_space_booking?room=4", french);
     expect(cal.options.customButtons.book.text).toBe("Réserver");
   });
 
-  it("does nothing more on a page without the calendar", () => {
-    const cal = boot("http://localhost/sub_space_booking", "<p>x</p>");
+  it("does nothing more on a page without the calendar", async () => {
+    const cal = await boot("http://localhost/sub_space_booking", "<p>x</p>");
     expect(cal).toBeUndefined();
   });
 });
 
 describe("new booking", () => {
-  it("the Book button opens the modal for a new booking", () => {
-    const cal = boot();
+  it("the Book button opens the modal for a new booking", async () => {
+    const cal = await boot();
     cal.options.customButtons.book.click();
 
     expect($("bookModal").classList.contains("show")).toBe(true);
@@ -221,8 +234,8 @@ describe("new booking", () => {
     expect($("book-recurring-end").style.display).toBe("none");
   });
 
-  it("selecting a range fills the start and end", () => {
-    const cal = boot();
+  it("selecting a range fills the start and end", async () => {
+    const cal = await boot();
     cal.options.select({
       startStr: "2026-11-02T10:00:00",
       endStr: "2026-11-02T11:00:00",
@@ -235,8 +248,8 @@ describe("new booking", () => {
     );
   });
 
-  it("ticking recurring shows the recurrence fields", () => {
-    const cal = boot();
+  it("ticking recurring shows the recurrence fields", async () => {
+    const cal = await boot();
     cal.options.customButtons.book.click();
     $("book-recurring").checked = true;
     $("book-recurring").dispatchEvent(new Event("change"));
@@ -245,8 +258,8 @@ describe("new booking", () => {
     expect(document.querySelector(".flatpickr").style.display).toBe("block");
   });
 
-  it("refuses an end before the start and sends nothing", () => {
-    const cal = boot();
+  it("refuses an end before the start and sends nothing", async () => {
+    const cal = await boot();
     stubFetch(() => reply("{}"));
     cal.options.customButtons.book.click();
     pickDates("2026-11-02T11:00", "2026-11-02T10:00");
@@ -261,7 +274,7 @@ describe("new booking", () => {
   });
 
   it("posts the booking and refreshes the calendar", async () => {
-    const cal = boot();
+    const cal = await boot();
     stubFetch(() => reply("{}"));
     cal.options.customButtons.book.click();
     pickDates("2026-11-02T10:00", "2026-11-02T11:00");
@@ -294,7 +307,7 @@ describe("new booking", () => {
   });
 
   it("marks the field a validation error names", async () => {
-    const cal = boot();
+    const cal = await boot();
     stubFetch(() =>
       reply(
         JSON.stringify({
@@ -319,7 +332,7 @@ describe("new booking", () => {
   });
 
   it("shows a toast and closes the modal for a slot rule error", async () => {
-    const cal = boot();
+    const cal = await boot();
     stubFetch(() =>
       reply(JSON.stringify({ errors: ["TimeSlot is already taken"] })),
     );
@@ -337,7 +350,7 @@ describe("new booking", () => {
   });
 
   it("reports a partly booked series and refreshes the calendar", async () => {
-    const cal = boot();
+    const cal = await boot();
     stubFetch(() =>
       reply(
         JSON.stringify({
@@ -361,7 +374,7 @@ describe("new booking", () => {
   });
 
   it("titles the partly booked toast with the page's own text", async () => {
-    const cal = boot();
+    const cal = await boot();
     $("booking_toast").dataset.partlyDoneTitle = "Réservation en partie faite";
     stubFetch(() =>
       reply(
@@ -386,7 +399,7 @@ describe("new booking", () => {
   });
 
   it("enables the button again when the request fails", async () => {
-    const cal = boot();
+    const cal = await boot();
     stubFetch(() => {
       throw new Error("offline");
     });
@@ -399,8 +412,8 @@ describe("new booking", () => {
     expect($("bookSave").hasAttribute("disabled")).toBe(false);
   });
 
-  it("cancel and close reset the modal", () => {
-    const cal = boot();
+  it("cancel and close reset the modal", async () => {
+    const cal = await boot();
     cal.options.customButtons.book.click();
     $("book-name").classList.add("is-invalid");
     $("bookCancel").click();
@@ -432,8 +445,8 @@ describe("existing booking", () => {
       event: { id: "booking_12", extendedProps: { viewable } },
     });
 
-  it("ignores an event the user may not open", () => {
-    const cal = boot();
+  it("ignores an event the user may not open", async () => {
+    const cal = await boot();
     stubFetch(() => reply("{}"));
     click(cal, false);
     expect(requests).toEqual([]);
@@ -441,7 +454,7 @@ describe("existing booking", () => {
   });
 
   it("loads the booking into the modal", async () => {
-    const cal = boot();
+    const cal = await boot();
     stubFetch(() => reply(JSON.stringify(booking())));
     click(cal);
     await flush();
@@ -466,7 +479,7 @@ describe("existing booking", () => {
   });
 
   it("offers the series delete for a recurring booking", async () => {
-    const cal = boot();
+    const cal = await boot();
     stubFetch(() =>
       reply(JSON.stringify(booking({ recurring_booking_id: 3 }))),
     );
@@ -480,7 +493,7 @@ describe("existing booking", () => {
     ["a server error", reply("boom", { ok: false, status: 500 })],
     ["a page that is not JSON", reply("<html>", { type: "text/html" })],
   ])("says the booking is unavailable on %s", async (_name, response) => {
-    const cal = boot();
+    const cal = await boot();
     stubFetch(() => response);
     click(cal);
     await flush();
@@ -490,7 +503,7 @@ describe("existing booking", () => {
   });
 
   it("patches the booking", async () => {
-    const cal = boot();
+    const cal = await boot();
     stubFetch(() => reply(JSON.stringify(booking())));
     click(cal);
     await flush();
@@ -514,7 +527,7 @@ describe("existing booking", () => {
   });
 
   it("does not patch when the dates are invalid", async () => {
-    const cal = boot();
+    const cal = await boot();
     stubFetch(() => reply(JSON.stringify(booking())));
     click(cal);
     await flush();
@@ -526,7 +539,7 @@ describe("existing booking", () => {
   });
 
   it("do nothing on a plain click, which the confirmation prompt may still decline", async () => {
-    const cal = boot();
+    const cal = await boot();
     stubFetch(() => reply(JSON.stringify(booking())));
     click(cal);
     await flush();
@@ -538,7 +551,7 @@ describe("existing booking", () => {
   });
 
   it("deletes the booking when the delete button is clicked", async () => {
-    const cal = boot();
+    const cal = await boot();
     stubFetch(() => reply(JSON.stringify(booking())));
     click(cal);
     await flush();
@@ -556,7 +569,7 @@ describe("existing booking", () => {
   });
 
   it("deletes the rest of a series from its own button", async () => {
-    const cal = boot();
+    const cal = await boot();
     stubFetch(() =>
       reply(JSON.stringify(booking({ recurring_booking_id: 3 }))),
     );
@@ -580,8 +593,8 @@ describe("existing booking", () => {
 });
 
 describe("admin lists", () => {
-  it("fills the recurring approval modal with one checked box per date", () => {
-    boot(
+  it("fills the recurring approval modal with one checked box per date", async () => {
+    await boot(
       "http://localhost/sub_space_booking",
       `<div id="approveRecurringModal">
          <div id="recurring-checkboxes"></div>
@@ -607,8 +620,8 @@ describe("admin lists", () => {
     expect(boxes.every((b) => b.checked)).toBe(true);
   });
 
-  function openRecurringModal(dates) {
-    boot(
+  async function openRecurringModal(dates) {
+    await boot(
       "http://localhost/sub_space_booking",
       `<div id="approveRecurringModal"><div id="recurring-checkboxes"></div></div>`,
     );
@@ -620,8 +633,8 @@ describe("admin lists", () => {
     return [...$("recurring-checkboxes").children];
   }
 
-  it("draws each recurring date as a bordered row with a checked box and its label", () => {
-    const rows = openRecurringModal([
+  it("draws each recurring date as a bordered row with a checked box and its label", async () => {
+    const rows = await openRecurringModal([
       [7, "Nov  2 (10:00am-11:00am)"],
       [8, "Nov  9 (10:00am-11:00am)"],
     ]);
@@ -671,15 +684,15 @@ describe("admin lists", () => {
     );
   });
 
-  it("shows a recurring date label as plain text, markup included", () => {
-    const [row] = openRecurringModal([[9, "<b>Nov 16</b>"]]);
+  it("shows a recurring date label as plain text, markup included", async () => {
+    const [row] = await openRecurringModal([[9, "<b>Nov 16</b>"]]);
     const label = row.querySelector("label");
     expect(label.textContent).toBe("<b>Nov 16</b>");
     expect(label.children).toHaveLength(0);
   });
 
-  it("empties the recurring approval modal before each opening", () => {
-    openRecurringModal([[1, "Mon"]]);
+  it("empties the recurring approval modal before each opening", async () => {
+    await openRecurringModal([[1, "Mon"]]);
     const trigger = document.createElement("button");
     trigger.dataset.dates = JSON.stringify([[2, "Tue"]]);
     const event = new Event("show.bs.modal");
@@ -694,11 +707,14 @@ describe("admin lists", () => {
   it.each([
     ["pending_bookings_select_all", "pending-booking-select"],
     ["userRequestSelectAll", "user-request-select"],
-  ])("%s selects and clears every row", (allId, rowClass) => {
-    boot(
+  ])("%s selects and clears every row", async (allId, rowClass) => {
+    await boot(
       "http://localhost/sub_space_booking",
-      `<input type="checkbox" id="${allId}">
-       <input type="checkbox" class="${rowClass}"><input type="checkbox" class="${rowClass}">`,
+      `<table data-controller="select-all"><tr><td>
+       <input type="checkbox" id="${allId}" data-action="change->select-all#toggle">
+       <input type="checkbox" class="${rowClass}" data-select-all-target="row">
+       <input type="checkbox" class="${rowClass}" data-select-all-target="row">
+       </td></tr></table>`,
     );
     const all = $(allId);
     const rows = document.querySelectorAll(`.${rowClass}`);
@@ -712,8 +728,8 @@ describe("admin lists", () => {
     expect([...rows].some((r) => r.checked)).toBe(false);
   });
 
-  it("shows the supervisor list only for the Staff identity", () => {
-    boot(
+  it("shows the supervisor list only for the Staff identity", async () => {
+    await boot(
       "http://localhost/sub_space_booking",
       `<button class="identity-button" value="Staff" id="staff"></button>
        <button class="identity-button" value="Student" id="student"></button>

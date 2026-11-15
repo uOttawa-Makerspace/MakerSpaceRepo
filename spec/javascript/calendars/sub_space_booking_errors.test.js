@@ -3,6 +3,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { textsAttribute } from "./calendar_texts_fixture.js";
+import {
+  settle,
+  startBookingControllers,
+  withControllers,
+} from "./booking_page_fixture.js";
 
 let calendarOptions;
 vi.mock("@fullcalendar/core", () => ({
@@ -33,7 +38,7 @@ const PAGE = `
   <div class="toast-header"><strong id="toast_title"></strong></div><div id="toast_text"></div>
 </div>
 <div id="booked-calendar" ${textsAttribute()}></div>
-<div id="bookModal"></div>
+<div id="bookModal">
 <input id="book-start"><input id="book-end"><input id="book-recurring-end">
 <input id="book-name"><input id="book-description"><input id="book-recurring" type="checkbox">
 <input id="sub_space_booking_id" value="7">
@@ -41,11 +46,11 @@ const PAGE = `
 <button id="bookCancel"></button><button id="bookClose"></button><button id="bookSave"></button>
 <button id="bookUpdate"></button><button id="bookDelete"></button>
 <div id="subspace"></div><div id="subspace_header"></div><h5 id="bookingModalLabel"></h5><label id="book-recurring-label"></label>
-<button id="bookRecurringDeleteOne"></button><button id="bookRecurringDeleteRest"></button>`;
+<button id="bookRecurringDeleteOne"></button><button id="bookRecurringDeleteRest"></button>
+</div>`;
 
 const toast = () => document.getElementById("toast_text").innerText;
 const title = () => document.getElementById("toast_title").innerText;
-const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 async function respond(response) {
   global.fetch = vi.fn(() =>
@@ -61,21 +66,23 @@ async function respond(response) {
 
 const reply = (status, text) => ({ ok: status < 400, text: async () => text });
 
+Element.prototype.flatpickr = () => ({
+  selectedDates: [],
+  input: { value: "" },
+  altInput: document.createElement("input"),
+  setDate() {},
+});
+await import("../../../app/javascript/entrypoints/sub_space_booking.js");
+await startBookingControllers();
+
 beforeEach(async () => {
-  Element.prototype.flatpickr = () => ({
-    selectedDates: [],
-    input: { value: "" },
-    altInput: document.createElement("input"),
-    setDate() {},
-  });
   window.scrollTo = vi.fn();
   global.confirm = vi.fn(() => true);
-  document.body.innerHTML = PAGE;
+  document.body.innerHTML = withControllers(PAGE);
   document.documentElement.dataset.requestNetwork = "Server unreachable";
   document.documentElement.dataset.requestFailed = "No reason given";
-  vi.resetModules();
-  await import("../../../app/javascript/entrypoints/sub_space_booking.js");
   document.dispatchEvent(new Event("turbo:load"));
+  await settle();
 });
 
 describe("a failed booking request", () => {

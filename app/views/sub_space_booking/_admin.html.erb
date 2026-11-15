@@ -26,12 +26,12 @@
             <!-- Bulk Approve Form Handle -->
             <%= form_with id: 'bulkApproveDeclineForm', url: bulk_approve_decline_sub_space_booking_index_path, method: :put do |f| %><% end %>
 
-            <table class="table table-hover align-middle mb-0 table-sub-space-booking-pending">
+            <table class="table table-hover align-middle mb-0 table-sub-space-booking-pending" data-controller="select-all">
               <thead class="table-secondary">
                 <tr>
                   <th class="ps-3">
                     <div class="form-check">
-                      <%= check_box_tag :pending_bookings_select_all, '1', false, class: 'form-check-input', aria: { label: t('common.names.select_all_pending') } %>
+                      <%= check_box_tag :pending_bookings_select_all, '1', false, class: 'form-check-input', data: { action: 'change->select-all#toggle' }, aria: { label: t('common.names.select_all_pending') } %>
                     </div>
                   </th>
                   <th>Room</th>
@@ -55,7 +55,7 @@
                   <tr>
                     <td class="ps-3">
                       <div class="form-check">
-                        <%= check_box_tag "sub_space_booking_ids[]", booking.id, false, id: "booking_#{booking.id}", class: 'form-check-input pending-booking-select', aria: { label: t('common.names.select_booking', id: booking.id) }, form: 'bulkApproveDeclineForm' %>
+                        <%= check_box_tag "sub_space_booking_ids[]", booking.id, false, id: "booking_#{booking.id}", class: 'form-check-input pending-booking-select', data: { select_all_target: 'row' }, aria: { label: t('common.names.select_booking', id: booking.id) }, form: 'bulkApproveDeclineForm' %>
                       </div>
                     </td>
                     <td>
@@ -247,10 +247,10 @@
           <%= form_with url: bulk_approve_access_sub_space_booking_index_path, method: :put, id: 'bulkApproveAccessForm' do %><% end %>
           <div>
             <div class="table-responsive">
-              <table class="table table-hover align-middle border border-secondary-subtle">
+              <table class="table table-hover align-middle border border-secondary-subtle" data-controller="select-all">
                 <thead class="table-secondary">
                   <tr>
-                    <th class="ps-3"><input type="checkbox" id="userRequestSelectAll" class="form-check-input" aria-label="<%= t('common.names.select_all_requests') %>" /></th>
+                    <th class="ps-3"><input type="checkbox" id="userRequestSelectAll" class="form-check-input" data-action="change->select-all#toggle" aria-label="<%= t('common.names.select_all_requests') %>" /></th>
                     <th>Name</th>
                     <th>Reason</th>
                     <th>Date</th>
@@ -260,7 +260,7 @@
                 <tbody>
                   <% @pending_access_requests.each do |req| %>
                     <tr>
-                      <td class="ps-3"><%= check_box_tag 'user_booking_approval_ids[]', req.id, false, class: 'form-check-input user-request-select', form: 'bulkApproveAccessForm', aria: { label: t('common.names.select_access_request', id: req.id) } %></td>
+                      <td class="ps-3"><%= check_box_tag 'user_booking_approval_ids[]', req.id, false, class: 'form-check-input user-request-select', data: { select_all_target: 'row' }, form: 'bulkApproveAccessForm', aria: { label: t('common.names.select_access_request', id: req.id) } %></td>
                       <td>
                         <strong class="text-body-emphasis"><%= req.user.name %></strong><br>
                         <small class="text-body-secondary"><%= req.user.email %></small>
