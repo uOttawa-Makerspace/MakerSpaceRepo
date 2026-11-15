@@ -9,8 +9,6 @@ RSpec.describe "Route helpers used in views" do
   let(:route_helpers) do
     Rails.application.routes.named_routes.names.flat_map { |name| ["#{name}_path", "#{name}_url"] }
   end
-  # Helpers a controller module adds to its own views only.
-  let(:controller_only_helpers) { %w[saml_acs_url] }
   let(:view_helper_context) { ApplicationController.new.view_context }
 
   def helper_names_in(source)
@@ -21,7 +19,7 @@ RSpec.describe "Route helpers used in views" do
     missing = Dir[Rails.root.join("app/views/**/*.{erb,jbuilder}")].sort.flat_map do |file|
       source = File.read(file)
       helper_names_in(source).filter_map do |name|
-        next if route_helpers.include?(name) || controller_only_helpers.include?(name)
+        next if route_helpers.include?(name)
         next if source.match?(/\b#{name}\s*=[^=~]/)
         next if view_helper_context.respond_to?(name)
 

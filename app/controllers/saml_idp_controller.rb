@@ -64,11 +64,18 @@ class SamlIdpController < ApplicationController
       render template: "saml/staff_only"
     else
       @saml_response = encode_response @current_user
+      @saml_response_destination = saml_request.response_url
       render template: "saml/saml_post"
     end
   end
 
   private
+
+  # The gem hands back the signed LogoutResponse as XML, while the HTTP-POST binding
+  # carries it base64-encoded, as the gem already does for the authn response.
+  def encode_logout_response(...)
+    Base64.strict_encode64(super)
+  end
 
   # The user the submit button chose: signed in with the posted credentials, the
   # session user, or nobody (after a sign-out or an unknown submit value).

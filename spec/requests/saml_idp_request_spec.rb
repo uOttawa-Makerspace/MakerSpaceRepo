@@ -768,6 +768,17 @@ RSpec.describe "SAML IdP", type: :request do
             expect(response.body).to include('value="sign_in"')
             expect(response.body).not_to include("habilitated", "SAMLResponse")
           end
+
+          it "answers a staff user's 'use this account' with a LogoutResponse posted to the SP's logout URL" do
+            post_wiki_server_logout(:staff)
+            expect(response).to have_http_status(:ok)
+            expect(c18_form_action).to eq("https://wiki-server.makerepo.com/saml/logout")
+            logout_response = Nokogiri::XML(c18_saml_response_xml).remove_namespaces!.root
+            expect(logout_response.name).to eq("LogoutResponse")
+            expect(logout_response["InResponseTo"]).to eq("_lo1")
+            expect(logout_response["Destination"]).to eq("https://wiki-server.makerepo.com/saml/logout")
+            expect(logout_response.at_xpath("Status/StatusCode")["Value"]).to eq("urn:oasis:names:tc:SAML:2.0:status:Success")
+          end
         end
 
         it "accepts a LogoutRequest whose root element is signed (control for the wrapping examples)" do
