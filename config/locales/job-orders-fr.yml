@@ -98,6 +98,29 @@ fr:
     navigation:
       all_job_orders_staff_only: "Toutes les commandes (personnel seulement)"
       settings_admin_only: "Paramètres (administrateurs seulement)"
+    # The staff quote modal on an order's page; %{unit} = the service's unit, %{name} = an option's name
+    quote_modal:
+      # Heading of a task that has no title
+      task_number: "Tâche n° %{id}"
+      base_fee: "Frais de base ($ CA)"
+      # Shown when the service has no unit of its own
+      unit: "unité"
+      service_quantity: "Quantité (%{unit})"
+      service_price: "Prix par %{unit} ($ CA)"
+      option_price: "%{name} ($ CA)"
+      # Placeholder of the price and quantity fields
+      value: "valeur"
+      staff_files: "Fichiers du personnel (GCode, PDF, etc.)"
+      line_items: "Articles supplémentaires"
+      description: "Description"
+      new_line_item: "Nouvel article"
+      user_comments: "Commentaires pour l'utilisateur (envoyés dans le clavardage)"
+      user_comments_placeholder: "Je devrai ajouter des supports"
+      staff_comments: "Commentaires pour les membres du personnel"
+      staff_comments_placeholder: "Utiliser la Raise 3D"
+      # %{amount} = the running total, updated by the page as prices are typed
+      total_html: "Total : %{amount} $"
+      approve: "Approuver"
   job_order_mailer:
     quote_notes: "Note du personnel :"
     hello: "Bonjour,"

@@ -44,9 +44,10 @@ module LiteralTextScan
           .reject { |text| ALLOWED_LITERALS.include?(text) || not_wording?(text) }
   end
 
-  # A lowercase identifier such as "await_payment" handed to a helper that takes form tokens.
+  # A lowercase identifier such as "await_payment" or "task_#{task.id}_service_qty" handed to a helper that takes
+  # form tokens.
   def self.field_token?(helper, text)
-    FIELD_TOKEN_HELPERS.include?(helper) && text.match?(FORM_CODE)
+    FIELD_TOKEN_HELPERS.include?(helper) && text.gsub(/#\{[^}]*\}/, "").match?(FORM_CODE)
   end
 
   # Links, fragments, markup with no text outside its tags, and a string that is one interpolation (optionally after an id prefix).

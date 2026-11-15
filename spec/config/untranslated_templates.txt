@@ -44,7 +44,6 @@ app/views/job_alert_mailer/alert.html.erb
 app/views/job_orders/_admin_row.html.erb
 app/views/job_orders/_assign_staff.html.erb
 app/views/job_orders/_completed_email_modal.html.erb
-app/views/job_orders/_quote_modal.html.erb
 app/views/job_orders/_staff_details.html.erb
 app/views/job_orders/admin.html.erb
 app/views/job_orders/settings.html.erb

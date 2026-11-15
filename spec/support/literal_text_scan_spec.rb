@@ -31,6 +31,8 @@ RSpec.describe LiteralTextScan do
   it "ignores a submitted value or a label's field name, but not words in those places" do
     expect(arguments(%(<%= f.button name: "state", value: "await_payment" do %>))).to eq([])
     expect(arguments(%(<%= label_tag "assign_indefinite", t("x") %>))).to eq([])
+    expect(arguments(%(<%= label_tag "task_\#{task.id}_option_\#{id}", t("x") %>))).to eq([])
+    expect(arguments(%(<%= label_tag "Task \#{task.id}" %>))).to eq(["Task \#{task.id}"])
     expect(arguments(%(<%= f.submit value: "Save changes" %>))).to eq(["Save changes"])
     expect(arguments(%(<%= label_tag "Indefinite" %>))).to eq(["Indefinite"])
     expect(arguments(%(<%= link_to "active", root_path %>))).to eq(["active"])
