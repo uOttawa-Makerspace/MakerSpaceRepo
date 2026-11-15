@@ -130,8 +130,8 @@ fr:
       approved_html: "Votre commande numéro #%{id} a été approuvée. Consultez la %{link} pour approuver ou refuser le devis."
       page_link: "page de la commande"
       pricing: "Prix :"
-      # %{amount} = an amount of money
-      amount: "CAD %{amount}"
+      # %{amount} = an amount of money, already with its "$"
+      amount: "%{amount} CA"
       # Start of the price breakdown of a task, followed by "<quantity> <unit> × <unit price>"
       base_fee: "frais de base de %{amount} plus"
       # Shown when the service has no unit of its own

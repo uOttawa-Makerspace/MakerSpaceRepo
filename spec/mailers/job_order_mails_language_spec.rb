@@ -255,7 +255,7 @@ RSpec.describe JobOrderMailer, type: :mailer do
     add_quoted_tasks!(order)
     body = text(deliver { described_class.send_job_quote(id) })
 
-    expect(body).to include("Total général : CAD 58,50 $", "Grand Total: CAD $58.50",
+    expect(body).to include("Total général : 58,50 $ CA", "Grand Total: CAD $58.50",
                             "(frais de base de 20,00 $ plus 4.0 unité × 3,00 $ )", "(base fee of $20.00 plus 4.0 unit × $3.00 )")
   end
 

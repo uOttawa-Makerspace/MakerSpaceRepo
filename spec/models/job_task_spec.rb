@@ -23,6 +23,12 @@ RSpec.describe JobTask, type: :model do
       expect(task.missing_information?).to be(true)
     end
 
+    # JobTasksController#create builds a task this way, so creating one never fails validation.
+    it "is valid with only a title on its order, as the add-task button creates it" do
+      order = create(:job_order)
+      expect(order.job_tasks.build(title: "Task #1")).to be_valid
+    end
+
     it "creates a task option on a created task" do
       expect(create(:job_task_option).job_task).to be_persisted
     end

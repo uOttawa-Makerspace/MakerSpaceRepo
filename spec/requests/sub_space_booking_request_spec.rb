@@ -232,6 +232,41 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(SubSpaceBooking.where(name: "TooLong")).to be_empty
     end
 
+    it "refuses a booking longer than maximum_booking_duration in French" do
+      capped = create(:sub_space, space: space, maximum_booking_duration: 4)
+      post sub_space_booking_index_path(locale: "fr"), as: :json,
+           params: { sub_space_booking: {
+             sub_space_id: capped.id, start_time: "2027-03-03 10:00",
+             end_time: "2027-03-03 15:00", name: "TooLong", description: "D"
+           } }
+      expect(response.status).to eq(422)
+      expect(response.parsed_body).to eq(
+        "errors" =>
+          ["DurationHour Vous ne pouvez pas réserver #{capped.name} pour plus de 4 heures."]
+      )
+    end
+
+    it "refuses a booking over maximum_booking_hours_per_week in French" do
+      travel_to(Time.zone.local(2027, 3, 10, 12, 0)) do
+        log_in!(user)
+        capped = create(:sub_space, space: space, maximum_booking_hours_per_week: 2)
+        existing = 4.hours.ago.to_datetime
+        create(:sub_space_booking, sub_space: capped, user: user,
+               name: "Earlier", start_time: existing, end_time: existing + 4.hours)
+        post sub_space_booking_index_path(locale: "fr"), as: :json,
+             params: { sub_space_booking: {
+               sub_space_id: capped.id, start_time: "2027-03-10 13:00",
+               end_time: "2027-03-10 14:00", name: "OverWeek", description: "D"
+             } }
+        expect(response.status).to eq(422)
+        expect(response.parsed_body).to eq(
+          "errors" =>
+            ["DurationWeek Vous ne pouvez pas réserver #{capped.name} pour plus de 2 heures par semaine."]
+        )
+        expect(SubSpaceBooking.where(name: "OverWeek")).to be_empty
+      end
+    end
+
     it "lets an admin book longer than maximum_booking_duration" do
       capped = create(:sub_space, space: space, maximum_booking_duration: 4)
       admin = create(:user, :admin, booking_approval: true)

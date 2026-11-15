@@ -350,6 +350,10 @@ fr:
       decline_reason_label: "Raison du refus pour %{name} (facultative)"
       revoke_reason_label: "Raison du retrait de l'accès de %{name} (facultative)"
       decline_label: "Refuser %{name}"
+    limits:
+      # %{room} = the room's name, %{hours} = the room's limit
+      maximum_duration: "Vous ne pouvez pas réserver %{room} pour plus de %{hours} heures."
+      weekly_hours: "Vous ne pouvez pas réserver %{room} pour plus de %{hours} heures par semaine."
     picker:
       min_length: "Saisissez au moins %{count} caractères pour rechercher une personne."
     rules:
@@ -509,7 +513,6 @@ fr:
       action_required_scroll_to_timeline: "Action Requise : Veuillez descendre jusqu'à la section « Chronologie » pour fournir votre contribution. Votre réponse est nécessaire pour continuer. Merci !"
       missing_info: "Votre commande n'est pas soumise ! Il manque des informations requises dans les tâches suivantes :"
       task_deleted: "La tâche a été supprimée."
-      task_create_failed: "La tâche n'a pas pu être créée : %{message}"
     timeline:
       unknown_user: "Inconnu"
       approved_by_html: "Approuvé par %{name} pour le client"
