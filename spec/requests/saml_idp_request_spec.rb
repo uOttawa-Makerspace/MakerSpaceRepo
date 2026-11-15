@@ -526,6 +526,7 @@ RSpec.describe "SAML IdP", type: :request do
         doc.remove_namespaces!
         expect(doc.at_xpath("//Assertion/Subject/NameID").text).to eq(signed_in.id.to_s)
         expect(c18_saml_attributes(c18_saml_response_xml)["groups"]).to eq(["Staff Readonly"])
+        expect(session[:user_id]).to eq(signed_in.id) # an AuthnRequest keeps the session
       end
 
       it "guest: no assertion; the login page is shown again without an error message" do
@@ -767,6 +768,33 @@ RSpec.describe "SAML IdP", type: :request do
             expect(session[:user_id]).to be_nil
             expect(response.body).to include('value="sign_in"')
             expect(response.body).not_to include("habilitated", "SAMLResponse")
+          end
+
+          it "answers a staff user's 'use this account' with a LogoutResponse posted to the SP's logout URL" do
+            post_wiki_server_logout(:staff)
+            expect(response).to have_http_status(:ok)
+            expect(c18_form_action).to eq("https://wiki-server.makerepo.com/saml/logout")
+            logout_response = Nokogiri::XML(c18_saml_response_xml).remove_namespaces!.root
+            expect(logout_response.name).to eq("LogoutResponse")
+            expect(logout_response["InResponseTo"]).to eq("_lo1")
+            expect(logout_response["Destination"]).to eq("https://wiki-server.makerepo.com/saml/logout")
+            expect(logout_response.at_xpath("Status/StatusCode")["Value"]).to eq("urn:oasis:names:tc:SAML:2.0:status:Success")
+          end
+
+          it "signs the user out of MakerRepo once the LogoutResponse is built" do
+            post_wiki_server_logout(:staff)
+            expect(c18_saml_response_xml).to include("LogoutResponse")
+            expect(session[:user_id]).to be_nil
+            get "/saml/auth", params: { SAMLRequest: authn_request }
+            expect(response.body).to include('value="sign_in"')
+            expect(response.body).not_to include('value="current_user"')
+          end
+
+          # The controller base64-encodes the gem's LogoutResponse for the POST binding,
+          # so a gem release that encodes it already must fail here, not double-encode.
+          it "relies on the gem returning the signed LogoutResponse as XML" do
+            xml = SamlIdp::LogoutResponseBuilder.new("r1", "https://idp.test", "https://sp.test/logout", "_lo1", OpenSSL::Digest::SHA256).signed
+            expect(xml).to start_with("<LogoutResponse")
           end
         end
 

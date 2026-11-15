@@ -2,7 +2,7 @@
 
 <p class="text-center" style="font-size: 2rem;"><%= t('saml.post.redirecting') %></p>
 
-<%= form_tag saml_acs_url do %>
+<%= form_tag @saml_response_destination do %>
   <%= hidden_field_tag('SAMLResponse', @saml_response) %>
   <%= hidden_field_tag('RelayState', params[:RelayState]) %>
   <%= submit_tag t('saml.post.redirect'), class: 'btn btn-primary btn-sm' %>

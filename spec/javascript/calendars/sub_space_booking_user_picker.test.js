@@ -12,12 +12,22 @@ import {
 } from "vitest";
 
 import BookingUserPicker from "../../../app/javascript/controllers/booking_user_picker_controller.js";
+import { newTomSelect } from "../../../app/javascript/src/tom_select.js";
+
+// The real helper, wrapped so one example can make it throw.
+vi.mock("../../../app/javascript/src/tom_select.js", async (importOriginal) => {
+  const original = await importOriginal();
+  return { ...original, newTomSelect: vi.fn(original.newTomSelect) };
+});
 
 const RITA = { id: 1, name: "Rita Requester" };
 const BOB = { id: 2, name: "Bob Brown" };
 
+let application;
+
 beforeAll(() => {
-  Application.start().register("booking-user-picker", BookingUserPicker);
+  application = Application.start();
+  application.register("booking-user-picker", BookingUserPicker);
 });
 
 let picker;
@@ -68,6 +78,27 @@ describe("admin user picker", () => {
     expect(select.tomselect).toBeUndefined();
     expect(select.classList).not.toContain("tomselected");
     expect(document.querySelectorAll(".ts-wrapper")).toHaveLength(0);
+  });
+
+  it("disconnects without an error when its picker could not be built", async () => {
+    const errors = vi
+      .spyOn(application, "handleError")
+      .mockImplementation(() => {});
+    vi.mocked(newTomSelect).mockImplementationOnce(() => {
+      throw new Error("no picker");
+    });
+    const select = document.createElement("select");
+    select.dataset.minLength = "3";
+    document.body.append(select);
+    await vi.advanceTimersByTimeAsync(0);
+    select.dataset.controller = "booking-user-picker";
+    await vi.advanceTimersByTimeAsync(0);
+    delete select.dataset.controller;
+    await vi.advanceTimersByTimeAsync(0);
+    expect(errors.mock.calls.map(([error]) => error.message)).toEqual([
+      "no picker",
+    ]);
+    errors.mockRestore();
   });
 
   it("has one picker again when it connects again", async () => {
