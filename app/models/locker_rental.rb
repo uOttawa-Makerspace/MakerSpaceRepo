@@ -7,6 +7,7 @@ class LockerRental < ApplicationRecord
   include ApplicationHelper
   # Fetch checkout url via shopify
   include ShopifyConcern
+  include CheckoutRecords
 
   # Associated when assigned
   belongs_to :locker, optional: true
@@ -432,10 +433,14 @@ class LockerRental < ApplicationRecord
   end
   private_class_method :delete_orphan_draft
 
-  # Forgets the stored draft id, only if it is still `gid` (a conditional UPDATE, never over a newer draft).
-  # Public for .reconcile_orphan_draft!.
-  def forget_draft_order_id(gid)
-    self.class.where(id: id, shopify_draft_order_id: gid).update_all(shopify_draft_order_id: nil)
+  # Forgets the stored draft id, only if it is still `gid` (a conditional UPDATE, never over a newer draft), and
+  # closes the draft's checkout record as `checkout_status` in the same transaction. Public for
+  # .reconcile_orphan_draft!.
+  def forget_draft_order_id(gid, checkout_status = 'void')
+    transaction do
+      self.class.where(id: id, shopify_draft_order_id: gid).update_all(shopify_draft_order_id: nil)
+      close_checkout_record(gid, checkout_status)
+    end
     @attributes.write_from_database('shopify_draft_order_id', nil) if shopify_draft_order_id == gid
   end
 
@@ -491,7 +496,8 @@ class LockerRental < ApplicationRecord
     end
   end
 
-  # Display-only "latest applied payment" (GREATEST), written only when a payment becomes applied.
+  # Display-only "latest applied payment" (GREATEST), written only when a payment becomes applied, with the
+  # stored draft's checkout record (#record_checkout_paid).
   # One UPDATE with GREATEST in SQL (never the in-memory value, which may be stale).
   def stamp_paid_at(time)
     sql = self.class.sanitize_sql_array(
@@ -501,6 +507,7 @@ class LockerRental < ApplicationRecord
     # same request must see the new paid_at)
     row = self.class.connection.exec_query(sql).first
     @attributes.write_from_database('paid_at', row && row['paid_at'])
+    record_checkout_paid
   end
 
   # Sets the end date on a saved rental. A later date (or one side being open-ended) makes the earlier expiry
@@ -542,14 +549,14 @@ class LockerRental < ApplicationRecord
     ['applied', nil]
   end
 
-  # Inserts the payment row unless the order id is already recorded (ON CONFLICT DO NOTHING). The new
-  # LockerPayment, or nil for a duplicate.
+  # Inserts the payment row unless the order id is already recorded (ON CONFLICT DO NOTHING), with its entry in the
+  # payments ledger. The new LockerPayment, or nil for a duplicate.
   def insert_payment(**attributes)
     inserted = LockerPayment.insert(
       { locker_rental_id: id, **attributes, resolved_at: (Time.current if attributes[:status] == 'applied') },
       unique_by: :shopify_order_id, returning: %w[id]
     )
-    LockerPayment.find(inserted.rows.first.first) if inserted.rows.any?
+    LockerPayment.find(inserted.rows.first.first).tap(&:record_in_ledger) if inserted.rows.any?
   end
 
   # What a NEW payment row does to the rental, in #record_payment's transaction. Returns the payment, which is
@@ -616,11 +623,17 @@ class LockerRental < ApplicationRecord
   def settle_removed_draft(gid, result, new_term:)
     case result.outcome
     when :deleted, :gone then forget_draft_order_id(gid)
-    when :completed then forget_draft_order_id(gid) if new_term
+    when :completed then settle_paid_draft(gid, new_term:)
     else
       raise DraftOrderNotDeleted,
             "Shopify did not delete the open draft order #{gid}: #{result.user_errors.map { |e| e['message'] }.join(', ')}"
     end
+  end
+
+  # A paid draft is never deleted: its checkout record is paid. Ending a rental keeps the id (the record of the
+  # payment); a rental that starts a new term forgets it.
+  def settle_paid_draft(gid, new_term:)
+    new_term ? forget_draft_order_id(gid, 'paid') : close_checkout_record(gid, 'paid')
   end
 
   # THE place a link is served from: fetch the stored draft, classify it, serve it only when payable. The url, nil
@@ -654,6 +667,13 @@ class LockerRental < ApplicationRecord
     report_checkout_failure(
       UnknownDraftStatus.new("draft order #{shopify_draft_order_id} has status #{draft['status'].inspect}"), 'serve_draft'
     )
+  end
+
+  # Stores a new draft's id (#keep_draft_order_id_unless_taken, under the row lock) and opens its
+  # checkout record in the same transaction.
+  def store_shopify_draft_order_id(new_id)
+    super
+    open_checkout_record(new_id)
   end
 
   def create_checkout_draft

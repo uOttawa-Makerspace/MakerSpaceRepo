@@ -15,7 +15,7 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
   let!(:rental) { create(:locker_rental, :await_payment, rented_by: renter) }
 
   after do
-    LockerPayment.where(locker_rental_id: rental.id).delete_all
+    delete_locker_payment_records([rental.id])
     LockerRental.where(id: rental.id).delete_all
     locker = Locker.find_by(id: rental.locker_id)
     decider = User.unscoped.where(id: rental.decided_by_id)

@@ -21,6 +21,26 @@ class PaymentLedgerEntry < ApplicationRecord
     persisted? || super
   end
 
+  # The id of the payment entry for (provider, provider_ref): written now, or the one already there. The insert is
+  # ON CONFLICT DO NOTHING on the one-payment-per-provider_ref index, so a retried write adds nothing.
+  def self.record_payment(provider:, provider_ref:, amount:)
+    inserted = insert(
+      { provider: provider, provider_ref: provider_ref, amount: amount, kind: "payment" },
+      unique_by: :index_payment_ledger_entries_one_payment_per_provider_ref, returning: %w[id]
+    )
+    inserted.rows.first&.first || payment.find_by!(provider: provider, provider_ref: provider_ref).id
+  end
+
+  # Writes the reversal of the payment entry `entry` once (ON CONFLICT DO NOTHING on reversed_entry_id: a payment has
+  # at most one reversal).
+  def self.record_reversal(entry)
+    insert(
+      { provider: entry.provider, provider_ref: entry.provider_ref, amount: entry.amount, kind: "reversal",
+        reversed_entry_id: entry.id },
+      unique_by: :reversed_entry_id
+    )
+  end
+
   private
 
   # A reversal points at a payment (not another reversal) with its own provider and provider_ref.

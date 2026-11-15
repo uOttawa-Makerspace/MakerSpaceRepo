@@ -6,7 +6,7 @@ require "rails_helper"
 # payment, end to end: the card payment (orders/paid), the cash payment (orders/fulfilled), a retried delivery,
 # held payments refunded, dismissed or settled by an assignment, the checkout link (a new draft, a replaced one),
 # the draft removed when a rental is cancelled or starts a new term, and the draft sweep. Each example pins what
-# the rental and payment columns become.
+# the rental and payment columns become, and the payment checkout records and ledger entries written beside them.
 RSpec.describe "Locker payment records", type: :request do
   include ActiveJob::TestHelper
   include ActiveSupport::Testing::TimeHelpers
@@ -36,9 +36,22 @@ RSpec.describe "Locker payment records", type: :request do
     expect(response).to have_http_status(:ok)
   end
 
+  # A stored draft with its open checkout record, as storing a new draft writes them.
   def with_draft(rental, draft = gid)
-    rental.update_column(:shopify_draft_order_id, draft)
+    rental.transaction do
+      rental.update_column(:shopify_draft_order_id, draft)
+      rental.open_checkout_record(draft)
+    end
     rental.reload
+  end
+
+  def checkouts(rental)
+    PaymentCheckout.where(reference: rental).order(:id).pluck(:provider, :provider_id, :status, :term)
+  end
+
+  def ledger(payment)
+    PaymentLedgerEntry.where(provider_ref: payment.shopify_order_id).order(:id)
+                      .pluck(:provider, :kind, :amount, :reversed_entry_id)
   end
 
   def resolve(payment, resolution)
@@ -56,6 +69,12 @@ RSpec.describe "Locker payment records", type: :request do
       expect(rental.reload).to have_attributes(state: "active", paid_at: frozen, shopify_draft_order_id: gid)
       expect(LockerPayment.where(locker_rental: rental).pluck(:shopify_order_id, :status, :amount))
         .to eq([["5001", "applied", BigDecimal("20.00")]])
+
+      payment = LockerPayment.find_by!(shopify_order_id: "5001")
+      expect(checkouts(rental)).to eq([["shopify", gid, "paid", rental.owned_until.to_date]])
+      expect(ledger(payment)).to eq([["shopify", "payment", BigDecimal("20.00"), nil]])
+      expect(payment.ledger_entry).to have_attributes(provider_ref: "5001", kind: "payment")
+      expect(payment.reversed_at).to be_nil
     end
 
     it "in cash (fulfilled, pending) activates the rental and records one applied payment" do
@@ -64,6 +83,11 @@ RSpec.describe "Locker payment records", type: :request do
 
       expect(rental.reload).to have_attributes(state: "active", shopify_draft_order_id: gid)
       expect(LockerPayment.where(locker_rental: rental).pluck(:shopify_order_id, :status)).to eq([%w[5002 applied]])
+
+      payment = LockerPayment.find_by!(shopify_order_id: "5002")
+      expect(checkouts(rental).map(&:third)).to eq(%w[paid])
+      expect(ledger(payment)).to eq([["shopify", "payment", BigDecimal("20.00"), nil]])
+      expect(payment.ledger_entry_id).to be_present
     end
 
     it "delivered twice records one payment" do
@@ -72,6 +96,9 @@ RSpec.describe "Locker payment records", type: :request do
       2.times { deliver(:fulfilled, payload(rental, id: 5003, financial_status: "pending")) }
 
       expect(LockerPayment.where(locker_rental: rental).pluck(:shopify_order_id, :status)).to eq([%w[5003 applied]])
+
+      expect(PaymentLedgerEntry.where(provider_ref: "5003").pluck(:kind)).to eq(%w[payment])
+      expect(checkouts(rental).map(&:third)).to eq(%w[paid])
     end
   end
 
@@ -84,14 +111,23 @@ RSpec.describe "Locker payment records", type: :request do
 
     it "is recorded held, and refunded by staff" do
       expect(payment).to have_attributes(status: "held", hold_reason: "rental_cancelled", resolved_at: nil)
-      expect(resolve(payment, "refunded")).to be(true)
+      expect(ledger(payment)).to eq([["shopify", "payment", BigDecimal("20.00"), nil]])
+      refunded_at = Time.utc(2026, 10, 21, 9)
+      travel_to(refunded_at) { expect(resolve(payment, "refunded")).to be(true) }
       expect(payment.reload).to have_attributes(status: "refunded", resolved_by_id: staff.id, resolution_note: "settled")
       expect(resolve(payment, "refunded")).to be(false)
+
+      expect(payment.reversed_at).to eq(refunded_at)
+      expect(ledger(payment)).to eq([["shopify", "payment", BigDecimal("20.00"), nil],
+                                     ["shopify", "reversal", BigDecimal("20.00"), payment.ledger_entry_id]])
     end
 
     it "is dismissed by staff" do
       expect(resolve(payment, "dismissed")).to be(true)
       expect(payment.reload).to have_attributes(status: "dismissed", resolved_by_id: staff.id)
+
+      expect(payment.reversed_at).to be_nil
+      expect(ledger(payment).map(&:second)).to eq(%w[payment])
     end
   end
 
@@ -110,6 +146,9 @@ RSpec.describe "Locker payment records", type: :request do
     end
     expect(payment.reload.status).to eq("applied")
     expect(rental.reload).to have_attributes(state: "active", paid_at: frozen, shopify_draft_order_id: gid)
+
+    expect(checkouts(rental).map(&:third)).to eq(%w[paid])
+    expect(ledger(payment).map(&:second)).to eq(%w[payment])
   end
 
   describe "the checkout link" do
@@ -119,6 +158,8 @@ RSpec.describe "Locker payment records", type: :request do
       rental = create(:locker_rental, :await_payment)
       expect(rental.checkout_link).to eq(fake.invoice_url)
       expect(rental.reload.shopify_draft_order_id).to eq(gid)
+
+      expect(checkouts(rental)).to eq([["shopify", gid, "open", rental.owned_until.to_date]])
     end
 
     it "replaces a stored draft Shopify no longer has" do
@@ -126,6 +167,9 @@ RSpec.describe "Locker payment records", type: :request do
       fake.missing_ids << "gid://shopify/DraftOrder/1"
       expect(rental.checkout_link).to eq(fake.invoice_url)
       expect(rental.reload.shopify_draft_order_id).to eq(gid)
+
+      expect(checkouts(rental).map { |c| c.values_at(1, 2) })
+        .to eq([["gid://shopify/DraftOrder/1", "void"], [gid, "open"]])
     end
   end
 
@@ -137,6 +181,8 @@ RSpec.describe "Locker payment records", type: :request do
       rental.update!(state: :cancelled, decided_by: staff)
       expect(rental.sync_shopify_draft_order_after_commit).to be(true)
       expect(rental.reload.shopify_draft_order_id).to be_nil
+
+      expect(checkouts(rental).map(&:third)).to eq(%w[void])
     end
 
     it "is kept when it was paid and the rental ends, and forgotten when a paid rental starts a new term" do
@@ -146,12 +192,14 @@ RSpec.describe "Locker payment records", type: :request do
       ended.update!(state: :cancelled)
       expect(ended.sync_shopify_draft_order_after_commit).to be(true)
       expect(ended.reload.shopify_draft_order_id).to eq(gid)
+      expect(checkouts(ended).map(&:third)).to eq(%w[paid])
 
       renewed = with_draft(create(:locker_rental, :active), "gid://shopify/DraftOrder/2")
       fake.draft_statuses["gid://shopify/DraftOrder/2"] = "COMPLETED"
       renewed.update!(state: :await_payment)
       expect(renewed.sync_shopify_draft_order_after_commit).to be(true)
       expect(renewed.reload.shopify_draft_order_id).to be_nil
+      expect(checkouts(renewed).map(&:third)).to eq(%w[paid])
     end
   end
 
@@ -162,5 +210,39 @@ RSpec.describe "Locker payment records", type: :request do
     outcome = LockerRental.reconcile_orphan_draft!(rental.id, gid, may_delete: true)
     expect(outcome).to have_attributes(value: :deleted)
     expect(rental.reload.shopify_draft_order_id).to be_nil
+
+    expect(checkouts(rental).map(&:third)).to eq(%w[void])
+  end
+
+  describe "the ledger writers on a retry" do
+    let(:payment) do
+      rental = create(:locker_rental, :active).tap { |r| r.update!(state: :cancelled) }
+      rental.record_payment(shopify_order_id: "5006", amount: "3.00")
+    end
+
+    it "write one payment entry and link it once" do
+      entry_id = payment.ledger_entry_id
+      expect(payment.record_in_ledger).to eq(entry_id)
+      expect(PaymentLedgerEntry.record_payment(provider: "shopify", provider_ref: "5006", amount: BigDecimal("3.00")))
+        .to eq(entry_id)
+      expect(LockerPayment.find(payment.id).record_in_ledger).to eq(entry_id)
+      expect(ledger(payment).map(&:second)).to eq(%w[payment])
+    end
+
+    it "write one reversal" do
+      2.times { PaymentLedgerEntry.record_reversal(payment.ledger_entry) }
+      expect(ledger(payment).map(&:second)).to eq(%w[payment reversal])
+    end
+
+    it "write the payment entry first when a payment without one is refunded" do
+      rental = create(:locker_rental, :active).tap { |r| r.update!(state: :cancelled) }
+      bare = LockerPayment.find(LockerPayment.insert(
+        { locker_rental_id: rental.id, shopify_order_id: "5007", paid_at: Time.current, status: "held",
+          hold_reason: "rental_cancelled" }, returning: %w[id]
+      ).rows.first.first)
+      expect(resolve(bare, "refunded")).to be(true)
+      expect(ledger(bare).map(&:second)).to eq(%w[payment reversal])
+      expect(bare.reload.ledger_entry_id).to be_present
+    end
   end
 end

@@ -20,7 +20,7 @@ RSpec.describe "LockerRentals update racing a payment webhook", type: :request d
   let!(:created_user_ids) { [staff.id, rental.rented_by_id, rental.decided_by_id].compact }
 
   after do
-    LockerPayment.where(locker_rental_id: rental.id).delete_all
+    delete_locker_payment_records([rental.id])
     LockerRental.where(id: rental.id).delete_all
     locker = Locker.find_by(id: rental.locker_id)
     locker&.destroy
