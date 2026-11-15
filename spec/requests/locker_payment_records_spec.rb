@@ -233,16 +233,18 @@ RSpec.describe "Locker payment records", type: :request do
 
     def checked = LockerRental::PaymentRecordsCheck.run(adapter: check_adapter)
 
-    it "never fails the checkout link: the draft is stored and served, and the check reports the missing record" do
+    it "a new draft whose id another checkout already records is reported and not served, and nothing is stored" do
       fake = stub_shopify_admin!.tap { |f| f.draft_id = gid }
       PaymentCheckout.create!(reference: create(:locker_rental), provider: "shopify", provider_id: gid, status: :void)
       rental = create(:locker_rental, :await_payment)
+      errors = []
+      allow(Rails.error).to receive(:report) { |error, **| errors << error }
 
-      expect(rental.checkout_link).to eq(fake.invoice_url)
-      expect(rental.reload.shopify_draft_order_id).to eq(gid)
+      expect(rental.checkout_link).to be_nil
+      expect(errors).to contain_exactly(be_a(ActiveRecord::RecordNotUnique))
+      expect(rental.reload.shopify_draft_order_id).to be_nil
       expect(fake.deleted_ids).to be_empty
-      expect(checkouts(rental)).to be_empty
-      expect(checked).to eq("checkout_missing" => [rental.id])
+      expect(checkouts(rental)).to eq([["shopify", nil, "open", rental.owned_until.to_date]])
     end
 
     it "never fails a payment: it links an existing entry, and the check reports a different amount" do
@@ -273,7 +275,7 @@ RSpec.describe "Locker payment records", type: :request do
     end
   end
 
-  it "opens no checkout for a draft that is not kept (the rental was cancelled while Shopify made it)" do
+  it "voids the claim of a draft that is not kept (the rental was cancelled while Shopify made it)" do
     fake = stub_shopify_admin!.tap { |f| f.draft_id = gid }
     rental = create(:locker_rental, :await_payment)
     fake.on_query = lambda do |query, _|
@@ -281,7 +283,7 @@ RSpec.describe "Locker payment records", type: :request do
     end
     expect(rental.checkout_link).to be_nil
     expect(fake.deleted_ids).to eq([gid])
-    expect(checkouts(rental)).to be_empty
+    expect(checkouts(rental)).to eq([["shopify", nil, "void", rental.owned_until.to_date]])
   end
 
   it "pays the checkout of the draft the row stores now, even through a stale rental instance" do

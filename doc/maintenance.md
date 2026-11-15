@@ -305,6 +305,8 @@ Checking the records: the recurring task `locker_payment_records_check` (`Locker
 
 Reversible: rolling back removes exactly the recorded checkouts and ledger entries and clears the links, then drops the new columns, the tables, the trigger and its function. It refuses, changing nothing, if a recorded row changed since, and the table and column migrations refuse while anything not written by the copy is left in them (export and settle those rows first). Once the app has written its own rows there, the rollback refuses until they are exported and settled.
 
+The release with migration `20261115160000` (`AllowClaimedPaymentCheckouts`) serves the locker pay link from the rental's open checkout record. A checkout is now claimed before Shopify is asked for a draft, so `payment_checkouts.provider_id` may be null while a claim has no draft yet; a `paid` checkout must have one (check constraint `payment_checkouts_paid_has_provider_id_check`). The migration changes no row and needs no manual step. A rental awaiting payment whose stored draft has no checkout record yet opens one on its next page view. Rolling it back refuses, changing nothing, while any checkout has no provider id. To see them (read only): `SELECT id, reference_id, status, created_at FROM payment_checkouts WHERE provider_id IS NULL;`. An open one is a checkout whose draft was not made or not taken yet, and the renter's next view reuses it; a void one is a claim whose rental moved on.
+
 ### Failed and overdue job alerts
 
 The `job_alerts` task (`JobAlertJob`, every 5 minutes, production and staging) mails the maintenance address (the one set on the printer issues page, `Setting.maintenance_email`) when a background job needs attention. It reports, once each:

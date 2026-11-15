@@ -1,14 +1,17 @@
 # frozen_string_literal: true
 
 class LockerRental
-  # The rental's payment checkout records (PaymentCheckout), written beside the stored Shopify draft id, which stays
-  # what every decision reads. Each step is called explicitly by the code that changes the draft id, in the same
-  # transaction: a stored draft opens its checkout, a draft deleted (or gone) at Shopify voids it, a draft found paid
-  # pays it, and an applied payment pays the stored draft's checkout.
+  # The rental's payment checkout records (PaymentCheckout). The pay link comes from the rental's one open checkout:
+  # it is claimed in the database before Shopify is asked for a draft, the draft is tagged with the claim's id, and the
+  # claim takes the draft's id under the row lock; a later attempt on the same claim first looks for an open draft with
+  # that tag and reuses it. The stored Shopify draft id is written in step with it, and stays what the draft removal,
+  # the sweep and the payment steps read. Each step is called explicitly by the code that changes the draft id or the
+  # state, in the same transaction: a draft deleted (or gone) at Shopify voids its checkout, a draft found paid pays
+  # it, an applied payment pays the stored draft's checkout, and a new term voids last term's open checkout.
   #
-  # The writes never raise on a row that is already there (an INSERT ... ON CONFLICT DO NOTHING on the provider id, and
-  # conditional UPDATEs), so a checkout record cannot fail the payment or the draft it shadows; a write that changed
-  # nothing leaves a difference LockerRental::PaymentRecordsCheck reports.
+  # The writes beside a draft never raise on a row that is already there (an INSERT ... ON CONFLICT DO NOTHING on the
+  # provider id, and conditional UPDATEs); a write that changed nothing leaves a difference
+  # LockerRental::PaymentRecordsCheck reports.
   module CheckoutRecords
     extend ActiveSupport::Concern
 
@@ -49,10 +52,23 @@ class LockerRental
       end
     end
 
+    # The Shopify id of the rental's open checkout's draft; nil when it has none, or only a claim with no draft yet.
+    def open_checkout_draft_id = open_checkout&.provider_id
+
+    # Last term's open checkout (drafted or only claimed) is void once the rental starts a new term, in the
+    # transaction of that save: its link is never served again, and the new term claims its own. Its draft is removed
+    # at Shopify after the commit (#sync_shopify_draft_order_after_commit). Call it after the save that changed the
+    # state.
+    def void_last_term_checkout
+      return unless started_new_term?
+
+      payment_checkouts.open.update_all(status: 'void', updated_at: Time.current)
+    end
+
     # The stored draft `gid` is now the rental's invoice: its open checkout, for the term the rental ends. A rental
-    # has one open checkout, so one it had for another draft is voided first (that draft was replaced).
+    # has one open checkout, so one it had for another draft, or a claim with none yet, is voided first (replaced).
     def open_checkout_record(gid)
-      payment_checkouts.open.where.not(provider_id: gid).update_all(status: 'void', updated_at: Time.current)
+      payment_checkouts.open.where('provider_id IS DISTINCT FROM ?', gid).update_all(status: 'void', updated_at: Time.current)
       self.class.insert_checkout_record(id, gid, status: 'open', term: checkout_term)
     end
 
@@ -76,6 +92,68 @@ class LockerRental
     end
 
     private
+
+    def open_checkout = payment_checkouts.open.find_by(provider: PROVIDER)
+
+    # The draft the pay link is served from: the open checkout's, or a stored draft no checkout record names yet.
+    def checkout_draft_id = open_checkout_draft_id || adopt_unrecorded_draft
+
+    # A stored draft no checkout record names yet (stored before checkout records were written) opens its checkout, as
+    # storing it does, under the row lock while the rental may take a draft. Its Shopify id, or nil.
+    def adopt_unrecorded_draft
+      return unless unrecorded_draft?
+
+      with_lock { open_unrecorded_draft if may_take_draft_order? }&.provider_id
+    end
+
+    # Under the row lock, while the rental may take a draft: the rental's open checkout, as [checkout, whether it was
+    # there already]. That is the open checkout it has (another request's, or a claim an earlier attempt left), the
+    # stored draft when no checkout record names it yet (it opens its checkout, as storing it does), or else a new
+    # claim with no draft. nil when the rental may no longer take a draft.
+    def claim_checkout
+      with_lock do
+        next nil unless may_take_draft_order?
+
+        existing = open_checkout || open_unrecorded_draft
+        existing ? [existing, true] : [payment_checkouts.create!(provider: PROVIDER, term: checkout_term), false]
+      end
+    end
+
+    def unrecorded_draft?
+      shopify_draft_order_id.present? && !PaymentCheckout.exists?(provider: PROVIDER, provider_id: shopify_draft_order_id)
+    end
+
+    # Opens the checkout of the stored draft when no checkout record names it (call it under the row lock).
+    def open_unrecorded_draft
+      open_checkout if unrecorded_draft? && open_checkout_record(shopify_draft_order_id)
+    end
+
+    # Makes the claim's draft on Shopify (no lock held), tagged with the claim's id. A claim that was there already
+    # first looks for an open draft with that tag (made by an attempt that stopped before the claim took it) and
+    # reuses it. Then the claim takes the draft (#take_draft) or the draft is removed again.
+    def draft_claimed_checkout(claim, retried)
+      adapter = Payments::ShopifyAdapter.new
+      reference = Payments::Reference.new(kind: shopify_draft_order_key_name, record_id: id, checkout_id: claim.id)
+      draft = (adapter.find_open_checkout(reference: reference) if retried) ||
+              adapter.create_checkout(lines: shopify_draft_order_line_items, reference: reference)
+      discard_unused_draft(draft.id) unless with_lock { take_draft(claim, draft.id) }
+    end
+
+    # Under the row lock (the row read again): the claim takes the draft `gid` while it is open with no other draft
+    # and the rental may still take one, and the rental stores the same id. Any id it stored before has a checkout
+    # record (#claim_checkout), so nothing is lost. A rental that moved on voids the claim. True when taken (or the
+    # claim already has this draft).
+    def take_draft(claim, gid)
+      claimed = payment_checkouts.open.where(id: claim.id)
+      unless may_take_draft_order?
+        claimed.where(provider_id: nil).update_all(status: 'void', updated_at: Time.current)
+        return false
+      end
+
+      taken = claimed.where('provider_id IS NULL OR provider_id = ?', gid).update_all(provider_id: gid, updated_at: Time.current) == 1
+      store_shopify_draft_order_id(gid) if taken
+      taken
+    end
 
     def checkout_records_of(gid) = payment_checkouts.where(provider: PROVIDER, provider_id: gid)
 
