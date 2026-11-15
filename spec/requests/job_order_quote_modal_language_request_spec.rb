@@ -54,6 +54,6 @@ RSpec.describe "Job order quote modal in English and French", type: :request do
                           "Commentaires pour l'utilisateur (envoyés dans le clavardage)",
                           "Commentaires pour les membres du personnel"])
     expect(placeholders).to eq(["valeur", "Description", "0.00", "Je devrai ajouter des supports", "Utiliser la Raise 3D"])
-    expect(other_text).to eq(["Articles supplémentaires", "Nouvel article", "Total : 0.00 $", "Approuver"])
+    expect(other_text).to eq(["Articles supplémentaires", "Nouvel article", "Total : 0,00 $ CA", "Approuver"])
   end
 end

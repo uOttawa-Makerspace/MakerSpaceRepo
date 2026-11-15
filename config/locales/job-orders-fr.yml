@@ -119,7 +119,7 @@ fr:
       staff_comments: "Commentaires pour les membres du personnel"
       staff_comments_placeholder: "Utiliser la Raise 3D"
       # %{amount} = the running total, updated by the page as prices are typed
-      total_html: "Total : %{amount} $"
+      total_html: "Total : %{amount} $ CA"
       approve: "Approuver"
   job_order_mailer:
     quote_notes: "Note du personnel :"

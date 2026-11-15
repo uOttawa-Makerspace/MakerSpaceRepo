@@ -145,7 +145,7 @@
 
       <!-- Total Display -->
       <div class="alert alert-info text-end fw-bold" id="quote-total">
-        <%= t(".total_html", amount: tag.span("0.00", id: "quote-total-value")) %>
+        <%= t(".total_html", amount: tag.span(number_with_precision(0, precision: 2), id: "quote-total-value")) %>
       </div>
 
       <%= f.submit t(".approve"), class: 'btn btn-primary' %>
