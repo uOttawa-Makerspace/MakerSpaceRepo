@@ -737,9 +737,9 @@ RSpec.describe "SAML IdP", type: :request do
             %(<saml:NameID>#{name_id}</saml:NameID>#{inner}</samlp:LogoutRequest>)
         end
 
-        # A staff_only SP's LogoutRequest gets the same treatment as before the refusal
-        # moved into the controller: "use this account" shows a non-staff user the
-        # notice page and no response; "logout" signs them out to the login page.
+        # A staff_only SP's LogoutRequest is answered for every signed-in user: "use this
+        # account" posts the LogoutResponse and ends the session; "logout" signs them out
+        # to the login page.
         context "a signed LogoutRequest from the staff_only wiki server" do
           def post_wiki_server_logout(role, submit: "current_user")
             c18_sign_in(role)
@@ -755,11 +755,17 @@ RSpec.describe "SAML IdP", type: :request do
             SamlIdp.config.service_provider.finder = original
           end
 
-          it "shows a non-staff user the notice page with no SAMLResponse" do
+          # Only sign-in requests are refused for a non-staff user; a logout request is
+          # answered and ends the MakerRepo session, as for staff.
+          it "answers a non-staff user's 'use this account' with a LogoutResponse and signs them out" do
             post_wiki_server_logout(:regular)
             expect(response).to have_http_status(:ok)
-            expect(response.body).to include("you are not habilitated to login to the wiki")
-            expect(response.body).not_to include("SAMLResponse")
+            expect(response.body).not_to include("habilitated")
+            expect(c18_form_action).to eq("https://wiki-server.makerepo.com/saml/logout")
+            logout_response = Nokogiri::XML(c18_saml_response_xml).remove_namespaces!.root
+            expect(logout_response.name).to eq("LogoutResponse")
+            expect(logout_response["InResponseTo"]).to eq("_lo1")
+            expect(session[:user_id]).to be_nil
           end
 
           it "signs a non-staff user out to the login page on submit=logout" do

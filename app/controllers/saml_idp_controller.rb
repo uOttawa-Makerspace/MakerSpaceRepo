@@ -109,9 +109,11 @@ class SamlIdpController < ApplicationController
   end
 
   # A service provider marked staff_only in config/initializers/saml.rb never
-  # receives an assertion for a user who is not staff or admin.
+  # receives an assertion for a user who is not staff or admin. A LogoutRequest is
+  # never refused: its LogoutResponse carries no assertion, and answering it ends
+  # the MakerRepo session (single sign-out).
   def refused_by_staff_only_sp?
-    saml_request.service_provider.attributes[:staff_only] && !@current_user.staff?
+    saml_request.authn_request? && saml_request.service_provider.attributes[:staff_only] && !@current_user.staff?
   end
 
   # The one verdict every caller of the gem's validation sees (validate_saml_request,
