@@ -39,7 +39,20 @@ describe("staffDashboardChannelConnection", () => {
     expect(create).not.toHaveBeenCalled();
   });
 
-  it("ends the previous visit's subscription before subscribing again", () => {
+  it("keeps the subscription when the page loads again for the same space", () => {
+    subscribeOnDashboard("7");
+    const subscription = create.mock.results[0].value;
+    const handlers = create.mock.calls[0][1];
+    const latest = vi.fn();
+    document.body.innerHTML = '<input id="space_id" value="7">';
+    staffDashboardChannelConnection(latest);
+    expect(subscription.unsubscribe).not.toHaveBeenCalled();
+    expect(create).toHaveBeenCalledTimes(1);
+    handlers.received({ add_user: 2 });
+    expect(latest).toHaveBeenCalledWith({ add_user: 2 });
+  });
+
+  it("ends the previous space's subscription before following another space", () => {
     subscribeOnDashboard("7");
     const first = create.mock.results[0].value;
     subscribeOnDashboard("8");
