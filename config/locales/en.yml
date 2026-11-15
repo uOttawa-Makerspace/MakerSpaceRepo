@@ -350,6 +350,11 @@ en:
       staff_required: "You must be an admin or staff to view this page."
       admin_required: "You must be an admin to view this page."
       owner_required: "You must be the owner of this booking or an admin to delete it."
+    # Titles of the booking calendar's entries; %{title} = the entry's title
+    feed:
+      blocked: "Space Blocked"
+      booked: "Space Booked"
+      pending: "%{title} (Pending)"
     access_status:
       none: "You have not requested booking access yet."
       pending: "Your request has been pending since %{date}."

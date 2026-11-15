@@ -63,9 +63,9 @@ RSpec.describe "Bookings feed JSON contract", :booking_clock, type: :request do
     )
   end
 
-  def fetch(room: subspace.id, user: viewer)
+  def fetch(room: subspace.id, user: viewer, locale: nil)
     log_in!(user)
-    get bookings_sub_space_booking_index_path, params: { room: room }
+    get bookings_sub_space_booking_index_path, params: { room: room, locale: locale }.compact
     expect(response).to have_http_status(:ok)
     response.body
   end
@@ -125,6 +125,24 @@ RSpec.describe "Bookings feed JSON contract", :booking_clock, type: :request do
     expect(JSON.parse(fetch).first["title"]).to eq("Space Blocked")
     expect(JSON.parse(fetch(user: admin)).first)
       .to include("title" => "Space Blocked", "color" => "#ABABABFF")
+  end
+
+  it "names blocked, hidden and pending entries in French for a French-speaking viewer" do
+    approved_booking(name: "B", description: "D", public: false, blocking: true)
+    approved_booking(name: "S", description: "D", public: false,
+                     start_time: DateTime.parse("2027-04-01 12:00"), end_time: DateTime.parse("2027-04-01 13:00"))
+    approved_booking(name: "P", description: "D", public: true,
+                     start_time: DateTime.parse("2027-04-01 14:00"), end_time: DateTime.parse("2027-04-01 15:00"))
+      .change_status!(@pending_status)
+
+    titles = JSON.parse(fetch(locale: "fr")).pluck("title")
+    expect(titles).to eq(["Espace bloqué", "Espace réservé", "P - D (en attente)"])
+  end
+
+  it "keeps the English titles for an English-speaking viewer" do
+    approved_booking(name: "S", description: "D", public: false)
+      .change_status!(@pending_status)
+    expect(JSON.parse(fetch(locale: "en")).first["title"]).to eq("Space Booked (Pending)")
   end
 
   it "lists bookings by start time, then id, whatever order they were created in" do
