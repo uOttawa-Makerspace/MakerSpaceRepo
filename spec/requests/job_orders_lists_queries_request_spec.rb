@@ -277,4 +277,15 @@ RSpec.describe "Job order lists: status queries", type: :request do
     cell = Nokogiri::HTML(response.body).at_css("td[data-sort='#{order.created_at.utc.iso8601}']")
     expect(cell.text.strip).to eq(I18n.l(order.created_at, format: :long, locale: :fr))
   end
+
+  it "closes as many cells as it opens in each admin row" do
+    session_login!(admin)
+    order = orders!(1, owner: owner).first
+    get admin_job_orders_path
+
+    expect(response).to have_http_status(:ok)
+    row = response.body[%r{<tr id="job-order-row-#{order.id}">(.*?)</tr>}m, 1]
+    expect(row.scan(/<td[\s>]/).size).to eq(9)
+    expect(row.scan(%r{</td>}).size).to eq(9)
+  end
 end
