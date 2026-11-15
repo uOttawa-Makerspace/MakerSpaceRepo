@@ -462,10 +462,11 @@ class SubSpaceBookingController < SessionsController
   def room_limit_failure(booking)
     room = booking.sub_space
     if booking.exceeds_maximum_duration?
-      limit_failure("DurationHour", "You cannot book #{room.name} for more than #{room.maximum_booking_duration} hours.")
+      limit_failure("DurationHour",
+                    t("sub_space_booking.limits.maximum_duration", room: room.name, hours: room.maximum_booking_duration))
     elsif booking.exceeds_weekly_hours?
-      limit_failure("DurationWeek",
-                    "You cannot book #{room.name} for more than #{room.maximum_booking_hours_per_week} hours per week.")
+      limit_failure("DurationWeek", t("sub_space_booking.limits.weekly_hours",
+                                      room: room.name, hours: room.maximum_booking_hours_per_week))
     end
   end
 

@@ -320,6 +320,10 @@ en:
       decline_reason_label: "Reason for declining %{name} (optional)"
       revoke_reason_label: "Reason for revoking %{name}'s access (optional)"
       decline_label: "Decline %{name}"
+    limits:
+      # %{room} = the room's name, %{hours} = the room's limit
+      maximum_duration: "You cannot book %{room} for more than %{hours} hours."
+      weekly_hours: "You cannot book %{room} for more than %{hours} hours per week."
     picker:
       min_length: "Type at least %{count} characters to search for a person."
     rules:
