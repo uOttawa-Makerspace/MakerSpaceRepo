@@ -6,14 +6,12 @@ function parseVal(el) {
   return isNaN(val) ? 0.0 : val;
 }
 
-// The running total as the page's language writes it, without thousands
-// separators: "1234.50" on an English page, "1234,50" on a French one.
+// The running total as the page's language writes it, rounded by toFixed and
+// without thousands separators: "1234.50" on an English page, "1234,50" on a
+// French one.
 function totalText(total, target) {
-  return new Intl.NumberFormat(pageLanguage(target) || "en", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-    useGrouping: false,
-  }).format(total);
+  const text = total.toFixed(2);
+  return pageLanguage(target) === "fr" ? text.replace(".", ",") : text;
 }
 
 function calculateTotal() {
