@@ -602,6 +602,12 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
         room.update!(max_automatic_approval_hour: nil)
         expect(booking_at("2027-04-07", "10:00", "10:30").initial_status(booked_by_admin: false)).to eq(@pending_status)
       end
+
+      it "is pending while a time is missing, even in a room with automatic-approval hours" do
+        room.update!(approval_required: true, max_automatic_approval_hour: 2)
+        expect(booking_at("2027-04-07", "10:00", "11:00", end_time: nil).initial_status(booked_by_admin: false)).to eq(@pending_status)
+        expect(booking_at("2027-04-07", "10:00", "11:00", start_time: nil).initial_status(booked_by_admin: false)).to eq(@pending_status)
+      end
     end
   end
 

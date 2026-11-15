@@ -290,13 +290,14 @@ class SubSpaceBooking < ApplicationRecord
   end
 
   # The status a new booking starts with: approved when an admin books it or its room needs no approval;
-  # otherwise approved only up to the room's automatic-approval hours, and pending beyond them or when
-  # the room has none.
+  # otherwise approved only up to the room's automatic-approval hours, and pending beyond them, when the
+  # room has none or while a time is missing.
   def initial_status(booked_by_admin:)
     return BookingStatus.approved if booked_by_admin || !sub_space.approval_required
 
     auto_hours = sub_space.max_automatic_approval_hour
-    !auto_hours.nil? && duration_hours <= auto_hours ? BookingStatus.approved : BookingStatus.pending
+    hours = duration_hours
+    [auto_hours, hours].none?(nil) && hours <= auto_hours ? BookingStatus.approved : BookingStatus.pending
   end
 
   def times_present?
