@@ -45,8 +45,10 @@ export default class extends AccessorController {
     );
   }
 
+  // The backdrop sits in the page body, so it goes with the modal.
   disconnect() {
     this.pickers().forEach((picker) => picker.destroy());
+    this.backdrop.remove();
   }
 
   pickers() {

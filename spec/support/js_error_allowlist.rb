@@ -65,8 +65,6 @@ module JsErrorCheck
     { id: "js-error-booking-422", path: %r{\A/sub_space_booking(?:\z|[/?])}, message: request_failed("/sub_space_booking", 422) },
     # After a delete the page follows the redirect with a JSON request that answers 404.
     { id: "js-error-booking-delete-404", path: %r{\A/sub_space_booking(?:\z|[/?])}, message: request_failed("/sub_space_booking#booking-tab", 404) },
-    # The select-dates dialog writes into a template row that is missing.
-    { id: "js-error-booking-dates-row", path: %r{\A/sub_space_booking(?:\z|[/?])}, message: script_error("sub_space_booking-[\\w-]+\\.js", "Uncaught TypeError: Cannot set properties of null \\(setting 'innerHTML'\\)") },
     # the Bootstrap tooltip of a locker row note throws when the
     # row's hover text is rewritten after an inline save.
     { id: "js-error-12", path: %r{\A/lockers\z}, message: script_error("bootstrap\\.esm-[\\w-]+\\.js", "Uncaught TypeError: Cannot convert undefined or null to object") },
