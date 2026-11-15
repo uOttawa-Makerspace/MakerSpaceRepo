@@ -441,6 +441,15 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         expect(response).to have_http_status(:ok)
       end
     end
+
+    it "lists a request without user comments with an empty comments cell" do
+      order_item_for(buyer, status: "Waiting for approval").update_columns(user_comments: nil)
+      content_sign_in_as(:staff)
+      get requests_proficient_projects_path
+      expect(response).to have_http_status(:ok)
+      cells = Nokogiri::HTML(response.body).css("#prof-proj-requests tr td:nth-child(4)").map(&:text)
+      expect(cells).to eq([""])
+    end
   end
 
   describe "PUT complete_project" do
