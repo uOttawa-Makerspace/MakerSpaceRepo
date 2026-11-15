@@ -4,8 +4,8 @@
 # (applied | held | refunded | dismissed). A held payment is one that could not be applied to the
 # rental (see HOLD_REASONS); it stays held until staff settle it (the rental is assigned active, or
 # they mark it refunded or dismissed). Never deleted. Created only through LockerRental#record_payment.
-# Each one also has a payment entry in the payments ledger (ledger_entry), and a refunded one a reversal entry
-# (reversed_at), written beside these columns, which stay what every decision reads.
+# Each one also has a payment entry in the payments ledger (ledger_entry), inserted with it, and a refunded one a
+# reversal entry (reversed_at), written beside these columns, which stay what every decision reads.
 class LockerPayment < ApplicationRecord
   belongs_to :locker_rental
   belongs_to :resolved_by, class_name: "User", optional: true
@@ -33,6 +33,41 @@ class LockerPayment < ApplicationRecord
     raise ArgumentError, "amount out of range" if amount.negative? || amount.round(2) > MONEY_MAX
 
     amount.round(2)
+  end
+
+  # One statement: the order's payment entry in the ledger, only while the order has no payment row (ON CONFLICT DO
+  # NOTHING on the one-payment-per-order index), then the payment row linked to it (ON CONFLICT DO NOTHING on the
+  # order id). An entry already there for the order, that no other payment links, is linked instead.
+  INSERT_WITH_LEDGER_ENTRY_SQL = <<~SQL.squish
+    WITH entry AS (
+      INSERT INTO payment_ledger_entries (provider, provider_ref, amount, kind, created_at, updated_at)
+      SELECT :provider, :shopify_order_id, :amount, 'payment', :now, :now
+      WHERE NOT EXISTS (SELECT 1 FROM locker_payments WHERE shopify_order_id = :shopify_order_id)
+      ON CONFLICT (provider, provider_ref) WHERE kind = 'payment' DO NOTHING
+      RETURNING id
+    )
+    INSERT INTO locker_payments (locker_rental_id, shopify_order_id, paid_at, amount, currency, order_total, status,
+                                 hold_reason, resolved_at, ledger_entry_id, created_at, updated_at)
+    VALUES (:locker_rental_id, :shopify_order_id, :paid_at, :amount, :currency, :order_total, :status, :hold_reason,
+            :resolved_at,
+            COALESCE((SELECT id FROM entry),
+                     (SELECT e.id FROM payment_ledger_entries e
+                      WHERE e.provider = :provider AND e.provider_ref = :shopify_order_id AND e.kind = 'payment'
+                        AND NOT EXISTS (SELECT 1 FROM locker_payments p WHERE p.ledger_entry_id = e.id))),
+            :now, :now)
+    ON CONFLICT (shopify_order_id) DO NOTHING
+    RETURNING id
+  SQL
+
+  # Inserts a payment row and its payment entry in the payments ledger together, in one statement, unless the order id
+  # is already recorded: then neither is written. `attributes`: locker_rental_id, shopify_order_id, paid_at, amount,
+  # currency, order_total, status, hold_reason, resolved_at. The new payment's id, or nil. Only for
+  # LockerRental#record_payment.
+  def self.insert_with_ledger_entry(attributes)
+    sql = sanitize_sql_array([INSERT_WITH_LEDGER_ENTRY_SQL,
+                              { **attributes, provider: Payments::ShopifyAdapter::PROVIDER, now: Time.current }])
+    # exec_query, not select_value: a write, so it clears the query cache
+    connection.exec_query(sql).rows.first&.first
   end
 
   # What staff may resolve a held payment as.

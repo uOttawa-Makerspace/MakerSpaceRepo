@@ -550,14 +550,13 @@ class LockerRental < ApplicationRecord
     ['applied', nil]
   end
 
-  # Inserts the payment row unless the order id is already recorded (ON CONFLICT DO NOTHING), with its entry in the
-  # payments ledger. The new LockerPayment, or nil for a duplicate.
+  # Inserts the payment row unless the order id is already recorded, with its entry in the payments ledger, in one
+  # statement (LockerPayment.insert_with_ledger_entry). The new LockerPayment, or nil for a duplicate.
   def insert_payment(**attributes)
-    inserted = LockerPayment.insert(
-      { locker_rental_id: id, **attributes, resolved_at: (Time.current if attributes[:status] == 'applied') },
-      unique_by: :shopify_order_id, returning: %w[id]
+    payment_id = LockerPayment.insert_with_ledger_entry(
+      locker_rental_id: id, **attributes, resolved_at: (Time.current if attributes[:status] == 'applied')
     )
-    LockerPayment.find(inserted.rows.first.first).tap(&:record_in_ledger) if inserted.rows.any?
+    LockerPayment.find(payment_id) if payment_id
   end
 
   # What a NEW payment row does to the rental, in #record_payment's transaction. Returns the payment, which is

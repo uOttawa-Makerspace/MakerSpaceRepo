@@ -259,6 +259,15 @@ RSpec.describe "Locker payment records", type: :request do
       expect(checked).to eq("ledger_entry_differs" => [payment.id])
     end
 
+    it "a repeat delivery of an order whose payment has no ledger entry writes no entry" do
+      rental = with_draft(create(:locker_rental, :await_payment))
+      create(:locker_payment, locker_rental: rental, shopify_order_id: "5014") # recorded before the ledger existed
+
+      deliver(:paid, payload(rental, id: 5014))
+      expect(PaymentLedgerEntry.where(provider_ref: "5014")).to be_empty
+      expect(LockerPayment.where(shopify_order_id: "5014").count).to eq(1)
+    end
+
     it "never fails a payment or its refund when the entry belongs to another payment: the check reports it" do
       entry = PaymentLedgerEntry.record_payment(provider: "shopify", provider_ref: "5011", amount: nil)
       expect(entry).to be_persisted
