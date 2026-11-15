@@ -237,15 +237,15 @@ RSpec.describe LockerMailer, type: :mailer do
         .to include("for course GNG1103, section A, team T1.")
     end
 
-    it "gives staff the French request mail when the staff address belongs to a user who saved French" do
+    it "gives the staff team mailbox the request mail in English, even when an account with that address saved French" do
       create(:user, email: "ceed@uottawa.ca", locale: "fr")
       request = create(:locker_rental, :reviewing)
       ActionMailer::Base.deliveries.clear
       described_class.with(locker_rental: LockerRental.find(request.id)).locker_requested.deliver_now
 
       mail = ActionMailer::Base.deliveries.last
-      expect(mail.subject).to eq("Nouvelle demande de casier")
-      expect(Nokogiri::HTML(mail.body.encoded).text.squish).to include("Voir la demande ici.")
+      expect(mail.subject).to eq("New locker request")
+      expect(Nokogiri::HTML(mail.body.encoded).text.squish).to include("View the request here.")
     end
   end
 end

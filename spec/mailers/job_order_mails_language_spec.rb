@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # The job order mails and the job order chat mail, as delivered, in the language their recipient saved:
-# subject, body, sign-off and footer. The mails to the customer about a quote, the decision confirmation, the staff
+# subject, body, sign-off and footer. The mails to the makerspace team mailbox are in English. The mails to the customer about a quote, the decision confirmation, the staff
 # assignment and the chat mail stay bilingual (French, then English) whatever the recipient's language; only their
 # layout and sign-off follow it.
 RSpec.describe JobOrderMailer, type: :mailer do
@@ -35,8 +35,7 @@ RSpec.describe JobOrderMailer, type: :mailer do
     order.job_tasks.first.job_task_options.create!(job_option: JobOption.create!(name: "Expedited Processing", fee: 5))
   end
 
-  # The makerspace mailbox has no account of its own, so a mail to it is in the site's default language unless an
-  # account holds that address.
+  # An account that uses the makerspace team mailbox's address, in the saved language under test.
   def mailbox_account!
     create(:user, :staff, email: "makerspace@uottawa.ca", locale: locale)
   end
@@ -95,25 +94,6 @@ RSpec.describe JobOrderMailer, type: :mailer do
 
   def french
     {
-      send_job_submitted: ["Une nouvelle commande a été soumise",
-                           "Bonjour, Un utilisateur a créé la commande numéro #{id}. Consultez la page des commandes pour " \
-                           "les détails. Voir la commande",
-                           "Vous avez reçu ce courriel parce qu'une nouvelle commande a été créée sur makerepo.com."],
-      send_job_requote_needed: ["La commande ##{id} a besoin d'un nouveau devis",
-                                "Bonjour, La commande a été modifiée après avoir reçu un devis. La commande #{id} est revenue " \
-                                "à l'état « En attente de l'approbation du personnel ». Son devis précédent ne peut plus être " \
-                                "approuvé et son lien de paiement précédent ne fonctionne plus. Veuillez examiner la commande " \
-                                "et envoyer un nouveau devis. Voir la commande",
-                                "Vous avez reçu ce courriel parce qu'une commande ayant reçu un devis sur makerepo.com a besoin " \
-                                "d'un nouveau devis."],
-      send_job_user_approval: ["Un utilisateur a approuvé une commande",
-                               "Bonjour, Un utilisateur a approuvé la commande numéro #{id}. Consultez la page des commandes " \
-                               "pour les détails. Voir la commande",
-                               "Vous avez reçu ce courriel parce qu'un utilisateur a approuvé une commande sur makerepo.com."],
-      send_job_user_declined: ["Un utilisateur a refusé une commande",
-                               "Bonjour, Un utilisateur a refusé la commande numéro #{id}. Consultez la page des commandes " \
-                               "pour les détails. Voir la commande",
-                               "Vous avez reçu ce courriel parce qu'un utilisateur a refusé une commande sur makerepo.com."],
       send_job_declined: ["Votre commande ##{id} a été refusée",
                           "Bonjour, Les administrateurs ont refusé la commande numéro ##{id}. Veuillez consulter les " \
                           "commentaires suivants des administrateurs pour plus de détails : Too big Si vous avez besoin " \
@@ -149,13 +129,22 @@ RSpec.describe JobOrderMailer, type: :mailer do
   end
 
   def prepare(name)
-    mailbox_account! if %i[send_job_submitted send_job_requote_needed send_job_user_approval send_job_user_declined].include?(name)
     order.update!(user_comments: "Too big") if name == :send_job_declined
     create(:job_status, name: "Draft") if name == :new_message && !JobStatus.exists?(name: "Draft")
   end
 
-  %i[send_job_submitted send_job_requote_needed send_job_user_approval send_job_user_declined send_job_declined
-     send_job_completed payment_succeeded].each do |name|
+  %i[send_job_submitted send_job_requote_needed send_job_user_approval send_job_user_declined].each do |name|
+    it "delivers #{name} to the team mailbox in English, even when an account with that address saved French" do
+      create(:user, :staff, email: "makerspace@uottawa.ca", locale: "fr")
+      subject_line, body, why = english.fetch(name)
+      mail = deliver(&mails.fetch(name))
+
+      expect([mail.to, mail.subject]).to eq([["makerspace@uottawa.ca"], subject_line])
+      expect(text(mail)).to include(body, why, "Thank you, The MakerRepo Team", "CEED, 150 Louis Pasteur")
+    end
+  end
+
+  %i[send_job_declined send_job_completed payment_succeeded].each do |name|
     it "delivers #{name} in English to a recipient who saved English" do
       prepare(name)
       subject_line, body, why = english.fetch(name)
@@ -188,11 +177,11 @@ RSpec.describe JobOrderMailer, type: :mailer do
     expect(text(mail)).to include("A user has created a Job order")
   end
 
-  it "keeps the requote reason in the recipient's language" do
+  it "gives the requote reason in English, the team mailbox's language" do
     create(:user, :staff, email: "makerspace@uottawa.ca", locale: "fr")
 
     expect(text(deliver { described_class.send_job_requote_needed(id, "invoice_mismatch") }))
-      .to include(I18n.t("job_orders.status_reasons.invoice_mismatch", locale: :fr))
+      .to include(I18n.t("job_orders.status_reasons.invoice_mismatch", locale: :en))
   end
 
   describe "an expedited order" do
@@ -210,12 +199,12 @@ RSpec.describe JobOrderMailer, type: :mailer do
     context "when the recipient saved French" do
       let(:locale) { "fr" }
 
-      it "flags each staff mail in French, with high priority" do
+      it "flags the team mailbox's mails in English and the assigned staff member's in French, with high priority" do
         mailbox_account!
-        { send_job_submitted: "PRIORITAIRE : Une nouvelle commande a été soumise",
-          send_job_requote_needed: "PRIORITAIRE : La commande ##{id} a besoin d'un nouveau devis",
-          send_job_user_approval: "PRIORITAIRE : Un utilisateur a approuvé une commande",
-          send_job_user_declined: "PRIORITAIRE : Un utilisateur a refusé une commande",
+        { send_job_submitted: "EXPEDITED: A new Job Order has been submitted",
+          send_job_requote_needed: "EXPEDITED: Job Order ##{id} needs a new quote",
+          send_job_user_approval: "EXPEDITED: A user has approved a Job Order",
+          send_job_user_declined: "EXPEDITED: A user has declined a Job Order",
           staff_assigned: "PRIORITAIRE : Vous avez été assigné(e) à la commande ##{id}" }.each do |name, subject_line|
           mail = deliver(&mails.fetch(name))
 

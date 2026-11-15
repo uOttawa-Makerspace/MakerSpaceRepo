@@ -35,6 +35,24 @@ RSpec.describe ApplicationMailer, type: :mailer do
     expect(html_lang(cc_order("nobody@example.com"))).to eq("en")
   end
 
+  it "renders a mail to a member in the language they saved, subject included" do
+    user = create(:user, locale: "fr")
+    mail = cc_order(user.email)
+    expect([html_lang(mail), mail.subject]).to eq(["fr", "Votre commande de Crédits du CGEC (CC)"])
+  end
+
+  it "renders a mail to a team address in the default language, even when an account with that address saved French" do
+    create(:user, locale: "fr", email: "makerspace@uottawa.ca")
+    mail = cc_order("MakerSpace@uOttawa.ca")
+    expect([html_lang(mail), mail.subject]).to eq(["en", "Your CEED Credits (CC) order"])
+  end
+
+  it "renders a mail to the maintenance address in the default language, even when an account with it saved French" do
+    create(:user, locale: "fr", email: "printers@example.com")
+    Setting.maintenance_email = "printers@example.com"
+    expect(html_lang(cc_order("printers@example.com"))).to eq("en")
+  end
+
   it "renders a mail sent with locale: in that language, whatever account the address belongs to" do
     create(:user, locale: "en", email: "taken@example.com")
     user = create(:user, locale: "fr")
