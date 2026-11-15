@@ -6,7 +6,8 @@ class JobOrderMailer < ApplicationMailer
     { job_task_options: :job_option }
   ].freeze
 
-  # The mails to staff and the customer are written in the recipient's saved language (see ApplicationMailer#mail);
+  # The mails to the customer and to an assigned staff member are written in the recipient's saved language, and the
+  # mails to the makerspace team mailbox in English (see ApplicationMailer#mail);
   # the quote, the decision confirmation and the staff assignment carry a French and an English half for everyone.
   # Subjects come from job_order_mailer.<action>.
   def send_job_submitted(job_order_id)

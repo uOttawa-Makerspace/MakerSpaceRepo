@@ -5,7 +5,8 @@ class BookingMailer < ApplicationMailer
   MTC_MAILBOX = "mtc@uottawa.ca"
 
   # The mails to staff, and the approval mails to a booker or applicant, are written in the recipient's saved language
-  # (see ApplicationMailer#mail): a mail to several managers at once is in the site's default language. Subjects come
+  # (see ApplicationMailer#mail): a mail to several managers at once, or to the MTC mailbox, is in the site's default
+  # language. Subjects come
   # from booking_mailer.<action>.subject.
   def send_booking_needs_approval(booking_id)
     @booking = SubSpaceBooking.find(booking_id)
