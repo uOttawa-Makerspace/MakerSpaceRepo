@@ -256,7 +256,7 @@ RSpec.describe JobOrderMailer, type: :mailer do
     body = text(deliver { described_class.send_job_quote(id) })
 
     expect(body).to include("Total général : 58,50 $ CA", "Grand Total: CAD $58.50",
-                            "(frais de base de 20,00 $ plus 4.0 unité × 3,00 $ )", "(base fee of $20.00 plus 4.0 unit × $3.00 )")
+                            "(frais de base de 20,00 $ plus 4,0 unité × 3,00 $ )", "(base fee of $20.00 plus 4.0 unit × $3.00 )")
   end
 
   it "uses the decline wording of the decision confirmation in both halves" do

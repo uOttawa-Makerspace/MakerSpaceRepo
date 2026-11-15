@@ -970,6 +970,28 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(flash[:notice]).to be_nil
       expect(flash[:alert]).to eq("1 selected request(s) were already approved and were skipped.")
     end
+
+    it "keeps the English wording when several were skipped" do
+      a = request_for(approved: false)
+      skipped = Array.new(2) { request_for(approved: true) }
+      put bulk_approve_access_sub_space_booking_index_path, params: { user_booking_approval_ids: [a.id, *skipped.map(&:id)] }
+      expect(flash[:alert]).to eq("2 selected request(s) were already approved and were skipped.")
+    end
+
+    it "words the results in French, one or several skipped" do
+      a = request_for(approved: false)
+      b = request_for(approved: true)
+      put bulk_approve_access_sub_space_booking_index_path(locale: "fr"), params: { user_booking_approval_ids: [a.id, b.id] }
+      expect(flash[:notice]).to eq("Les demandes d'accès sélectionnées ont été approuvées.")
+      expect(flash[:alert]).to eq("1 demande sélectionnée était déjà approuvée et a été ignorée.")
+
+      c = request_for(approved: false)
+      put bulk_approve_access_sub_space_booking_index_path(locale: "fr"), params: { user_booking_approval_ids: [c.id] }
+      expect(flash[:notice]).to eq("Toutes les demandes d'accès sélectionnées ont été approuvées.")
+
+      put bulk_approve_access_sub_space_booking_index_path(locale: "fr"), params: { user_booking_approval_ids: [a.id, b.id] }
+      expect(flash[:alert]).to eq("2 demandes sélectionnées étaient déjà approuvées et ont été ignorées.")
+    end
   end
 
   describe "bulk approve and decline booking messages" do
@@ -997,7 +1019,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
         put bulk_approve_decline_sub_space_booking_index_path,
             params: { sub_space_booking_ids: [b.id, done.id], bulk_status: action }
         expect(flash[:notice]).to eq("Bookings #{verb} successfully.")
-        expect(flash[:alert]).to include("1 selected booking(s)")
+        expect(flash[:alert]).to eq("1 selected booking(s) were no longer pending and were skipped.")
       end
 
       it "#{action}: only the alert when none are pending" do
@@ -1007,6 +1029,24 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
             params: { sub_space_booking_ids: [done.id], bulk_status: action }
         expect(flash[:notice]).to be_nil
         expect(flash[:alert]).to include("1 selected booking(s)")
+      end
+    end
+
+    { "approve" => "approuvées", "decline" => "refusées" }.each do |action, verb|
+      it "#{action}: words the notice and the skipped alert in French" do
+        b = pending_booking(booker)
+        done = Array.new(2) do |i|
+          pending_booking(booker, start_time: DateTime.parse("2027-04-0#{4 + i} 10:00"),
+                                  end_time: DateTime.parse("2027-04-0#{4 + i} 11:00")).tap { |row| row.change_status!(@approved_status) }
+        end
+        put bulk_approve_decline_sub_space_booking_index_path(locale: "fr"),
+            params: { sub_space_booking_ids: [b.id, *done.map(&:id)], bulk_status: action }
+        expect(flash[:notice]).to eq("Les réservations ont été #{verb}.")
+        expect(flash[:alert]).to eq("2 réservations sélectionnées n'étaient plus en attente et ont été ignorées.")
+
+        put bulk_approve_decline_sub_space_booking_index_path(locale: "fr"),
+            params: { sub_space_booking_ids: [done.first.id], bulk_status: action }
+        expect(flash[:alert]).to eq("1 réservation sélectionnée n'était plus en attente et a été ignorée.")
       end
     end
   end

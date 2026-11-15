@@ -98,6 +98,29 @@ en:
     navigation:
       all_job_orders_staff_only: "All Job Orders (Staff Only)"
       settings_admin_only: "Settings (Admin Only)"
+    # The staff quote modal on an order's page; %{unit} = the service's unit, %{name} = an option's name
+    quote_modal:
+      # Heading of a task that has no title
+      task_number: "Task #%{id}"
+      base_fee: "Base Fee (CAD)"
+      # Shown when the service has no unit of its own
+      unit: "unit"
+      service_quantity: "Number of %{unit}"
+      service_price: "Price per %{unit} (CAD)"
+      option_price: "%{name} (CAD)"
+      # Placeholder of the price and quantity fields
+      value: "value"
+      staff_files: "Staff Files (GCode, PDF, etc.)"
+      line_items: "Additional Line Items"
+      description: "Description"
+      new_line_item: "New Line Item"
+      user_comments: "Comments for the user (will send as a chat)"
+      user_comments_placeholder: "I will need to add supports"
+      staff_comments: "Comments for the staff members"
+      staff_comments_placeholder: "Use the Raise 3D"
+      # %{amount} = the running total, updated by the page as prices are typed
+      total_html: "Total: $%{amount}"
+      approve: "Approve"
   job_order_mailer:
     quote_notes: "Note from the staff:"
     hello: "Hello,"

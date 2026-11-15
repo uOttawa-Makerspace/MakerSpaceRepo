@@ -307,6 +307,18 @@ en:
       page: "MakerRepo Booking"
       why_received: "You have received this email because your booking access request was approved."
   sub_space_booking:
+    # Results of the bulk approve and decline buttons on the admin tab; %{count} = how many were skipped
+    bulk:
+      access_approved: "Selected access requests approved successfully."
+      access_all_approved: "All selected access requests approved successfully."
+      access_skipped:
+        one: "%{count} selected request(s) were already approved and were skipped."
+        other: "%{count} selected request(s) were already approved and were skipped."
+      bookings_approved: "Bookings approved successfully."
+      bookings_declined: "Bookings declined successfully."
+      bookings_skipped:
+        one: "%{count} selected booking(s) were no longer pending and were skipped."
+        other: "%{count} selected booking(s) were no longer pending and were skipped."
     access_status:
       none: "You have not requested booking access yet."
       pending: "Your request has been pending since %{date}."
@@ -324,6 +336,8 @@ en:
       # %{room} = the room's name, %{hours} = the room's limit
       maximum_duration: "You cannot book %{room} for more than %{hours} hours."
       weekly_hours: "You cannot book %{room} for more than %{hours} hours per week."
+      # The booking overlaps a block
+      slot_taken: "This time slot is already booked."
     picker:
       min_length: "Type at least %{count} characters to search for a person."
     rules:

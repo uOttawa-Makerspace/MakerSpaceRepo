@@ -106,9 +106,9 @@ class SubSpaceBookingController < SessionsController
     set_bulk_result_flash(
       approved_ids.size,
       skipped,
-      notice: "Selected access requests approved successfully.",
-      all_notice: "All selected access requests approved successfully.",
-      alert: "#{skipped} selected request(s) were already approved and were skipped."
+      notice: t("sub_space_booking.bulk.access_approved"),
+      all_notice: t("sub_space_booking.bulk.access_all_approved"),
+      alert: t("sub_space_booking.bulk.access_skipped", count: skipped)
     )
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab")
   rescue ActiveRecord::RecordInvalid => e
@@ -234,8 +234,8 @@ class SubSpaceBookingController < SessionsController
     set_bulk_result_flash(
       booking_ids.size,
       skipped,
-      notice: bulk_status == "approve" ? "Bookings approved successfully." : "Bookings declined successfully.",
-      alert: "#{skipped} selected booking(s) were no longer pending and were skipped."
+      notice: t(bulk_status == "approve" ? "sub_space_booking.bulk.bookings_approved" : "sub_space_booking.bulk.bookings_declined"),
+      alert: t("sub_space_booking.bulk.bookings_skipped", count: skipped)
     )
 
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab")
@@ -454,7 +454,7 @@ class SubSpaceBookingController < SessionsController
   end
 
   def slot_taken_failure
-    limit_failure("TimeSlot", "This time slot is already booked.")
+    limit_failure("TimeSlot", t("sub_space_booking.limits.slot_taken"))
   end
 
   # The first of its room's limits the booking breaks, or nil: the maximum

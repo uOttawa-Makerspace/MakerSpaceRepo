@@ -45,7 +45,7 @@
       <%= t(".amount", amount: number_to_currency(total_task_price, locale: :fr), locale: :fr) %>
       <small>(<%= t(".base_fee", amount: number_to_currency(base_fee, locale: :fr), locale: :fr) %>
         <% if task.job_task_quote&.service_quantity.present? %>
-          <%= "#{task.job_task_quote.service_quantity || 0} #{task.job_service&.unit.presence || t('.unit', locale: :fr)}" %>
+          <%= number_with_delimiter(task.job_task_quote.service_quantity, delimiter: "", locale: :fr) %> <%= task.job_service&.unit.presence || t(".unit", locale: :fr) %>
           ×
           <%= number_to_currency(task.job_task_quote.service_price || 0, locale: :fr) %>
         <% end %>)</small>
@@ -114,7 +114,7 @@
       <%= t(".amount", amount: number_to_currency(total_task_price, locale: :en), locale: :en) %>
       <small>(<%= t(".base_fee", amount: number_to_currency(base_fee, locale: :en), locale: :en) %>
         <% if task.job_task_quote&.service_quantity.present? %>
-          <%= "#{task.job_task_quote.service_quantity || 0} #{task.job_service&.unit.presence || t('.unit', locale: :en)}" %>
+          <%= number_with_delimiter(task.job_task_quote.service_quantity, delimiter: "", locale: :en) %> <%= task.job_service&.unit.presence || t(".unit", locale: :en) %>
           ×
           <%= number_to_currency(task.job_task_quote.service_price || 0, locale: :en) %>
         <% end %>)</small>
