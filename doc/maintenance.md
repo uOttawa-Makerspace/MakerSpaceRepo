@@ -88,6 +88,7 @@ SELECT max(version) FROM schema_migrations;      -- expected to be 2026110620000
 - [ ] In the first hour, check the worker logs (`docker compose -f docker-compose.production.yml logs worker`) and the `job_alerts` inbox. The worker is recreated alongside `web`, so a scheduled job can run once before the migrations have finished and fail. Check that such a failure does not repeat after `web` is up.
 - [ ] Check that `membership_expiry` is not loaded after the deploy: `SolidQueue::RecurringTask.where(key: "membership_expiry").exists?` in a console is false. The job is held in this release (see the `membership_expiry` note under "Scheduled tasks"), so no pending membership checkout is closed by it.
 - [ ] Create a training session and change space from the staff app.
+- [ ] Check that the cache database was created and is used (see "Deploy step: own cache database").
 
 ### Rollback limits
 
@@ -419,9 +420,28 @@ The release that adds `index_design_days_single_row` makes the database hold at 
 
 The release that makes `printer_sessions.printer_id` NOT NULL (migration `20261113100000`) needs no manual step; `web` runs the migration on boot. It first counts printer sessions with no printer; if any exist it changes nothing and stops with a message naming the count. Decide by hand what those rows stand for, then deploy again; the migration never deletes or changes a session. The 2026-11-01 backup had none. It adds a check NOT VALID, validates it without blocking writes, sets the column NOT NULL and drops the check; each step waits at most 3 seconds for its lock and is retried. `down` makes the column nullable again and changes no row.
 
+## Cache database
+
+`Rails.cache` in production and staging is Solid Cache, and its entries live in a database of their own: `makerspacerepo_cache` in production, `makerspacerepo_cache_staging` in staging (`config/database.yml`, the `cache` entry; `config/cache.yml` names it with `database: cache`). It sits on the same Postgres server, with the same user and password, as the primary database, beside the queue and cable databases. Its schema is `db/cache_schema.rb` (one table, `solid_cache_entries`); its migrations, if any are ever added, go in `db/cache_migrate`. Development and test use an in-memory or null store and have no cache database.
+
+Everything in it is throwaway: entries expire after at most seven days, the table is capped at 256 MB with the oldest entries going first, and emptying it (`Rails.cache.clear`) is safe at any time. It does not need a backup. The database backup (the script in the deploy user's home folder) dumps the primary database, so it needs no change, and it no longer carries cache rows.
+
+### Deploy step: own cache database
+
+No manual step. On the first boot of the new image, `web` runs `bin/rails db:prepare` (`bin/docker-entrypoint`), which creates `makerspacerepo_cache` and loads `db/cache_schema.rb`; later boots find it and leave it alone. The compose file connects as `postgres`, which may create databases. After the deploy:
+
+- [ ] `docker compose -f docker-compose.production.yml logs web` shows `Created database 'makerspacerepo_cache'` once.
+- [ ] In a console, `SolidCache::Entry.connection_db_config.database` is `"makerspacerepo_cache"`, and `Rails.cache.write("deploy-check", 1)` then `Rails.cache.read("deploy-check")` returns 1 (`Rails.cache.delete("deploy-check")` afterwards).
+
+The cache starts empty, so the first page loads after the deploy rebuild their fragments and fetch imported calendars again. Rehearsed on a copy of the 2026-11-14 backup: the cache database was created and loaded, the primary schema dump and the row count of every primary table were the same before and after, and a cache write and read went to the new database.
+
+The old `solid_cache_entries` table in the primary database (migration `20261031000002`) is no longer used: nothing reads or writes it after this release, and it keeps the rows it held at the deploy. It is left in place; removing it is a separate change that needs the maintainers' approval.
+
+Rollback: remove the `database: cache` lines from `config/cache.yml` (production and staging) and deploy. `Rails.cache` then uses the old table in the primary database again (with the entries it held at the switch); run `Rails.cache.clear` in a console right after, so no entry from before the switch is served. The `cache` entry in `config/database.yml` and the cache database can stay; drop the database by hand only if it is not wanted. Redeploying an older image has the same effect.
+
 ## Imported calendar (ICS) cache
 
-The body of each imported calendar link (staff external unavailabilities, a space's open-hours and needed-staff calendars) is kept in Solid Cache (`Rails.cache`, the `solid_cache_entries` table) for ten minutes, so a page load that reads the same link again does not fetch it again. Only a successful body is kept; a failed or empty fetch is read again on the next load. The body is encrypted with a key derived from the application secret (`secret_key_base`), and the cache key is a digest of the link, never the link (a private calendar link holds a secret). Emptying the cache is safe at any time (`Rails.cache.clear`, or delete one entry with `Rails.cache.delete(["ics-body", Digest::SHA256.hexdigest(url)])`): the next load fetches the link again. After the application secret is changed, copies made under the old secret cannot be read; a load that meets one reports the calendar as failed until the entry expires (at most ten minutes) or is cleared. Nothing needs to be run on deploy.
+The body of each imported calendar link (staff external unavailabilities, a space's open-hours and needed-staff calendars) is kept in Solid Cache (`Rails.cache`, the `solid_cache_entries` table of the cache database, see "Cache database") for ten minutes, so a page load that reads the same link again does not fetch it again. Only a successful body is kept; a failed or empty fetch is read again on the next load. The body is encrypted with a key derived from the application secret (`secret_key_base`), and the cache key is a digest of the link, never the link (a private calendar link holds a secret). Emptying the cache is safe at any time (`Rails.cache.clear`, or delete one entry with `Rails.cache.delete(["ics-body", Digest::SHA256.hexdigest(url)])`): the next load fetches the link again. After the application secret is changed, copies made under the old secret cannot be read; a load that meets one reports the calendar as failed until the entry expires (at most ten minutes) or is cleared. Nothing needs to be run on deploy.
 
 ## Staff space unique index
 
