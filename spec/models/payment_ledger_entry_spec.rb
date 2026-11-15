@@ -39,6 +39,21 @@ RSpec.describe PaymentLedgerEntry do
     expect(entry(kind: "reversal", reversed_entry: payment)).not_to be_valid
   end
 
+  it "refuses a reversal of a reversal, or of a payment with another provider ref" do
+    reversal = entry(kind: "reversal", reversed_entry: payment).tap(&:save!)
+    other = entry(provider_ref: "1002").tap(&:save!)
+
+    expect(entry(kind: "reversal", reversed_entry: reversal)).not_to be_valid
+    expect(entry(kind: "reversal", provider_ref: "1001", reversed_entry: other).tap(&:validate).errors.attribute_names).to include(:reversed_entry)
+    expect(entry(kind: "reversal", provider: "other", reversed_entry: other, provider_ref: "1002")).not_to be_valid
+  end
+
+  it "is refused by the database when a reversal's provider ref differs from its payment's" do
+    mismatched = entry(kind: "reversal", provider_ref: "1002", reversed_entry: payment)
+
+    expect { mismatched.save!(validate: false) }.to raise_error(ActiveRecord::InvalidForeignKey)
+  end
+
   it "cannot change or remove a saved entry" do
     expect { payment.update!(amount: "1.00") }.to raise_error(ActiveRecord::ReadOnlyRecord)
     expect { payment.destroy }.to raise_error(ActiveRecord::ReadOnlyRecord)

@@ -24,11 +24,11 @@ RSpec.describe CreatePaymentLedgerEntries do
     connection.transaction(requires_new: true) { connection.execute(sql) }
   end
 
-  def insert(ref, kind: "payment", reversed: "NULL", amount: "10.00")
+  def insert(ref, kind: "payment", reversed: "NULL", amount: "10.00", provider: "shopify")
     connection.transaction(requires_new: true) do
       connection.select_value(<<~SQL.squish)
         INSERT INTO payment_ledger_entries (provider, provider_ref, amount, kind, reversed_entry_id, created_at, updated_at)
-        VALUES ('shopify', '#{ref}', #{amount}, '#{kind}', #{reversed}, now(), now()) RETURNING id
+        VALUES ('#{provider}', '#{ref}', #{amount}, '#{kind}', #{reversed}, now(), now()) RETURNING id
       SQL
     end
   end
@@ -47,6 +47,19 @@ RSpec.describe CreatePaymentLedgerEntries do
     expect { insert("1004", amount: "-1") }.to raise_error(ActiveRecord::StatementInvalid, /amount_check/)
     expect { insert("1005", kind: "refund") }.to raise_error(ActiveRecord::StatementInvalid, /kind_check/)
     expect(count).to eq(2)
+  end
+
+  it "refuses a reversal that points at a reversal, or at a payment of another provider or provider ref" do
+    migrate(:up)
+    paid = insert("1001")
+    reversal = insert("1001", kind: "reversal", reversed: paid)
+    fk = /fk_payment_ledger_entries_reversed_entry/
+
+    expect { insert("1001", kind: "reversal", reversed: reversal) }.to raise_error(ActiveRecord::InvalidForeignKey, fk)
+    expect { insert("1002", kind: "reversal", reversed: insert("1009")) }.to raise_error(ActiveRecord::InvalidForeignKey, fk)
+    expect { insert("1003", kind: "reversal", reversed: insert("1003", provider: "other")) }
+      .to raise_error(ActiveRecord::InvalidForeignKey, fk)
+    expect(connection.select_value("SELECT COUNT(*) FROM payment_ledger_entries WHERE kind = 'reversal'").to_i).to eq(1)
   end
 
   it "refuses every update, delete and truncate, leaving the rows as they were" do
