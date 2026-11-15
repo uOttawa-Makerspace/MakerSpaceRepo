@@ -283,7 +283,6 @@ en:
       notification_not_sent: "The printer issue was created, but the maintenance notification email could not be queued, so it was not sent."
     help:
       not_received: "Your issue was not submitted."
-      copy_not_sent: "Your issue was submitted, but the confirmation email could not be queued, so you will not receive a copy."
     users:
       password_not_changed: "Your password was not changed:"
       password_not_saved: "Your new password could not be saved because of a problem on our side. Nothing was changed. Please try again. If it keeps happening, contact the makerspace staff and quote reference %{reference}."

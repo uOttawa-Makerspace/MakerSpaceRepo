@@ -180,22 +180,37 @@ RSpec.describe "Error messages", type: :request do
       expect(flash[:alert]).to start_with("Votre demande n'a pas été soumise. ")
     end
 
-    it "keeps a saved report whose copy cannot be queued, says so and reports it" do
-      allow(MsrMailer).to receive(:issue_email_to_team).and_raise(ActiveJob::EnqueueError, "queue down")
-      expect(Rails.error).to receive(:report).with(an_instance_of(ActiveJob::EnqueueError), hash_including(handled: true))
-      post help_path, params: form
-      expect(response).to redirect_to(help_path)
-      expect(flash[:alert]).to eq(I18n.t("errors.help.copy_not_sent"))
+    it "refuses a typed name longer than the stored limit, in English and French" do
+      long = { help: form[:help].merge(name: "n" * 201) }
+      expect { post help_path, params: long }.not_to change(Help, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to include("Name is too long (maximum is 200 characters)")
+      post help_path, params: long.merge(fr)
+      expect(flash[:alert]).to start_with("Votre demande n'a pas été soumise. ").and include("Nom ")
     end
 
-    it "still sends the team its copy of a signed-in report when the reporter's copy cannot be queued" do
-      user = create(:user, :regular_user)
-      log_in!(user)
-      allow(MsrMailer).to receive(:issue_email).and_raise(ActiveJob::EnqueueError, "queue down")
+    it "accepts a long subject and comments as before: stored in full, mailed in full, GitHub text bounded" do
+      posted = nil
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue) { |_s, **kw| posted = kw; { number: 5 } }
       ActionMailer::Base.deliveries.clear
-      perform_enqueued_jobs { post help_path, params: form }
-      expect(flash[:alert]).to eq(I18n.t("errors.help.copy_not_sent"))
-      expect(ActionMailer::Base.deliveries.map(&:to)).to eq([["uottawa.makerepo@gmail.com"]])
+      long = { help: form[:help].merge(subject: "S" * 300, comments: "#{'c' * 70_000} end-marker") }
+      perform_enqueued_jobs { expect { post help_path, params: long }.to change(Help, :count).by(1) }
+      expect(response).to redirect_to(help_path)
+      expect(flash[:notice]).to eq("Your issue has been submitted.")
+      expect(Help.last.subject).to eq("S" * 300)
+      expect(Help.last.comments.to_plain_text).to end_with("end-marker")
+      expect(posted[:title]).to end_with(Help::TRUNCATED_TITLE)
+      expect(posted[:body]).to end_with(Help::TRUNCATED_BODY)
+      expect(ActionMailer::Base.deliveries.last.body.decoded).to include("end-marker", "S" * 300)
+    end
+
+    it "keeps a saved report whose job cannot be queued, says it was submitted and reports the queue failure" do
+      allow(HelpFilingJob).to receive(:perform_later).and_raise(ActiveJob::EnqueueError, "queue down")
+      expect(Rails.error).to receive(:report).with(an_instance_of(ActiveJob::EnqueueError), hash_including(handled: true))
+      expect { post help_path, params: form }.to change(Help, :count).by(1)
+      expect(response).to redirect_to(help_path)
+      expect(flash[:notice]).to eq("Your issue has been submitted.")
+      expect(flash[:alert]).to be_nil
     end
 
     it "reports an unexpected error and shows the form again with the reference" do

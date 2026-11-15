@@ -62,8 +62,10 @@ RSpec.describe "POST /api/v1/support_requests", type: :request do
       posted = kw
       { number: 9 }
     end
-    post_request(payload.merge(name: "Hi @org/team", subject: "See @someone and #123 now",
-                               comments: "ping @someone, fixes #123, GH-5 1 < 2 > 0 a&b"))
+    perform_enqueued_jobs do
+      post_request(payload.merge(name: "Hi @org/team", subject: "See @someone and #123 now",
+                                 comments: "ping @someone, fixes #123, GH-5 1 < 2 > 0 a&b"))
+    end
     expect(response).to have_http_status(:accepted)
     zwj = "\u200D"
     expect(posted[:reporter]).to eq("Hi @#{zwj}org/team")
@@ -72,11 +74,15 @@ RSpec.describe "POST /api/v1/support_requests", type: :request do
     expect([posted[:reporter], posted[:title], posted[:body]].join).not_to match(/@\w|#\d|GH-\d|</)
   end
 
-  it "opens the GitHub issue exactly as the legacy path does" do
+  it "answers before the GitHub issue is opened; its job then opens it as the legacy path does" do
     expect_any_instance_of(GithubIssuesService).to receive(:create_issue)
       .with(hash_including(reporter: "Help Seeker", title: "Printer will not start")).and_return({ number: 7 })
     post_request
     expect(response).to have_http_status(:accepted)
+    expect(Help.last).to have_attributes(gh_issue_number: nil, user: nil, source: "app", app_version: "2.4.1")
+    expect(HelpFilingJob).to have_been_enqueued.with(Help.last.id)
+    perform_enqueued_jobs
+    expect(Help.last.gh_issue_number).to eq("7")
   end
 
   it "uses the account name and email when signed in, never the posted ones" do
@@ -107,11 +113,28 @@ RSpec.describe "POST /api/v1/support_requests", type: :request do
     expect(CGI.unescapeHTML(team.body.decoded)).not_to include("Bonjour", "Merci,")
   end
 
-  it "still sends the team its copy when a signed-in caller's copy cannot be queued" do
-    allow(MsrMailer).to receive(:issue_email).and_raise(ActiveJob::EnqueueError, "queue down")
-    perform_enqueued_jobs { post_request(payload, as: user) }
-    expect(response).to have_http_status(:internal_server_error)
-    expect(deliveries.map(&:to)).to eq([["uottawa.makerepo@gmail.com"]])
+  it "answers 202 and keeps the request when its job cannot be queued; the sweep sends it later, once" do
+    allow(HelpFilingJob).to receive(:perform_later).and_raise(ActiveRecord::ConnectionNotEstablished, "queue down")
+    expect(Rails.error).to receive(:report)
+      .with(an_instance_of(ActiveRecord::ConnectionNotEstablished), hash_including(handled: true))
+    expect { perform_enqueued_jobs { post_request(payload, as: user) } }.to change(Help, :count).by(1)
+    expect(response).to have_http_status(:accepted)
+    expect(body).to eq("status" => "accepted")
+    expect(deliveries).to be_empty
+
+    allow(HelpFilingJob).to receive(:perform_later).and_call_original
+    travel(Help::RESEND_AFTER + 1.minute) do
+      perform_enqueued_jobs { 2.times { HelpFilingSweepJob.perform_now } }
+    end
+    expect(deliveries.map(&:to)).to eq([["uottawa.makerepo@gmail.com"], ["owner@example.com"]])
+    expect(Help.last.gh_issue_number).to eq("42")
+  end
+
+  it "accepts a signed-in caller whose saved name is shorter than a typed name may be" do
+    user.update_columns(name: "Q")
+    post_request(payload.except(:name, :email), as: user)
+    expect(response).to have_http_status(:accepted)
+    expect(Help.last.name).to eq("Q")
   end
 
   it "needs no name or email from a signed-in caller" do
@@ -160,6 +183,12 @@ RSpec.describe "POST /api/v1/support_requests", type: :request do
       expect(response).to have_http_status(:accepted)
     end
 
+    it "counts comments as posted (the API takes plain text; markup is not stripped before counting)" do
+      post_request(payload.merge(comments: "<b>#{'c' * 4993}</b>"))
+      expect(response).to have_http_status(:accepted)
+      expect_rejected(payload.merge(comments: "<b>#{'c' * 4994}</b>"), "comments")
+    end
+
     it "treats non-string values as missing" do
       expect_rejected(payload.merge(subject: { a: 1 }, comments: ["x"]), "subject", "comments")
     end
@@ -170,15 +199,17 @@ RSpec.describe "POST /api/v1/support_requests", type: :request do
     end
   end
 
-  it "answers 503, keeps the report without an issue number and sends nothing when the GitHub issue cannot be opened" do
+  it "answers 202 and mails the team when the GitHub issue cannot be opened; the job tries the issue again" do
     allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return(false)
-    expect do
-      perform_enqueued_jobs { post_request }
-    end.to change(Help, :count).by(1)
-    expect(deliveries).to be_empty
+    perform_enqueued_jobs(only: ApplicationMailDeliveryJob) do
+      post_request
+      HelpFilingJob.perform_now(Help.last.id)
+    end
+    expect(response).to have_http_status(:accepted)
+    expect(body).to eq("status" => "accepted")
+    expect(deliveries.map(&:to)).to eq([["uottawa.makerepo@gmail.com"]])
     expect(Help.last.gh_issue_number).to be_nil
-    expect(response).to have_http_status(:service_unavailable)
-    expect(body["error"]["code"]).to eq("service_unavailable")
+    expect(HelpFilingJob).to have_been_enqueued.with(Help.last.id).at_least(:once)
   end
 
   # test env uses :null_store (never counts), so back the limiter with a counter
