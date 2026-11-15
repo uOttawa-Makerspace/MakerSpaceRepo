@@ -56,26 +56,12 @@ class SamlIdpController < ApplicationController
   end
 
   def auth
-    @current_user =
-      case params[:submit]
-      when "sign_in"
-        user = sign_in(params[:username], params[:password])
-
-        @error_message = sign_in_error_message if user.nil?
-
-        user
-      when "current_user"
-        current_user if signed_in?
-      when "logout"
-        sign_out
-        nil
-      else
-        @error_message = "Invalid request"
-        nil
-      end
+    @current_user = user_for_submit
 
     if @current_user.nil?
       render template: "saml/login"
+    elsif refused_by_staff_only_sp?
+      render template: "saml/staff_only"
     else
       @saml_response = encode_response @current_user
       render template: "saml/saml_post"
@@ -83,6 +69,33 @@ class SamlIdpController < ApplicationController
   end
 
   private
+
+  # The user the submit button chose: signed in with the posted credentials, the
+  # session user, or nobody (after a sign-out or an unknown submit value).
+  def user_for_submit
+    case params[:submit]
+    when "sign_in"
+      user = sign_in(params[:username], params[:password])
+
+      @error_message = sign_in_error_message if user.nil?
+
+      user
+    when "current_user"
+      current_user if signed_in?
+    when "logout"
+      sign_out
+      nil
+    else
+      @error_message = "Invalid request"
+      nil
+    end
+  end
+
+  # A service provider marked staff_only in config/initializers/saml.rb never
+  # receives an assertion for a user who is not staff or admin.
+  def refused_by_staff_only_sp?
+    saml_request.service_provider.attributes[:staff_only] && !@current_user.staff?
+  end
 
   # The one verdict every caller of the gem's validation sees (validate_saml_request,
   # enforce_saml_request, any later direct call): the request must be valid AND the

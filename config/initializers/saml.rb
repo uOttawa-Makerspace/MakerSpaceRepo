@@ -36,8 +36,10 @@ SamlIdp.configure do |config|
     },
     "wiki-server.makerepo.com" => {
       metadata_url: "https://makerepo.com/saml/wiki_metadata",
-      response_hosts: %w[wiki-server.makerepo.com localhost]
-    # principal is passed in when `encode_response` is called
+      response_hosts: %w[wiki-server.makerepo.com localhost],
+      # Only staff and admins may sign in; anyone else is refused before an
+      # assertion is built (SamlIdpController#auth).
+      staff_only: true
     },
     
     "wikijs.makerepo.com" => {
