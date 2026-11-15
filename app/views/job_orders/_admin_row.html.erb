@@ -52,20 +52,3 @@
     link_to 'View', job_order_path(jo.id), class: 'btn btn-primary btn-sm'
   %>
 </td>
-
-<div class="modal fade" id="assignStaffModal-<%= jo.id %>" tabindex="-1" aria-labelledby="assignStaffModalLabel-<%= jo.id %>" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="assignStaffModalLabel-<%= jo.id %>">Assign Staff</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
-      </div>
-      <div class="modal-body">
-        <%= render "assign_staff", jo: jo, staff: @staff %>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      </div>
-    </div>
-  </div>
-</div>

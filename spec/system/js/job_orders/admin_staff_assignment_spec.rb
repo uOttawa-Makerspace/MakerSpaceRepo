@@ -24,12 +24,8 @@ RSpec.describe "Assigning staff from the admin job order list", type: :system do
     within("#job-order-row-#{older.id}") { click_button "Assign Staff" }
     modal = find(".modal.show")
     wait_for_modal_ready("##{modal[:id]}")
-    # picked by hand: the shared picker helper ends with Escape, which also
-    # closes the dialog
-    wrapper = modal.find("select[name='staff_id'] + .ts-wrapper")
-    wrapper.find(".ts-control").click
-    wrapper.find(".ts-dropdown .option", text: "Row Staffer", exact_text: true).click
-    expect(wrapper).to have_no_css(".ts-dropdown", visible: true)
+    within(modal) { tom_select "Row Staffer", from: "jo-staff-select-#{older.id}" }
+    expect(modal).to match_css(".show")
     modal.click_button "Assign"
 
     expect(page).to have_content(I18n.t("job_orders.alerts.staff_assigned", name: "Row Staffer"))

@@ -1041,6 +1041,20 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).not_to include("<td>#{draft.id}</td>")
     end
 
+    it "puts each order's assign-staff dialog outside the table, one per order with its staff picker" do
+      first = order_with_task!(owner: owner, status_key: :staff_approval)
+      second = order_with_task!(owner: owner, status_key: :staff_approval)
+
+      http_login!(admin)
+      get admin_job_orders_path
+      html = Nokogiri::HTML(response.body)
+      expect(html.css("table .modal")).to be_empty
+      [first, second].each do |order|
+        expect(html.css("tr#job-order-row-#{order.id} button[data-bs-target='#assignStaffModal-#{order.id}']").size).to eq(1)
+        expect(html.css("#assignStaffModal-#{order.id} select#jo-staff-select-#{order.id}").size).to eq(1)
+      end
+    end
+
     it "bounces regular users to root" do
       http_login!(owner)
       get admin_job_orders_path

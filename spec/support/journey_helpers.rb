@@ -106,6 +106,8 @@ module JourneyHelpers
   # the typed text.
   # The pick is confirmed on the hidden native select (what the form submits),
   # and the dropdown must be closed before returning: it overlays the form.
+  # A picker that closes itself on a pick is left alone; an open one gets
+  # Escape, which Tom Select keeps to itself, so a dialog around it stays open.
   def tom_select(option_text, from:, search: nil, exact: true)
     native = find(:select, from, visible: :all)
     wait_until("##{native[:id]} not yet a Tom Select") { native[:class].to_s.split.include?("tomselected") }
@@ -127,7 +129,7 @@ module JourneyHelpers
       chosen = exact ? selected.include?(option_text) : selected.any? { |text| text.include?(option_text) }
       raise Capybara::ExpectationNotMet, "#{option_text.inspect} not selected in ##{native[:id]}" unless chosen
     end
-    input.send_keys(:escape)
+    input.send_keys(:escape) if wrapper.matches_css?(".dropdown-active", wait: false)
     expect(wrapper).to have_no_css(".ts-dropdown", visible: true)
   end
 
