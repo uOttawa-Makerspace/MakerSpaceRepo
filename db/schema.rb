@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_15_130100) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_15_140200) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -868,6 +868,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_130100) do
     t.string "shopify_order_id", null: false
     t.string "status", null: false
     t.datetime "updated_at", null: false
+    t.bigint "ledger_entry_id"
+    t.datetime "reversed_at"
+    t.index ["ledger_entry_id"], name: "index_locker_payments_on_ledger_entry_id", unique: true
     t.index ["locker_rental_id"], name: "index_locker_payments_held_on_locker_rental_id", where: "((status)::text = 'held'::text)"
     t.index ["locker_rental_id"], name: "index_locker_payments_on_locker_rental_id"
     t.index ["resolved_by_id"], name: "index_locker_payments_on_resolved_by_id"
@@ -1022,6 +1025,36 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_130100) do
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
     t.index ["user_id"], name: "index_orders_on_user_id"
+  end
+
+  create_table "payment_checkouts", force: :cascade do |t|
+    t.string "reference_type", null: false
+    t.bigint "reference_id", null: false
+    t.date "term"
+    t.string "provider", null: false
+    t.string "provider_id", null: false
+    t.string "status", default: "open", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["provider", "provider_id"], name: "index_payment_checkouts_on_provider_and_provider_id", unique: true
+    t.index ["reference_type", "reference_id"], name: "index_payment_checkouts_on_reference"
+    t.index ["reference_type", "reference_id"], name: "index_payment_checkouts_one_open_per_reference", unique: true, where: "((status)::text = 'open'::text)"
+    t.check_constraint "status::text = ANY (ARRAY['open'::character varying, 'paid'::character varying, 'void'::character varying]::text[])", name: "payment_checkouts_status_check"
+  end
+
+  create_table "payment_ledger_entries", force: :cascade do |t|
+    t.string "provider", null: false
+    t.string "provider_ref", null: false
+    t.decimal "amount", precision: 10, scale: 2
+    t.string "kind", null: false
+    t.bigint "reversed_entry_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["provider", "provider_ref"], name: "index_payment_ledger_entries_one_payment_per_provider_ref", unique: true, where: "((kind)::text = 'payment'::text)"
+    t.index ["reversed_entry_id"], name: "index_payment_ledger_entries_on_reversed_entry_id", unique: true
+    t.check_constraint "(kind::text = 'reversal'::text) = (reversed_entry_id IS NOT NULL)", name: "payment_ledger_entries_reversal_has_entry_check"
+    t.check_constraint "amount IS NULL OR amount >= 0::numeric", name: "payment_ledger_entries_amount_check"
+    t.check_constraint "kind::text = ANY (ARRAY['payment'::character varying, 'reversal'::character varying]::text[])", name: "payment_ledger_entries_kind_check"
   end
 
   create_table "photos", id: :serial, force: :cascade do |t|
@@ -2046,6 +2079,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_130100) do
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
   add_foreign_key "locker_payments", "locker_rentals"
+  add_foreign_key "locker_payments", "payment_ledger_entries", column: "ledger_entry_id"
   add_foreign_key "locker_payments", "users", column: "resolved_by_id"
   add_foreign_key "locker_rentals", "course_names", on_delete: :nullify
   add_foreign_key "locker_rentals", "lockers"
@@ -2060,6 +2094,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_130100) do
   add_foreign_key "order_items", "proficient_projects"
   add_foreign_key "orders", "order_statuses"
   add_foreign_key "orders", "users"
+  add_foreign_key "payment_ledger_entries", "payment_ledger_entries", column: "reversed_entry_id"
   add_foreign_key "photos", "learning_modules"
   add_foreign_key "photos", "proficient_projects"
   add_foreign_key "photos", "project_proposals"
@@ -2194,5 +2229,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_130100) do
                       ELSE 0
                   END AS n) moves)
        CROSS JOIN LATERAL ( SELECT COALESCE(("substring"((users.year_of_study_entered)::text, '^[0-9]+'::text))::numeric, (0)::numeric) AS year) entered);
+  SQL
+
+  execute <<~'SQL'
+    CREATE OR REPLACE FUNCTION public.payment_ledger_entries_append_only()
+     RETURNS trigger
+     LANGUAGE plpgsql
+    AS $function$
+    BEGIN
+      RAISE EXCEPTION 'payment_ledger_entries is append-only: % refused', TG_OP;
+    END;
+    $function$
+  SQL
+
+  execute <<~'SQL'
+    CREATE TRIGGER payment_ledger_entries_no_change BEFORE DELETE OR UPDATE ON public.payment_ledger_entries FOR EACH ROW EXECUTE FUNCTION payment_ledger_entries_append_only()
+  SQL
+
+  execute <<~'SQL'
+    CREATE TRIGGER payment_ledger_entries_no_truncate BEFORE TRUNCATE ON public.payment_ledger_entries FOR EACH STATEMENT EXECUTE FUNCTION payment_ledger_entries_append_only()
   SQL
 end
