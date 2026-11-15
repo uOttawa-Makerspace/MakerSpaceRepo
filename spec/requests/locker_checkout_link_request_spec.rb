@@ -96,6 +96,25 @@ RSpec.describe "Locker checkout link", type: :request do
       expect(checkouts(rental)).to eq([[old_id, "open"]])
     end
 
+    it "a rental cancelled since it was loaded claims nothing and asks Shopify nothing" do
+      stale = LockerRental.find(rental.id)
+      LockerRental.where(id: rental.id).update_all(state: "cancelled", cancelled_at: Time.current)
+
+      expect(stale.checkout_link).to be_nil
+      expect(checkouts(rental)).to be_empty
+      expect(fake.calls).to be_empty
+    end
+
+    it "a stored draft no checkout record names is not adopted by a rental cancelled since it was loaded" do
+      rental.update_column(:shopify_draft_order_id, old_id)
+      stale = LockerRental.find(rental.id)
+      LockerRental.where(id: rental.id).update_all(state: "cancelled", cancelled_at: Time.current)
+
+      expect(stale.checkout_link).to be_nil
+      expect(checkouts(rental)).to be_empty
+      expect(fake.calls).to be_empty
+    end
+
     it "a draft the rental may no longer take voids the claim and is removed" do
       fake.on_query = lambda do |query, _|
         LockerRental.where(id: rental.id).update_all(state: "reviewing") if query.include?("draftOrderCreate")
