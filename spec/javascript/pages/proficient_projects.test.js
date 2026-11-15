@@ -94,6 +94,25 @@ describe("proficient project page script reached by a Turbo visit", () => {
     expect(document.querySelector(".tr-row")).toBeNull();
   });
 
+  it("removes the rows a page restored from the cache came with", async () => {
+    const restored = form
+      .replace(
+        "</div>\n  </div>\n  <table>",
+        '</div>\n    <div class="input-group"><input type="file"><button class="btn-danger"><i></i></button></div>\n  </div>\n  <table>',
+      )
+      .replace(
+        '<div id="link-container">',
+        '<div id="link-container"><div class="added"><select></select><button class="tr-delete-button"><i></i></button></div>',
+      );
+    await importOver(restored);
+    turboLoad();
+    $("photos").querySelector(".btn-danger i").click();
+    expect($("photos").children).toHaveLength(1);
+    document.querySelector(".added .tr-delete-button i").click();
+    expect(document.querySelector(".added")).toBeNull();
+    expect(document.querySelector(".tr-row")).not.toBeNull();
+  });
+
   it("sets up the form of a later page", async () => {
     await importOver("<p>another page</p>");
     document.body.innerHTML = form;

@@ -62,14 +62,23 @@ const bindImageRemove = oncePerElement((el) => {
 
 // The add button of a file or photo input: each click adds another input row
 // with a button that removes it.
-const bindAddInputRow = oncePerElement((addButton) => {
-  addButton.addEventListener("click", () => {
-    const remove = addInputRow(addButton);
-    remove.addEventListener("click", () => {
-      remove.closest(".input-group").remove();
-    });
-  });
-});
+const bindAddInputRow = oncePerElement((addButton) =>
+  addButton.addEventListener("click", () => addInputRow(addButton)),
+);
+
+// The remove buttons of the added input rows, listened to on the rows' parent,
+// so the rows of a page Turbo restores from its cache can be removed too.
+const bindRemoveInputRow = oncePerElement((rows) =>
+  rows.addEventListener("click", (event) => {
+    const remove = event.target.closest(".input-group > .btn-danger");
+    if (remove && rows.contains(remove)) remove.parentElement.remove();
+  }),
+);
+
+function bindInputRows(addButton) {
+  bindAddInputRow(addButton);
+  bindRemoveInputRow(addButton?.parentElement.parentElement);
+}
 
 function buildTrainingPicker() {
   const select = document.getElementById("training_requirements");
@@ -94,14 +103,17 @@ onEveryPageLoad(() => {
   );
   [...document.getElementsByClassName("file-remove")].forEach(bindFileRemove);
   [...document.getElementsByClassName("image-remove")].forEach(bindImageRemove);
-  bindAddInputRow(document.getElementById("new-file-input"));
-  bindAddInputRow(document.getElementById("new-photo-input"));
+  bindInputRows(document.getElementById("new-file-input"));
+  bindInputRows(document.getElementById("new-photo-input"));
 });
 
-// A training requirement's delete button removes its row.
-const bindRequirementDelete = oncePerElement((btn) =>
-  btn.addEventListener("click", (el) => {
-    el.target.closest("button").parentNode.remove();
+// The delete buttons of the training requirement rows, listened to on the
+// rows' parent, so the rows of a page Turbo restores from its cache can be
+// deleted too.
+const bindRequirementDelete = oncePerElement((rows) =>
+  rows.addEventListener("click", (event) => {
+    const remove = event.target.closest(".tr-delete-button");
+    if (remove && rows.contains(remove)) remove.parentNode.remove();
   }),
 );
 
@@ -114,17 +126,12 @@ const bindNewRequirement = oncePerElement((newTr) => {
     clone.querySelectorAll("input").forEach((input) => {
       input.value = "";
     });
-    clone.querySelector("button").addEventListener("click", (el) => {
-      el.target.closest("button").parentNode.remove();
-    });
     clone.style.visibility = "visible";
   });
 });
 
 onEveryPageLoad(() => {
-  [...document.getElementsByClassName("tr-delete-button")].forEach(
-    bindRequirementDelete,
-  );
+  bindRequirementDelete(document.getElementById("link-container"));
   bindNewRequirement(document.getElementById("new-tr"));
 });
 
