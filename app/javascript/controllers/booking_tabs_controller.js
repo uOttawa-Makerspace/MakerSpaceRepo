@@ -1,9 +1,10 @@
+import { Tab } from "bootstrap";
 import { AccessorController } from "../src/accessor_controller.js";
 
 // The booking page opens on the tab its address names: the anchor's tab, else
 // the admin tab scrolled to the table of a page parameter, else Book Room. An
 // anchor that names no tab leaves the tabs as they are. Bootstrap's tab plugin
-// handles the clicks.
+// shows the opening tab, as it shows a clicked one (classes, aria-selected, fade).
 const TABLE_OF_PAGE_PARAMETER = {
   pending_page: "pendingBody",
   approved_page: "approvedBody",
@@ -21,7 +22,7 @@ function tableOfPageParameter(search) {
 }
 
 export default class extends AccessorController {
-  static targets = ["tab", "pane"];
+  static targets = ["tab"];
 
   connect() {
     const anchor = window.location.hash.replace("#", "");
@@ -32,16 +33,9 @@ export default class extends AccessorController {
   }
 
   open(id, table = null) {
-    const pane = this.paneTargets.find((each) => each.id === id);
     const tab = this.tabTargets.find((each) => each.id === `${id}-btn`);
-    if (!(pane && tab)) return;
-    this.tabTargets.forEach((each) =>
-      each.classList.toggle("active", each === tab),
-    );
-    this.paneTargets.forEach((each) => {
-      each.classList.toggle("active", each === pane);
-      each.classList.toggle("show", each === pane);
-    });
+    if (!tab) return;
+    Tab.getOrCreateInstance(tab).show();
     if (table) this.scrollToTable(table);
   }
 

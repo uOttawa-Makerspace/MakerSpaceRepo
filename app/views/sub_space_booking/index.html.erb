@@ -25,20 +25,20 @@
       <% end %>
       <ul class="nav nav-tabs nav-fill mb-4 border-bottom-0 shadow-sm rounded bg-body" id="booking-tab-list" role="tablist">
         <li class="nav-item" role="presentation">
-          <button class="nav-link fw-bold text-uppercase tab-link active" id="booking-calendar-tab-btn" data-booking-tabs-target="tab" data-bs-toggle="tab" data-bs-target="#booking-calendar-tab" type="button" role="tab"><i class="fa fa-calendar me-2"></i> Book Room</button>
+          <button class="nav-link fw-bold text-uppercase active" id="booking-calendar-tab-btn" data-booking-tabs-target="tab" data-bs-toggle="tab" data-bs-target="#booking-calendar-tab" type="button" role="tab"><i class="fa fa-calendar me-2"></i> Book Room</button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link fw-bold text-uppercase tab-link" id="booking-tab-btn" data-booking-tabs-target="tab" data-bs-toggle="tab" data-bs-target="#booking-tab" type="button" role="tab"><i class="fa fa-list me-2"></i> My Bookings</button>
+          <button class="nav-link fw-bold text-uppercase" id="booking-tab-btn" data-booking-tabs-target="tab" data-bs-toggle="tab" data-bs-target="#booking-tab" type="button" role="tab"><i class="fa fa-list me-2"></i> My Bookings</button>
         </li>
         <% if current_user.admin? %>
           <li class="nav-item" role="presentation">
-            <button class="nav-link fw-bold text-uppercase tab-link" id="booking-admin-tab-btn" data-booking-tabs-target="tab" data-bs-toggle="tab" data-bs-target="#booking-admin-tab" type="button" role="tab"><i class="fa fa-cog me-2"></i> Admin Panel</button>
+            <button class="nav-link fw-bold text-uppercase" id="booking-admin-tab-btn" data-booking-tabs-target="tab" data-bs-toggle="tab" data-bs-target="#booking-admin-tab" type="button" role="tab"><i class="fa fa-cog me-2"></i> Admin Panel</button>
           </li>
         <% end %>
       </ul>
 
       <div class="tab-content bg-body p-4 shadow-sm rounded" id="tabContent">
-        <div class="tab-pane active show" id="booking-calendar-tab" data-booking-tabs-target="pane" role="tabpanel">
+        <div class="tab-pane fade active show" id="booking-calendar-tab" role="tabpanel">
            <% if params[:room].present? %>
               <h3 class="text-center mb-4 fw-bold text-body-emphasis"><%= @subspace.name %> Calendar</h3>
               <div>
@@ -74,7 +74,7 @@
         </div>
         
         <!-- RESTORED MY BOOKINGS TAB -->
-        <div class="tab-pane fade" id="booking-tab" data-booking-tabs-target="pane" role="tabpanel">
+        <div class="tab-pane fade" id="booking-tab" role="tabpanel">
           <div id="my-booking-table" class="mt-3 table-responsive">
             <table class="table table-hover align-middle shadow-sm rounded overflow-hidden">
               <thead class="table-primary text-center">
@@ -125,7 +125,7 @@
         </div>
 
         <% if current_user.admin? %>
-          <div class="tab-pane fade" id="booking-admin-tab" data-booking-tabs-target="pane" role="tabpanel">
+          <div class="tab-pane fade" id="booking-admin-tab" role="tabpanel">
             <%= render 'admin' %>
             <%= render 'approve_recurring_modal' %>
           </div>

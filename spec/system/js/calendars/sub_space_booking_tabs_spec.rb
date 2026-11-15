@@ -28,30 +28,36 @@ RSpec.describe "Sub-space booking: tabs", :booking_clock, type: :system do
     expect(page).to have_css("#booking-tab-list .nav-link.active", count: 1)
   end
 
-  # The class list of My Bookings' pane straight after its button is clicked,
+  # The class list of a tab's pane straight after its button is clicked,
   # before any transition has run.
-  def pane_classes_on_click
-    page.evaluate_script(<<~JS)
-      (() => {
-        document.getElementById("booking-tab-btn").click();
-        return document.getElementById("booking-tab").className;
-      })()
+  def pane_classes_on_click(tab)
+    page.evaluate_script(<<~JS, tab).split
+      ((tab) => {
+        document.getElementById(`${tab}-btn`).click();
+        return document.getElementById(tab).className;
+      })(arguments[0])
     JS
   end
 
-  def expect_click_fades_in
-    classes = pane_classes_on_click.split
+  def expect_click_fades_in(tab = "booking-tab")
+    classes = pane_classes_on_click(tab)
     expect(classes).to include("active", "fade")
     expect(classes).not_to include("show")
-    expect_open("booking-tab")
-    expect(page).to have_css("#booking-tab-btn[aria-selected='true']")
+    expect_open(tab)
+    expect(page).to have_css("##{tab}-btn[aria-selected='true']")
+    expect(page).to have_css("#booking-tab-list [aria-selected='true']", count: 1)
+  end
+
+  def expect_selected(tab)
+    expect(page).to have_css("##{tab}-btn[aria-selected='true']")
+    expect(page).to have_css("#booking-tab-list [aria-selected='true']", count: 1)
   end
 
   describe "on a full page load", js: true, skip_bullet: true do
-    it "opens Book Room and fades a clicked tab in" do
+    it "opens Book Room and fades every clicked tab in, Book Room included" do
       log_in_as(admin, to: booking_path)
       expect_open("booking-calendar-tab")
-      expect_click_fades_in
+      %w[booking-tab booking-admin-tab booking-calendar-tab].each { |tab| expect_click_fades_in(tab) }
     end
 
     it "opens the tab of the anchor, which wins over a page parameter" do
@@ -80,6 +86,7 @@ RSpec.describe "Sub-space booking: tabs", :booking_clock, type: :system do
       turbo_visit("#{booking_path}&pending_page=1")
       expect(page).to have_current_path(/pending_page=1/)
       expect_open("booking-admin-tab")
+      expect_selected("booking-admin-tab")
       expect_click_fades_in
     end
 
@@ -87,6 +94,7 @@ RSpec.describe "Sub-space booking: tabs", :booking_clock, type: :system do
       turbo_visit("#{booking_path}&old_denied_page=1#booking-tab")
       expect(page).to have_current_path(/old_denied_page=1/)
       expect_open("booking-tab")
+      expect_selected("booking-tab")
     end
 
     it "opens the tab the address names on Back and Forward, not the tab left open" do
