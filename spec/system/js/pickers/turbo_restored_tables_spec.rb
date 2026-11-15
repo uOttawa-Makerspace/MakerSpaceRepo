@@ -83,8 +83,13 @@ RSpec.describe "Sortable tables on a page gone back to with Turbo", type: :syste
       expect(page).to have_css("#signed-in-table tbody tr", count: 3)
       expect(page).to have_css("#signed-in-table tbody tr", text: "Mia Middle")
       expect_one_table_wrapper
+      # the rebuilt table starts unsorted; DataTables sorts after a header click
+      # returns, so wait for the sorted column before reading the rows
+      expect(page).to have_no_css("#signed-in-table th.dt-ordering-asc, #signed-in-table th.dt-ordering-desc")
       find("#signed-in-table th", text: "Name").click
-      expect(signed_in_names.first).to eq("Adam Apple")
+      expect(page).to have_css("#signed-in-table th.dt-ordering-asc", text: "Name")
+      expect(page).to have_css("#signed-in-table tbody tr:first-child", text: "Adam Apple")
+      expect(signed_in_names).to eq(["Adam Apple", "Mia Middle", "Zoe Zephyr"])
     end
   end
 end
