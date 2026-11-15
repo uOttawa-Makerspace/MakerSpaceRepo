@@ -26,7 +26,7 @@ Request:
 
 Unknown fields are ignored. Values must be strings (an object or array counts as missing). Fields are trimmed.
 
-When the caller is signed in, `name` and `email` are taken from the account and the posted values are ignored (they may be omitted). Anonymous callers' `email` is used as given, but only as Reply-To and in the email body (never as a recipient).
+When the caller is signed in, `name` and `email` are taken from the account and the posted values are ignored (they may be omitted); the account's own name and email are not checked against the rules above. Anonymous callers' `email` is used as given, but only as Reply-To and in the email body (never as a recipient).
 
 Same path as the web Help form (`HelpController#create`): the request only saves a `Help` record and queues `HelpFilingJob`. It answers once the record is saved; the GitHub issue and the email come after, from the job.
 

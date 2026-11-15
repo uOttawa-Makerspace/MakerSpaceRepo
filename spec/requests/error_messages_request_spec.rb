@@ -189,6 +189,15 @@ RSpec.describe "Error messages", type: :request do
       expect(flash[:alert]).to start_with("Votre demande n'a pas été soumise. ").and include("Nom ", "Sujet ")
     end
 
+    it "refuses comments longer than 5000 characters, in English and French" do
+      long = { help: form[:help].merge(comments: "c" * 5001) }
+      expect { post help_path, params: long }.not_to change(Help, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to include("Comments is too long (maximum is 5000 characters)")
+      post help_path, params: long.merge(fr)
+      expect(flash[:alert]).to include("Commentaires ")
+    end
+
     it "keeps a saved report whose job cannot be queued, says it was submitted and reports the queue failure" do
       allow(HelpFilingJob).to receive(:perform_later).and_raise(ActiveJob::EnqueueError, "queue down")
       expect(Rails.error).to receive(:report).with(an_instance_of(ActiveJob::EnqueueError), hash_including(handled: true))

@@ -14,7 +14,7 @@ module Api
     class SupportRequestsController < BaseController
       skip_authorization only: :create, reason: "Public by contract: anyone may send a support request (rate limited)"
 
-      MAX = Help::MAX_LENGTH.merge(comments: 5000, app_version: 50).freeze
+      MAX = Help::MAX_LENGTH
 
       rate_limit to: 5, within: 1.minute, only: :create, scope: "api-support", name: "ip-minute",
                  by: -> { request.remote_ip }, with: :rate_limited

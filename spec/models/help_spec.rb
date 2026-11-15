@@ -152,6 +152,49 @@ RSpec.describe Help, type: :model do
     end
   end
 
+  describe "steps done by another run" do
+    it "counts a step another run finished after this row was loaded as done, and the request as finished" do
+      help = Help.create!(valid_attrs)
+      stale = Help.find(help.id)
+      expect(help.file!).to be(true)
+      expect_any_instance_of(GithubIssuesService).not_to receive(:create_issue)
+      expect(ActionMailer).not_to receive(:deliver_all_later)
+      expect(stale.file!).to be(true)
+    end
+
+    it "neither records nor gives back a claim that another run took over" do
+      help = Help.create!(valid_attrs)
+      later = 1.minute.from_now.floor(6)
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue) do
+        Help.where(id: help.id).update_all(filing_claimed_at: later)
+        { number: 9 }
+      end
+      help.file_issue
+      expect(Help.find(help.id)).to have_attributes(filed_at: nil, gh_issue_number: nil, filing_claimed_at: later)
+
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue) do
+        Help.where(id: help.id).update_all(filing_claimed_at: later + 1.second)
+        false
+      end
+      Help.where(id: help.id).update_all(filing_claimed_at: nil)
+      help.reload.file_issue
+      expect(Help.find(help.id).filing_claimed_at).to eq(later + 1.second)
+    end
+
+    it "raises the step's own error when giving the claim back fails too, and reports that failure" do
+      help = Help.create!(valid_attrs)
+      allow(ActionMailer).to receive(:deliver_all_later).and_raise(ActiveJob::EnqueueError, "queue down")
+      allow(Help).to receive(:where).and_wrap_original do |original, *args, **kw|
+        relation = original.call(*args, **kw)
+        allow(relation).to receive(:update_all).and_raise(ActiveRecord::ConnectionNotEstablished, "db down") if kw.key?(:mailing_claimed_at)
+        relation
+      end
+      allow(Rails.error).to receive(:report)
+      expect { help.mail_copies }.to raise_error(ActiveJob::EnqueueError, "queue down")
+      expect(Rails.error).to have_received(:report).with(an_instance_of(ActiveRecord::ConnectionNotEstablished), hash_including(handled: true))
+    end
+  end
+
   describe "#file!" do
     it "mails, then files, and says whether the request is finished" do
       help = Help.create!(valid_attrs)
@@ -194,6 +237,22 @@ RSpec.describe Help, type: :model do
       allow(Rails.error).to receive(:report)
       expect(Help.compose(valid_attrs.except(:source), user: nil, source: Help::APP).submit).to be(true)
     end
+  end
+
+  it "limits comments (as plain text) and the app version to the API's lengths, in English and French" do
+    long = Help.new(valid_attrs(comments: "c" * 5001, app_version: "v" * 51))
+    expect(I18n.with_locale(:en) { long.valid?; long.errors.full_messages })
+      .to include("Comments is too long (maximum is 5000 characters)", "App version is too long (maximum is 50 characters)")
+    expect(I18n.with_locale(:fr) { long.valid?; long.errors.full_messages })
+      .to include(a_string_starting_with("Commentaires "), a_string_matching(/version/i))
+    expect(Help.new(valid_attrs(comments: "<b>#{'c' * 5000}</b>", app_version: "v" * 50))).to be_valid
+  end
+
+  it "does not check an account's own name and email as if they were typed" do
+    user = create(:user, :regular_user)
+    user.update_columns(name: "A")
+    expect(Help.compose(valid_attrs.except(:source, :name, :email), user: user, source: Help::APP)).to be_valid
+    expect(Help.compose(valid_attrs.except(:source).merge(name: "A"), user: user, source: Help::HELP_PAGE)).not_to be_valid
   end
 
   it "limits name, email and subject to the API's lengths, in English and French" do

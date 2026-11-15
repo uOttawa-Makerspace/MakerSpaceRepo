@@ -16,8 +16,8 @@ class Help < ApplicationRecord
   APP = "app"
   ZWJ = "‍"
 
-  # Longest values kept; the /api/v1 contract uses the same limits.
-  MAX_LENGTH = { name: 200, email: 254, subject: 200 }.freeze
+  # Longest values kept, on every path (comments counted as plain text); the /api/v1 contract uses the same limits.
+  MAX_LENGTH = { name: 200, email: 254, subject: 200, comments: 5000, app_version: 50 }.freeze
   # A claim on a step is taken again after this long: longer than the GitHub calls can take (see GithubIssuesService).
   CLAIM_TIMEOUT = 5.minutes
   # The sweep queues an unfinished request again when the row has not changed for this long.
@@ -30,12 +30,16 @@ class Help < ApplicationRecord
   # Rows saved before the filing job existed have no source; the request that saved them did their work.
   UNFINISHED = "source IS NOT NULL AND (filed_at IS NULL OR mailed_at IS NULL)"
 
-  validates :name, presence: true, length: { minimum: 2, maximum: MAX_LENGTH[:name] }
-  validates :email, presence: true, length: { maximum: MAX_LENGTH[:email] },
-                    format: { with: URI::MailTo::EMAIL_REGEXP }
+  # A typed name and address are checked; an account's own (from the apps) were checked when the account saved them.
+  with_options unless: :sender_from_account? do
+    validates :name, presence: true, length: { minimum: 2, maximum: MAX_LENGTH[:name] }
+    validates :email, presence: true, length: { maximum: MAX_LENGTH[:email] },
+                      format: { with: URI::MailTo::EMAIL_REGEXP }
+  end
   validates :subject, presence: true, length: { minimum: 10, maximum: MAX_LENGTH[:subject] }
-  # I'd add a length check to comments but this would count HTML characters too
   validates :comments, presence: true
+  validate :comments_fit
+  validates :app_version, length: { maximum: MAX_LENGTH[:app_version] }
   validates :source, inclusion: { in: [HELP_PAGE, APP] }
 
   scope :unfinished, -> { where(UNFINISHED) }
@@ -102,7 +106,9 @@ class Help < ApplicationRecord
     finished?
   end
 
-  # Queues the mails, both or none, in one insert into the queue, the team's copy first; once.
+  # Queues the mails, both or none, in one insert into the queue, the team's copy first; once. A run that stops
+  # after the insert and before the mail time is recorded leaves its claim, and the run that takes the claim after
+  # CLAIM_TIMEOUT queues a second set of mails.
   def mail_copies
     run_once(:mailed_at, :mailing_claimed_at) do
       ActionMailer.deliver_all_later(*mails)
@@ -131,33 +137,69 @@ class Help < ApplicationRecord
 
   private
 
+  def sender_from_account?
+    user.present? && source == APP
+  end
+
+  def comments_fit
+    max = MAX_LENGTH[:comments]
+    errors.add(:comments, :too_long, count: max) if comments.to_plain_text.length > max
+  end
+
   # Claims the step, runs the block outside any transaction and records what it returns with the step's time
-  # (nil: not done, the claim is given back). Returns whether the step is done; false also when another run holds
-  # the claim.
+  # (nil: not done, the claim is given back). Returns whether the step is done, read from the row when the claim
+  # fails: another run may have done it since this record was loaded, or may hold it.
   def run_once(done, claim, &)
     return true if self[done]
-    return false unless claim_step(done, claim)
 
-    record_step(done, claim, run_claimed(claim, &))
+    mine = claim_step(done, claim)
+    return refresh(done) unless mine
+
+    record_step(done, claim, mine, run_claimed(claim, mine, &))
   end
 
+  # Takes the claim in one UPDATE and returns its time (whole microseconds, as stored), or nil when the step is
+  # done or another run holds a claim younger than CLAIM_TIMEOUT.
   def claim_step(done, claim)
-    now = Time.current
+    now = Time.current.floor(6)
     column = self.class.arel_table[claim]
     open = self.class.where(id: id, done => nil).where(column.eq(nil).or(column.lt(now - CLAIM_TIMEOUT)))
-    open.update_all(claim => now) == 1
+    now if open.update_all(claim => now) == 1
   end
 
-  # A step that raises gives its claim back, so the next run does not wait for CLAIM_TIMEOUT; the error is raised.
-  def run_claimed(claim)
+  # A step that raises gives its claim back, so the next run does not wait for CLAIM_TIMEOUT; the step's own error
+  # is raised, also when giving the claim back fails (that failure is reported).
+  def run_claimed(claim, mine)
     yield
   rescue StandardError
-    update_columns(claim => nil)
+    release(claim, mine)
     raise
   end
 
-  def record_step(done, claim, recorded)
-    recorded ? update!(recorded.merge(done => Time.current, claim => nil)) : update_columns(claim => nil)
+  # Records the step only while this run still holds its claim (a run that outlived CLAIM_TIMEOUT lost it to
+  # another run, whose claim stays); a step that did nothing gives the claim back the same way.
+  def record_step(done, claim, mine, recorded)
+    recorded ? record_owned(done, claim, mine, recorded) : release(claim, mine)
+    refresh(done)
+  end
+
+  def record_owned(done, claim, mine, recorded)
+    now = Time.current
+    owned = self.class.where(id: id, claim => mine)
+    assign_attributes(recorded) if owned.update_all(recorded.merge(done => now, claim => nil, updated_at: now)) == 1
+  end
+
+  # Gives this run's claim back, if it still holds it. A failure here is reported, not raised: the claim then times
+  # out after CLAIM_TIMEOUT, and the caller's own error (if any) is the one that matters.
+  def release(claim, mine)
+    self.class.where(id: id, claim => mine).update_all(claim => nil)
+  rescue ActiveRecord::ActiveRecordError => e
+    Rails.error.report(e, handled: true, context: { help_id: id, step_claim: claim })
+  end
+
+  # Reads the step's time from the row (another run may have recorded it) and returns whether it is done.
+  def refresh(done)
+    self[done] = self.class.where(id: id).pick(done)
     self[done].present?
   end
 

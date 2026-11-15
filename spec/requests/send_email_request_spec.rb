@@ -119,6 +119,23 @@ RSpec.describe "PUT /send_email (React Help form)", type: :request do
     expect(user.reload.name).to eq("Original Name")
   end
 
+  it "refuses an app version or comments longer than the API allows, in English" do
+    expect do
+      put "/send_email", params: payload.merge(app_version: "v" * 51, comments: "c" * 5001).to_json,
+                         headers: headers.merge("Content-Type" => "application/json")
+    end.not_to change(Help, :count)
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(JSON.parse(response.body)["errors"])
+      .to include("App version is too long (maximum is 50 characters)", "Comments is too long (maximum is 5000 characters)")
+  end
+
+  it "sends for an account whose saved name is shorter than a typed name may be" do
+    user.update_columns(name: "Q")
+    put "/send_email", params: payload.to_json, headers: headers.merge("Content-Type" => "application/json")
+    expect(response).to have_http_status(:ok)
+    expect(Help.last.name).to eq("Q")
+  end
+
   it "refuses anonymous callers with 401 and sends nothing" do
     expect do
       perform_enqueued_jobs { put "/send_email", params: payload.to_json, headers: { "Content-Type" => "application/json" } }

@@ -130,6 +130,13 @@ RSpec.describe "POST /api/v1/support_requests", type: :request do
     expect(Help.last.gh_issue_number).to eq("42")
   end
 
+  it "accepts a signed-in caller whose saved name is shorter than a typed name may be" do
+    user.update_columns(name: "Q")
+    post_request(payload.except(:name, :email), as: user)
+    expect(response).to have_http_status(:accepted)
+    expect(Help.last.name).to eq("Q")
+  end
+
   it "needs no name or email from a signed-in caller" do
     post_request(payload.except(:name, :email), as: user)
     expect(response).to have_http_status(:accepted)

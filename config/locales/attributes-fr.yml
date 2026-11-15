@@ -164,6 +164,7 @@ fr:
         subject: Sujet
         comments: Commentaires
         source: Origine
+        app_version: Version de l'application
       chat_message:
         job_order: Commande
         sender: Expéditeur
