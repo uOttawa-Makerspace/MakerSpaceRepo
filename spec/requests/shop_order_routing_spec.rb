@@ -89,10 +89,12 @@ RSpec.describe "Shopify order routing", type: :request do
     tables = []
     callback = lambda do |*, payload|
       sql = payload[:sql].to_s
-      next unless (match = sql.match(/\A\s*(?:INSERT INTO|UPDATE)\s+"?(\w+)"?/i))
-      next if match[1].start_with?("solid_queue", "schema_migrations")
+      # a statement with a WITH clause writes its own table last (the CTE writes first)
+      targets = sql.match?(/\A\s*WITH\b/i) ? sql.scan(/(?:INSERT INTO|UPDATE)\s+"?(\w+)"?/i).flatten : []
+      next unless (table = targets.last || sql.match(/\A\s*(?:INSERT INTO|UPDATE)\s+"?(\w+)"?/i)&.[](1))
+      next if table.start_with?("solid_queue", "schema_migrations")
 
-      tables << match[1]
+      tables << table
     end
     ActiveSupport::Notifications.subscribed(callback, "sql.active_record", &)
     tables.chunk_while { |a, b| a == b }.map(&:first)

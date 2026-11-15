@@ -151,6 +151,13 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
       end
     end
 
+    # What a request that claimed the same checkout and drafted it first leaves: the claim has its draft, and the
+    # rental stores it.
+    def another_request_drafts(gid)
+      PaymentCheckout.where(reference_type: "LockerRental", reference_id: rental.id, status: "open").update_all(provider_id: gid)
+      LockerRental.where(id: rental.id).update_all(shopify_draft_order_id: gid)
+    end
+
     it "a cancel that commits during the Shopify create never leaves a payable draft on the cancelled rental" do
       during_shopify_create do
         cancelled = LockerRental.find(rental.id)
@@ -166,9 +173,14 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
       expect(fake.deleted_ids).to eq([fake.draft_id]) # the draft that was created is removed again
     end
 
-    it "a failure after the Shopify create and before the id is stored (lock timeout) removes the new draft, reports, and gives no link (never an exception into the page)" do
+    it "a failure after the Shopify create and before the claim takes the draft (lock timeout) reports and gives no link; the next attempt reuses that draft" do
       candidate = LockerRental.find(rental.id)
-      allow(candidate).to receive(:lock!).and_raise(ActiveRecord::LockWaitTimeout)
+      locks = 0
+      allow(candidate).to receive(:lock!).and_wrap_original do |original, *args|
+        raise ActiveRecord::LockWaitTimeout if (locks += 1) == 2 # the claim's lock passes, the take's does not
+
+        original.call(*args)
+      end
       reports = []
       allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
 
@@ -176,8 +188,12 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
 
       expect(candidate.checkout_state).to eq(:unavailable)
       expect(reports.map { |e, _| e }).to include(be_a(ActiveRecord::LockWaitTimeout))
-      expect(fake.deleted_ids).to eq([fake.draft_id])
+      expect(fake.deleted_ids).to be_empty
       expect(LockerRental.find(rental.id).shopify_draft_order_id).to be_nil
+
+      expect(LockerRental.find(rental.id).checkout_link).to eq(fake.invoice_url)
+      expect(fake.created_ids).to eq([fake.draft_id])
+      expect(LockerRental.find(rental.id).shopify_draft_order_id).to eq(fake.draft_id)
     end
 
     it "creates no draft for a deleted or deactivated renter (checked before the create)" do
@@ -191,7 +207,7 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
     it "the winner's draft already COMPLETED when the loser serves: processing, no link" do
       winner = "gid://shopify/DraftOrder/winner"
       during_shopify_create do
-        LockerRental.where(id: rental.id).update_all(shopify_draft_order_id: winner)
+        another_request_drafts(winner)
         fake.draft_statuses[winner] = "COMPLETED"
       end
       candidate = LockerRental.find(rental.id)
@@ -292,10 +308,8 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
       expect(fake.deleted_ids).to be_empty
     end
 
-    it "when another request stored its draft first, that one is served and this one's is removed" do
-      during_shopify_create do
-        LockerRental.where(id: rental.id).update_all(shopify_draft_order_id: "gid://shopify/DraftOrder/first")
-      end
+    it "when another request drafted the claim first, that draft is served and this one's is removed" do
+      during_shopify_create { another_request_drafts("gid://shopify/DraftOrder/first") }
 
       expect(LockerRental.find(rental.id).checkout_link).to eq(fake.invoice_url)
       expect(LockerRental.find(rental.id).shopify_draft_order_id).to eq("gid://shopify/DraftOrder/first")
@@ -303,9 +317,7 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
     end
 
     it "an unused draft Shopify refuses to delete is reported, not raised, and the stored draft is still served" do
-      during_shopify_create do
-        LockerRental.where(id: rental.id).update_all(shopify_draft_order_id: "gid://shopify/DraftOrder/first")
-      end
+      during_shopify_create { another_request_drafts("gid://shopify/DraftOrder/first") }
       fake.delete_user_errors = [{ "field" => "id", "message" => "not deletable" }]
       reports = []
       allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
@@ -323,9 +335,7 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
     end
 
     it "an unused draft that was paid meanwhile is left alone and not reported" do
-      during_shopify_create do
-        LockerRental.where(id: rental.id).update_all(shopify_draft_order_id: "gid://shopify/DraftOrder/first")
-      end
+      during_shopify_create { another_request_drafts("gid://shopify/DraftOrder/first") }
       fake.delete_user_errors = [{ "field" => "id", "message" => "completed" }]
       fake.draft_statuses[fake.draft_id] = "COMPLETED"
       reports = []

@@ -90,6 +90,24 @@ RSpec.describe "Locker payment records", type: :request do
       expect(payment.ledger_entry_id).to be_present
     end
 
+    it "pays the checkout of the draft the order names, never the rental's newer open one" do
+      rental = with_draft(create(:locker_rental, :await_payment), "gid://shopify/DraftOrder/9002")
+      PaymentCheckout.create!(reference: rental, provider: "shopify", provider_id: "gid://shopify/DraftOrder/9001",
+                              status: :void, term: rental.owned_until.to_date) # last term's, voided at the new term
+      deliver(:paid, payload(rental, id: 5015, draft_order_id: 9001))
+
+      expect(rental.reload.state).to eq("active")
+      expect(checkouts(rental).map { |c| c.values_at(1, 2) })
+        .to contain_exactly(["gid://shopify/DraftOrder/9002", "open"], ["gid://shopify/DraftOrder/9001", "void"])
+    end
+
+    it "pays the checkout of the draft the order names when that is the open one" do
+      rental = with_draft(create(:locker_rental, :await_payment))
+      deliver(:paid, payload(rental, id: 5016, draft_order_id: 9001))
+
+      expect(checkouts(rental).map(&:third)).to eq(%w[paid])
+    end
+
     it "delivered twice records one payment" do
       rental = with_draft(create(:locker_rental, :await_payment))
       2.times { deliver(:paid, payload(rental, id: 5003)) }
@@ -233,16 +251,18 @@ RSpec.describe "Locker payment records", type: :request do
 
     def checked = LockerRental::PaymentRecordsCheck.run(adapter: check_adapter)
 
-    it "never fails the checkout link: the draft is stored and served, and the check reports the missing record" do
+    it "a new draft whose id another checkout already records is reported and not served, and nothing is stored" do
       fake = stub_shopify_admin!.tap { |f| f.draft_id = gid }
       PaymentCheckout.create!(reference: create(:locker_rental), provider: "shopify", provider_id: gid, status: :void)
       rental = create(:locker_rental, :await_payment)
+      errors = []
+      allow(Rails.error).to receive(:report) { |error, **| errors << error }
 
-      expect(rental.checkout_link).to eq(fake.invoice_url)
-      expect(rental.reload.shopify_draft_order_id).to eq(gid)
+      expect(rental.checkout_link).to be_nil
+      expect(errors).to contain_exactly(be_a(ActiveRecord::RecordNotUnique))
+      expect(rental.reload.shopify_draft_order_id).to be_nil
       expect(fake.deleted_ids).to be_empty
-      expect(checkouts(rental)).to be_empty
-      expect(checked).to eq("checkout_missing" => [rental.id])
+      expect(checkouts(rental)).to eq([["shopify", nil, "open", rental.owned_until.to_date]])
     end
 
     it "never fails a payment: it links an existing entry, and the check reports a different amount" do
@@ -255,6 +275,15 @@ RSpec.describe "Locker payment records", type: :request do
       expect(ledger(payment)).to eq([["shopify", "payment", BigDecimal("1.00"), nil]])
       expect(payment.ledger_entry_id).to eq(PaymentLedgerEntry.find_by!(provider_ref: "5010").id)
       expect(checked).to eq("ledger_entry_differs" => [payment.id])
+    end
+
+    it "a repeat delivery of an order whose payment has no ledger entry writes no entry" do
+      rental = with_draft(create(:locker_rental, :await_payment))
+      create(:locker_payment, locker_rental: rental, shopify_order_id: "5014") # recorded before the ledger existed
+
+      deliver(:paid, payload(rental, id: 5014))
+      expect(PaymentLedgerEntry.where(provider_ref: "5014")).to be_empty
+      expect(LockerPayment.where(shopify_order_id: "5014").count).to eq(1)
     end
 
     it "never fails a payment or its refund when the entry belongs to another payment: the check reports it" do
@@ -273,7 +302,7 @@ RSpec.describe "Locker payment records", type: :request do
     end
   end
 
-  it "opens no checkout for a draft that is not kept (the rental was cancelled while Shopify made it)" do
+  it "voids the claim of a draft that is not kept (the rental was cancelled while Shopify made it)" do
     fake = stub_shopify_admin!.tap { |f| f.draft_id = gid }
     rental = create(:locker_rental, :await_payment)
     fake.on_query = lambda do |query, _|
@@ -281,7 +310,7 @@ RSpec.describe "Locker payment records", type: :request do
     end
     expect(rental.checkout_link).to be_nil
     expect(fake.deleted_ids).to eq([gid])
-    expect(checkouts(rental)).to be_empty
+    expect(checkouts(rental)).to eq([["shopify", nil, "void", rental.owned_until.to_date]])
   end
 
   it "pays the checkout of the draft the row stores now, even through a stale rental instance" do

@@ -119,19 +119,7 @@ class LockerRentalsController < SessionsController
       return
     end
 
-    # Locked and reloaded first, so renewable? and the save see the current row.
-    outcome = nil
-    LockerRental.transaction do
-      @locker_rental.lock!
-      if @locker_rental.renewable?
-        saved = @locker_rental.extend_until(end_of_this_semester, state: :await_payment, decided_by: current_user)
-        outcome = saved ? :saved : :invalid
-      else
-        outcome = :not_renewable
-      end
-    end
-
-    case outcome
+    case renew_under_lock
     when :not_renewable
       redirect_to @locker_rental, alert: t('errors.lockers.not_renewable')
     when :saved
@@ -264,10 +252,24 @@ class LockerRentalsController < SessionsController
     @locker_product_info = LockerOption.locker_product_info || { variants: {} }
   end
 
+  # Locked and reloaded, then the renewal voids last term's open checkout in the same transaction.
+  # Returns :saved, :invalid or :not_renewable.
+  def renew_under_lock
+    LockerRental.transaction do
+      @locker_rental.lock!
+      next :not_renewable unless @locker_rental.renewable?
+      next :invalid unless @locker_rental.extend_until(end_of_this_semester, state: :await_payment, decided_by: current_user)
+
+      @locker_rental.void_last_term_checkout
+      :saved
+    end
+  end
+
   # Everything here runs on the row locked FOR UPDATE and reloaded: the guards, the save and the settlement of
   # held payments all see the CURRENT state (a webhook payment may have activated or the other staff member
-  # cancelled it since this page was rendered), and a concurrent webhook waits for the commit. Returns the
-  # outcome: :stale, :state_refused, :saved or :invalid.
+  # cancelled it since this page was rendered), and a concurrent webhook waits for the commit. A save that starts a
+  # new term voids last term's open checkout in the same transaction. Returns the outcome: :stale, :state_refused,
+  # :saved or :invalid.
   def update_under_lock
     LockerRental.transaction do
       @locker_rental.lock!
@@ -280,6 +282,7 @@ class LockerRentalsController < SessionsController
       next :state_refused if renter_state_change_refused?
       next :invalid unless @locker_rental.save
 
+      @locker_rental.void_last_term_checkout
       settle_held_payments_on_activation
       :saved
     end

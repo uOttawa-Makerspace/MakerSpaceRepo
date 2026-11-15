@@ -224,7 +224,10 @@ class LockerRental < ApplicationRecord
   # `malformed_amounts`: names of the figures the caller could not read (it stored nil for them); reported once,
   # after the commit, only for a new payment row (a replay reports nothing), like a held payment.
   # Serialised per rental by the row lock, so two simultaneous deliveries cannot both apply.
-  def record_payment(shopify_order_id:, paid_at: Time.current, amount: nil, currency: nil, order_total: nil, malformed_amounts: [])
+  # `draft_gid`: the draft the order was paid through, when the order names it; an applied payment pays that draft's
+  # checkout (#record_checkout_paid).
+  def record_payment(shopify_order_id:, paid_at: Time.current, amount: nil, currency: nil, order_total: nil, malformed_amounts: [],
+                     draft_gid: nil)
     payment = nil
     transaction do
       lock!
@@ -233,7 +236,7 @@ class LockerRental < ApplicationRecord
         shopify_order_id: shopify_order_id.to_s, paid_at: paid_at, amount: amount,
         currency: currency, order_total: order_total, status: status, hold_reason: reason
       )
-      payment = apply_new_payment(payment, status, paid_at, malformed_amounts) if payment
+      payment = apply_new_payment(payment, status, paid_at, malformed_amounts, draft_gid) if payment
     end
     payment
   end
@@ -365,7 +368,7 @@ class LockerRental < ApplicationRecord
   def sync_shopify_draft_order_after_commit
     return true unless saved_change_to_state?
 
-    new_term = await_payment? && %w[active cancelled].include?(state_before_last_save)
+    new_term = started_new_term?
     return true unless cancelled? || new_term
 
     gid = shopify_draft_order_id
@@ -377,6 +380,9 @@ class LockerRental < ApplicationRecord
     report_checkout_failure(e, 'delete_shopify_draft_order')
     false
   end
+
+  # Whether the last save sent the rental back to payment for a new term (from active, or from cancelled).
+  def started_new_term? = saved_change_to_state? && await_payment? && %w[active cancelled].include?(state_before_last_save)
 
   # Whether the stored draft `gid` is the invoice the database backs: the rental is waiting for payment and its stored
   # shopify_draft_order_id is this draft. Any other draft of a rental is one nobody can still be asked to pay.
@@ -443,12 +449,12 @@ class LockerRental < ApplicationRecord
     @attributes.write_from_database('shopify_draft_order_id', nil) if shopify_draft_order_id == gid
   end
 
-  # Fetch checkout link from shopify. Returns nil if API call fails or checkout is not possible now.
-  # A stored draft is just fetched. When there is none it is created on Shopify first, outside any lock (no HTTP
-  # call runs under the row lock), then stored only if, under the row lock, the rental is still awaiting payment
-  # and still has no draft: a cancel that committed meanwhile (its after-commit sync saw no id, so would never
-  # delete this draft) would otherwise leave a payable draft on a cancelled rental. A draft that is not kept is
-  # removed again, after the lock is released.
+  # The pay link of the rental's open checkout record (CheckoutRecords), fetched from Shopify. Returns nil if the API
+  # call fails or checkout is not possible now. The draft of the open checkout is just fetched. When there is none,
+  # the checkout is claimed in the database first, then its draft is made on Shopify outside any lock (no HTTP call
+  # runs under the row lock) and kept only if, under the row lock, the rental is still awaiting payment and the claim
+  # has no other draft: a cancel that committed meanwhile would otherwise leave a payable draft on a cancelled rental.
+  # A draft that is not kept is removed again, after the lock is released.
   def checkout_link
     @checkout_state = :unavailable
     return nil unless await_payment?
@@ -458,11 +464,12 @@ class LockerRental < ApplicationRecord
       return nil
     end
 
-    if shopify_draft_order_id.present?
-      link = served_link
+    gid = checkout_draft_id
+    if gid
+      link = served_link(gid)
       return link unless link == :gone
 
-      forget_gone_draft(shopify_draft_order_id)
+      forget_gone_draft(gid)
     end
     create_checkout_draft
   rescue StandardError => e
@@ -546,25 +553,24 @@ class LockerRental < ApplicationRecord
     ['applied', nil]
   end
 
-  # Inserts the payment row unless the order id is already recorded (ON CONFLICT DO NOTHING), with its entry in the
-  # payments ledger. The new LockerPayment, or nil for a duplicate.
+  # Inserts the payment row unless the order id is already recorded, with its entry in the payments ledger, in one
+  # statement (LockerPayment.insert_with_ledger_entry). The new LockerPayment, or nil for a duplicate.
   def insert_payment(**attributes)
-    inserted = LockerPayment.insert(
-      { locker_rental_id: id, **attributes, resolved_at: (Time.current if attributes[:status] == 'applied') },
-      unique_by: :shopify_order_id, returning: %w[id]
+    payment_id = LockerPayment.insert_with_ledger_entry(
+      locker_rental_id: id, **attributes, resolved_at: (Time.current if attributes[:status] == 'applied')
     )
-    LockerPayment.find(inserted.rows.first.first).tap(&:record_in_ledger) if inserted.rows.any?
+    LockerPayment.find(payment_id) if payment_id
   end
 
   # What a NEW payment row does to the rental, in #record_payment's transaction. Returns the payment, which is
   # held as not_activatable when the rental could not be activated.
-  def apply_new_payment(payment, status, paid_at, malformed_amounts)
+  def apply_new_payment(payment, status, paid_at, malformed_amounts, draft_gid)
     payment = activate_and_notify(payment) if status == 'applied' && !active?
     # Display-only "latest payment", moved only by an APPLIED payment: a held one (cancelled rental,
     # ineligible renter) must not show the renter "Paid on".
     if payment.applied?
       stamp_paid_at(paid_at)
-      record_checkout_paid
+      record_checkout_paid(draft_gid)
     end
     report_held_payment(payment) if payment.held?
     report_malformed_amounts(payment, malformed_amounts)
@@ -647,15 +653,15 @@ class LockerRental < ApplicationRecord
     end
   end
 
-  # THE place a link is served from: fetch the stored draft, classify it, serve it only when payable. The url, nil
-  # (no link; #checkout_state says why) or :gone (Shopify no longer has it).
+  # THE place a link is served from: fetch the open checkout's draft `gid`, classify it, serve it only when payable.
+  # The url, nil (no link; #checkout_state says why) or :gone (Shopify no longer has it).
   #   payable (OPEN, INVOICE_SENT)  the invoice url
   #   COMPLETED                     the payment was received and is being processed (webhook lag, or a held payment):
   #                                 no link, never a second invoice, never deleted
   #   any other status              no link; reported once per draft per day so staff can clear it
-  def served_link
-    state, draft = fetch_shopify_draft_order_result
-    return nil if state == :error # Shopify did not answer: no link now, the stored id is untouched
+  def served_link(gid)
+    state, draft = fetch_shopify_draft_order_result(gid)
+    return nil if state == :error # Shopify did not answer: no link now, the checkout is untouched
     return :gone unless state == :found
 
     if Payments::ShopifyAdapter::DraftStatus.payable?(draft)
@@ -666,30 +672,39 @@ class LockerRental < ApplicationRecord
       nil
     else
       @checkout_state = :unexpected_status
-      report_unknown_draft_status(draft)
+      report_unknown_draft_status(gid, draft)
       nil
     end
   end
 
-  def report_unknown_draft_status(draft)
-    first = Rails.cache.write("locker_unknown_draft_status:#{shopify_draft_order_id}", true, expires_in: 1.day, unless_exist: true)
-    return unless first
+  # Reported once per draft per day. The throttle only ever skips a report it has seen recorded: a cache that cannot
+  # be read or written reports every time. Two views at the same moment can both report (read, then write): a duplicate
+  # report is the price of never losing one when the cache fails.
+  def report_unknown_draft_status(gid, draft)
+    key = "locker_unknown_draft_status:#{gid}"
+    return if Rails.cache.read(key)
 
-    report_checkout_failure(
-      UnknownDraftStatus.new("draft order #{shopify_draft_order_id} has status #{draft['status'].inspect}"), 'serve_draft'
-    )
+    Rails.cache.write(key, true, expires_in: 1.day)
+    report_checkout_failure(UnknownDraftStatus.new("draft order #{gid} has status #{draft['status'].inspect}"), 'serve_draft')
   end
 
+  # The rental claims its open checkout (an earlier attempt's claim is reused), makes or finds the claim's draft, and
+  # serves the open checkout's draft: this one when kept, another request's when it drafted the claim first. Either way
+  # the link goes through the same fetch -> classify -> payable path.
   def create_checkout_draft
     ensure_can_use_draft_order
-    new_id, = create_remote_draft_order # Shopify, no lock
-    # Stored under the row lock with its open checkout record, in the same transaction.
-    keep_draft_order_id_unless_taken(new_id) { open_checkout_record(new_id) }
-    # Kept: this draft is the invoice. Lost the race: another request stored its draft, which is. Either way the link
-    # goes through the same fetch -> classify -> payable path.
-    return nil unless shopify_draft_order_id.present? && await_payment? && renter_eligible?(lock: false)
+    claim, retried = claim_checkout
+    draft_claimed_checkout(claim, retried) if claim && claim.provider_id.nil?
+    serve_open_checkout
+  end
 
-    link = served_link
+  # The open checkout's draft, served while the rental (read again under the lock) still awaits payment from an
+  # eligible renter.
+  def serve_open_checkout
+    gid = open_checkout_draft_id
+    return nil unless gid && await_payment? && renter_eligible?(lock: false)
+
+    link = served_link(gid)
     link == :gone ? nil : link
   end
 

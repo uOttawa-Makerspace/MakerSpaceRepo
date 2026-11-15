@@ -39,7 +39,14 @@ class ShopOrderApplier
       problems = []
       amounts = money(rental, problems)
       rental.record_payment(shopify_order_id: plan.id, paid_at: plan.event.paid_at, **amounts,
-                            currency: hook["currency"].presence&.to_s&.first(8), malformed_amounts: problems)
+                            currency: hook["currency"].presence&.to_s&.first(8), malformed_amounts: problems,
+                            draft_gid: paid_draft_gid)
+    end
+
+    # The draft order the order was paid through, when the payload names it (draft_order_id); nil otherwise.
+    def paid_draft_gid
+      id = hook["draft_order_id"].to_s
+      "gid://shopify/DraftOrder/#{id}" if id.match?(/\A\d+\z/)
     end
 
     def money(rental, problems)

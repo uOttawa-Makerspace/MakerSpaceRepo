@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_15_150000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1052,13 +1052,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_150000) do
     t.bigint "reference_id", null: false
     t.date "term"
     t.string "provider", null: false
-    t.string "provider_id", null: false
+    t.string "provider_id"
     t.string "status", default: "open", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["provider", "provider_id"], name: "index_payment_checkouts_on_provider_and_provider_id", unique: true
     t.index ["reference_type", "reference_id"], name: "index_payment_checkouts_on_reference"
     t.index ["reference_type", "reference_id"], name: "index_payment_checkouts_one_open_per_reference", unique: true, where: "((status)::text = 'open'::text)"
+    t.check_constraint "status::text <> 'paid'::text OR provider_id IS NOT NULL", name: "payment_checkouts_paid_has_provider_id_check"
     t.check_constraint "status::text = ANY (ARRAY['open'::character varying, 'paid'::character varying, 'void'::character varying]::text[])", name: "payment_checkouts_status_check"
   end
 

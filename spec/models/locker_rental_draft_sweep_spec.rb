@@ -31,12 +31,13 @@ RSpec.describe LockerRental::DraftSweep, type: :model do
   end
 
   describe "tagging" do
-    it "marks a draft created for a checkout with the operating tag and the rental's marker" do
+    it "marks a draft created for a checkout with the operating tag, the rental's marker and the checkout's tag" do
       rental = create(:locker_rental, :await_payment)
       rental.checkout_link
 
       create_call = shopify.calls.find { |c| c[:query].include?("draftOrderCreate") }
-      expect(create_call[:variables].dig(:input, :tags)).to eq([operating_tag, "locker_rental:#{rental.id}"])
+      checkout_tag = Payments::ShopifyAdapter.checkout_tag(PaymentCheckout.find_by!(reference: rental).id)
+      expect(create_call[:variables].dig(:input, :tags)).to eq([operating_tag, "locker_rental:#{rental.id}", checkout_tag])
       expect(LockerRental.marked_for?(create_call[:variables].dig(:input, :tags), rental.id)).to be(true)
       expect(LockerRental.marked_for?([operating_tag, "locker_rental:#{rental.id + 1}"], rental.id)).to be(false)
     end
