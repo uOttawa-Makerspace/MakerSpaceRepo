@@ -526,6 +526,7 @@ RSpec.describe "SAML IdP", type: :request do
         doc.remove_namespaces!
         expect(doc.at_xpath("//Assertion/Subject/NameID").text).to eq(signed_in.id.to_s)
         expect(c18_saml_attributes(c18_saml_response_xml)["groups"]).to eq(["Staff Readonly"])
+        expect(session[:user_id]).to eq(signed_in.id) # an AuthnRequest keeps the session
       end
 
       it "guest: no assertion; the login page is shown again without an error message" do
@@ -778,6 +779,15 @@ RSpec.describe "SAML IdP", type: :request do
             expect(logout_response["InResponseTo"]).to eq("_lo1")
             expect(logout_response["Destination"]).to eq("https://wiki-server.makerepo.com/saml/logout")
             expect(logout_response.at_xpath("Status/StatusCode")["Value"]).to eq("urn:oasis:names:tc:SAML:2.0:status:Success")
+          end
+
+          it "signs the user out of MakerRepo once the LogoutResponse is built" do
+            post_wiki_server_logout(:staff)
+            expect(c18_saml_response_xml).to include("LogoutResponse")
+            expect(session[:user_id]).to be_nil
+            get "/saml/auth", params: { SAMLRequest: authn_request }
+            expect(response.body).to include('value="sign_in"')
+            expect(response.body).not_to include('value="current_user"')
           end
         end
 

@@ -65,6 +65,7 @@ class SamlIdpController < ApplicationController
     else
       @saml_response = encode_response @current_user
       @saml_response_destination = saml_request.response_url
+      end_session_for_logout_request
       render template: "saml/saml_post"
     end
   end
@@ -75,6 +76,15 @@ class SamlIdpController < ApplicationController
   # carries it base64-encoded, as the gem already does for the authn response.
   def encode_logout_response(...)
     Base64.strict_encode64(super)
+  end
+
+  # Answering a LogoutRequest is single sign-out: the MakerRepo session ends as on
+  # the website's logout (session reset, the user's live connections dropped).
+  def end_session_for_logout_request
+    return unless saml_request.logout_request?
+
+    sign_out
+    @current_user.disconnect_cable!
   end
 
   # The user the submit button chose: signed in with the posted credentials, the
