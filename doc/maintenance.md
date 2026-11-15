@@ -72,6 +72,7 @@ SELECT user_id, space_id FROM staff_spaces GROUP BY 1,2 HAVING count(*)>1;
 SELECT count(*) FROM design_days;                -- at most 1
 SELECT count(*) FROM printer_sessions WHERE printer_id IS NULL;
 SELECT lower(name), array_agg(id) FROM spaces GROUP BY 1 HAVING count(*)>1;
+SELECT count(*) FROM space_manager_joins WHERE user_id IS NULL OR space_id IS NULL;
 SELECT job_task_quote_id, job_option_id FROM job_task_quote_options GROUP BY 1,2 HAVING count(*)>1;
 SELECT b.id FROM sub_space_bookings b WHERE (SELECT count(*) FROM sub_space_booking_statuses s WHERE s.sub_space_booking_id = b.id) <> 1 OR NOT EXISTS (SELECT 1 FROM sub_space_booking_statuses s WHERE s.id = b.sub_space_booking_status_id AND s.sub_space_booking_id = b.id AND s.booking_status_id IS NOT NULL);  -- bookings without exactly one status row linked both ways
 SELECT max(version) FROM schema_migrations;      -- expected to be 20261106200000; confirm before the merge
@@ -463,11 +464,12 @@ The release that adds `index_staff_spaces_on_user_id_and_space_id` (unique over 
 
 ## Space names and space managers
 
-The release with migration `20261115130000` needs no manual step; `web` runs it on boot.
+The release with migrations `20261115130000` and `20261115130100` needs no manual step; `web` runs them on boot.
 
 - `20261115130000` adds the unique index `index_spaces_on_lower_name` on `lower(name)`, so the database refuses two spaces whose names differ only in case (the model check is case-insensitive too). It first looks for names used more than once, ignoring case; if any exist it changes nothing and stops with a message listing each name and its space ids. Rename those spaces by hand, then deploy again. The table is small, so the index is built inside the migration's transaction. `down` drops the index and keeps every row.
+- `20261115130100` makes `space_manager_joins.user_id` and `space_id` NOT NULL (the model requires both associations). It first counts rows missing either; if any exist it changes nothing and stops with a message naming the counts. Decide with the maintainers what those rows stand for, then deploy again; the migration never changes or removes a row. `down` makes both columns nullable again and changes no row.
 
-The 2026-11-14 backup had 12 spaces with 12 distinct names ignoring case. Run the query in "Before merging to master" on production before the merge.
+The 2026-11-14 backup had 12 spaces with 12 distinct names ignoring case, and 13 space manager rows, none missing a user or a space. Run the two queries in "Before merging to master" on production before the merge.
 
 ## Kiosk sign-in log
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_15_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_15_130100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1464,9 +1464,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_130000) do
 
   create_table "space_manager_joins", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.bigint "space_id"
+    t.bigint "space_id", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id"
+    t.bigint "user_id", null: false
     t.index ["space_id"], name: "index_space_manager_joins_on_space_id"
     t.index ["user_id"], name: "index_space_manager_joins_on_user_id"
   end
