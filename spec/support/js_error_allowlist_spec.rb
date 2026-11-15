@@ -21,7 +21,6 @@ RSpec.describe JsErrorCheck do
       "js-error-color-422" => ["/admin/calendar", "http://127.0.0.1:3001/admin/calendar/update_color - Failed to load resource: the server responded with a status of 422 (Unprocessable Content)"],
       "js-error-booking-422" => ["/sub_space_booking", "http://127.0.0.1:3001/sub_space_booking - Failed to load resource: the server responded with a status of 422 (Unprocessable Content)"],
       "js-error-booking-delete-404" => ["/sub_space_booking", "http://127.0.0.1:3001/sub_space_booking#booking-tab - Failed to load resource: the server responded with a status of 404 (Not Found)"],
-      "js-error-booking-dates-row" => ["/sub_space_booking", "http://127.0.0.1:3001/vite-test/assets/sub_space_booking-Ab1_c.js 9:2 Uncaught TypeError: Cannot set properties of null (setting 'innerHTML')"],
       "js-error-12" => ["/lockers", "http://127.0.0.1:3001/vite-test/assets/bootstrap.esm-Ab1_c.js 4:7 Uncaught TypeError: Cannot convert undefined or null to object"],
       "js-error-13" => ["/lockers", "http://127.0.0.1:3001/lockers/5 - Failed to load resource: the server responded with a status of 422 (Unprocessable Content)"],
       "js-error-14" => ["/lockers", "http://127.0.0.1:3001/vite-test/assets/lockers-Ab1_c.js 8:3 Uncaught TypeError: Cannot read properties of null (reading 'displayName')"]
