@@ -92,8 +92,8 @@ const bindAddInputRow = oncePerElement((cloneButton) =>
   cloneButton.addEventListener("click", () => {
     let parent = cloneButton.parentElement;
     let clone = parent.cloneNode(true);
-    clone.removeAttribute("id");
     clone.children[0].value = null;
+    clone.children[1].removeAttribute("id");
     clone.children[1].className = "btn btn-danger";
     clone.children[1].children[0].className = "fa fa-trash";
     parent.parentElement.appendChild(clone);

@@ -225,6 +225,22 @@ describe("attachments", () => {
   );
 
   it.each(["new-file-input", "new-photo-input"])(
+    "%s stays the only element with its id, and keeps adding rows",
+    async (id) => {
+      await load(
+        `<div class="wrap"><div class="input-group"><input type="file"><button type="button" id="${id}" class="btn btn-success"><i class="fa fa-plus"></i></button></div></div>`,
+      );
+      const button = document.getElementById(id);
+      button.click();
+      button.click();
+
+      expect(document.querySelectorAll(".input-group")).toHaveLength(3);
+      expect([...document.querySelectorAll(`[id="${id}"]`)]).toEqual([button]);
+      expect(document.querySelectorAll(".wrap [id]")).toHaveLength(1);
+    },
+  );
+
+  it.each(["new-file-input", "new-photo-input"])(
     "%s rows a page restored from the cache comes back with can be removed",
     async (id) => {
       await load(
