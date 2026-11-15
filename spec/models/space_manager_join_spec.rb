@@ -19,8 +19,19 @@ RSpec.describe SpaceManagerJoin, type: :model do
     expect(SpaceManagerJoin.new(space: create(:space), user: admin)).to be_valid
   end
 
-  it "skips the admin check when no user is set" do
-    expect(SpaceManagerJoin.new(space: space)).to be_valid
+  it "requires a user and a space" do
+    join = SpaceManagerJoin.new
+    expect(join).not_to be_valid
+    expect(join.errors.details).to include(user: [{ error: :blank }], space: [{ error: :blank }])
+  end
+
+  it "has the database refuse a row without a user or a space" do
+    now = Time.current
+    admin = create(:user, :admin)
+    [{ user_id: nil, space_id: space.id }, { user_id: admin.id, space_id: nil }].each do |row|
+      insert = proc { SpaceManagerJoin.insert_all!([row.merge(created_at: now, updated_at: now)]) }
+      expect { SpaceManagerJoin.transaction(requires_new: true, &insert) }.to raise_error(ActiveRecord::NotNullViolation)
+    end
   end
 
   describe ".supervisor_options" do
@@ -32,14 +43,6 @@ RSpec.describe SpaceManagerJoin, type: :model do
       SpaceManagerJoin.create!(space: space, user: alice)
 
       expect(SpaceManagerJoin.supervisor_options).to eq([["alice Manager", alice.id], ["Bob Manager", bob.id]])
-    end
-
-    it "leaves out a manager row with no user" do
-      admin = create(:user, :admin, name: "Ada Manager")
-      SpaceManagerJoin.create!(space: space, user: admin)
-      SpaceManagerJoin.create!(space: create(:space))
-
-      expect(SpaceManagerJoin.supervisor_options).to eq([["Ada Manager", admin.id]])
     end
 
     it "orders managers whose names differ only in case by id" do

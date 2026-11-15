@@ -36,7 +36,7 @@ class Space < ApplicationRecord
 
   validates :name,
             presence: true,
-            uniqueness: true
+            uniqueness: { case_sensitive: false }
 
   # The records this space still has, as the associations that block its deletion. Empty when it can be deleted.
   def blocking_records
