@@ -2,16 +2,14 @@ import DataTable from "datatables.net-bs5";
 import { Modal } from "bootstrap";
 import { staffDashboardChannelConnection } from "../channels/staff_dashboard_channel";
 import { dataTableOptions } from "../src/page_locale.js";
+import { oncePerElement } from "../src/on_page.js";
 
 let notifyModal = null;
 let modalClicked = false;
 let autoHideTimer = null;
 
-function setupModal() {
-  const modalEl = document.getElementById("signinModal");
-  if (!modalEl) return null;
-
-  notifyModal = Modal.getOrCreateInstance(modalEl);
+// The popup's listeners, bound once per popup element however often it is shown.
+const bindModalListeners = oncePerElement((modalEl) => {
   const progressBar = document.getElementById("outer-progress-bar");
 
   modalEl.addEventListener("click", () => {
@@ -22,7 +20,14 @@ function setupModal() {
   modalEl.addEventListener("hidden.bs.modal", () => {
     if (progressBar) progressBar.classList.remove("fading-progress-bar");
   });
+});
 
+function setupModal() {
+  const modalEl = document.getElementById("signinModal");
+  if (!modalEl) return null;
+
+  notifyModal = Modal.getOrCreateInstance(modalEl);
+  bindModalListeners(modalEl);
   return notifyModal;
 }
 

@@ -192,6 +192,37 @@ describe("sign in notification", () => {
     expect(redraws).toEqual([$("signed-in-table")]);
   });
 
+  it("runs the popup's click handler once after several taps", async () => {
+    await load(MODAL);
+    const add = vi.spyOn($("outer-progress-bar").classList, "add");
+    tapIn();
+    tapIn();
+    tapIn();
+    $("signinModal").click();
+    expect(
+      add.mock.calls.filter(([name]) => name === "fading-progress-bar"),
+    ).toHaveLength(1);
+  });
+
+  it("runs the popup's close handler once after several taps", async () => {
+    await load(MODAL);
+    const remove = vi.spyOn($("outer-progress-bar").classList, "remove");
+    tapIn();
+    tapIn();
+    tapIn();
+    $("signinModal").dispatchEvent(new Event("hidden.bs.modal"));
+    expect(remove).toHaveBeenCalledTimes(1);
+  });
+
+  it("binds the popup of a new page again", async () => {
+    await load(MODAL);
+    await load(MODAL);
+    const add = vi.spyOn($("outer-progress-bar").classList, "add");
+    tapIn();
+    $("signinModal").click();
+    expect(add).toHaveBeenCalledWith("fading-progress-bar");
+  });
+
   it("does nothing when the page has no sign in dialog", async () => {
     await load("<p>x</p>");
     tapIn();
