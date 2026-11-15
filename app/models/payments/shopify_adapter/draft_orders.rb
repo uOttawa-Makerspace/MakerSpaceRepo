@@ -9,6 +9,10 @@ module Payments
       # Shopify did not answer a draft check that must be answered (#fetch_or_raise).
       class Unanswered < StandardError; end
 
+      # Every failure a draft call can raise from Shopify or the network: a caller that settles one record and goes on
+      # with the next rescues exactly these.
+      FAILURES = [Unanswered, *Metafields::NETWORK_ERRORS].freeze
+
       GET_QUERY = <<~QUERY
         query getDraftOrder($id: ID!) {
           draftOrder(id: $id) {
