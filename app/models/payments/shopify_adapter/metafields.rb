@@ -85,17 +85,25 @@ module Payments
       # Any other shape (no body, not a hash, no "data") is not an answer to the query: reading it as "no
       # metafields" would send a membership order down the no-reference path, so the lookup fails and is retried.
       def edges(data)
-        raise FAILED, "metafield lookup failed (unexpected answer)" unless data.is_a?(Hash) && data.key?("node")
-
-        node = data["node"]
+        node = owner_node(data)
         return [] if node.nil? || (node.is_a?(Hash) && !node.key?("metafields"))
 
+        edge_list(node).map { |edge| edge.is_a?(Hash) ? edge["node"] : nil }.compact
+      end
+
+      def owner_node(data)
+        raise FAILED, "metafield lookup failed (unexpected answer)" unless data.is_a?(Hash) && data.key?("node")
+
+        data["node"]
+      end
+
+      def edge_list(node)
         edges = node.is_a?(Hash) && node["metafields"].is_a?(Hash) ? node["metafields"]["edges"] : nil
         raise FAILED, "metafield lookup failed (unexpected answer)" unless edges.is_a?(Array)
 
-        edges.map { |edge| edge.is_a?(Hash) ? edge["node"] : nil }.compact
+        edges
       end
-      private_class_method :ask, :refuse_errors!, :edges
+      private_class_method :ask, :refuse_errors!, :edges, :owner_node, :edge_list
     end
   end
 end
