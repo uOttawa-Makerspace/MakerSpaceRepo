@@ -13,6 +13,13 @@ const TypedController = /** @type {new () => Controller<HTMLElement> & {
   bookingToastOutlet: { text(name: string): string, show(titleName: string, text: string): void },
 }} */ (/** @type {unknown} */ (Controller));
 
+// The day the address names (start=2026-03-02), or today when it names none
+// or no real day.
+function firstDay(params) {
+  const day = new Date(params.get("start") ?? NaN);
+  return isNaN(day.getTime()) ? new Date() : day;
+}
+
 // A week of a room's bookings (the room and the first day come from the
 // address). Selecting a range or pressing Book opens the booking modal for a
 // new booking, and clicking a booking opens it there.
@@ -52,9 +59,7 @@ export default class extends TypedController {
   calendarOptions(params) {
     const modal = () => this.bookingModalOutlet;
     return {
-      initialDate: params.has("start")
-        ? new Date(params.get("start"))
-        : new Date(),
+      initialDate: firstDay(params),
       height: "auto",
       headerToolbar: {
         left: "prev,today,next",

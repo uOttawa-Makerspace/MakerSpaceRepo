@@ -203,6 +203,24 @@ describe("calendar page", () => {
     },
   );
 
+  it.each(["start=soon", "start="])(
+    "opens on today for a start that is not a day: %s",
+    async (start) => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-15T12:00:00Z"));
+      try {
+        const cal = await boot(
+          `http://localhost/sub_space_booking?room=4&${start}`,
+        );
+        expect(cal.options.initialDate.toISOString()).toBe(
+          "2026-11-15T12:00:00.000Z",
+        );
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
   it("says when the bookings could not be loaded", async () => {
     const cal = await boot();
     await cal.options.eventSources[0].failure(new Error("feed down"));
