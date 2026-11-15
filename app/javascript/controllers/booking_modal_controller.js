@@ -60,6 +60,20 @@ export default class extends TypedController {
     );
   }
 
+  disconnect() {
+    this.pickers().forEach((picker) => picker.destroy());
+  }
+
+  pickers() {
+    return [this.startPicker, this.endPicker, this.recurringEndPicker];
+  }
+
+  // The callback, unless the modal has left the page by the time it runs
+  // (the user went on before the server answered).
+  whileOnPage(callback) {
+    return (value) => this.element.isConnected && callback(value);
+  }
+
   get toast() {
     return this.bookingToastOutlet;
   }
@@ -96,11 +110,13 @@ export default class extends TypedController {
     this.titleTarget.innerText = "Update Booking";
     this.idTarget.value = event.id.split("_")[1];
     this.fetchBooking(this.idTarget.value)
-      .then((booking) => this.fill(booking))
-      .catch((error) =>
-        this.toast.show(
-          "unavailableTitle",
-          failureText(error, this.toast.text("unavailable")),
+      .then(this.whileOnPage((booking) => this.fill(booking)))
+      .catch(
+        this.whileOnPage((error) =>
+          this.toast.show(
+            "unavailableTitle",
+            failureText(error, this.toast.text("unavailable")),
+          ),
         ),
       );
   }
@@ -238,8 +254,12 @@ export default class extends TypedController {
       body: JSON.stringify(data),
     });
     requestResult(request)
-      .then((result) => this.showAnswer(result, button, successText))
-      .catch((error) => this.showFailure(button, failureText(error)));
+      .then(this.whileOnPage((r) => this.showAnswer(r, button, successText)))
+      .catch(
+        this.whileOnPage((error) =>
+          this.showFailure(button, failureText(error)),
+        ),
+      );
   }
 
   showAnswer(result, button, successText) {

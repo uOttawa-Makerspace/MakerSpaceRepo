@@ -16,6 +16,7 @@ vi.mock("@fullcalendar/core", () => ({
       calendarOptions = options;
     }
     render() {}
+    destroy() {}
     refetchEvents() {}
   },
 }));
@@ -70,6 +71,7 @@ Element.prototype.flatpickr = () => ({
   selectedDates: [],
   input: { value: "" },
   altInput: document.createElement("input"),
+  destroy() {},
   setDate() {},
 });
 await import("../../../app/javascript/entrypoints/sub_space_booking.js");

@@ -29,6 +29,11 @@ export default class extends TypedController {
     this.calendar.render();
   }
 
+  disconnect() {
+    this.calendar?.destroy();
+    this.calendar = null;
+  }
+
   // Draws the room's bookings again, after the modal saved one.
   refetch() {
     this.calendar.refetchEvents();
@@ -38,6 +43,7 @@ export default class extends TypedController {
   /** @param {any} error */
   async showFeedError(error) {
     const body = await error?.response?.json?.().catch(() => null);
+    if (!this.element.isConnected) return; // the user went on to another page
     const toast = this.bookingToastOutlet;
     toast.show("failedTitle", serverError(body, toast.text("feed")));
   }

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { textsAttribute } from "./calendar_texts_fixture.js";
 import {
@@ -23,6 +23,9 @@ vi.mock("@fullcalendar/core", () => ({
     }
     render() {
       this.rendered = true;
+    }
+    destroy() {
+      this.destroyed = true;
     }
   },
 }));
@@ -53,6 +56,7 @@ HTMLElement.prototype.flatpickr = function () {
     selectedDates: [],
     input: { value: "" },
     altInput: document.createElement("input"),
+    destroy: vi.fn(),
     setDate: vi.fn(function (value) {
       this.selectedDates = value ? [new Date(value)] : [];
     }),
@@ -739,5 +743,80 @@ describe("admin lists", () => {
     expect($("supervisor-select").style.display).toBe("block");
     $("student").click();
     expect($("supervisor-select").style.display).toBe("none");
+  });
+});
+
+describe("leaving the page", () => {
+  const leave = async () => {
+    document.body.innerHTML = "<p>elsewhere</p>";
+    await settle();
+  };
+  const unhandled = [];
+  const record = (reason) => unhandled.push(reason);
+  beforeEach(() => {
+    unhandled.length = 0;
+    process.on("unhandledRejection", record);
+  });
+  afterEach(() => process.off("unhandledRejection", record));
+
+  it("destroys the calendar and the modal's pickers", async () => {
+    const cal = await boot();
+    const made = Object.values(pickers);
+    await leave();
+    expect(cal.destroyed).toBe(true);
+    expect(made).toHaveLength(3);
+    made.forEach((picker) => expect(picker.destroy).toHaveBeenCalledTimes(1));
+  });
+
+  it("ignores a save answer that comes after the page was left", async () => {
+    const cal = await boot();
+    let answer;
+    stubFetch(() => new Promise((resolve) => (answer = resolve)));
+    cal.options.customButtons.book.click();
+    pickDates("2026-11-02T10:00", "2026-11-02T11:00");
+    $("bookSave").click();
+    await flush();
+    await leave();
+    answer(reply("{}"));
+    await flush();
+    await flush();
+    expect(cal.refetched).toBe(0);
+    expect(unhandled).toEqual([]);
+  });
+
+  it("does not open a booking whose details come after the page was left", async () => {
+    const cal = await boot();
+    let answer;
+    stubFetch(() => new Promise((resolve) => (answer = resolve)));
+    cal.options.eventClick({
+      event: { id: "booking_12", extendedProps: { viewable: true } },
+    });
+    await flush();
+    await leave();
+    answer(
+      reply(
+        JSON.stringify({
+          name: "Late",
+          description: "",
+          start_time: "2026-11-02T10:00:00-05:00",
+          end_time: "2026-11-02T11:00:00-05:00",
+          blocking: false,
+          recurring_booking_id: null,
+          sub_space_id: "4",
+        }),
+      ),
+    );
+    await flush();
+    await flush();
+    expect(document.getElementById("book-modal-backdrop")).toBeNull();
+    expect(unhandled).toEqual([]);
+  });
+
+  it("ignores a feed failure that comes after the page was left", async () => {
+    const cal = await boot();
+    await leave();
+    await expect(
+      cal.options.eventSources[0].failure(new Error("feed down")),
+    ).resolves.toBeUndefined();
   });
 });

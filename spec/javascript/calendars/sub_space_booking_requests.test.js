@@ -21,6 +21,7 @@ vi.mock("@fullcalendar/core", () => ({
       this.refetched++;
     }
     render() {}
+    destroy() {}
   },
 }));
 vi.mock("@fullcalendar/interaction", () => ({
@@ -56,6 +57,7 @@ HTMLElement.prototype.flatpickr = function (options) {
     selectedDates: [],
     input: { value: "" },
     altInput: document.createElement("input"),
+    destroy() {},
     setDate: vi.fn(function (value) {
       this.selectedDates = value ? [new Date(value)] : [];
     }),
