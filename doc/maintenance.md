@@ -292,6 +292,17 @@ Verify afterwards (read only): `SELECT source, count(*) FROM uoeng_profiles GROU
 
 Reversible: rolling it back drops the table and every uOEng profile record; reports then show the users' own faculty, and the next check after a redeploy fetches the answers again.
 
+### Deploy step: payments checkout records and ledger
+
+The release that adds `payment_checkouts`, `payment_ledger_entries` and two columns on `locker_payments` (migrations `20261115140000` to `20261115140400`) needs no manual step; `web` runs them on boot. Nothing in the app reads or writes these tables yet; locker payments still run on `locker_rentals.shopify_draft_order_id` and `locker_payments`, which are not changed.
+
+- `payment_ledger_entries` is append-only: a trigger refuses every UPDATE, DELETE and TRUNCATE on it. A reversal entry must point at a payment entry with the same provider and provider reference (a composite foreign key). `db/schema.rb` carries the trigger and its function as SQL, so a database built from the schema has them too.
+- The migrations copy, never move. A rental awaiting payment with a draft id becomes an `open` checkout; an active rental with a draft id and a payment time becomes a `paid` one; an active rental with a draft id but no payment time is skipped (its draft is checked at Shopify later). Every locker payment gets a `payment` ledger entry and points at it (`ledger_entry_id`); a refunded one also gets a `reversal` entry. The rows written are listed in `payment_checkout_backfills` and `payment_ledger_backfills`. On the 2026-11-14 backup this wrote 1 open and 4 paid checkouts, skipped 4 rentals, and wrote no ledger entries (no locker payments yet).
+
+Verify afterwards (read only): `SELECT status, count(*) FROM payment_checkouts GROUP BY 1;` matches the migration log line; `SELECT count(*) FROM payment_ledger_entries;` equals the number of locker payments plus the refunded ones; `SELECT tgname FROM pg_trigger WHERE tgrelid = 'payment_ledger_entries'::regclass AND NOT tgisinternal;` lists `payment_ledger_entries_no_change` and `payment_ledger_entries_no_truncate`.
+
+Reversible: rolling back removes exactly the recorded checkouts and ledger entries and clears the links, then drops the new columns, the tables, the trigger and its function. It refuses, changing nothing, if a recorded row changed since, and the table and column migrations refuse while anything not written by the copy is left in them (export and settle those rows first).
+
 ### Failed and overdue job alerts
 
 The `job_alerts` task (`JobAlertJob`, every 5 minutes, production and staging) mails the maintenance address (the one set on the printer issues page, `Setting.maintenance_email`) when a background job needs attention. It reports, once each:
