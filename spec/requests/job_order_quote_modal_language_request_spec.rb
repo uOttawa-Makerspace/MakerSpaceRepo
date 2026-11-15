@@ -3,7 +3,8 @@
 require "rails_helper"
 
 # The quote modal on a job order's page (staff only) follows the staff member's language. Names entered by staff
-# (job types, services, units, options) stay as entered; a service without a unit falls back to the word "unit".
+# (job types, services, units, options) stay as entered; a service without a unit, or with a blank one, falls back to
+# the word "unit".
 RSpec.describe "Job order quote modal in English and French", type: :request do
   let(:owner) { create(:user, :regular_user) }
   let(:staff) { create(:user, :staff) }
@@ -55,5 +56,26 @@ RSpec.describe "Job order quote modal in English and French", type: :request do
                           "Commentaires pour les membres du personnel"])
     expect(placeholders).to eq(["valeur", "Description", "0.00", "Je devrai ajouter des supports", "Utiliser la Raise 3D"])
     expect(other_text).to eq(["Articles supplémentaires", "Nouvel article", "Total : 0,00 $ CA", "Approuver"])
+  end
+
+  context "with a service whose unit is blank" do
+    before do
+      blank = create(:job_service, job_service_group: JobServiceGroup.find_by!(name: "Materials"), name: "Wood", unit: "")
+      order.job_tasks.create!(title: "Cut C", job_type: job_type, job_service: blank)
+    end
+
+    it "names the unit in English" do
+      get job_order_path(order)
+
+      expect([labels.count("Number of unit"), labels.count("Price per unit (CAD)")]).to eq([2, 2])
+      expect(labels).not_to include("Number of", "Price per (CAD)")
+    end
+
+    it "names the unit in French" do
+      get job_order_path(order, locale: "fr")
+
+      expect([labels.count("Quantité (unité)"), labels.count("Prix par unité ($ CA)")]).to eq([2, 2])
+      expect(labels).not_to include("Quantité ()", "Prix par ($ CA)")
+    end
   end
 end
