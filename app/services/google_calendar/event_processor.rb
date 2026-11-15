@@ -5,7 +5,8 @@ module GoogleCalendar
     ALL_DAY_TIME_ZONE = "America/Toronto"
 
     def self.process(event)
-      Rails.logger.info "[GCAL] Processing event #{event.id} - #{event.summary}"
+      # The id only: a title can name a person.
+      Rails.logger.info "[GCAL] Processing event #{event.id}"
 
       location = event.location.to_s.strip
       return unless VALID_LOCATIONS.include?(location)

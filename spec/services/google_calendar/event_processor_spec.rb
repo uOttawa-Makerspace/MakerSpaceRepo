@@ -256,4 +256,20 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
       expect(booking_for("evt-1")).to be_present
     end
   end
+  describe "logging" do
+    it "logs the event id and never the event title" do
+      io = StringIO.new
+      logger = ActiveSupport::Logger.new(io, level: :info) # the level production logs at
+      Rails.logger.broadcast_to(logger)
+      begin
+        described_class.process(c18_gcal_event(id: "evt-logged", summary: "Visit with Jane Example"))
+      ensure
+        Rails.logger.stop_broadcasting_to(logger)
+      end
+
+      expect(booking_for("evt-logged")).to be_present
+      expect(io.string).to include("evt-logged")
+      expect(io.string).not_to include("Jane Example")
+    end
+  end
 end
