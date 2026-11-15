@@ -1,6 +1,7 @@
 import TomSelect from "tom-select";
 import { tomSelectOptions } from "../src/page_locale.js";
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
+import { addInputRow } from "../src/input_rows.js";
 import { onEveryPageLoad } from "../src/on_page.js";
 import { pageTable } from "../src/page_table.js";
 document.addEventListener("turbo:load", () => {
@@ -68,37 +69,20 @@ document.addEventListener("turbo:load", () => {
       el.parentElement.remove();
     });
   });
-  if (document.getElementById("new-file-input")) {
-    let cloneButton = document.getElementById("new-file-input");
-    cloneButton.addEventListener("click", () => {
-      let parent = cloneButton.parentElement;
-      let clone = parent.cloneNode(true);
-      clone.removeAttribute("id");
-      clone.children[0].value = null;
-      clone.children[1].className = "btn btn-danger";
-      clone.children[1].children[0].className = "fa fa-trash";
-      clone.children[1].addEventListener("click", (el) => {
-        el.target.closest(".input-group").remove();
-      });
-      parent.parentElement.appendChild(clone);
-    });
-  }
-  if (document.getElementById("new-photo-input")) {
-    let cloneButton = document.getElementById("new-photo-input");
-    cloneButton.addEventListener("click", () => {
-      let parent = cloneButton.parentElement;
-      let clone = parent.cloneNode(true);
-      clone.removeAttribute("id");
-      clone.children[0].value = null;
-      clone.children[1].className = "btn btn-danger";
-      clone.children[1].children[0].className = "fa fa-trash";
-      clone.children[1].addEventListener("click", (el) => {
-        el.target.closest(".input-group").remove();
-      });
-      parent.parentElement.appendChild(clone);
-    });
-  }
+  bindAddInputRow(document.getElementById("new-file-input"));
+  bindAddInputRow(document.getElementById("new-photo-input"));
 });
+
+// The add button of a file or photo input: each click adds another input row
+// with a button that removes it.
+function bindAddInputRow(addButton) {
+  addButton?.addEventListener("click", () => {
+    const remove = addInputRow(addButton);
+    remove.addEventListener("click", () => {
+      remove.closest(".input-group").remove();
+    });
+  });
+}
 
 document.addEventListener("turbo:load", () => {
   [...document.getElementsByClassName("tr-delete-button")].forEach((btn) =>
