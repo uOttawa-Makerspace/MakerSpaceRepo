@@ -736,6 +736,40 @@ RSpec.describe "SAML IdP", type: :request do
             %(<saml:NameID>#{name_id}</saml:NameID>#{inner}</samlp:LogoutRequest>)
         end
 
+        # A staff_only SP's LogoutRequest gets the same treatment as before the refusal
+        # moved into the controller: "use this account" shows a non-staff user the
+        # notice page and no response; "logout" signs them out to the login page.
+        context "a signed LogoutRequest from the staff_only wiki server" do
+          def post_wiki_server_logout(role, submit: "current_user")
+            c18_sign_in(role)
+            unsigned = logout_xml("", issuer: "wiki-server.makerepo.com")
+            request = saml_deflate(logout_xml(signature_for(unsigned, "_lo1"), issuer: "wiki-server.makerepo.com"))
+            original = SamlIdp.config.service_provider.finder
+            SamlIdp.config.service_provider.finder = lambda do |id|
+              original.call(id)&.merge(cert: cert_b64, fingerprint: "aa:bb",
+                                       assertion_consumer_logout_service_url: "https://wiki-server.makerepo.com/saml/logout")
+            end
+            post "/saml/auth", params: { SAMLRequest: request, submit: submit }
+          ensure
+            SamlIdp.config.service_provider.finder = original
+          end
+
+          it "shows a non-staff user the notice page with no SAMLResponse" do
+            post_wiki_server_logout(:regular)
+            expect(response).to have_http_status(:ok)
+            expect(response.body).to include("you are not habilitated to login to the wiki")
+            expect(response.body).not_to include("SAMLResponse")
+          end
+
+          it "signs a non-staff user out to the login page on submit=logout" do
+            post_wiki_server_logout(:regular, submit: "logout")
+            expect(response).to have_http_status(:ok)
+            expect(session[:user_id]).to be_nil
+            expect(response.body).to include('value="sign_in"')
+            expect(response.body).not_to include("habilitated", "SAMLResponse")
+          end
+        end
+
         it "accepts a LogoutRequest whose root element is signed (control for the wrapping examples)" do
           c18_with_signing_sps(cert_pem: cert_b64) do
             unsigned = logout_xml("")
