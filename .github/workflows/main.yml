@@ -33,6 +33,8 @@ jobs:
     # (because the 'push' event below is already running the test suite for it)
     if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || (github.head_ref != 'staging' && github.head_ref != 'master'))
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     timeout-minutes: 5
 
     steps:
@@ -57,12 +59,15 @@ jobs:
           name: parallel-runtime-base
           path: tmp/parallel_runtime_rspec.log
           if-no-files-found: error
+          overwrite: true
           retention-days: 1
 
   test:
     needs: test-plan
     name: test (shard ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     # Each shard runs a third of the spec files, one rspec process per core (GitHub runners have
     # 4 cores), plus ~3 min of setup (Ruby/Node caches, Vite build).
     timeout-minutes: 15
@@ -178,6 +183,8 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: parallel-runtime-shard-${{ matrix.shard }}
+          # a re-run of this job replaces the artifact of the failed attempt
+          overwrite: true
           path: tmp/parallel_runtime_rspec.log
           retention-days: 1
 
@@ -187,6 +194,8 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: coverage-shard-${{ matrix.shard }}
+          # a re-run of this job replaces the artifact of the failed attempt
+          overwrite: true
           path: coverage/.resultset.json
           include-hidden-files: true
           if-no-files-found: ignore
@@ -197,6 +206,8 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: axe-report-shard-${{ matrix.shard }}
+          # a re-run of this job replaces the artifact of the failed attempt
+          overwrite: true
           path: tmp/axe
           if-no-files-found: ignore
           retention-days: 7
@@ -206,6 +217,8 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: capybara-failures-shard-${{ matrix.shard }}
+          # a re-run of this job replaces the artifact of the failed attempt
+          overwrite: true
           path: tmp/capybara
           if-no-files-found: ignore
           retention-days: 7
@@ -219,6 +232,8 @@ jobs:
     needs: [test-plan, test]
     if: ${{ !cancelled() && (needs.test.result == 'success' || needs.test.result == 'failure') }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     timeout-minutes: 10
 
     steps:
@@ -273,6 +288,7 @@ jobs:
         with:
           name: coverage
           path: coverage
+          overwrite: true
           if-no-files-found: ignore
           retention-days: 7
 
