@@ -567,14 +567,14 @@ class UsersController < SessionsController
                   'Password changed successfully, an email will be sent to confirm.'
   end
 
-  # The refusal of a password reset before its strength check: a link that does not
-  # resolve, then a confirmation mismatch.
   # The answer of a throttled reset request (StaticPagesController#reset_password).
   def reset_password_throttled
     flash.now[:notice] = StaticPagesController::RESET_PASSWORD_NOTICE
     render 'static_pages/forgot_password'
   end
 
+  # The refusal of a password reset before its strength check: a link that does not
+  # resolve, then a confirmation mismatch.
   def reset_password_alert(user)
     return LINK_EXPIRED_ALERT if user.nil?
 
