@@ -16,18 +16,12 @@ class CustomWebhooksController < ApplicationController
   # it, so the webhook itself never calls Shopify and never touches memberships, CC Money or lockers, and answers
   # fast. A delivery of an order already stored inserts nothing and changes nothing: the stored order's own schedule
   # (ProcessedOrder.dispatch_due) decides when it is applied.
-  # An order with nothing to apply (plain merch, job orders) is answered and not stored.
+  # An order with nothing to apply (plain merch, job orders: no handler for its PaymentEvent) is answered and not
+  # stored.
   def orders_paid
-    hook = verified_body
-    # Job-order payment is recorded by staff, not automatically. Leave a trace so a
-    # paid job-order draft order can be reconciled by hand.
-    if JobOrder.draft_order_processable?(hook["tags"])
-      Rails.logger.info(
-        "[orders_paid] paid job-order draft order ignored (no automatic payment recording): " \
-        "order id=#{hook['id'].inspect} name=#{hook['name'].inspect} draft_order_id=#{hook['draft_order_id'].inspect}"
-      )
-    end
-    store_order(hook, "orders/paid")
+    order = Payments::ShopifyAdapter::Order.new(verified_body, topic: "orders/paid")
+    log_job_order(order.hook) if order.event.kinds.include?("job_order")
+    store_order(order)
   end
 
   # Cash locker payments. Staff fulfil a cash order in Shopify without marking it paid, so the fulfillment
@@ -40,7 +34,7 @@ class CustomWebhooksController < ApplicationController
     hook = verified_body
     return head :ok unless hook["financial_status"] == "pending"
 
-    store_order(hook, "orders/fulfilled")
+    store_order(Payments::ShopifyAdapter::Order.new(hook, topic: "orders/fulfilled"))
   end
 
   # Raised only to be reported (Rails.error.report).
@@ -91,25 +85,37 @@ class CustomWebhooksController < ApplicationController
     {}
   end
 
-  def store_order(hook, topic)
-    plan = ShopOrderApplier.plan_for(hook, topic: topic)
-    return head :ok unless plan.branches?
+  # Job-order payment is recorded by staff, not automatically. Leave a trace so a
+  # paid job-order draft order can be reconciled by hand.
+  def log_job_order(hook)
+    Rails.logger.info(
+      "[orders_paid] paid job-order draft order ignored (no automatic payment recording): " \
+      "order id=#{hook['id'].inspect} name=#{hook['name'].inspect} draft_order_id=#{hook['draft_order_id'].inspect}"
+    )
+  end
 
-    if plan.id.blank?
-      # Shopify always sends the id (the key of the stored order); reported with ids only, staff reconcile it.
-      Rails.error.report(
-        OrderWithoutId.new("#{topic} order without an order id; nothing stored"),
-        handled: true, severity: :error, context: { draft_order_id: hook["draft_order_id"] }.compact
-      )
-      return head :ok
-    end
+  # Stores the order when a handler applies its payment (ShopOrderApplier.handlers_for).
+  def store_order(order)
+    event = order.event
+    return head :ok if ShopOrderApplier.handlers_for(event).empty?
+    return report_order_without_id(order) if event.provider_ref.blank?
 
-    order, = ProcessedOrder.receive!(provider: ShopOrderApplier::PROVIDER, order_id: plan.id, topic: topic,
-                                     payload: hook, name: hook["name"])
+    hook = order.hook
+    stored, = ProcessedOrder.receive!(provider: event.provider, order_id: order.id, topic: order.topic,
+                                      payload: hook, name: hook["name"])
     # The row is durable and due now: it is handed to the queue here, and if that fails (answer 200 all the same)
     # the recurring dispatcher hands it out. A redelivery of an order that is already scheduled, applied or failed
     # hands out nothing.
-    ProcessedOrder.dispatch_due(id: order.id)
+    ProcessedOrder.dispatch_due(id: stored.id)
+    head :ok
+  end
+
+  # Shopify always sends the id (the key of the stored order); reported with ids only, staff reconcile it.
+  def report_order_without_id(order)
+    Rails.error.report(
+      OrderWithoutId.new("#{order.topic} order without an order id; nothing stored"),
+      handled: true, severity: :error, context: { draft_order_id: order.hook["draft_order_id"] }.compact
+    )
     head :ok
   end
 end

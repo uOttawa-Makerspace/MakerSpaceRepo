@@ -12,6 +12,9 @@ module Payments
   #   verify_webhook!(body:, headers:) -> nil               raises WebhookRejected unless the request is signed by Shopify
   #   parse_webhook(body:, headers:) -> PaymentEvent        raises WebhookRejected (see ShopifyAdapter::Webhook)
   #
+  # Order reads one Shopify order payload (as received, or as ProcessedOrder stored it) as a PaymentEvent without
+  # verifying it; parse_webhook verifies the request first.
+  #
   # The products that still keep their own draft id (lockers, memberships, job orders) call the Shopify-level parts
   # directly: DraftOrders (fetch, create, delete, list), DraftStatus (paid or payable), DraftRemoval (the delete-and-classify rule) and Metafields.
   #

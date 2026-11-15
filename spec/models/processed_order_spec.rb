@@ -20,6 +20,25 @@ RSpec.describe ProcessedOrder do
     expect([paid.provider_ref, fulfilled.provider_ref]).to eq(%w[5001 5001/fulfilled])
   end
 
+  describe "#payment_event" do
+    it "reads the stored payload as the webhook read it, keyed as the row" do
+      paid, = described_class.receive!(provider: "shopify", order_id: 5002, topic: "orders/paid", name: "#9",
+                                       payload: { "id" => 5002, "tags" => [LockerRental.draft_order_operating_tag],
+                                                  "processed_at" => "2026-11-01T10:00:00Z", "total_price" => "12.50" })
+      expect(paid.payment_event).to eq(Payments::PaymentEvent.new(
+        provider: "shopify", provider_ref: paid.provider_ref, references: [Payments::Reference.new(kind: "locker")],
+        amount: BigDecimal("12.5"), paid_at: Time.utc(2026, 11, 1, 10), cash: false
+      ))
+    end
+
+    it "dates an order that names no time when it was received, and a fulfilled one as cash" do
+      fulfilled, = store(5003, topic: "orders/fulfilled")
+      fulfilled.update!(created_at: Time.utc(2026, 10, 1, 8))
+      expect(fulfilled.payment_event)
+        .to have_attributes(provider_ref: "5003/fulfilled", paid_at: Time.utc(2026, 10, 1, 8), cash: true)
+    end
+  end
+
   it "rejects a status outside received, applied and failed (database check)" do
     order, = store
     expect { order.update_columns(status: "done") }.to raise_error(ActiveRecord::StatementInvalid, /processed_orders_status_check/)

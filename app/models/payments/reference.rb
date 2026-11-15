@@ -14,6 +14,7 @@ module Payments
     end
   end
 
-  # The product kinds a checkout is made for (each model's shopify_draft_order_key_name).
-  Reference::KINDS = %w[locker membership job_order].freeze
+  # The product kinds a payment can be for: the products a checkout is made for (each model's
+  # shopify_draft_order_key_name), and CC Money, bought in the shop.
+  Reference::KINDS = %w[locker membership job_order cc_money].freeze
 end

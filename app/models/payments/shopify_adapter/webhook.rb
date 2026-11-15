@@ -2,15 +2,13 @@
 
 module Payments
   class ShopifyAdapter
-    # Turns one Shopify order webhook into a PaymentEvent, or raises WebhookRejected.
+    # Turns one Shopify order webhook into a PaymentEvent (read by Order), or raises WebhookRejected.
     #
     # `body` is the raw request body and `headers` the request's headers (read by their Rack names, e.g.
     # HTTP_X_SHOPIFY_HMAC_SHA256). Verification (#verify!, what CustomWebhooksController runs before every webhook):
     # the X-Shopify-Hmac-Sha256 header must be the Base64 HMAC-SHA256 of the raw body under the secret or the old
-    # secret, the check the shopify_app gem's webhook verification made. The topic comes from the X-Shopify-Topic header. provider_ref is the key ProcessedOrder stores the order under
-    # (the order id; "<id>/fulfilled" for an orders/fulfilled delivery). The reference is read from the order's tags:
-    # the kind from this environment's operating tag, the record id from the marker tag (lockers and job orders;
-    # a membership's id is only in the draft's metafields, so it is nil here) and the checkout id from the checkout tag.
+    # secret, the check the shopify_app gem's webhook verification made. The topic comes from the X-Shopify-Topic
+    # header. A body that is not a JSON object, or an order without an id, is :malformed.
     class Webhook
       HMAC_HEADER = "HTTP_X_SHOPIFY_HMAC_SHA256"
       TOPIC_HEADER = "HTTP_X_SHOPIFY_TOPIC"
@@ -27,13 +25,10 @@ module Payments
         topic = @headers[TOPIC_HEADER]
         raise WebhookRejected, :unsupported_topic unless TOPICS.include?(topic)
 
-        hook = body
-        id = order_id(hook)
-        raise WebhookRejected, :malformed if id.blank?
+        event = Order.new(body, topic: topic).event
+        raise WebhookRejected, :malformed if event.provider_ref.blank?
 
-        PaymentEvent.new(provider: PROVIDER, provider_ref: ProcessedOrder.ref_for(id, topic),
-                         reference: reference(ShopifyAdapter.tag_list(hook["tags"])),
-                         amount: amount(hook["total_price"]), paid_at: paid_at(hook, topic))
+        event
       end
 
       # Raises WebhookRejected (:not_configured, :unsigned, :bad_signature) unless the body is signed by Shopify.
@@ -59,48 +54,6 @@ module Payments
         hook
       rescue JSON::ParserError
         raise WebhookRejected, :malformed
-      end
-
-      def reference(tags)
-        kind = Reference::KINDS.find { |k| tags.include?("#{ShopifyAdapter.target_tag}_#{k}") }
-        return nil unless kind
-
-        Reference.new(kind: kind, record_id: MARKERS[kind] && tagged_id(tags, "#{MARKERS[kind]}:"),
-                      checkout_id: tagged_id(tags, ShopifyAdapter.checkout_tag_prefix))
-      end
-
-      # The id after `prefix` in the tags: nil when no tag or two different ones carry it.
-      def tagged_id(tags, prefix)
-        pattern = /\A#{Regexp.escape(prefix)}(\d+)\z/
-        ids = tags.filter_map { |t| pattern.match(t)&.captures&.first&.to_i }.uniq
-        ids.first if ids.one?
-      end
-
-      # The Shopify order id: the payload's "id", else the numeric tail of its admin_graphql_api_id
-      # ("gid://shopify/Order/123"), so both spellings of one order are the same key.
-      def order_id(hook)
-        hook["id"].presence&.to_s || hook["admin_graphql_api_id"].presence&.to_s&.split("/")&.last
-      end
-
-      def parse_time(value)
-        Time.zone.parse(value.to_s) if value.present?
-      rescue ArgumentError
-        nil
-      end
-
-      def amount(value)
-        parsed = BigDecimal(value.to_s.strip, exception: false)
-        parsed.round(2) if parsed&.finite?
-      end
-
-      # orders/fulfilled: when the cash was taken (the latest fulfillment); orders/paid: the order's processed_at.
-      def paid_at(hook, topic)
-        time = if topic == "orders/fulfilled"
-                 Array(hook["fulfillments"]).filter_map { |f| parse_time(f["created_at"]) if f.is_a?(Hash) }.max
-               else
-                 parse_time(hook["processed_at"])
-               end
-        time || Time.current
       end
     end
   end
