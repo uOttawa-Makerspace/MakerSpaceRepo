@@ -102,6 +102,17 @@ RSpec.describe LockerRental::PaymentRecordsCheck, type: :model do
       expect(reported).to eq("open_checkout_not_stored" => [stray.id])
     end
 
+    it "is reported unclear when Shopify answers open but another rental's checkout holds that draft" do
+      allow(adapter).to receive(:checkout_status).with(gid) do
+        PaymentCheckout.create!(reference: create(:locker_rental), provider: "shopify", provider_id: gid, status: :void)
+        :open
+      end
+      rental
+      expect { run }.not_to raise_error
+      expect(reported).to eq("checkout_status_unclear" => [rental.id])
+      expect(PaymentCheckout.where(reference: rental)).to be_empty
+    end
+
     it "is reported, and not recorded, when Shopify's answer is unclear" do
       allow(adapter).to receive(:checkout_status).with(gid).and_return(:unknown)
       cancelled = create(:locker_rental, :active).tap { |r| r.update!(state: :cancelled) }
