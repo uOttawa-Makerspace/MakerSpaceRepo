@@ -1,5 +1,5 @@
 <div class="card shadow-sm border-0 bg-body-tertiary">
-    <h5 class="card-header bg-dark text-white mb-0">Staff Actions</h5>
+    <h5 class="card-header bg-dark text-white mb-0"><%= t('lockers.staff_actions.title') %></h5>
 
     <div class="card-body">
         <% unless @locker_rental.cancelled? %>
@@ -9,27 +9,26 @@
                         <div class="card h-100 border-success">
                             <div class="card-body d-flex flex-column">
                                 <h6 class="card-title text-success">
-                                    <i class="fa-solid fa-paper-plane"></i> Send to Checkout
+                                    <i class="fa-solid fa-paper-plane"></i> <%= t('lockers.staff_actions.send_to_checkout') %>
                                 </h6>
                                 <% if @locker_rental.requested_as_student? || @locker_rental.requested_as_staff? %>
                                     <p class="card-text text-muted flex-grow-1">
-                                        Locker was requested as student/staff and cannot be sent to checkout.
-                                        If this request is valid, assign it now. If not, cancel the request
+                                        <%= t('lockers.staff_actions.no_checkout') %>
                                     </p>
                                 <% else %>
                                     <p class="card-text text-muted flex-grow-1">
-                                        Notify the user by email that their locker is approved and ready for payment.
+                                        <%= t('lockers.staff_actions.checkout_intro') %>
                                     </p>
-                                    <%= form_with model: @locker_rental do |f| %>
-<%= hidden_field_tag :expected_state, @locker_rental.state, id: nil %>
-                                        <%= f.select :locker_id, @locker_select_options, { include_blank: 'Select a locker' }, { class: 'form-select mb-2', required: true } %>
-                                        <%= f.date_field :owned_until, value: @locker_rental.owned_until || end_of_this_semester, class: 'form-control mb-2', id: 'owned_until_checkout' %>
+                                    <%= form_with model: @locker_rental, data: { controller: 'locker-picker' } do |f| %>
+                                        <%= hidden_field_tag :expected_state, @locker_rental.state, id: nil %>
+                                        <%= f.select :locker_id, @locker_select_options, { include_blank: t('lockers.select_a_locker') }, { class: 'form-select mb-2', required: true, id: 'locker_rental_locker_id_checkout', data: { locker_picker_target: 'locker' }, aria: { label: t('common.names.locker') } } %>
+                                        <%= f.date_field :owned_until, value: @locker_rental.owned_until || end_of_this_semester, class: 'form-control mb-2', id: 'owned_until_checkout', aria: { label: t('common.names.owned_until') } %>
                                         <div class="form-check mb-2 text-start">
                                           <%= check_box_tag 'locker_rental[indefinite]', '1', false, class: 'form-check-input', id: 'indefinite_checkout', data: { indefinite_target: 'owned_until_checkout' } %>
-                                          <%= label_tag 'indefinite_checkout', 'Indefinite', class: 'form-check-label small' %>
+                                          <%= label_tag 'indefinite_checkout', t('lockers.indefinite'), class: 'form-check-label small' %>
                                         </div>
-                                        <%= f.button name: 'locker_rental[state]', value: 'await_payment', class: 'btn btn-success w-100 mt-auto', data: { confirm: 'Send payment notification to the user?' } do %>
-                                            <i class="fa-solid fa-paper-plane"></i> Send to Checkout
+                                        <%= f.button name: 'locker_rental[state]', value: 'await_payment', class: 'btn btn-success w-100 mt-auto', **confirmation_options(t('confirmations.locker_rentals.send_payment_notification')) do %>
+                                            <i class="fa-solid fa-paper-plane"></i> <%= t('lockers.staff_actions.send_to_checkout') %>
                                         <% end %>
                                     <% end %>
                                 <% end %>
@@ -42,21 +41,21 @@
                     <div class="card h-100 border-info">
                         <div class="card-body d-flex flex-column">
                             <h6 class="card-title text-info">
-                                <%= @locker_rental.active? ? 'Move Locker' : 'Assign Now' %>
+                                <%= @locker_rental.active? ? t('lockers.staff_actions.move') : t('lockers.staff_actions.assign_now') %>
                             </h6>
                             <p class="card-text text-muted flex-grow-1">
-                                Immediately assign or move a locker without requiring payment.
+                                <%= t('lockers.staff_actions.assign_intro') %>
                             </p>
-                            <%= form_with model: @locker_rental do |f| %>
-<%= hidden_field_tag :expected_state, @locker_rental.state, id: nil %>
-                                <%= f.select :locker_id, @locker_select_options, { include_blank: 'Select a locker' }, { class: 'form-select mb-2', required: true } %>
-                                <%= f.date_field :owned_until, value: @locker_rental.owned_until || end_of_this_semester, class: 'form-control mb-2', id: 'owned_until_assign' %>
+                            <%= form_with model: @locker_rental, data: { controller: 'locker-picker' } do |f| %>
+                                <%= hidden_field_tag :expected_state, @locker_rental.state, id: nil %>
+                                <%= f.select :locker_id, @locker_select_options, { include_blank: t('lockers.select_a_locker') }, { class: 'form-select mb-2', required: true, id: 'locker_rental_locker_id_assign', data: { locker_picker_target: 'locker' }, aria: { label: t('common.names.locker') } } %>
+                                <%= f.date_field :owned_until, value: @locker_rental.owned_until || end_of_this_semester, class: 'form-control mb-2', id: 'owned_until_assign', aria: { label: t('common.names.owned_until') } %>
                                 <div class="form-check mb-2 text-start">
-                                  <%= check_box_tag 'locker_rental[indefinite]', '1', @locker_rental.owned_until.nil?, class: 'form-check-input', id: 'indefinite_assign', data: { indefinite_target: 'owned_until_assign' } %>
-                                  <%= label_tag 'indefinite_assign', 'Indefinite', class: 'form-check-label small' %>
+                                  <%= check_box_tag 'locker_rental[indefinite]', '1', @locker_rental.indefinite?, class: 'form-check-input', id: 'indefinite_assign', data: { indefinite_target: 'owned_until_assign' } %>
+                                  <%= label_tag 'indefinite_assign', t('lockers.indefinite'), class: 'form-check-label small' %>
                                 </div>
-                                <%= f.button name: 'locker_rental[state]', value: 'active', class: 'btn btn-info w-100 mt-auto', data: { confirm: 'Assign this locker immediately?' } do %>
-                                    <%= @locker_rental.active? ? 'Move Locker' : 'Assign Now' %>
+                                <%= f.button name: 'locker_rental[state]', value: 'active', class: 'btn btn-info w-100 mt-auto', **confirmation_options(t('confirmations.locker_rentals.assign_now')) do %>
+                                    <%= @locker_rental.active? ? t('lockers.staff_actions.move') : t('lockers.staff_actions.assign_now') %>
                                 <% end %>
                             <% end %>
                         </div>
@@ -67,7 +66,7 @@
                     <div class="card h-100 border-danger">
                         <div class="card-body d-flex flex-column">
                             <h6 class="card-title text-danger">
-                                <i class="fa-solid fa-ban"></i> <%= @locker_rental.active? ? 'End Rental' : 'Cancel Request' %>
+                                <i class="fa-solid fa-ban"></i> <%= @locker_rental.active? ? t('lockers.staff_actions.end_rental') : t('lockers.staff_actions.cancel_request') %>
                             </h6>
                             <p class="card-text text-muted flex-grow-1">
                                 <% if @locker_rental.active? %>
@@ -77,12 +76,12 @@
                                 <% end %>
                             </p>
                             <%= form_with model: @locker_rental do |f| %>
-<%= hidden_field_tag :expected_state, @locker_rental.state, id: nil %>
-                                <%= f.button name: 'locker_rental[state]', value: 'cancelled', class: 'btn btn-outline-danger w-100 mt-auto', data: { confirm: 'Are you sure you want to cancel this locker?' } do %>
+                                <%= hidden_field_tag :expected_state, @locker_rental.state, id: nil %>
+                                <%= f.button name: 'locker_rental[state]', value: 'cancelled', class: 'btn btn-outline-danger w-100 mt-auto', **confirmation_options(t('confirmations.locker_rentals.cancel')) do %>
                                     <% if @locker_rental.active? %>
-                                        <i class="fa-solid fa-ban"></i> End Rental
+                                        <i class="fa-solid fa-ban"></i> <%= t('lockers.staff_actions.end_rental') %>
                                     <% else %>
-                                        <i class="fa-solid fa-xmark"></i> Cancel Request
+                                        <i class="fa-solid fa-xmark"></i> <%= t('lockers.staff_actions.cancel_request') %>
                                     <% end %>
                                 <% end %>
                             <% end %>
@@ -91,10 +90,9 @@
                 </div>
             </div>
         <% else %>
-            <div class="alert alert-secondary mb-0">This locker request has been finished and cannot be re-enabled.</div>
+            <div class="alert alert-secondary mb-0"><%= t('lockers.staff_actions.finished') %></div>
         <% end %>
     </div>
 </div>
 
-<%= vite_javascript_tag 'locker_rental_form', 'data-turbo-track': 'reload' %>
 <%= vite_javascript_tag 'locker_admin', 'data-turbo-track': 'reload' %>

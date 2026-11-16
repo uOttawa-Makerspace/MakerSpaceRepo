@@ -1,4 +1,4 @@
-<% provide :title, 'Request a locker' %>
+<% provide :title, t('lockers.request_a_locker') %>
 
 <h1 class="text-center pt-3"><%= t('lockers.new_request.header') %></h1>
 <hr class="w-50 mx-auto" />
@@ -6,9 +6,9 @@
 <table class="table table-hover">
     <thead>
         <tr>
-            <th scope="col">Available count</th>
-            <th scope="col">Size</th>
-            <th scope="col">Cost</th>
+            <th scope="col"><%= t('lockers.request_form.available_count') %></th>
+            <th scope="col"><%= t('lockers.request_form.size') %></th>
+            <th scope="col"><%= t('lockers.request_form.cost') %></th>
         </tr>
     </thead>
     <tbody>
@@ -18,18 +18,19 @@
 else
 (current_user.student? ? 'gng' : 'general')
 end %>
+        <% available_counts = Locker.available(audience).group(:locker_size_id).count %>
         <% LockerSize.find_each do |size| %>
             <tr>
                 <td>
                     <!-- Show available count based on the determined audience -->
-                    <%= size.lockers.available(audience).count %>
+                    <%= available_counts.fetch(size.id, 0) %>
                 </td>
                 <td><%= size.size %></td>
-                <td>$<%= @locker_product_info&.dig(:variants, size.shopify_gid, :price) %> per semester</td>
+                <td><%= t('lockers.request_form.cost_per_semester', price: @locker_product_info&.dig(:variants, size.shopify_gid, :price)) %></td>
             </tr>
         <% end %>
     </tbody>
-    <caption class="caption-top">Current lockers available are</caption>
+    <caption class="caption-top"><%= t('lockers.request_form.available_caption') %></caption>
 </table>
 
 <hr />
@@ -37,50 +38,50 @@ end %>
 <%# A request that failed validation shows its errors and the form, not the pending-request notice. %>
 <% pending_request = @locker_rental.errors.none? ? @pending_locker_request : nil %>
 <% if !LockerOption.lockers_enabled %>
-    Locker requests are not currently accepted.
+    <%= t('lockers.request_form.not_accepted') %>
 <% elsif pending_request&.reviewing? %>
-    <p>You have a pending request for a locker submitted on <b><%= pending_request.created_at.to_date %></b>.
-        You will receive a response shortly. <%= link_to 'View current locker request <i class="fa-solid fa-arrow-right"></i>'.html_safe, pending_request %></p>
+    <p><%= t('lockers.request_form.pending_html', date: l(pending_request.created_at.to_date),
+             link: link_to(safe_join([t('lockers.request_form.view_pending'), tag.i(class: 'fa-solid fa-arrow-right')], ' '), pending_request)) %></p>
 <% elsif pending_request&.await_payment? %>
-    <p>Your request has been accepted, and now is pending payment to be finalized. <%= link_to 'Click here to view your request and to proceed to checkout', pending_request, class: '' %></p>
+    <p><%= t('lockers.request_form.awaiting_payment_html', link: link_to(t('lockers.request_form.view_and_checkout'), pending_request, class: '')) %></p>
 <% else %>
     <%= form_with model: @locker_rental do |f| %>
         <div class="row row-cols-auto mb-3">
             <div>
-                <%= f.label :requested_as, 'I am a ', class: 'form-label' %>
-                <%= f.select :requested_as, options_for_select(@available_fors), {}, { class: 'form-select w-auto', required: true } %>
+                <%= f.label :requested_as, t('lockers.request_form.requested_as'), class: 'form-label' %>
+                <%= f.select :requested_as, @available_fors, { selected: @locker_rental.requested_as.presence || (@available_fors.values.first if @available_fors.one?), prompt: t('lockers.request_form.choose_one') }, { class: 'form-select w-auto', required: true } %>
             </div>
             <div>
-                <%= f.label :preferred_locker_id, 'You can request for a specific locker, if it is available (optional)', class: 'form-label' %>
+                <%= f.label :preferred_locker_id, t('lockers.request_form.preferred_locker'), class: 'form-label' %>
                 <!-- Requirement: Depending on the user they can only request a certain set of lockers -->
                 <% preferrable_lockers = Locker.available(audience).includes(:locker_size) %>
                 <%= f.select :preferred_locker_id, preferrable_lockers.order_by_specifier.map { |locker|
                     [locker.specifier, locker.id, {data: {size: locker.locker_size.size, staff_only: !locker.available }}]
                 }, { include_blank: '' }, { class: 'form-select' } %>
-                <div class="form-text">Locker location is dependent on availability.</div>
+                <div class="form-text"><%= t('lockers.request_form.location_note') %></div>
             </div>
         </div>
         <fieldset id="repo-select" class="border rounded p-3 mb-3" hidden disabled>
             <div class="row">
                 <div class="col">
-                    <%= f.label :course_name_id, 'What course are you enrolled in?', class: 'form-label' %>
+                    <%= f.label :course_name_id, t('lockers.request_form.course'), class: 'form-label' %>
                     <%= f.collection_select :course_name_id, CourseName.all, :id, :name, {}, {class: 'form-select'} %>
                 </div>
                 <div class="col">
-                    <%= f.label :section_name, "What section are you in?", class: 'form-label' %>
+                    <%= f.label :section_name, t('lockers.request_form.section'), class: 'form-label' %>
                     <%= f.text_field :section_name, class: 'form-control', required: true %>
                 </div>
                 <div class="col">
-                    <%= f.label :team_name, 'What is your group number?', class: 'form-label' %>
+                    <%= f.label :team_name, t('lockers.request_form.group'), class: 'form-label' %>
                     <%= f.text_field :team_name, class: 'form-control', required: true %>
                 </div>
             </div>
         </fieldset>
-        <%= f.label :notes, 'Notes with request:' %>
+        <%= f.label :notes, t('lockers.request_form.notes') %>
         <%= f.text_area :notes, class: 'form-control mb-3' %>
         <div class="d-flex justify-content-between mb-3">
-            <%= f.submit 'Submit request', class: 'btn btn-primary' %>
-            <%= link_to "Back", locker_rentals_path, class: 'btn btn-secondary' %>
+            <%= f.submit t('lockers.request_form.submit'), class: 'btn btn-primary' %>
+            <%= link_to t('lockers.request_form.back'), locker_rentals_path, class: 'btn btn-secondary' %>
         </div>
 
     <% end %>
@@ -88,7 +89,7 @@ end %>
 
 <% if @locker_rental.errors.any? %>
     <div class="border">
-        <p class="fw-bold">Errors:</p>
+        <p class="fw-bold"><%= t('lockers.request_form.errors') %></p>
         <ul>
             <% @locker_rental.errors.each do |error| %>
                 <li><%= error.full_message %></li>

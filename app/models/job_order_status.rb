@@ -12,8 +12,17 @@ class JobOrderStatus < ApplicationRecord
   REASONS = %w[owner_change invoice_mismatch].freeze
   validates :reason, inclusion: { in: REASONS }, allow_nil: true
 
-  # Whether the staff timeline names who added this row: processing steps and rows with a reason.
+  # Whether the staff timeline names who added this row: processing steps, rows with a reason, and an approval or
+  # decline recorded by someone other than the order's owner.
   def actor_shown?
-    reason.present? || [JobStatus.being_processed, JobStatus.completed].include?(job_status)
+    reason.present? || [JobStatus.being_processed, JobStatus.completed].include?(job_status) || acted_for_customer?
+  end
+
+  # An approval or decline of the quote answered by a person other than the order's owner (staff answering for the
+  # customer). Rows with no recorded actor are not claimed to be staff.
+  def acted_for_customer?
+    return false if user_id.nil? || job_order.nil?
+
+    [JobStatus.waiting_processed, JobStatus.declined].include?(job_status) && user_id != job_order.user_id
   end
 end

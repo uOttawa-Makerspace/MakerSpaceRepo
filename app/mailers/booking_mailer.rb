@@ -1,35 +1,26 @@
 class BookingMailer < ApplicationMailer
+  helper_method :booker_name
+
   # Receives the mails meant for a space's managers when the space has none.
   MTC_MAILBOX = "mtc@uottawa.ca"
 
+  # The mails to staff, and the approval mails to a booker or applicant, are written in the recipient's saved language
+  # (see ApplicationMailer#mail): a mail to several managers at once, or to the MTC mailbox, is in the site's default
+  # language. Subjects come
+  # from booking_mailer.<action>.subject.
   def send_booking_needs_approval(booking_id)
     @booking = SubSpaceBooking.find(booking_id)
     @sub_space = SubSpace.find(@booking.sub_space_id)
 
     return if @sub_space.approval_required == false
-    @emails = manager_emails(@booking.sub_space.space)
-    @message =
-      "A booking has been made in " + @sub_space.name + " by " + booker_name +
-        " for " + @booking.description + " on " +
-        @booking.start_time.to_formatted_s(:long) + " to " +
-        @booking.end_time.to_formatted_s(:long) +
-        ". Please check the Booking Admin Panel to approve or decline this booking."
-    mail(to: @emails, subject: "Booking needs approval")
+
+    mail(to: manager_emails(@sub_space.space))
   end
 
   def send_booking_automatically_approved(booking_id)
     @booking = SubSpaceBooking.find(booking_id)
     @sub_space = SubSpace.find(@booking.sub_space_id)
-    @emails = manager_emails(@booking.sub_space.space)
-    @message =
-      "A booking has been made and automatically approved in " +
-        @sub_space.name + " by " + booker_name + " for " +
-        @booking.description + " on " +
-        @booking.start_time.to_formatted_s(:long) + " to " +
-        @booking.end_time.to_formatted_s(:long) +
-        ". If you want to disable automatic booking for this subspace, go to the admin space page."
-
-    mail(to: @emails, subject: "Booking automatically approved.")
+    mail(to: manager_emails(@sub_space.space))
   end
 
   def send_booking_approved(booking_id)
@@ -38,39 +29,61 @@ class BookingMailer < ApplicationMailer
     @email = @booking.user.email
 
     return if @email.blank?
-    @message =
-      "Your booking in " + @sub_space.name + " for " + @booking.description +
-        " on " + @booking.start_time.to_formatted_s(:long) + " to " +
-        @booking.end_time.to_formatted_s(:long) + " has been approved."
-    mail(to: @email, subject: "Booking approved")
+
+    mail(to: @email)
+  end
+
+  # Tells the booker that staff declined the booking. French first, then English, like the access mails.
+  def send_booking_declined(booking_id)
+    @booking = SubSpaceBooking.find(booking_id)
+    @sub_space = @booking.sub_space
+    @email = @booking.user&.email
+
+    return if @email.blank?
+
+    key = "booking_mailer.declined.subject"
+    @subject = "MakerRepo - #{I18n.t(key, locale: :fr)} // #{I18n.t(key, locale: :en)}"
+    mail(to: @email, subject: @subject)
   end
 
   def send_booking_approval_request_sent(booking_approval_id, emails)
     @user_booking_approval = UserBookingApproval.find(booking_approval_id)
     @user = @user_booking_approval.user
 
-    return if emails.empty?
-    @message =
-      "A user by the name of " + @user.name +
-        " has requested to be a room booker in makeroom. Please go to the
-                <a href='https://makerepo.com/sub_space_booking'>MakeRepo Booking</a> admin
-                panel to approve or deny this request."
-    mail(to: emails, subject: "Booking approval request sent")
+    return if emails.empty? || @user.deleted?
+
+    mail(to: emails)
   end
 
   def send_booking_approval_request_approved(booking_approval_id)
     @user_booking_approval = UserBookingApproval.find(booking_approval_id)
     @user = @user_booking_approval.user
-    @email = @user.email
+    @email = requester_email
+    return if @email.nil?
 
-    return if @email.blank?
-    @message =
-      "Your booking approval request has been reviewed and accepted by an admin. Please go to the
-                <a href='https://makerepo.com/sub_space_booking'>MakeRepo Booking</a> page if you would like to book rooms."
-    mail(to: @email, subject: "Booking approval request accepted")
+    mail(to: @email)
+  end
+
+  # Tells the requester that their request was declined, or their access revoked, with the
+  # reason when staff gave one. French first, then English, like the other mails sent to users.
+  def send_booking_access_denied(booking_approval_id)
+    @user_booking_approval = UserBookingApproval.find(booking_approval_id)
+    @user = @user_booking_approval.user
+    email = requester_email
+    return if email.nil?
+
+    key = "booking_mailer.access_denied.subject.#{@user_booking_approval.status}"
+    @subject = "MakerRepo - #{I18n.t(key, locale: :fr)} // #{I18n.t(key, locale: :en)}"
+    mail(to: email, subject: @subject)
   end
 
   private
+
+  # Where a mail to the requester goes: nil, so nothing is sent, when the account was deleted or
+  # has no email.
+  def requester_email
+    @user.email.presence unless @user.deleted?
+  end
 
   # The space managers' emails; the MTC mailbox, with the missing managers
   # reported, when the space has none.

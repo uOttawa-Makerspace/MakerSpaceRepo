@@ -56,33 +56,65 @@ class SamlIdpController < ApplicationController
   end
 
   def auth
-    @current_user =
-      case params[:submit]
-      when "sign_in"
-        user = sign_in(params[:username], params[:password])
-
-        @error_message = sign_in_error_message if user.nil?
-
-        user
-      when "current_user"
-        current_user if signed_in?
-      when "logout"
-        sign_out
-        nil
-      else
-        @error_message = "Invalid request"
-        nil
-      end
+    @current_user = user_for_submit
 
     if @current_user.nil?
       render template: "saml/login"
+    elsif refused_by_staff_only_sp?
+      render template: "saml/staff_only"
     else
       @saml_response = encode_response @current_user
+      @saml_response_destination = saml_request.response_url
+      end_session_for_logout_request
       render template: "saml/saml_post"
     end
   end
 
   private
+
+  # The gem hands back the signed LogoutResponse as XML, while the HTTP-POST binding
+  # carries it base64-encoded, as the gem already does for the authn response.
+  def encode_logout_response(...)
+    Base64.strict_encode64(super)
+  end
+
+  # Answering a LogoutRequest is single sign-out: the MakerRepo session ends as on
+  # the website's logout (session reset, the user's live connections dropped).
+  def end_session_for_logout_request
+    return unless saml_request.logout_request?
+
+    sign_out
+    @current_user.disconnect_cable!
+  end
+
+  # The user the submit button chose: signed in with the posted credentials, the
+  # session user, or nobody (after a sign-out or an unknown submit value).
+  def user_for_submit
+    case params[:submit]
+    when "sign_in"
+      user = sign_in(params[:username], params[:password])
+
+      @error_message = sign_in_error_message if user.nil?
+
+      user
+    when "current_user"
+      current_user if signed_in?
+    when "logout"
+      sign_out
+      nil
+    else
+      @error_message = "Invalid request"
+      nil
+    end
+  end
+
+  # A service provider marked staff_only in config/initializers/saml.rb never
+  # receives an assertion for a user who is not staff or admin. A LogoutRequest is
+  # never refused: its LogoutResponse carries no assertion, and answering it ends
+  # the MakerRepo session (single sign-out).
+  def refused_by_staff_only_sp?
+    saml_request.authn_request? && saml_request.service_provider.attributes[:staff_only] && !@current_user.staff?
+  end
 
   # The one verdict every caller of the gem's validation sees (validate_saml_request,
   # enforce_saml_request, any later direct call): the request must be valid AND the

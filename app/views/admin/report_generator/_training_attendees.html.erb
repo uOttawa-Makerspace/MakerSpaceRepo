@@ -24,13 +24,13 @@
 
     <div class="mb-5 accordion">
       <% @spaces.each do |space| %>
-        <% space_certs = space.certifications.includes(:user, :training_session, :training).where(created_at: params[:start_date]..params[:end_date]).reverse_order %>
-        <% if !space_certs.empty? %>
+        <% space_certs = @certifications_by_space.fetch(space.id, []) %>
+        <% if space_certs.any? %>
           <div class="card">
             <div class="card-header" data-bs-toggle="collapse" data-bs-target="#accordion-<%= space.name.gsub(' ', '-') %>" aria-expanded="true">
               <h2 class="mb-0 text-center">
                 <button class="btn btn-link" type="button">
-                  <%= space.name %> - <%= space_certs.count %> attendees
+                  <%= space.name %> - <%= space_certs.size %> attendees
                 </button>
               </h2>
             </div>
@@ -57,9 +57,16 @@
                         <%= certification.user.email %>
                       <% end %>
                     </td>
-                    <td><%= certification.training.name %></td>
+                    <td><%= certification.training_session.training&.name || 'Unknown' %></td>
                     <td><%= certification.created_at.strftime('%Y-%m-%d') %></td>
-                    <td><%= link_to certification.training_session.user.name, user_path(certification.training_session.user.username) %></td>
+                    <td>
+                      <% instructor = certification.training_session.user %>
+                      <% if instructor %>
+                        <%= link_to instructor.name, user_path(instructor.username) %>
+                      <% else %>
+                        Unknown
+                      <% end %>
+                    </td>
                     <td><%= certification.training_session.course %></td>
                   </tr>
                 <% end %>

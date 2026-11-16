@@ -111,9 +111,7 @@ RSpec.describe KeyRequestsController, type: :controller do
              }
 
         expect(KeyRequest.count).to eq(0)
-        expect(flash[:alert]).to eq(
-          "Something went wrong while trying to submit the form."
-        )
+        expect(flash[:alert]).to start_with("The key request was not started. ")
       end
     end
   end

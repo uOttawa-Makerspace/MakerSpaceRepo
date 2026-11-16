@@ -8,7 +8,7 @@ require "rails_helper"
 # (id OR slug OR title, soft-deleted rows excluded by Repository's
 # default_scope); check_auth (show/download_files: admin, staff, the owner by
 # username, or a password the session already passed); check_ownership
-# (edit/update/destroy: admin or a member of repository.users).
+# (edit/update: admin, the owner or a member of repository.users; destroy and member management: admin or the owner).
 #
 # There is no GitHub integration in this controller: the `github` / `github_url`
 # columns are only copied by MakesController (see makes_request_spec.rb).
@@ -44,17 +44,92 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response.body).to include("Laser Lamp")
     end
 
+    it "renders a repository with several photos without per-photo attachment queries" do
+      create(:photo, repository: repo)
+      create(:photo, repository: repo)
+      queries = []
+      counter = ->(*, payload) { queries << payload[:sql] if payload[:sql].include?('FROM "active_storage_attachments"') }
+      ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { get repo_path }
+      expect(response).to have_http_status(:ok)
+      expect(queries.size).to eq(1)
+    end
+
+    it "renders the edit form for a repository with several photos" do
+      create(:photo, repository: repo)
+      content_login!(owner)
+      get edit_repository_path(repo.user_username, repo.slug)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "shows stored photos and image files on the edit form with an empty alt, beside their file names" do
+      create(:photo, repository: repo)
+      RepoFile.create!(repository: repo, file: Rack::Test::UploadedFile.new(
+        Rails.root.join("spec/support/assets/avatar.png"), "image/png"
+      ))
+      content_login!(owner)
+      get edit_repository_path(repo.user_username, repo.slug)
+      page = Nokogiri::HTML(response.body)
+      file_previews = page.css("[data-file-upload-file-preview] .file-upload-item-preview img")
+      photo_previews = page.css(".file-upload-item-preview img") - file_previews
+      expect([file_previews.size, photo_previews.size]).to eq([1, repo.photos.count])
+      expect((file_previews.to_a + photo_previews.to_a).map { |img| img["alt"] }).to all(eq(""))
+      expect(page.css(".file-upload-item-preview span[title]").map(&:text)).to all(be_present)
+    end
+
     it "writes the repo into the recently_viewed cookie" do
       get repo_path
       cookie = JSON.parse(CGI.unescape(response.cookies["recently_viewed"]))
       expect(cookie).to eq({ "/#{owner.username}/#{repo.id}" => "Laser Lamp" })
     end
 
-    it "caps recently_viewed at 5 entries (existing entries kept, newcomer dropped past the cap)" do
+    it "keeps the five most recently viewed repositories, newest first, without duplicates" do
+      repos = Array.new(6) { |i| create(:repository, owner: owner, title: "Viewed #{i}", users: [owner]) }
+      repos.each { |r| get repo_path(r) }
+      get repo_path(repos[3])
+      links = JSON.parse(CGI.unescape(cookies[:recently_viewed])).keys
+      expect(links).to eq([3, 5, 4, 2, 1].map { |i| "/#{owner.username}/#{repos[i].id}" })
+    end
+
+    it "starts the recently_viewed cookie afresh when it holds JSON that is not a list of links" do
+      cookies[:recently_viewed] = "[1, 2]"
       get repo_path
-      other = create(:repository, owner: owner, title: "Other", users: [owner])
-      get repo_path(other)
-      expect(JSON.parse(CGI.unescape(response.cookies["recently_viewed"])).keys.size).to eq(2)
+      expect(JSON.parse(CGI.unescape(response.cookies["recently_viewed"]))).to eq({ "/#{owner.username}/#{repo.id}" => "Laser Lamp" })
+    end
+
+    it "shows the like button as liked to a user who has liked the repository" do
+      Like.create!(repository: repo, user: stranger)
+      content_login!(stranger)
+      get repo_path
+      expect(Nokogiri::HTML(response.body).at_css("span.like.liked")).to be_present
+    end
+
+    describe "comments" do
+      let(:commenter) { create(:user, :regular_user, reputation: 42) }
+
+      before do
+        create(:comment, repository: repo, user: commenter, content: "Older and popular", upvote: 9, created_at: 2.days.ago)
+        create(:comment, repository: repo, user: commenter, content: "Newer and quiet", upvote: 1, created_at: 1.day.ago)
+      end
+
+      def listed_comments
+        Nokogiri::HTML(response.body).css("#comment-container .comment-content").map { |c| c.text.strip }
+      end
+
+      it "lists the comments by votes by default, each with its author's reputation" do
+        get repo_path
+        expect(listed_comments).to eq(["Older and popular", "Newer and quiet"])
+        expect(Nokogiri::HTML(response.body).css("#comment-container .rep").map { |r| r.text.strip }).to eq(%w[42 42])
+      end
+
+      it "lists the comments by votes for the top filter" do
+        get repo_path, params: { comment_filter: "top" }
+        expect(listed_comments).to eq(["Older and popular", "Newer and quiet"])
+      end
+
+      it "lists the newest comment first for the newest filter" do
+        get repo_path, params: { comment_filter: "newest" }
+        expect(listed_comments).to eq(["Newer and quiet", "Older and popular"])
+      end
     end
 
     it "does not count as a view anywhere (no counters on the model)" do
@@ -75,7 +150,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to redirect_to(repository_path(repo.user_username, repo.slug, page: "2"))
     end
 
-    it "shows the member forms to owners and admin only, the link-to-proposal form to staff too" do
+    it "shows the member forms to owners and admin only, the link-to-proposal form to members and staff too" do
       forms = ->(path) { %w[link_to_pp add_member remove_member].select { |a| response.body.include?("/#{a}") } }
       content_login!(owner)
       get repo_path
@@ -85,6 +160,11 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(forms.call(nil)).to eq(%w[link_to_pp add_member remove_member])
       # staff cannot use the member forms (check_ownership), so they are no longer rendered
       content_sign_in_as(:staff)
+      get repo_path
+      expect(forms.call(nil)).to eq(%w[link_to_pp])
+      member = create(:user, :regular_user)
+      repo.users << member
+      content_login!(member)
       get repo_path
       expect(forms.call(nil)).to eq(%w[link_to_pp])
       content_login!(stranger)
@@ -351,6 +431,16 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "renders the new form for a given project proposal with the proposal fixed and no proposal list" do
+      proposal = create(:project_proposal, :approved)
+      content_login!(stranger)
+      get new_repository_path(stranger.username, project_proposal_id: proposal.id)
+      expect(response).to have_http_status(:ok)
+      page = Nokogiri::HTML(response.body)
+      expect(page.at_css("input[type='hidden'][name='repository[project_proposal_id]']")["value"]).to eq(proposal.id.to_s)
+      expect(page.at_css("select[name='repository[project_proposal_id]']")).to be_nil
+    end
+
     it "creates a repository owned by the current user (ignores the URL username), +25 reputation" do
       content_login!(stranger)
       expect do
@@ -369,6 +459,26 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       content_login!(stranger)
       post repositories_path(owner.username), params: valid_params(title: "Spoof", user_id: owner.id)
       expect(Repository.find_by(title: "Spoof").user_id).to eq(stranger.id)
+    end
+
+    it "stores a new repository's slug as '<id>.<title>'" do
+      content_login!(stranger)
+      post repositories_path(stranger.username), params: valid_params(title: "Zed Title")
+      made = Repository.find_by(title: "Zed Title")
+      expect(made.slug).to eq("#{made.id}.zed-title")
+    end
+
+    it "adds the creator once when params[:owner] names the creator too" do
+      content_login!(stranger)
+      post repositories_path(owner.username), params: valid_params(title: "Solo").merge(owner: [stranger.id])
+      expect(Repository.find_by(title: "Solo").users.to_a).to eq([stranger])
+    end
+
+    it "awards no reputation for a refused create" do
+      content_login!(stranger)
+      post repositories_path(stranger.username), params: valid_params(title: "")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(stranger.reload.reputation).to eq(0)
     end
 
     it "adds extra owners from params[:owner] when they exist (silently skips unknown ids)" do
@@ -418,6 +528,21 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
         post repositories_path(stranger.username), params: { repository: { title: "NoPic", share_type: "public" } }
       end.not_to change(Repository, :count)
       expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "rejects a gallery photo over the size limit with 422" do
+      content_login!(stranger)
+      p = valid_params(title: "BigPic")
+      p[:repository][:photos_attributes] = { "0" => { image: content_png_upload_of_size(Photo::MAX_IMAGE_SIZE + 1) } }
+      expect { post repositories_path(stranger.username), params: p }.not_to change(Repository, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "accepts a gallery photo exactly at the size limit" do
+      content_login!(stranger)
+      p = valid_params(title: "LimitPic")
+      p[:repository][:photos_attributes] = { "0" => { image: content_png_upload_of_size(Photo::MAX_IMAGE_SIZE) } }
+      expect { post repositories_path(stranger.username), params: p }.to change(Repository, :count).by(1)
     end
 
     it "rejects a non-image gallery upload (content-type validation) with 422" do
@@ -482,6 +607,52 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(Repository.find_by(title: "Yt").youtube_link).to be_nil
     end
 
+    # Owners, categories and equipment have no validations of their own, so these steps fail only by raising.
+    # The error is answered by the error page (422 for these errors) after the whole create has rolled back.
+    context "when a step after the save fails" do
+      before { content_login!(stranger) }
+
+      def fail_owner_join_for(user)
+        allow_any_instance_of(Repository.const_get(:HABTM_Users)).to receive(:create_or_update).and_wrap_original do |m, *args, **opts, &blk|
+          raise ActiveRecord::RecordNotSaved, "join refused" if m.receiver.user_id == user.id
+
+          m.call(*args, **opts, &blk)
+        end
+      end
+
+      def expect_nothing_stored(params)
+        counts = -> { [Repository.count, Photo.count, Category.count, Equipment.count, EquipmentOption.count] }
+        expect { post repositories_path(stranger.username), params: params }.not_to change(&counts)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(stranger.reload.reputation).to eq(0)
+      end
+
+      it "stores nothing and awards no reputation when an owner cannot be added" do
+        fail_owner_join_for(owner)
+        expect_nothing_stored(valid_params(title: "Partial").merge(owner: [owner.id]))
+      end
+
+      it "stores nothing and awards no reputation when a category cannot be stored" do
+        allow_any_instance_of(Category).to receive(:save!).and_raise(ActiveRecord::RecordInvalid)
+        expect_nothing_stored(valid_params(title: "Partial", categories: %w[A]))
+      end
+
+      it "stores nothing and awards no reputation when equipment cannot be stored" do
+        allow(Equipment).to receive(:create).and_raise(ActiveRecord::RecordNotSaved, "equipment refused")
+        expect_nothing_stored(valid_params(title: "Partial", categories: %w[A], equipments: %w[Laser]))
+      end
+
+      it "creates the repository once when the same form is sent again after a failure" do
+        allow(Equipment).to receive(:create).and_raise(ActiveRecord::RecordNotSaved, "equipment refused")
+        post repositories_path(stranger.username), params: valid_params(title: "Retry", equipments: %w[Laser])
+        allow(Equipment).to receive(:create).and_call_original
+        expect { post repositories_path(stranger.username), params: valid_params(title: "Retry", equipments: %w[Laser]) }
+          .to change(Repository, :count).by(1)
+        expect(Repository.find_by(title: "Retry").equipments.pluck(:name)).to eq(["Laser"])
+        expect(stranger.reload.reputation).to eq(25)
+      end
+    end
+
     it "responds with a redirect for missing repository params (parameter_missing -> root with alert)" do
       content_login!(stranger)
       post repositories_path(stranger.username), params: {}
@@ -513,6 +684,40 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       content_sign_in_as(:admin)
       get edit_repository_path(owner.username, repo.slug)
       expect(response).to have_http_status(:ok)
+    end
+
+    it "styles the categories and equipment selects as multiple-choice form selects" do
+      content_login!(owner)
+      get edit_repository_path(owner.username, repo.slug)
+      %w[categories equipments].each do |field|
+        select = Nokogiri::HTML(response.body).at_css("select[name='repository[#{field}][]']")
+        expect(select["class"].to_s.split).to include("form-control", "form-select")
+        expect(select["multiple"]).to be_present
+      end
+    end
+
+    it "always sends the category field, so clearing every category is submitted" do
+      content_login!(owner)
+      get edit_repository_path(owner.username, repo.slug)
+      page = Nokogiri::HTML(response.body)
+      expect(page.at_css("input[type='hidden'][name='repository[categories][]'][value='']")).to be_present
+    end
+
+    it "renders the edit form for a given project proposal with the proposal fixed and no proposal list" do
+      proposal = create(:project_proposal, :approved)
+      content_login!(owner)
+      get edit_repository_path(owner.username, repo.slug, project_proposal_id: proposal.id)
+      expect(response).to have_http_status(:ok)
+      page = Nokogiri::HTML(response.body)
+      expect(page.at_css("input[type='hidden'][name='repository[project_proposal_id]']")["value"]).to eq(proposal.id.to_s)
+      expect(page.at_css("select[name='repository[project_proposal_id]']")).to be_nil
+    end
+
+    it "always sends the equipment field, so clearing all equipment is submitted" do
+      content_login!(owner)
+      get edit_repository_path(owner.username, repo.slug)
+      page = Nokogiri::HTML(response.body)
+      expect(page.at_css("input[type='hidden'][name='repository[equipments][]'][value='']")).to be_present
     end
 
     it "bounces staff (staff can view private repos but not edit)" do
@@ -584,6 +789,17 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(repo.reload.title).to eq("Renamed")
     end
 
+    it "drops the cached zip of the updated repository" do
+      cache_dir = Pathname(Dir.mktmpdir("repository_zips"))
+      allow(Repository::ZipCache).to receive(:directory).and_return(cache_dir)
+      FileUtils.touch(repo.zip_path)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: update_params
+      expect(File.exist?(repo.zip_path)).to be(false)
+    ensure
+      FileUtils.rm_rf(cache_dir.to_s)
+    end
+
     it "replaces categories and equipment wholesale (destroy_all then recreate)" do
       Category.create!(name: "Old", repository_id: repo.id)
       content_login!(owner)
@@ -593,15 +809,119 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(repo.equipments).to be_empty
     end
 
-    it "destroys categories and equipment BEFORE validating: an invalid update still wipes them" do
+    it "keeps categories and equipment when the update is refused" do
+      Category.create!(name: "Old", repository_id: repo.id)
+      Equipment.create!(name: "Laser Cutter", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug),
+            params: { repository: { title: "", categories: %w[New], equipments: %w[Printer] } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to eq("The project was not updated. Title Project title is required.")
+      expect(repo.reload.categories.pluck(:name)).to eq(["Old"])
+      expect(repo.equipments.pluck(:name)).to eq(["Laser Cutter"])
+      expect(repo.title).to eq("Laser Lamp")
+    end
+
+    it "keeps categories and equipment when the update is refused with none submitted" do
       Category.create!(name: "Old", repository_id: repo.id)
       content_login!(owner)
       patch repository_path(owner.username, repo.slug), params: { repository: { title: "" } }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to eq("Unable to apply the changes.")
-      # update_destroys categories/equipments before the update is validated
+      expect(flash[:alert]).to eq("The project was not updated. Title Project title is required.")
+      expect(repo.reload.categories.pluck(:name)).to eq(["Old"])
+    end
+
+    it "sets categories and equipment as submitted on a valid update" do
+      Category.create!(name: "Old", repository_id: repo.id)
+      Equipment.create!(name: "Laser Cutter", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug),
+            params: update_params.deep_merge(repository: { categories: %w[New Newer], equipments: %w[Printer] })
+      expect(response).to redirect_to("/#{owner.username}/#{repo.reload.slug}")
+      expect(repo.categories.pluck(:name)).to match_array(%w[New Newer])
+      expect(repo.equipments.pluck(:name)).to eq(["Printer"])
+    end
+
+    it "clears the categories when the form sends an empty selection" do
+      Category.create!(name: "Old", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: update_params.deep_merge(repository: { categories: [""] })
       expect(repo.reload.categories).to be_empty
-      expect(repo.title).to eq("Laser Lamp")
+    end
+
+    it "keeps the categories when a valid update does not send the field" do
+      Category.create!(name: "Old", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: update_params
+      expect(repo.reload.title).to eq("Renamed")
+      expect(repo.categories.pluck(:name)).to eq(["Old"])
+    end
+
+    it "clears the equipment when the form sends an empty selection" do
+      Equipment.create!(name: "Laser Cutter", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: update_params.deep_merge(repository: { equipments: [""] })
+      expect(repo.reload.title).to eq("Renamed")
+      expect(repo.equipments).to be_empty
+    end
+
+    it "keeps the equipment when a valid update does not send the field" do
+      Equipment.create!(name: "Laser Cutter", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: update_params
+      expect(repo.reload.title).to eq("Renamed")
+      expect(repo.equipments.pluck(:name)).to eq(["Laser Cutter"])
+    end
+
+    it "keeps the equipment when a JSON update does not send the field" do
+      Equipment.create!(name: "Laser Cutter", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: update_params, as: :json
+      expect(repo.reload.title).to eq("Renamed")
+      expect(repo.equipments.pluck(:name)).to eq(["Laser Cutter"])
+    end
+
+    it "replaces the equipment when a JSON update sends the field, and clears it when the list is empty" do
+      Equipment.create!(name: "Laser Cutter", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: update_params.deep_merge(repository: { equipments: %w[Printer] }), as: :json
+      expect(repo.reload.equipments.pluck(:name)).to eq(["Printer"])
+      patch repository_path(owner.username, repo.slug), params: update_params.deep_merge(repository: { equipments: [] }), as: :json
+      expect(repo.reload.equipments).to be_empty
+    end
+
+    it "keeps the equipment when a scalar value is sent instead of a list" do
+      Equipment.create!(name: "Laser Cutter", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: update_params.deep_merge(repository: { equipments: "Printer" })
+      expect(repo.reload.title).to eq("Renamed")
+      expect(repo.equipments.pluck(:name)).to eq(["Laser Cutter"])
+    end
+
+    it "shows a refused edit for a given project proposal again with the proposal fixed" do
+      proposal = create(:project_proposal, :approved)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: { project_proposal_id: proposal.id, repository: { title: "" } }
+      expect(response).to have_http_status(:unprocessable_content)
+      page = Nokogiri::HTML(response.body)
+      expect(page.at_css("input[type='hidden'][name='repository[project_proposal_id]']")["value"]).to eq(proposal.id.to_s)
+      expect(repo.reload.title).to eq("Laser Lamp")
+    end
+
+    it "keeps the stored password when a refused update sends a new one" do
+      secret = create(:repository, :private, owner: owner, title: "Sec", users: [owner])
+      stored = secret.password
+      content_login!(owner)
+      patch repository_path(owner.username, secret.slug), params: { password: ["changed"], repository: { title: "", share_type: "private" } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(secret.reload.password).to eq(stored)
+    end
+
+    it "keeps categories and equipment for a stranger's refused update" do
+      Category.create!(name: "Old", repository_id: repo.id)
+      content_login!(stranger)
+      patch repository_path(owner.username, repo.slug), params: update_params.deep_merge(repository: { categories: %w[New] })
+      expect(repo.reload.categories.pluck(:name)).to eq(["Old"])
     end
 
     it "switching to public clears the password" do
@@ -630,6 +950,26 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(Photo.exists?(photo.id)).to be(false)
     end
 
+    it "refuses a new photo over the size limit and keeps the stored one" do
+      content_login!(owner)
+      photo = repo.photos.first
+      big = content_png_upload_of_size(Photo::MAX_IMAGE_SIZE + 1)
+      patch repository_path(owner.username, repo.slug),
+            params: { repository: { photos_attributes: { "0" => { image: big }, "1" => { id: photo.id, _destroy: "1" } } } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("larger than 10 MB")
+      expect(Photo.exists?(photo.id)).to be(true)
+      expect(repo.reload.photos.count).to eq(1)
+    end
+
+    it "still saves an edit of a repository whose stored photo is over the size limit" do
+      content_login!(owner)
+      repo.photos.first.image.blob.update_column(:byte_size, Photo::MAX_IMAGE_SIZE * 3)
+      patch repository_path(owner.username, repo.slug), params: { repository: { description: "edited" } }
+      expect(response).not_to have_http_status(:unprocessable_content)
+      expect(repo.reload.description).to include("edited")
+    end
+
     it "removing every photo fails validation (1..10 photos)" do
       content_login!(owner)
       photo = repo.photos.first
@@ -650,28 +990,78 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("You are not allowed to perform this action!")
     end
 
-    it "HARD deletes for a member (the soft-delete flag is not used here), -25 reputation per member" do
+    it "hides the repository for a member and takes 25 reputation back from each member" do
       owner.update!(reputation: 100)
       content_login!(owner)
       expect { delete repository_path(owner.username, repo.slug) }
-        .to change(Repository.unscoped, :count).by(-1)
+        .to change(Repository, :count).by(-1).and not_change(Repository.unscoped, :count)
+      expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true, hidden_reason: "user_deleted")
       expect(response).to redirect_to(user_path(owner.username))
       expect(flash[:notice]).to eq("Repository has been successfully deleted.")
       expect(owner.reload.reputation).to eq(75)
     end
 
-    it "removes photos, comments and likes with it" do
+    it "refuses a member who is not the owner and keeps the repository" do
+      member = create(:user, :regular_user)
+      repo.users << member
+      content_login!(member)
+      expect { delete repository_path(owner.username, repo.slug) }.not_to change(Repository, :count)
+      expect(flash[:alert]).to eq("You are not allowed to perform this action!")
+      expect(response).to redirect_to(repo_path)
+    end
+
+    it "drops the cached zip of the deleted repository" do
+      cache_dir = Pathname(Dir.mktmpdir("repository_zips"))
+      allow(Repository::ZipCache).to receive(:directory).and_return(cache_dir)
+      FileUtils.touch(repo.zip_path)
+      content_login!(owner)
+      delete repository_path(owner.username, repo.slug)
+      expect(File.exist?(repo.zip_path)).to be(false)
+    ensure
+      FileUtils.rm_rf(cache_dir.to_s)
+    end
+
+    it "keeps photos, files, comments, likes, makes and stored files" do
       create(:comment, repository: repo, user: stranger)
       create(:like, repository: repo, user: stranger)
+      make = create(:repository, owner: stranger, title: "Made from it", make_id: repo.id)
+      blob_ids = ActiveStorage::Blob.pluck(:id)
       content_sign_in_as(:admin)
       expect { delete repository_path(owner.username, repo.slug) }
-        .to change(Comment, :count).by(-1).and change(Like, :count).by(-1).and change(Photo, :count).by(-1)
+        .to not_change(Comment, :count).and not_change(Like, :count).and not_change(Photo, :count)
+        .and not_change(ActiveStorage::Attachment, :count)
+      expect(ActiveStorage::Blob.pluck(:id)).to match_array(blob_ids)
+      expect(make.reload.make_id).to eq(repo.id)
+      expect(make.parent).to eq(repo)
+    end
+
+    it "records an admin's deletion as deleted by an admin" do
+      content_sign_in_as(:admin)
+      delete repository_path(owner.username, repo.slug)
+      expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true, hidden_reason: "admin_deleted")
+    end
+
+    it "answers 404 for the hidden repository's page afterwards" do
+      content_login!(owner)
+      delete repository_path(owner.username, repo.slug)
+      get repository_path(owner.username, repo.id)
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "does not take the reputation back twice when the repository is deleted again" do
+      owner.update!(reputation: 100)
+      content_login!(owner)
+      delete repository_path(owner.username, repo.slug)
+      delete repository_path(owner.username, repo.slug)
+      expect(response).to have_http_status(:not_found)
+      expect(owner.reload.reputation).to eq(75)
     end
 
     it "lets the owner delete a repository whose users list does not include them" do
       orphan = create(:repository, owner: owner, title: "Orphan")
       content_login!(owner)
       expect { delete repository_path(owner.username, orphan.slug) }.to change(Repository, :count).by(-1)
+      expect(Repository.unscoped.find(orphan.id).deleted).to be(true)
       content_login!(stranger)
       other = create(:repository, owner: owner, title: "Orphan Two")
       expect { delete repository_path(owner.username, other.slug) }.not_to change(Repository, :count)
@@ -787,13 +1177,13 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       content_login!(stranger)
       patch add_member_repositories_path(owner.username),
             params: { repo_owner: { repository_id: repo.id, owner_username: newbie.username } }
-      # add_member runs check_ownership (owner, member or admin)
+      # add_member runs check_ownership (owner or admin)
       expect(repo.reload.users).to eq([owner])
       expect(flash[:alert]).to eq("You are not allowed to perform this action!")
       expect(response).to redirect_to(repo_path)
     end
 
-    it "lets the owner (even when not in users), a collaborator and admin add a member" do
+    it "lets the owner (even when not in users) and admin add a member" do
       orphan = create(:repository, owner: owner, title: "Orphan")
       content_login!(owner)
       patch add_member_repositories_path(owner.username),
@@ -801,16 +1191,24 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(orphan.reload.users).to eq([newbie])
       expect(flash[:notice]).to eq("This user was added to your repository.")
 
-      content_login!(newbie) # now a collaborator of orphan
-      patch add_member_repositories_path(owner.username),
-            params: { repo_owner: { repository_id: orphan.id, owner_username: stranger.username } }
-      expect(orphan.reload.users).to contain_exactly(newbie, stranger)
-
       third = create(:user, :regular_user)
       content_sign_in_as(:admin)
       patch add_member_repositories_path(owner.username),
             params: { repo_owner: { repository_id: orphan.id, owner_username: third.username } }
-      expect(orphan.reload.users).to include(third)
+      expect(orphan.reload.users).to contain_exactly(newbie, third)
+    end
+
+    it "refuses a member who is not the owner adding or removing members" do
+      repo.users << newbie
+      content_login!(newbie)
+      patch add_member_repositories_path(owner.username),
+            params: { repo_owner: { repository_id: repo.id, owner_username: stranger.username } }
+      expect(flash[:alert]).to eq("You are not allowed to perform this action!")
+      expect(response).to redirect_to(repo_path)
+      patch remove_member_repositories_path(owner.username),
+            params: { repo_owner: { repository_id: repo.id, owner_id: owner.id } }
+      expect(flash[:alert]).to eq("You are not allowed to perform this action!")
+      expect(repo.reload.users).to contain_exactly(owner, newbie)
     end
 
     it "refuses staff adding a member (staff are not repository owners)" do
@@ -852,6 +1250,16 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       patch remove_member_repositories_path(owner.username),
             params: { repo_owner: { repository_id: repo.id, owner_id: newbie.id } }
       expect(repo.reload.users).to eq([owner])
+    end
+
+    it "remove_member says the user is not a member instead of reporting a removal" do
+      repo.users << newbie
+      content_login!(owner)
+      patch remove_member_repositories_path(owner.username),
+            params: { repo_owner: { repository_id: repo.id, owner_id: stranger.id } }
+      expect(flash[:alert]).to eq("This user is not a member of this repository.")
+      expect(flash[:notice]).to be_nil
+      expect(repo.reload.users).to contain_exactly(owner, newbie)
     end
 
     it "remove_member protects the last member and the owner, and reports unknown users" do
@@ -961,6 +1369,44 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
     end
   end
 
+  describe "a username that does not own the repository" do
+    before { content_login!(owner) }
+
+    it "answers 404 to an update through a reserved first segment and changes nothing" do
+      patch "/job_orders/#{repo.id}", params: { repository: { title: "Hijacked" } }
+      expect(response).to have_http_status(:not_found)
+      expect(repo.reload.title).to eq("Laser Lamp")
+    end
+
+    it "answers 404 to a delete through a reserved first segment and keeps the repository" do
+      expect { delete "/locker_rentals/#{repo.id}" }.not_to change(Repository.unscoped, :count)
+      expect(response).to have_http_status(:not_found)
+      expect(repo.reload.deleted).to be_falsey
+    end
+
+    it "answers 404 to an update, delete, like and edit under another username" do
+      patch repository_path(stranger.username, repo.slug), params: { repository: { title: "Hijacked" } }
+      expect(response).to have_http_status(:not_found)
+      expect { delete repository_path(stranger.username, repo.slug) }.not_to change(Repository.unscoped, :count)
+      expect(response).to have_http_status(:not_found)
+      expect { post add_like_repository_path(stranger.username, repo.slug) }.not_to change(Like, :count)
+      expect(response).to have_http_status(:not_found)
+      get edit_repository_path(stranger.username, repo.slug)
+      expect(response).to have_http_status(:not_found)
+      expect(repo.reload.title).to eq("Laser Lamp")
+    end
+
+    it "answers 404 to a view through a reserved first segment" do
+      get "/locker_sizes/#{repo.id}"
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "still accepts the owner's username in any letter case for an update" do
+      patch repository_path(owner.username.upcase, repo.slug), params: { repository: { title: "Renamed" } }
+      expect(repo.reload.title).to eq("Renamed")
+    end
+  end
+
   describe "GET /repositories/populate_users" do
     # the search term is a token Faker names cannot produce
     let!(:zelda) { create(:user, :regular_user, name: "Zeldaxqzv Searchable") }
@@ -976,17 +1422,25 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response.location).to include("/login")
     end
 
-    it "returns only id, name and username to any signed-in user" do
+    it "gives a regular user only id and username, matched on username" do
       content_login!(stranger)
       get "/repositories/populate_users", params: { search: "zeldaxqzv" }
-      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)["users"]).to be_empty
+      get "/repositories/populate_users", params: { search: zelda.username }
       users = JSON.parse(response.body)["users"]
-      expect(users).to eq([{ "id" => zelda.id, "name" => "Zeldaxqzv Searchable", "username" => zelda.username }])
-      expect(response.body).not_to include("password", "access_token", "email")
+      expect(users).to eq([{ "id" => zelda.id, "username" => zelda.username }])
+      expect(response.body).not_to include("Searchable", "password", "access_token", "email")
+    end
+
+    it "gives staff id, name and username, matched on name" do
+      content_login!(create(:user, :staff))
+      get "/repositories/populate_users", params: { search: "zeldaxqzv" }
+      expect(JSON.parse(response.body)["users"])
+        .to eq([{ "id" => zelda.id, "name" => "Zeldaxqzv Searchable", "username" => zelda.username }])
     end
 
     it "treats % and _ in the search literally instead of as wildcards (review)" do
-      content_login!(stranger)
+      content_login!(create(:user, :staff))
       get "/repositories/populate_users", params: { search: "%" }
       expect(JSON.parse(response.body)["users"]).to be_empty
       get "/repositories/populate_users", params: { search: "Zel_a" }
@@ -997,7 +1451,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
 
     it "returns at most 10 users (review)" do
       create_list(:user, 12, :regular_user, name: "Crowd Member")
-      content_login!(stranger)
+      content_login!(create(:user, :staff))
       get "/repositories/populate_users", params: { search: "crowd" }
       expect(JSON.parse(response.body)["users"].size).to eq(10)
     end

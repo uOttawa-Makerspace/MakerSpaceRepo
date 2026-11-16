@@ -98,6 +98,15 @@ RSpec.describe "Learning area", type: :request do
       expect(response.body).to include(edit_learning_area_path(learning_module))
     end
 
+    it "gives the SCORM player frame a title" do
+      scorm_module = create(:learning_module, :with_scorm_object, training: training, title: "Safety course")
+      ExtractScormJob.perform_now(scorm_module.id)
+      sign_in_as(:regular)
+      get learning_area_path(scorm_module)
+      frame = Nokogiri::HTML(response.body).at_css("iframe[src*='scorm_launch']")
+      expect(frame["title"]).to eq("Safety course")
+    end
+
     it "does NOT show the Edit link to staff" do
       sign_in_as(:staff)
       get learning_area_path(learning_module)
@@ -108,7 +117,7 @@ RSpec.describe "Learning area", type: :request do
       sign_in_as(:regular)
       get learning_area_path(0)
       expect(response).to have_http_status(:not_found)
-      expect(error_text).to include("ActiveRecord::RecordNotFound")
+      expect(response.body).to include("Page not found")
     end
 
     it "resolves a module by shortcut_name" do
@@ -122,6 +131,36 @@ RSpec.describe "Learning area", type: :request do
       sign_in_as(:regular)
       get shortcut_learning_area_path("nope")
       expect(response).to have_http_status(:not_found)
+    end
+
+    ["/learning_area/s/%20", "/learning_area/s/---"].each do |path|
+      it "answers 404 for #{path}, a shortcut that is blank once normalised, even with modules that have none" do
+        create(:learning_module, title: "No shortcut", shortcut_name: nil)
+        sign_in_as(:regular)
+        get path
+        expect(response).to have_http_status(:not_found)
+        expect(response.body).not_to include("No shortcut")
+      end
+    end
+
+    it "answers 404 for a shortcut that is blank once normalised while a module is stored with an empty shortcut" do
+      older = create(:learning_module, title: "Empty shortcut")
+      LearningModule.where(id: older.id).update_all("shortcut_name = ''") # as stored before blanks became nil
+      expect(LearningModule.connection.select_value("SELECT shortcut_name FROM learning_modules WHERE id = #{older.id}")).to eq('')
+      sign_in_as(:regular)
+      ["/learning_area/s/---", "/learning_area/s/%20"].each do |path|
+        get path
+        expect(response).to have_http_status(:not_found)
+        expect(response.body).not_to include("Empty shortcut")
+      end
+    end
+
+    it "still resolves a real shortcut when modules without one exist" do
+      create(:learning_module, title: "No shortcut", shortcut_name: nil)
+      sign_in_as(:regular)
+      get "/learning_area/s/#{learning_module.shortcut_name.upcase}"
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Soldering basics")
     end
 
     it "renders a module that has no training, without a training name" do
@@ -147,6 +186,16 @@ RSpec.describe "Learning area", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("WELD-MARKER")
       expect(response.body).not_to include("SOLDER-MARKER")
+    end
+
+    it "shows a module's cover photo titled with that module" do
+      create(:learning_module, training: training, title: "Welding one", subskill: "welding").photos.attach(
+        Rack::Test::UploadedFile.new(Rails.root.join("spec/support/assets", "avatar.png"), "image/png")
+      )
+      sign_in_as(:regular)
+      get subskill_learning_area_index_path("welding")
+      expect(response).to have_http_status(:ok)
+      expect(Nokogiri::HTML(response.body).css("img[alt='Welding one']").size).to eq(1)
     end
 
     it "renders an empty page for an unknown subskill" do
@@ -223,6 +272,23 @@ RSpec.describe "Learning area", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Soldering basics")
     end
+
+    it "shows the shortcut link prefix of the real shortcut route" do
+      get new_learning_area_path
+      prefix = Capybara.string(response.body).find(".input-group-text code").text
+      expect(prefix).to eq("/learning_area/s/")
+      expect(shortcut_learning_area_path("x")).to eq("#{prefix}x")
+    end
+
+    it "keeps the level when the edit form is submitted unchanged" do
+      learning_module.update!(level: "advanced")
+      get edit_learning_area_path(learning_module)
+      select = Capybara.string(response.body).find("select[name='learning_module[level]']")
+      # A browser submits the selected option, or the first one when none is selected.
+      submitted = (select.first("option[selected]", minimum: 0) || select.first("option")).value
+      patch learning_area_path(learning_module), params: { learning_module: { level: submitted } }
+      expect(learning_module.reload.level).to eq("advanced")
+    end
   end
 
   describe "POST /learning_area (create, admin)" do
@@ -256,7 +322,7 @@ RSpec.describe "Learning area", type: :request do
     it "re-renders new with 422 and an alert when the title is blank" do
       expect { post learning_area_index_path, params: valid_params(title: "") }.not_to change(LearningModule, :count)
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to eq("Something went wrong")
+      expect(flash[:alert]).to eq("The learning module was not created. Title A title is required.")
     end
 
     it "rejects a duplicate title within the same training" do
@@ -269,6 +335,13 @@ RSpec.describe "Learning area", type: :request do
       other = create(:training)
       expect { post learning_area_index_path, params: valid_params(title: "Soldering basics", training_id: other.id) }
         .to change(LearningModule, :count).by(1)
+    end
+
+    it "creates a second module without a shortcut" do
+      post learning_area_index_path, params: valid_params(title: "First blank", shortcut_name: "")
+      expect { post learning_area_index_path, params: valid_params(title: "Second blank", shortcut_name: "") }
+        .to change(LearningModule, :count).by(1)
+      expect(LearningModule.where(title: ["First blank", "Second blank"]).pluck(:shortcut_name)).to eq([nil, nil])
     end
 
     it "rejects a duplicate shortcut_name (case-insensitive)" do
@@ -292,9 +365,9 @@ RSpec.describe "Learning area", type: :request do
 
     it "shows the failure alert on the re-rendered form only, not on the next request" do
       post learning_area_index_path, params: valid_params(title: "")
-      expect(response.body).to include("Something went wrong")
+      expect(response.body).to include("The learning module was not created.")
       get learning_area_index_path
-      expect(response.body).not_to include("Something went wrong")
+      expect(response.body).not_to include("The learning module was not created.")
     end
 
     it "ignores unpermitted attributes such as order and scorm_status" do
@@ -302,6 +375,12 @@ RSpec.describe "Learning area", type: :request do
       lm = LearningModule.find_by!(shortcut_name: "laser_101")
       expect(lm.order).not_to eq(99)
       expect(lm.scorm_status).to eq("pending")
+    end
+
+    it "ignores a cc field, which learning modules do not have" do
+      post learning_area_index_path, params: valid_params.deep_merge(learning_module: { cc: 5 })
+      expect(response).to have_http_status(:redirect)
+      expect(LearningModule.find_by!(shortcut_name: "laser_101").title).to eq("Laser cutting 101")
     end
 
     it "attaches photos, project files and videos" do
@@ -332,7 +411,7 @@ RSpec.describe "Learning area", type: :request do
     it "re-renders edit with 422 and an alert on invalid data" do
       patch learning_area_path(learning_module), params: { learning_module: { title: "" } }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to eq("Unable to apply the changes.")
+      expect(flash[:alert]).to eq("The learning module was not updated. Title A title is required.")
       expect(learning_module.reload.title).to eq("Soldering basics")
     end
 
@@ -450,6 +529,34 @@ RSpec.describe "Learning area", type: :request do
       expect(lm.scorm_status).to eq("ready")
       expect(lm.scorm_entry_point).to eq("start.html")
       expect(lm.scorm_package_files.map { |f| f.filename.to_s }).to match_array(%w[imsmanifest.xml start.html])
+    end
+
+    it "queues ExtractScormJob when an update uploads a new zip" do
+      zip = ScormZipHelper.create_scorm_zip
+      expect do
+        patch learning_area_path(learning_module), params: { learning_module: { scorm_package: zip } }
+      end.to have_enqueued_job(ExtractScormJob).with(learning_module.id)
+      expect(learning_module.reload.scorm_status).to eq("pending")
+    end
+
+    it "queues the job once per upload, not again on the next plain update" do
+      zip = ScormZipHelper.create_scorm_zip
+      patch learning_area_path(learning_module), params: { learning_module: { scorm_package: zip } }
+      expect do
+        patch learning_area_path(learning_module), params: { learning_module: { title: "Renamed again" } }
+      end.not_to have_enqueued_job(ExtractScormJob)
+    end
+
+    it "queues no extraction when an update removes the package" do
+      perform_enqueued_jobs do
+        patch learning_area_path(learning_module), params: { learning_module: { scorm_package: ScormZipHelper.create_scorm_zip } }
+      end
+      expect(learning_module.reload.scorm_package_files).to be_attached
+      patch learning_area_path(learning_module), params: { learning_module: { scorm_package: "" } }
+      expect(enqueued_jobs.map { |job| job["job_class"] }).not_to include("ExtractScormJob")
+      expect(learning_module.reload.scorm_package).not_to be_attached
+      perform_enqueued_jobs
+      expect(learning_module.reload.scorm_package_files).not_to be_attached
     end
 
     it "does not queue the job when a non-zip update leaves the package untouched" do

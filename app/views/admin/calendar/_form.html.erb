@@ -1,4 +1,4 @@
-<div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
+<div class="modal fade" id="eventModal" data-admin-calendar-target="dialog" data-exit-message="<%= t('confirmations.unsaved_changes.exit') %>" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content" id="content">
             <div class="modal-header">
@@ -6,10 +6,11 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
             </div>
             <div class="modal-body">
+                <div id="calendar_dialog_alert"></div>
                 <%= form_with url: admin_events_path, scope: :event, local: false, html: { id: "eventForm", class: "useTurbo" } do |f| %>
                     <div id="staff_select_container" class="mb-3">
                         <label class="form-label" for="staff_select">Assigned Staff</label>
-                        <select name="staff_select[]" id="staff_select" class="form-select" multiple></select>
+                        <select name="staff_select[]" id="staff_select" class="form-select" multiple data-staff="<%= @modal_staff.to_json %>"></select>
                     </div>
 
                     <div class="form-check mb-3">
@@ -110,6 +111,7 @@
                     <%= f.hidden_field :utc_start_time, id: "utc_start_time" %>
                     <%= f.hidden_field :utc_end_time, id: "utc_end_time" %>
                     <%= f.hidden_field :recurrence_rule, id: "recurrence_rule_field" %>
+                    <%= hidden_field_tag :keep_series_times, "1", id: "keep_series_times", disabled: true %>
                     <%= f.hidden_field :space_id, value: @space_id %>
 
                     <div id="accordion" class="accordion mt-3">
@@ -172,6 +174,10 @@
             <div class="modal-footer second" id="publish_and_delete_forms" style="display: none;">
                 <%= form_with url: "#", method: :patch, local: false, html: { class: "useTurbo", id: "publish_form", style: "display: none;" } do %>
                     <%= submit_tag "Publish", class: "btn btn-info" %>
+                <% end %>
+
+                <%= form_with url: "#", method: :delete, local: false, html: { class: "useTurbo", id: "unpublish_form", style: "display: none;" } do %>
+                    <%= submit_tag "Unpublish", class: "btn btn-outline-secondary", **confirmation_options(t("confirmations.events.unpublish")) %>
                 <% end %>
 
                 <div class="btn-group dropup position-relative">

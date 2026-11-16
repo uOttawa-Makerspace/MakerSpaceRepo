@@ -6,27 +6,27 @@
         <ol class="breadcrumb mb-0 small">
           <li class="breadcrumb-item">
             <%= link_to volunteers_path, class: "text-decoration-none text-body-secondary" do %>
-              <i class="fa-solid fa-hand-holding-heart me-1"></i>Volunteers
+              <i class="fa-solid fa-hand-holding-heart me-1"></i><%= t('volunteer_area.shared.volunteers') %>
             <% end %>
           </li>
-          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page">Volunteer Tasks</li>
+          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page"><%= t('volunteer_area.shared.volunteer_tasks') %></li>
         </ol>
       </nav>
       <h1 class="h3 fw-bold text-body-emphasis mb-0 d-flex align-items-center gap-2">
         <i class="fa-solid fa-list-check text-primary"></i>
-        <span>Volunteer Tasks</span>
+        <span><%= t('volunteer_area.shared.volunteer_tasks') %></span>
       </h1>
-      <p class="text-body-secondary small mb-0 mt-1">Explore available tasks, prerequisites, and earn Community Credits (CCs).</p>
+      <p class="text-body-secondary small mb-0 mt-1"><%= t('volunteer_area.tasks.index.subtitle') %></p>
     </div>
     <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
       <%= link_to my_tasks_volunteer_tasks_path, class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center" do %>
         <i class="fa-solid fa-clipboard-user"></i>
-        <span>My Assigned Tasks</span>
+        <span><%= t('volunteer_area.shared.my_assigned_tasks') %></span>
       <% end %>
       <% if current_user.staff? %>
         <%= link_to new_volunteer_task_path, class: "btn btn-primary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center shadow-sm" do %>
           <i class="fa-solid fa-circle-plus"></i>
-          <span>Create Task</span>
+          <span><%= t('volunteer_area.shared.create_task') %></span>
         <% end %>
       <% end %>
     </div>
@@ -39,7 +39,7 @@
       <div class="card border rounded-3 shadow-sm bg-body h-100">
         <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between gap-2">
           <div>
-            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">Available Tasks</h6>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1"><%= t('volunteer_area.tasks.index.available_tasks') %></h6>
             <h2 class="fw-bold text-body-emphasis mb-0"><%= @available_volunteer_tasks.count %></h2>
           </div>
           <div class="rounded-circle bg-success-subtle text-success d-flex align-items-center justify-content-center p-3 fs-4 flex-shrink-0">
@@ -54,7 +54,7 @@
       <div class="card border rounded-3 shadow-sm bg-body h-100">
         <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between gap-2">
           <div>
-            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">In Progress</h6>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1"><%= t('volunteer_area.shared.in_progress') %></h6>
             <h2 class="fw-bold text-body-emphasis mb-0"><%= @assigned_volunteer_tasks.count %></h2>
           </div>
           <div class="rounded-circle bg-warning-subtle text-warning d-flex align-items-center justify-content-center p-3 fs-4 flex-shrink-0">
@@ -69,7 +69,7 @@
       <div class="card border rounded-3 shadow-sm bg-body h-100">
         <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between gap-2">
           <div>
-            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">Completed</h6>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1"><%= t('volunteer_area.shared.completed') %></h6>
             <h2 class="fw-bold text-body-emphasis mb-0"><%= @completed_volunteer_tasks.count %></h2>
           </div>
           <div class="rounded-circle bg-secondary-subtle text-body-secondary d-flex align-items-center justify-content-center p-3 fs-4 flex-shrink-0">
@@ -93,7 +93,7 @@
             <input type="text"
                    id="taskSearchInput"
                    class="form-control"
-                   placeholder="Search tasks, descriptions, space..."
+                   placeholder="<%= t('volunteer_area.tasks.index.search_placeholder') %>"
                    autocomplete="off"
                    aria-label="<%= t('common.names.search_tasks') %>">
           </div>
@@ -101,8 +101,9 @@
 
         <!-- Space Filter -->
         <div class="col-6 col-md-3 col-lg-2">
-          <select id="spaceFilter" class="form-select tom-select-filter" placeholder="Filter Space">
-            <option value="">All Spaces</option>
+          <label for="spaceFilter" id="spaceFilterLabel" class="visually-hidden"><%= t('common.names.filter_space') %></label>
+          <select id="spaceFilter" aria-labelledby="spaceFilterLabel" class="form-select tom-select-filter" placeholder="<%= t('volunteer_area.tasks.index.filter_space') %>">
+            <option value=""><%= t('volunteer_area.tasks.index.all_spaces') %></option>
             <% Space.all.order(name: :asc).each do |s| %>
               <option value="<%= s.name.downcase %>"><%= s.name.capitalize %></option>
             <% end %>
@@ -111,19 +112,21 @@
 
         <!-- Category Filter -->
         <div class="col-6 col-md-3 col-lg-2">
-          <select id="categoryFilter" class="form-select tom-select-filter" placeholder="Filter Category">
-            <option value="">All Categories</option>
-            <option value="events">Events</option>
-            <option value="projects">Projects</option>
-            <option value="supervising">Supervising</option>
-            <option value="workshops">Workshops</option>
-            <option value="other">Other</option>
+          <label for="categoryFilter" id="categoryFilterLabel" class="visually-hidden"><%= t('common.names.filter_category') %></label>
+          <select id="categoryFilter" aria-labelledby="categoryFilterLabel" class="form-select tom-select-filter" placeholder="<%= t('volunteer_area.tasks.index.filter_category') %>">
+            <option value=""><%= t('volunteer_area.tasks.index.all_categories') %></option>
+            <option value="events"><%= t('volunteer_area.tasks.categories.events') %></option>
+            <option value="projects"><%= t('volunteer_area.tasks.categories.projects') %></option>
+            <option value="supervising"><%= t('volunteer_area.tasks.categories.supervising') %></option>
+            <option value="workshops"><%= t('volunteer_area.tasks.categories.workshops') %></option>
+            <option value="other"><%= t('volunteer_area.tasks.categories.other') %></option>
           </select>
         </div>
 
         <!-- Certifications Filter -->
         <div class="col-12 col-lg-4">
-          <select id="certFilter" class="form-select tom-select-filter" multiple placeholder="Filter by Certifications...">
+          <label for="certFilter" id="certFilterLabel" class="visually-hidden"><%= t('common.names.filter_certifications') %></label>
+          <select id="certFilter" aria-labelledby="certFilterLabel" class="form-select tom-select-filter" multiple placeholder="<%= t('volunteer_area.tasks.index.filter_certifications') %>">
             <% Training.all.order(name: :asc).each do |t| %>
               <option value="<%= t.localized_name.downcase %>"><%= t.localized_name.capitalize %></option>
             <% end %>
@@ -148,7 +151,7 @@
                   aria-controls="available-pane"
                   aria-selected="true">
             <i class="fa-solid fa-door-open text-success"></i>
-            <span>Available</span>
+            <span><%= t('volunteer_area.shared.available') %></span>
             <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1">
               <%= @available_volunteer_tasks.count %>
             </span>
@@ -164,7 +167,7 @@
                   aria-controls="assigned-pane"
                   aria-selected="false">
             <i class="fa-solid fa-hourglass-half text-warning"></i>
-            <span>In Progress</span>
+            <span><%= t('volunteer_area.shared.in_progress') %></span>
             <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill ms-1">
               <%= @assigned_volunteer_tasks.count %>
             </span>
@@ -180,7 +183,7 @@
                   aria-controls="completed-pane"
                   aria-selected="false">
             <i class="fa-solid fa-circle-check text-secondary"></i>
-            <span>Completed</span>
+            <span><%= t('volunteer_area.shared.completed') %></span>
             <span class="badge bg-secondary-subtle text-body-secondary border border-secondary-subtle rounded-pill ms-1">
               <%= @completed_volunteer_tasks.count %>
             </span>
@@ -193,15 +196,15 @@
     <div class="card-body p-3 p-md-4">
       <div class="tab-content" id="taskStatusTabsContent">
         <div class="tab-pane fade show active" id="available-pane" role="tabpanel" aria-labelledby="available-tab" tabindex="0">
-          <%= render partial: 'volunteer_tasks/task_card_grid', locals: { volunteer_tasks: @available_volunteer_tasks, pagy: @pagy_available, empty_message: "No available tasks right now. Check back soon!" } %>
+          <%= render partial: 'volunteer_tasks/task_card_grid', locals: { volunteer_tasks: @available_volunteer_tasks, pagy: @pagy_available, empty_message: t('volunteer_area.tasks.index.empty_available') } %>
         </div>
 
         <div class="tab-pane fade" id="assigned-pane" role="tabpanel" aria-labelledby="assigned-tab" tabindex="0">
-          <%= render partial: 'volunteer_tasks/task_card_grid', locals: { volunteer_tasks: @assigned_volunteer_tasks, pagy: @pagy_assigned, empty_message: "No tasks currently in progress." } %>
+          <%= render partial: 'volunteer_tasks/task_card_grid', locals: { volunteer_tasks: @assigned_volunteer_tasks, pagy: @pagy_assigned, empty_message: t('volunteer_area.tasks.index.empty_assigned') } %>
         </div>
 
         <div class="tab-pane fade" id="completed-pane" role="tabpanel" aria-labelledby="completed-tab" tabindex="0">
-          <%= render partial: 'volunteer_tasks/task_card_grid', locals: { volunteer_tasks: @completed_volunteer_tasks, pagy: @pagy_completed, empty_message: "No completed tasks yet." } %>
+          <%= render partial: 'volunteer_tasks/task_card_grid', locals: { volunteer_tasks: @completed_volunteer_tasks, pagy: @pagy_completed, empty_message: t('volunteer_area.tasks.index.empty_completed') } %>
         </div>
       </div>
     </div>

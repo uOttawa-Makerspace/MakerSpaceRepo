@@ -7,11 +7,13 @@ module Api
     class TrainingSessionOptionsController < BaseController
       before_action :require_staff!
 
-      # The legacy form always used the caller's space (assigned, else the first). An
-      # explicit space_id picks another one; an unknown id is a 404.
+      # Without space_id the form uses the caller's space (User#current_space); a caller who may work in none
+      # gets 403 space_not_assigned. An explicit space_id picks another one the caller may work in; an unknown
+      # id is a 404.
       def show
-        space = params[:space_id].present? ? Space.find(space_id_param) : (current_user.space || Space.first)
-        raise ActiveRecord::RecordNotFound if space.nil?
+        space = params[:space_id].present? ? requested_space : current_user.current_space
+        return if performed?
+        return render_error(:space_not_assigned, "You are not assigned to that space", status: :forbidden) if space.nil?
 
         render json: {
           trainings: space.trainings.pluck(:id, :name_en),
@@ -23,6 +25,12 @@ module Api
       end
 
       private
+
+      def requested_space
+        space = Space.find(space_id_param)
+        refuse_unworkable_space(space)
+        space
+      end
 
       def space_id_param
         raw = params[:space_id]

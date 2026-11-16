@@ -11,6 +11,8 @@ module AdminOnly
     return signed_in unless signed_in?
 
     @user = current_user
-    redirect_to "/" and return unless @user.admin?
+    return redirect_to("/") unless @user.admin?
+
+    record_authorization!(:admin)
   end
 end

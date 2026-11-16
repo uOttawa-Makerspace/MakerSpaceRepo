@@ -308,7 +308,7 @@ RSpec.describe "Owner changes after the quote", type: :request do
       expect(JobOrder.from_approval_token(old_token)).to be_nil
 
       # a new quote issues a new link; the old one stays dead
-      patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task1(order).id}" => "60",
+      patch_quote order, { approved: "true", "job_task_quote_price_#{task1(order).id}" => "60",
                                                    job_order: { staff_comments: "" } }
       expect(status_names(order).last).to eq("Waiting for User Approval")
       expect(JobOrder.from_approval_token(old_token)).to be_nil
@@ -332,7 +332,7 @@ RSpec.describe "Owner changes after the quote", type: :request do
         run_path("delete a task", order)
 
         expect(response).to redirect_to(job_order_path(order))
-        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.owner_change_draft_order_failed"))
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.owner_change_draft_order_failed", reference: error_reference))
         expect(snapshot(order)).to eq(before)
         expect_no_requote_mail
       end
@@ -341,7 +341,7 @@ RSpec.describe "Owner changes after the quote", type: :request do
 
   # ------------------------------------------------------------ what staff see
 
-  describe "pages", skip_bullet: true do
+  describe "pages" do
     it "shows staff in the timeline who sent the order back and why" do
       order = order_in!(:completed)
       session_login!(owner)

@@ -9,6 +9,11 @@ RSpec.describe IcsFetcher do
     allow(Addrinfo).to receive(:getaddrinfo).with(host, nil, nil, :STREAM).and_return(addresses.map { |a| Addrinfo.ip(a) })
   end
 
+  it "gives only the host of a link, or nil when it cannot be read" do
+    expect(described_class.host("https://cal.test/private/token/a.ics?key=1")).to eq("cal.test")
+    expect(described_class.host("not a link")).to be_nil
+  end
+
   it "returns the body of a feed on a public address" do
     resolves("cal.test", "93.184.216.34")
     stub_request(:get, "https://cal.test/a.ics").to_return(status: 200, body: "BEGIN:VCALENDAR")

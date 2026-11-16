@@ -1,7 +1,7 @@
 import { addEventClick } from "../src/calendar_helper";
-import "../src/fullcalendar_setup_admin";
 import "../src/manage_calendar_events";
 import "flatpickr";
+import { flatpickrOptions } from "../src/page_locale.js";
 import { csrfHeaders } from "../src/csrf";
 import { onPageLoad } from "../src/on_page";
 import { showToast } from "../src/toast";
@@ -54,20 +54,13 @@ function updateColor(userId, color) {
 
 /* For the event modal */
 onPageLoad("#addEventButton", () => {
-  const fp1 = flatpickr("#source_range", {
-    mode: "range",
-    dateFormat: "Y-m-d",
-  });
+  flatpickr(
+    "#source_range",
+    flatpickrOptions(document, { mode: "range", dateFormat: "Y-m-d" }),
+  );
 
-  const fp2 = flatpickr("#target_date", {
-    dateFormat: "Y-m-d",
-  });
-
-  let copyEventsModal = document.getElementById("copyEventsModal");
-  if (copyEventsModal) {
-    copyEventsModal.addEventListener("hide.bs.modal", (e) => {
-      fp1.flatpickr().destroy();
-      fp2.flatpickr().destroy();
-    });
-  }
+  flatpickr(
+    "#target_date",
+    flatpickrOptions(document, { dateFormat: "Y-m-d" }),
+  );
 });

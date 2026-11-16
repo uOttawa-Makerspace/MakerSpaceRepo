@@ -2,13 +2,23 @@ require "rails_helper"
 
 # Chunk 15: KioskController. A kiosk is a browser left logged in as a staff
 # or admin user; there is no device token. Everything is gated by
-# `current_user.staff? || current_user.admin?`; guests and regular users are
+# `current_user.staff? || current_user.admin?`; guests are sent to the sign-in page and regular users are
 # bounced to root with "You cannot access this area.". Once in, the kiosk lets
 # the session holder sign ANY user (looked up by username or email, no password)
 # in or out of any space.
 RSpec.describe "Kiosks", type: :request do
   let!(:space) { create(:space) }
   let(:visitor) { create(:user, :regular_user) }
+
+  # Staff work only in the spaces they are assigned to; admins in any.
+  def sign_in_assigned(role)
+    sign_in_as(role).tap { |user| StaffSpace.create!(user: user, space: space) if role == :staff }
+  end
+
+  def expect_refused_space
+    expect(response).to redirect_to(kiosk_index_path)
+    expect(flash[:alert]).to eq("You are not assigned to that space.")
+  end
 
   def expect_bounced
     expect(response).to redirect_to(root_path)
@@ -22,7 +32,7 @@ RSpec.describe "Kiosks", type: :request do
       "GET /kiosk/:id/edit" => -> { get edit_kiosk_path(space.id) },
       "POST /kiosk/:id/sign_email" => -> { post kiosk_sign_email_path(space.id), params: { visitor: visitor.username, entering: "true" } }
     }.each do |label, action|
-      %i[guest regular volunteer].each do |role|
+      %i[regular volunteer].each do |role|
         it "#{label} bounces a #{role}" do
           sign_in_as(role)
           instance_exec(&action)
@@ -31,13 +41,25 @@ RSpec.describe "Kiosks", type: :request do
       end
     end
 
+    it "GET /kiosk sends a guest to the sign-in page, remembering the page" do
+      get kiosk_index_path
+      expect(response).to redirect_to(login_path(back_to: kiosk_index_path))
+    end
+
+    it "GET /kiosk/:id and its edit page send a guest to the sign-in page" do
+      get kiosk_path(space.id)
+      expect(response).to redirect_to(login_path(back_to: kiosk_path(space.id)))
+      get edit_kiosk_path(space.id)
+      expect(response).to redirect_to(login_path(back_to: edit_kiosk_path(space.id)))
+    end
+
     it "does not create a lab session for a guest posting sign_email" do
       expect { post kiosk_sign_email_path(space.id), params: { visitor: visitor.username, entering: "true" } }.not_to change(LabSession, :count)
     end
 
     %i[staff admin].each do |role|
       it "lets #{role} open index, show and edit" do
-        sign_in_as(role)
+        sign_in_assigned(role)
         get kiosk_index_path
         expect(response).to have_http_status(:ok)
         expect(response.body).to include(space.name)
@@ -51,15 +73,61 @@ RSpec.describe "Kiosks", type: :request do
     end
   end
 
+  describe "a space the staff member is not assigned to" do
+    let!(:elsewhere) { create(:space) }
+    let(:staff) { sign_in_assigned(:staff) }
+
+    it "lists only the spaces staff may work in, and every space for an admin" do
+      staff
+      get kiosk_index_path
+      expect(response.body).to include(space.name)
+      expect(response.body).not_to include(elsewhere.name)
+      sign_in_as(:admin)
+      get kiosk_index_path
+      expect(response.body).to include(space.name, elsewhere.name)
+    end
+
+    it "refuses to open its kiosk page, even when it is their saved space" do
+      staff.update_columns(space_id: elsewhere.id)
+      get kiosk_path(elsewhere.id)
+      expect_refused_space
+    end
+
+    it "refuses to sign anyone in or out there, writing nothing" do
+      staff
+      LabSession.create!(user: visitor, space: elsewhere, sign_in_time: 1.hour.ago, sign_out_time: 5.hours.from_now)
+      expect do
+        post kiosk_sign_email_path(elsewhere.id), params: { visitor: visitor.username, entering: "true" }
+        expect_refused_space
+        post kiosk_sign_email_path(elsewhere.id), params: { visitor: visitor.username, leaving: "true" }
+        expect_refused_space
+      end.not_to change { [LabSession.count, KioskSignEvent.count] }
+      expect(LabSession.where(user: visitor, space: elsewhere).active.count).to eq(1)
+    end
+
+    it "refuses with the French message for a French-speaking staff member" do
+      staff.update_columns(locale: "fr")
+      get kiosk_path(elsewhere.id)
+      expect(flash[:alert]).to eq("Vous n'êtes pas affecté à cet espace.")
+    end
+
+    it "lets an admin with no assignments open it and sign people in" do
+      sign_in_as(:admin)
+      get kiosk_path(elsewhere.id)
+      expect(response).to have_http_status(:ok)
+      expect { post kiosk_sign_email_path(elsewhere.id), params: { visitor: visitor.username, entering: "true" } }.to change(LabSession, :count).by(1)
+    end
+  end
+
   describe "GET /kiosk/:id" do
     it "redirects to the kiosk index for an unknown space" do
-      sign_in_as(:staff)
+      sign_in_assigned(:staff)
       get kiosk_path(0)
       expect(response).to redirect_to(kiosk_index_path)
     end
 
     it "renders without a layout (full html document of its own)" do
-      sign_in_as(:staff)
+      sign_in_assigned(:staff)
       get kiosk_path(space.id)
       expect(response.body).to include("<title>#{space.name} Kiosk</title>")
       expect(response.body).not_to include("navbar-expand-xl")
@@ -67,15 +135,15 @@ RSpec.describe "Kiosks", type: :request do
   end
 
   describe "POST /kiosk/:id/sign_email" do
-    before { sign_in_as(:staff) }
+    before { sign_in_assigned(:staff) }
 
-    it "signs a visitor in by username with an 8 hour session and redirects to the kiosk" do
+    it "signs a visitor in by username with a 6 hour session and redirects to the kiosk" do
       expect { post kiosk_sign_email_path(space.id), params: { visitor: visitor.username, entering: "true" } }.to change(LabSession, :count).by(1)
       expect(response).to redirect_to(kiosk_path(space.id))
       expect(flash[:notice]).to eq("Signing in to #{space.name}, hello #{visitor.name}")
       ls = LabSession.last
       expect(ls).to have_attributes(user_id: visitor.id, space_id: space.id)
-      expect(ls.sign_out_time - ls.sign_in_time).to be_within(5.seconds).of(8.hours)
+      expect(ls.sign_out_time - ls.sign_in_time).to be_within(5.seconds).of(6.hours)
     end
 
     it "signs a visitor in by email" do
@@ -95,6 +163,12 @@ RSpec.describe "Kiosks", type: :request do
       expect(response).to redirect_to(kiosk_path(space.id))
       expect(flash[:notice]).to eq("Signing out from #{space.name}, bye #{visitor.name}")
       expect(LabSession.where(user: visitor).active).to be_empty
+    end
+
+    it "ends every active session the visitor has in the space and logs one row" do
+      2.times { LabSession.create!(user: visitor, space: space, sign_in_time: 1.hour.ago, sign_out_time: 5.hours.from_now) }
+      expect { post kiosk_sign_email_path(space.id), params: { visitor: visitor.username, leaving: "true" } }.to change(KioskSignEvent, :count).by(1)
+      expect(LabSession.where(user: visitor, space: space).active).to be_empty
     end
 
     it "flashes a sign-out notice even when there was nothing to end" do
@@ -131,6 +205,52 @@ RSpec.describe "Kiosks", type: :request do
       admin = create(:user, :admin)
       post kiosk_sign_email_path(space.id), params: { visitor: admin.username, entering: "true" }
       expect(LabSession.where(user: admin).active.count).to eq(1)
+    end
+
+    describe "sign-in log" do
+      let!(:staff) { sign_in_assigned(:staff) }
+
+      def post_sign(visitor_param, action, space_id: space.id)
+        post kiosk_sign_email_path(space_id), params: { visitor: visitor_param, action => "true" }
+      end
+
+      it "logs a sign-in with the kiosk account, visitor, space and time" do
+        freeze_time do
+          expect { post_sign(visitor.username, :entering) }.to change(KioskSignEvent, :count).by(1)
+          expect(KioskSignEvent.last).to have_attributes(
+            actor_id: staff.id, visitor_id: visitor.id, space_id: space.id, action: "sign_in", created_at: Time.zone.now
+          )
+        end
+      end
+
+      it "logs a sign-out only when a session was ended" do
+        post_sign(visitor.username, :entering)
+        expect { post_sign(visitor.username, :leaving) }.to change(KioskSignEvent, :count).by(1)
+        expect(KioskSignEvent.newest_first.first).to have_attributes(actor_id: staff.id, visitor_id: visitor.id, action: "sign_out")
+        expect { post_sign(visitor.username, :leaving) }.not_to change(KioskSignEvent, :count)
+      end
+
+      it "logs nothing when the visitor was already signed in, for an unknown visitor or space, or with no action" do
+        post_sign(visitor.username, :entering)
+        expect do
+          post_sign(visitor.username, :entering)
+          post_sign("nobody-here", :entering)
+          post_sign(visitor.username, :entering, space_id: 0)
+          post kiosk_sign_email_path(space.id), params: { visitor: visitor.username }
+        end.not_to change(KioskSignEvent, :count)
+      end
+
+      it "logs nothing when the session cannot be saved" do
+        allow(LabSession).to receive(:create!).and_raise(ActiveRecord::RecordInvalid)
+        expect { KioskSignEvent.sign_in(actor: staff, visitor: visitor, space: space) }.to raise_error(ActiveRecord::RecordInvalid)
+        expect(KioskSignEvent.count).to eq(0)
+      end
+
+      it "refuses to update or delete a logged row" do
+        event = KioskSignEvent.create!(actor: staff, visitor: visitor, space: space, action: "sign_in", created_at: Time.zone.now)
+        expect { event.update!(action: "sign_out") }.to raise_error(ActiveRecord::ReadOnlyRecord)
+        expect { event.destroy }.to raise_error(ActiveRecord::ReadOnlyRecord)
+      end
     end
   end
 end

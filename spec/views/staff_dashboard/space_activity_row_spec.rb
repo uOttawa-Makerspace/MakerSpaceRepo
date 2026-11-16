@@ -26,4 +26,26 @@ RSpec.describe "staff_dashboard/_space_activity_row", type: :view do
 
     expect(render_row).to include("about 2 hours ago at Elsewhere Lab")
   end
+
+  describe "certification date" do
+    let(:ceed) { create(:space, name: "CEED") }
+
+    before do
+      create(:certification, user: user).update_columns(updated_at: Time.zone.local(2026, 11, 2, 10))
+    end
+
+    def render_signed_in_row(locale)
+      I18n.with_locale(locale) do
+        ApplicationController.render(partial: "staff_dashboard/space_activity_row", collection: [User.find(user.id)], locals: { space: ceed })
+      end
+    end
+
+    it "reads month, day, year in English" do
+      expect(render_signed_in_row(:en)).to include("November 02, 2026")
+    end
+
+    it "reads day, month, year in French" do
+      expect(render_signed_in_row(:fr)).to include("2 novembre 2026")
+    end
+  end
 end

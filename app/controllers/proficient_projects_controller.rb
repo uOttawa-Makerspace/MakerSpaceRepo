@@ -25,36 +25,22 @@ class ProficientProjectsController < DevelopmentProgramsController
   before_action :with_development_header
 
   def index
-    @skills = Skill.all
-    @proficient_projects_awarded =
-      proc do |training|
-        training.proficient_projects.where(
-          id: current_user.order_items.awarded.pluck(:proficient_project_id)
-        )
-      end
-    @all_proficient_projects =
-      proc { |training| training.proficient_projects }
-    @advanced_pp_count =
-      proc do |training|
-        training.proficient_projects.where(level: "Advanced").count
-      end
+    @skills = Skill.includes(trainings: { proficient_projects: { photos: { image_attachment: :blob } } })
+    @requirements_by_project = TrainingRequirement.all.group_by(&:proficient_project_id)
     @order_item = current_order.order_items.new
-    @user_order_items = current_user.order_items.completed_order
-    @proficient_projects_bought =
-      proc do |training|
-        training.proficient_projects.where(
-          id:
-            current_user
-              .order_items
-              .where(status: ["Awarded", "In progress", "Waiting for approval"])
-              .pluck(:proficient_project_id)
-        )
-      end
+    @order_items_by_project = current_user.order_items.completed_order.group_by(&:proficient_project_id)
+    @in_progress_project_ids = current_user.order_items.in_progress.pluck(:proficient_project_id).to_set
+    @bought_project_ids =
+      current_user.order_items.where(status: ["Awarded", "In progress", "Waiting for approval"]).pluck(:proficient_project_id).to_set
+    @held_training_levels = current_user.held_training_levels
   end
 
   def requests
     @order_item_waiting_for_approval =
-      OrderItem.all.waiting_for_approval.order(updated_at: :asc)
+      OrderItem
+        .waiting_for_approval
+        .includes(:proficient_project, order: :user, files_attachments: :blob)
+        .order(updated_at: :asc)
   end
 
   def new
@@ -86,45 +72,40 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def create
     @proficient_project = ProficientProject.new(proficient_project_params)
-    if @proficient_project.save
-      if params[:training_requirements_id].present?
-        params[:training_requirements_id].each_with_index do |t, i|
-            @proficient_project.create_training_requirements(t, params[:training_requirements_level][i])
-        end
-        
-      end
-      begin
-        create_photos
-      rescue FastImage::ImageFetchFailure,
-             FastImage::UnknownImageType,
-             FastImage::SizeNotFound => e
-        @proficient_project.destroy
-        redirect_to request.path,
-                    alert:
-                      "Something went wrong while uploading photos, try uploading them again later."
-      else
-        create_files
-        redirect_to proficient_project_path(@proficient_project.id),
-                    notice: "Proficient Project successfully created."
-      end
+    case save_new_project
+    when :created
+      create_files
+      redirect_to proficient_project_path(@proficient_project.id),
+                  notice: "Proficient Project successfully created."
+    when :refused
+      redirect_to request.path, alert: @photo_refusal
     else
       @training_levels ||= TrainingSession.return_levels
       @training_categories = Training.all.order(:name_en).pluck(:name_en, :id)
       @drop_off_location = DropOffLocation.all.order(name: :asc)
       @trainings = Training.all
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = validation_message(@proficient_project, "errors.shop.projects.create_invalid")
       render "new", status: :unprocessable_content
     end
   end
 
   def destroy
-    @proficient_project.destroy
-    respond_to do |format|
-      format.html do
-        redirect_to proficient_projects_path,
-                    notice: "Proficient Project has been successfully deleted."
+    if @proficient_project.destroy
+      respond_to do |format|
+        format.html do
+          redirect_to proficient_projects_path,
+                      notice: "Proficient Project has been successfully deleted."
+        end
+        format.json { head :no_content }
       end
-      format.json { head :no_content }
+    else
+      respond_to do |format|
+        format.html do
+          redirect_to proficient_project_path(@proficient_project),
+                      alert: validation_message(@proficient_project, "errors.shop.projects.not_deleted")
+        end
+        format.json { render json: { errors: @proficient_project.errors.full_messages }, status: :unprocessable_content }
+      end
     end
   end
 
@@ -135,23 +116,14 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def update
-    replace_training_requirements
-    if @proficient_project.update(proficient_project_params)
-      begin
-        update_media
-      rescue FastImage::ImageFetchFailure,
-             FastImage::UnknownImageType,
-             FastImage::SizeNotFound => e
-        flash[
-          :alert_yellow
-        ] = "Something went wrong while uploading photos, try again later. Other changes have been saved."
-        redirect_to proficient_project_path(@proficient_project.id)
-      else
-        flash[:notice] = "Proficient Project successfully updated."
-        redirect_to proficient_project_path(@proficient_project.id)
-      end
+    case save_project_changes
+    when :updated
+      flash[:notice] = "Proficient Project successfully updated."
+      redirect_to proficient_project_path(@proficient_project.id)
+    when :refused
+      redirect_to edit_proficient_project_path(@proficient_project), alert: @photo_refusal
     else
-      flash[:alert] = "Unable to apply the changes."
+      flash[:alert] = validation_message(@proficient_project, "errors.shop.projects.update_invalid")
       @training_categories = Training.all.order(:name_en).pluck(:name_en, :id)
       @training_levels = TrainingSession.return_levels
       @trainings = Training.all
@@ -161,13 +133,6 @@ class ProficientProjectsController < DevelopmentProgramsController
       @videos = @proficient_project.videos.processed.order(created_at: :asc)
       render "edit", status: :unprocessable_content
     end
-  end
-
-  def open_modal
-    @proficient_project_modal = ProficientProject.find(params[:id])
-    @order_item = current_order.order_items.new
-    @user_order_items = current_user.order_items.completed_order
-    respond_to { |format| format.js }
   end
 
   def proficient_project_modal
@@ -181,10 +146,10 @@ class ProficientProjectsController < DevelopmentProgramsController
         proficient_project_id: @proficient_project.id
       )
     if !order_items.present?
-      flash[:alert] = "This project hasn't been found"
+      flash[:alert] = I18n.t("errors.shop.projects.not_found")
     elsif !order_items.in_progress.exists?
-      flash[:alert] = "This project can only be submitted while it is in progress."
-    elsif order_items.in_progress.first.update(
+      flash[:alert] = I18n.t("errors.shop.projects.not_in_progress")
+    elsif (submission = order_items.in_progress.first).update(
           order_item_params.merge(status: "Waiting for approval")
         )
       MsrMailer.send_admin_pp_evaluation(@proficient_project).deliver_now
@@ -196,80 +161,27 @@ class ProficientProjectsController < DevelopmentProgramsController
         :notice
       ] = "Congratulations on submitting this proficient project! The proficient project will now be reviewed by an admin in around 5 business days."
     else
-      flash[
-        :alert
-      ] = "Something went wrong with updating the proficient project. Please check the allowed file types."
+      flash[:alert] = validation_message(submission, "errors.shop.projects.submit_invalid")
     end
     redirect_to @proficient_project
   end
 
   def approve_project
     order_item = OrderItem.find_by(id: params[:oi_id])
-    if order_item
-      admin = @user
-      duplicates = 0
-      awarded = false
-      begin
-        order_item.with_lock do
-          if order_item.status == "Waiting for approval"
-            level = order_item.proficient_project.level
-            user_id = order_item.order.user_id
-            cert = Certification.create!(user_id: user_id, level: level)
-            ProficientProjectSession.create!(
-              proficient_project_id: order_item.proficient_project.id,
-              level: level,
-              user_id: admin.id,
-              certification_id: cert.id
-            )
-            # Award the cert
-            order_item.update!(order_item_params.merge({ status: "Awarded" }))
-            awarded = true
-          end
-        end
-      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved
-        awarded = false
-      end
-      if awarded
-        MsrMailer.send_results_pp(
-          order_item,
-          order_item.order.user,
-          "Passed"
-        ).deliver_now
-        flash[:notice] = "The project has been approved!  (#{duplicates} duplicates skipped)"
-      else
-        flash[:error] = "An error has occurred, please try again later."
-      end
+    if order_item.nil?
+      flash[:error] = I18n.t("errors.shop.projects.submission_not_found")
     else
-      flash[:error] = "An error has occurred, please try again later."
+      award(order_item)
     end
-    redirect_path =
-      if order_item.nil? || current_user.admin?
-        requests_proficient_projects_path
-      else
-        order_item.proficient_project
-      end
-    redirect_to redirect_path
+    redirect_to(order_item.nil? || current_user.admin? ? requests_proficient_projects_path : order_item.proficient_project)
   end
 
   def revoke_project
     order_item = OrderItem.find_by(id: params[:oi_id])
-    revoked = false
-    if order_item
-      order_item.with_lock do
-        if order_item.status == "Waiting for approval"
-          revoked = order_item.update(order_item_params.merge(status: "Revoked"))
-        end
-      end
-    end
-    if revoked
-      MsrMailer.send_results_pp(
-        order_item,
-        order_item.order.user,
-        "Failed"
-      ).deliver_now
-      flash[:alert_yellow] = "The project has been revoked."
+    if order_item.nil?
+      flash[:error] = I18n.t("errors.shop.projects.submission_not_found")
     else
-      flash[:error] = "An error has occurred, please try again later."
+      revoke(order_item)
     end
     redirect_to requests_proficient_projects_path
   end
@@ -342,18 +254,86 @@ class ProficientProjectsController < DevelopmentProgramsController
     )
   end
 
-  def create_photos
-    return unless params["images"].present?
-      params["images"].each do |img|
-        dimension = FastImage.size(img.tempfile, raise_on_failure: true)
-        Photo.create(
-          image: img,
-          proficient_project_id: @proficient_project.id,
-          width: dimension.first,
-          height: dimension.last
-        )
+  # Awards the badge for a submission waiting for approval, then mails the result. A submission in
+  # any other state, or one that fails validation, awards nothing and says which.
+  def award(order_item)
+    case (result = award_result(order_item))
+    when :awarded
+      MsrMailer.send_results_pp(order_item, order_item.order.user, "Passed").deliver_now
+      flash[:notice] = "The project has been approved!"
+    when :not_waiting
+      flash[:error] = I18n.t("errors.shop.projects.not_waiting")
+    else
+      flash[:error] = validation_message(result.record, "errors.shop.projects.approve_invalid")
+    end
+  end
+
+  # :awarded, :not_waiting, or the RecordInvalid / RecordNotSaved that rolled the award back.
+  def award_result(order_item)
+    order_item.award!(@user, order_item_params) ? :awarded : :not_waiting
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
+    e
+  end
+
+  # Revokes a submission waiting for approval, then mails the result.
+  def revoke(order_item)
+    revoked = nil
+    order_item.with_lock do
+      revoked = order_item.update(order_item_params.merge(status: "Revoked")) if order_item.status == "Waiting for approval"
+    end
+    if revoked
+      MsrMailer.send_results_pp(order_item, order_item.order.user, "Failed").deliver_now
+      flash[:alert_yellow] = "The project has been revoked."
+    elsif revoked.nil?
+      flash[:error] = I18n.t("errors.shop.projects.not_waiting")
+    else
+      flash[:error] = validation_message(order_item, "errors.shop.projects.revoke_invalid")
+    end
+  end
+
+  # Saves the new project with its requirements and photos in one transaction: :created,
+  # :invalid (the project failed validation) or :refused (a photo was refused, so nothing is
+  # stored; the reason is in @photo_refusal).
+  def save_new_project
+    ProficientProject.transaction do
+      if @proficient_project.save
+        create_training_requirements
+        create_photos
+        :created
+      else
+        :invalid
       end
-    
+    end
+  rescue Photo::Refused => e
+    @photo_refusal = "#{I18n.t('errors.shop.projects.photos_refused_on_create')} #{e.message}"
+    :refused
+  end
+
+  def create_training_requirements
+    Array(params[:training_requirements_id]).each_with_index do |t, i|
+      @proficient_project.create_training_requirements(t, params[:training_requirements_level][i])
+    end
+  end
+
+  def create_photos
+    Photo.create_from_uploads!(Array(params["images"]), proficient_project_id: @proficient_project.id)
+  end
+
+  # Saves the edit with its requirements and media in one transaction: :updated, :invalid (the
+  # project failed validation, so nothing is saved) or :refused as for a new project.
+  def save_project_changes
+    outcome = :invalid
+    ProficientProject.transaction do
+      replace_training_requirements
+      raise ActiveRecord::Rollback unless @proficient_project.update(proficient_project_params)
+
+      update_media
+      outcome = :updated
+    end
+    outcome
+  rescue Photo::Refused => e
+    @photo_refusal = "#{I18n.t('errors.shop.projects.photos_refused_on_update')} #{e.message}"
+    :refused
   end
 
   def create_files
@@ -361,7 +341,7 @@ class ProficientProjectsController < DevelopmentProgramsController
       params["files"].each do |f|
         @repo =
           RepoFile.new(file: f, proficient_project_id: @proficient_project.id)
-        flash[:alert] = "Make sure you only upload PDFs for the project files" unless @repo.save
+        flash[:alert] = I18n.t("errors.shop.projects.files_not_pdf") unless @repo.save
       end
     
   end
@@ -396,30 +376,17 @@ class ProficientProjectsController < DevelopmentProgramsController
     update_videos
   end
 
+  # New photos are added before any ticked one is removed, so a refused photo leaves the existing
+  # photos untouched. Removing a record deletes only its row here; Active Storage deletes the
+  # stored file after the surrounding transaction has committed, so a failed save keeps the files.
   def update_photos
-    ticked = ticked_ids("deleteimages")
-    @proficient_project.photos.where(id: ticked).find_each do |img|
-      img.image.purge
-      img.destroy
-    end
-
-    Array(params["images"]).each do |img|
-      dimension = FastImage.size(img.tempfile, raise_on_failure: true)
-      Photo.create(
-        image: img,
-        proficient_project_id: @proficient_project.id,
-        width: dimension.first,
-        height: dimension.last
-      )
-    end
+    create_photos
+    @proficient_project.photos.where(id: ticked_ids("deleteimages")).find_each(&:destroy)
   end
 
   def update_files
     ticked = ticked_ids("deletefiles")
-    @proficient_project.repo_files.where(id: ticked).find_each do |f|
-      f.file.purge
-      f.destroy
-    end
+    @proficient_project.repo_files.where(id: ticked).find_each(&:destroy)
 
     Array(params["files"]).each do |f|
       repo = RepoFile.new(file: f, proficient_project_id: @proficient_project.id)
@@ -435,8 +402,8 @@ class ProficientProjectsController < DevelopmentProgramsController
     return if ticked.empty?
 
     @proficient_project.videos.each do |f|
-      purged = f.video.attachments.where(id: ticked).each(&:purge)
-      f.destroy if purged.any? && !f.reload.video.attached?
+      removed = f.video.attachments.where(id: ticked).each(&:destroy)
+      f.destroy if removed.any? && !f.reload.video.attached?
     end
   end
 

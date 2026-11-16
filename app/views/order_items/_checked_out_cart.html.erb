@@ -4,10 +4,10 @@
 <p>This order was checked out with:</p>
 <ul class="list-unstyled">
   <% @order_items.each do |order_item| %>
-    <li><%= order_item.proficient_project&.title %> &times; <%= order_item.quantity.to_i %><%= " (#{order_item.paid_amount} CC)" if order_item.paid_amount %></li>
+    <li><%= order_item.proficient_project&.title %> &times; <%= order_item.quantity.to_i %><%= " (#{number_with_precision(order_item.paid_amount, precision: 3, strip_insignificant_zeros: true)} CC)" if order_item.paid_amount %></li>
   <% end %>
 </ul>
 <% if @order.subtotal %>
-  <p><strong>Total charged: <%= @order.subtotal.to_i %> CC</strong></p>
+  <p><strong>Total charged: <%= number_with_precision(@order.subtotal, precision: 3, strip_insignificant_zeros: true) %> CC</strong></p>
 <% end %>
 <p><%= link_to 'View your orders', orders_path %></p>

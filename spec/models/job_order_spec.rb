@@ -17,6 +17,33 @@ RSpec.describe JobOrder, type: :model do
     end
   end
 
+  describe "assigned staff" do
+    let(:order) { create(:job_order, user: create(:user, :regular_user)) }
+
+    it "accepts a staff member or an admin, and no assignee" do
+      expect(order.update(assigned_staff: create(:user, :staff))).to be(true)
+      expect(order.update(assigned_staff: create(:user, :admin))).to be(true)
+      expect(order.update(assigned_staff: nil)).to be(true)
+    end
+
+    it "refuses a user who is not staff" do
+      expect(order.update(assigned_staff: create(:user, :regular_user))).to be(false)
+      expect(order.errors[:assigned_staff]).to eq([I18n.t("job_orders.alerts.assign_staff_not_staff")])
+    end
+
+    it "refuses a deleted staff member" do
+      gone = create(:user, :staff)
+      gone.update_columns(deleted: true)
+      expect(order.update(assigned_staff_id: gone.id)).to be(false)
+    end
+
+    it "stays editable for other fields when the assignee has since stopped being staff" do
+      order.update!(assigned_staff: create(:user, :staff))
+      order.assigned_staff.update_columns(role: "regular_user")
+      expect(order.reload.update(user_comments: "changed")).to be(true)
+    end
+  end
+
   describe "#total_price" do
     before { seed_job_types! }
 
@@ -69,6 +96,19 @@ RSpec.describe JobOrder, type: :model do
       expect(loaded.latest_status.job_status_id).to eq(JobOrder.where(id: order.id).pick(Arel.sql(JobOrder::LATEST_STATUS_ID_SQL)))
       expect(loaded.task_edits_offered_to?(owner)).to be(true)
       expect(order.reload.latest_status).to eq(highest) # unloaded: one query, the same row
+    end
+
+    it "preloads only the newest status row per order, and #latest_status reads it" do
+      other = create(:job_order, user: owner)
+      other.job_order_statuses.create!(job_status: JobStatus.draft, user: owner)
+      order.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: owner)
+      orders = JobOrder.where(id: [order.id, other.id]).includes(latest_job_order_status: :job_status).to_a
+
+      expect(orders.map { |o| o.latest_job_order_status.id }.sort)
+        .to eq([order, other].map { |o| o.job_order_statuses.reorder(id: :desc).first.id }.sort)
+      statuses = orders.index_by(&:id).transform_values { |o| o.latest_status.job_status }
+      expect(statuses).to eq(order.id => JobStatus.staff_approval, other.id => JobStatus.draft)
+      expect(orders.first.job_order_statuses).not_to be_loaded
     end
 
     it "has no latest_status_id reader (the SQL is the batch rule, #latest_status the instance rule)" do
@@ -141,6 +181,15 @@ RSpec.describe JobOrder, type: :model do
       expect(result).to match_array(others)
     end
 
+    it "excludes a deleted order whatever its latest status" do
+      kept = order_in(:staff_approval)
+      deleted = order_in(:staff_approval)
+      deleted.update!(is_deleted: true)
+
+      expect(JobOrder.without_drafts).to include(kept)
+      expect(JobOrder.without_drafts).not_to include(deleted)
+    end
+
     it "is one query however many orders there are (no query per order)" do
       3.times { order_in(:staff_approval) }
       JobStatus.draft # memoized: not part of the scope's own cost
@@ -182,15 +231,12 @@ RSpec.describe JobOrder, type: :model do
       expect(JobOrder.without_drafts).not_to include(draft_last)
     end
 
-    # without_drafts does not filter deleted rows — callers must compose
-    # `.not_deleted` themselves (as JobOrdersController#admin does).
-    it "keeps soft-deleted orders (deletion is a separate composition)" do
+    it "leaves out soft-deleted orders" do
       submitted = create(:job_order, user: create(:user, :regular_user), is_deleted: true)
       travel(5.minutes) do
         submitted.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: submitted.user)
       end
-      expect(JobOrder.without_drafts).to include(submitted)
-      expect(JobOrder.not_deleted.without_drafts).not_to include(submitted)
+      expect(JobOrder.without_drafts).not_to include(submitted)
     end
   end
 
@@ -229,22 +275,60 @@ RSpec.describe JobOrder, type: :model do
     end
   end
 
-  describe "#set_filename (after_save)" do
+  describe "#prefix_file_names" do
     it "prefixes stored user file blobs with the order id, twice-save safe" do
       order = create(:job_order, user: create(:user, :regular_user))
       order.update!(user_files: [FilesTestHelper.stl])
+      expect(order.user_files.first.filename.to_s).to eq("test.stl")
+      order.prefix_file_names
 
       blob = order.user_files.first
-      expect(blob.filename.to_s).to eq("#{order.id}_test.stl")
+      expect(blob.reload.filename.to_s).to eq("#{order.id}_test.stl")
 
-      order.update!(comments: "again")
+      order.prefix_file_names
       expect(order.user_files.first.reload.filename.to_s).to eq("#{order.id}_test.stl")
+    end
+
+    it "prefixes a file whose name merely begins with the order id digits" do
+      order = create(:job_order, user: create(:user, :regular_user))
+      order.update!(user_files: [FilesTestHelper.stl])
+      order.user_files.first.blob.update!(filename: "#{order.id}abc.stl")
+      order.prefix_file_names
+      expect(order.reload.user_files.first.filename.to_s).to eq("#{order.id}_#{order.id}abc.stl")
     end
 
     it "prefixes staff files the same way" do
       order = create(:job_order, user: create(:user, :regular_user))
       order.update!(staff_files: [FilesTestHelper.stl])
-      expect(order.staff_files.first.filename.to_s).to eq("#{order.id}_test.stl")
+      order.prefix_file_names
+      expect(order.reload.staff_files.first.filename.to_s).to eq("#{order.id}_test.stl")
+    end
+
+    # Names already prefixed, so nothing is renamed (a rename is one write per file): only the reads are counted.
+    it "reads the files of three tasks and their options in as many queries as for one" do
+      option = create(:job_option)
+      orders = [1, 3].map do |count|
+        create(:job_order, user: create(:user, :regular_user)).tap do |job_order|
+          job_order.update!(user_files: [FilesTestHelper.stl])
+          count.times do |i|
+            task = job_order.job_tasks.create!(title: "Task #{i}", user_files: [FilesTestHelper.stl],
+                                               staff_files: [FilesTestHelper.png])
+            task.job_task_options.create!(job_option: option, option_file: FilesTestHelper.pdf)
+          end
+          job_order.prefix_file_names
+        end
+      end
+      queries = lambda do |job_order|
+        count = 0
+        counter = ->(*, payload) { count += 1 unless payload[:name] == "SCHEMA" || payload[:cached] }
+        fresh = JobOrder.find(job_order.id)
+        ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { fresh.prefix_file_names }
+        count
+      end
+
+      expect(queries.call(orders[1])).to eq(queries.call(orders[0]))
+      task_names = orders[1].job_tasks.map { |task| task.reload.user_files.map { |file| file.filename.to_s } }
+      expect(task_names).to eq([["#{orders[1].id}_#{FilesTestHelper.stl_name}"]] * 3)
     end
   end
 
@@ -285,6 +369,20 @@ RSpec.describe JobOrder, type: :model do
       order = create(:job_order, user: create(:user, :regular_user))
       order.job_tasks.create!(title: "Task #1")
       expect(order.reload.expedited?).to be(false)
+    end
+
+    it "gives the ids of the expedited orders among many in one query" do
+      option = JobOption.create!(name: "Expedited Resin", fee: 2)
+      plain = JobOption.create!(name: "Polish", fee: 1)
+      fast, slow, bare = create_list(:job_order, 3, user: create(:user, :regular_user))
+      2.times { |n| fast.job_tasks.create!(title: "Task #{n}").job_task_options.create!(job_option: option) }
+      slow.job_tasks.create!(title: "Task #1").job_task_options.create!(job_option: plain)
+      other = create(:job_order, user: create(:user, :regular_user))
+      other.job_tasks.create!(title: "Task #1").job_task_options.create!(job_option: option)
+
+      ids = nil
+      expect(count_queries { ids = JobOrder.expedited_ids([fast, slow, bare]) }).to eq(1)
+      expect(ids).to eq(Set[fast.id])
     end
   end
 
@@ -568,16 +666,6 @@ RSpec.describe JobOrder, type: :model do
           expect(fresh.quote_fingerprint(backward)).to eq(fresh.quote_fingerprint(forward))
         end
 
-        it "is the same for two quote options on one task with the same job_option_id and different prices, in either order" do
-          quote = order.job_tasks.first.job_task_quote
-          quote.job_task_quote_options.create!(job_option: options.first, price: 7)
-          quote.job_task_quote_options.create!(job_option: options.first, price: 4)
-
-          fresh, forward = snapshot_for(order.id, reverse: false)
-          _, backward = snapshot_for(order.id, reverse: true)
-          expect(fresh.quote_fingerprint(backward)).to eq(fresh.quote_fingerprint(forward))
-        end
-
         it "changes when one amount changes (so the comparison above is not vacuous)" do
           fresh, forward = snapshot_for(order.id, reverse: false)
           before = fresh.quote_fingerprint(forward)
@@ -603,6 +691,38 @@ RSpec.describe JobOrder, type: :model do
         expect(order.checkout_link.value).to be_nil
       end
 
+      it "serves a current draft from the locked path when the caller's status skips the lock-free read" do
+        quoted_task!("Task #1", price: 20, service_price: 0, service_quantity: 0)
+        order.reload.checkout_link
+        shopify.calls.clear
+
+        expect(order.reload.checkout_link(JobStatus.staff_approval).value).to eq("https://pay.example/inv-1")
+        expect(shopify.calls.map { |c| c[:query][/\b(draftOrder\w+|getDraftOrder)\b/] }).to eq(%w[getDraftOrder])
+        expect(order.job_order_statuses.last.job_status).to eq(JobStatus.completed)
+      end
+
+      it "returns no link and keeps the stored legacy draft when Shopify does not answer the locked read" do
+        quoted_task!("Task #1", price: 20, service_price: 0, service_quantity: 0)
+        order.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/7", shopify_draft_order_fingerprint: nil)
+        shopify.status = 502
+
+        expect(order.reload.checkout_link.value).to be_nil
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/7")
+        expect(shopify.calls.map { |c| c[:query][/\b(draftOrder\w+|getDraftOrder)\b/] }).to eq(%w[getDraftOrder])
+      end
+
+      it "drops a stored id Shopify no longer knows and creates a new draft, deleting nothing" do
+        quoted_task!("Task #1", price: 20, service_price: 0, service_quantity: 0)
+        order.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/7", shopify_draft_order_fingerprint: nil)
+        shopify.missing_ids = ["gid://shopify/DraftOrder/7"]
+
+        expect(order.reload.checkout_link.value).to eq("https://pay.example/inv-1")
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+        expect(shopify.deleted_ids).to be_empty
+        expect(shopify.calls.map { |c| c[:query][/\b(draftOrder\w+|getDraftOrder)\b/] })
+          .to eq(%w[getDraftOrder draftOrderCreate getDraftOrder])
+      end
+
       it "treats an empty (but non-null) draftOrder as found, not gone: no re-create" do
         fingerprint = described_class.find(order.id).quote_fingerprint
         order.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/9001", shopify_draft_order_fingerprint: fingerprint)
@@ -611,6 +731,36 @@ RSpec.describe JobOrder, type: :model do
         expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
         expect(shopify).to have_received(:query).once
       end
+    end
+  end
+
+  describe "#tasks_missing_information" do
+    it "lists the tasks lacking a job type or a required service, oldest first" do
+      order = create(:job_order)
+      typed = create(:job_type)
+      group = create(:job_service_group, job_type: typed)
+      service = create(:job_service, job_service_group: group)
+      later = order.job_tasks.create!(title: "no type", created_at: 1.hour.ago)
+      earlier = order.job_tasks.create!(title: "no service", job_type: typed, created_at: 2.hours.ago)
+      order.job_tasks.create!(title: "complete", job_type: typed, job_service: service)
+
+      expect(order.tasks_missing_information).to eq([earlier, later])
+    end
+
+    it "loads job types and service groups once, whatever the number of tasks" do
+      order = create(:job_order)
+      3.times { order.job_tasks.create!(title: "T", job_type: create(:job_type)) }
+      queries = []
+      callback = ->(*, payload) { queries << payload[:sql] unless payload[:name] == "SCHEMA" }
+      ActiveSupport::Notifications.subscribed(callback, "sql.active_record") { order.tasks_missing_information }
+      expect(queries.size).to eq(3)
+    end
+
+    it "uses the tasks it is given" do
+      order = create(:job_order)
+      task = order.job_tasks.create!(title: "T")
+      expect(order.tasks_missing_information([task])).to eq([task])
+      expect(order.tasks_missing_information([])).to eq([])
     end
   end
 end

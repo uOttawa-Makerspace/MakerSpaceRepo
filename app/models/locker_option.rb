@@ -5,6 +5,8 @@ class LockerOption < ApplicationRecord
   validates :name, uniqueness: true, presence: true
   normalizes :name, with: ->(name) { name.strip.downcase }
 
+  class LockerProductMissing < StandardError; end
+
   LOCKER_PRODUCT_LINK = 'locker_product_link'.freeze
   LOCKERS_ENABLED = 'lockers_enabled'.freeze
 
@@ -29,7 +31,8 @@ class LockerOption < ApplicationRecord
   def self.locker_product_info
     return unless locker_product_link
 
-    product = ShopifyService.product(locker_product_link)
+    product = Payments::ShopifyCatalog.product(locker_product_link)
+    raise LockerProductMissing, "Shopify has no product for the locker product link" unless product
 
     {
       title: product['title'],
@@ -49,23 +52,10 @@ class LockerOption < ApplicationRecord
           }
         end
     }
-    rescue StandardError => e
-      Rails.logger.fatal e
-      nil
-  end
-
-  def self.locker_product_variant_id
-    locker_product_info[:variant_id]
   rescue StandardError => e
-    Rails.logger.fatal e
+    # The lockers pages render without product details (callers treat nil as "Shopify not answering").
+    HandledError.report(e, source: "locker_option.locker_product_info")
     nil
-  end
-
-  def self.locker_rental_price
-    locker_product_info[:price]
-  rescue StandardError => e
-    Rails.logger.warn e
-    0
   end
 
   # Sitewide locker disable switch

@@ -84,6 +84,15 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       expect(flash[:notice]).to eq("Video Uploaded")
     end
 
+    it "refuses a video with no project or module, and one with both" do
+      blob = direct_blob(filename: "a.mp4", content_type: "video/mp4")
+      mod = create(:learning_module)
+      expect { post videos_path, params: video_params([blob], proficient_project_id: "") }.not_to change(Video, :count)
+      expect(response).to redirect_to(new_video_path)
+      expect { post videos_path, params: video_params([blob], learning_module_id: mod.id) }.not_to change(Video, :count)
+      expect(response).to redirect_to(new_video_path)
+    end
+
     it "also accepts a classic multipart upload" do
       expect do
         post videos_path, params: { video: { proficient_project_id: project.id, video: [FilesTestHelper.mp4] } }
@@ -95,7 +104,7 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       blob = direct_blob(filename: "evil.exe", content_type: "application/x-msdownload", content: "MZ" * 100)
       expect { post videos_path, params: video_params([blob]) }.not_to change(Video, :count)
       expect(response).to redirect_to(new_video_path)
-      expect(flash[:alert]).to eq("Something went wrong. Try again.")
+      expect(flash[:alert]).to start_with("The video was not uploaded. Video file should be one of")
     end
 
     # the bytes must sniff as a video; the declared type and filename no longer decide
@@ -128,10 +137,10 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       expect(response).to redirect_to(new_video_path)
     end
 
-    it "creates a video with no project and no learning module (no presence validation)" do
+    it "lists a video that belongs to a learning module" do
       blob = direct_blob(filename: "clip.mp4", content_type: "video/mp4")
-      expect { post videos_path, params: { video: { video: [blob.signed_id] } } }.to change(Video, :count).by(1)
-      # orphan videos are valid; they never appear in index (inner joins)
+      mod = create(:learning_module)
+      expect { post videos_path, params: { video: { learning_module_id: mod.id, video: [blob.signed_id] } } }.to change(Video, :count).by(1)
       expect(Video.last.proficient_project_id).to be_nil
       get videos_path
       expect(response).to have_http_status(:ok)
@@ -376,7 +385,7 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       content_login!(buyer)
       bad = direct_blob(filename: "evil.exe", content_type: "application/x-msdownload", content: "MZ" * 100)
       put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "x", files: [bad.signed_id] } }
-      expect(flash[:alert]).to eq("Something went wrong with updating the proficient project. Please check the allowed file types.")
+      expect(flash[:alert]).to start_with("#{I18n.t("errors.shop.projects.submit_invalid")} ")
       expect(oi.reload.status).to eq("In progress")
       good = direct_blob(filename: "ok.pdf", content_type: "application/pdf", content: "%PDF-1.4\n")
       put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "x", files: [good.signed_id] } }

@@ -5,8 +5,8 @@
     <!-- PENDING BOOKINGS -->
     <div class="card shadow-sm mb-4 border-0 bg-body" id="pending-accordion">
       <div class="card-header text-bg-warning d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#pendingBody">
-        <h5 class="mb-0 fw-bold text-dark"><i class="fa-regular fa-clock"></i> Pending Bookings</h5>
-        <span class="text-dark"><i class="fa-solid fa-chevron-down"></i></span>
+        <h5 class="mb-0 fw-bold"><i class="fa-regular fa-clock"></i> Pending Bookings</h5>
+        <span><i class="fa-solid fa-chevron-down"></i></span>
       </div>
       
       <div id="pendingBody" class="collapse show">
@@ -26,12 +26,12 @@
             <!-- Bulk Approve Form Handle -->
             <%= form_with id: 'bulkApproveDeclineForm', url: bulk_approve_decline_sub_space_booking_index_path, method: :put do |f| %><% end %>
 
-            <table class="table table-hover align-middle mb-0 table-sub-space-booking-pending">
+            <table class="table table-hover align-middle mb-0 table-sub-space-booking-pending" data-controller="select-all">
               <thead class="table-secondary">
                 <tr>
                   <th class="ps-3">
                     <div class="form-check">
-                      <%= check_box_tag :pending_bookings_select_all, '1', false, class: 'form-check-input', aria: { label: t('common.names.select_all_pending') } %>
+                      <%= check_box_tag :pending_bookings_select_all, '1', false, class: 'form-check-input', data: { action: 'change->select-all#toggle' }, aria: { label: t('common.names.select_all_pending') } %>
                     </div>
                   </th>
                   <th>Room</th>
@@ -55,7 +55,7 @@
                   <tr>
                     <td class="ps-3">
                       <div class="form-check">
-                        <%= check_box_tag "sub_space_booking_ids[]", booking.id, false, id: "booking_#{booking.id}", class: 'form-check-input pending-booking-select', aria: { label: t('common.names.select_booking', id: booking.id) }, form: 'bulkApproveDeclineForm' %>
+                        <%= check_box_tag "sub_space_booking_ids[]", booking.id, false, id: "booking_#{booking.id}", class: 'form-check-input pending-booking-select', data: { select_all_target: 'row' }, aria: { label: t('common.names.select_booking', id: booking.id) }, form: 'bulkApproveDeclineForm' %>
                       </div>
                     </td>
                     <td>
@@ -68,8 +68,8 @@
                       <small class="text-body-secondary"><%= truncate(booking.description, length: 50) %></small>
                     </td>
                     <td>
-                      <%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none fw-bold text-primary') %><br>
-                      <small class="text-body-secondary"><%= booking.user.email %></small>
+                      <%= staff_user_link(booking.display_user, class: 'text-decoration-none fw-bold text-primary') %><br>
+                      <small class="text-body-secondary"><%= booking.display_user&.email %></small>
                     </td>
                     <td>
                       <% if bookings.length > 1 %>
@@ -83,9 +83,9 @@
                     <td class="text-end pe-3">
                       <% if bookings.length > 1 %>
                         <div class="btn-group btn-group-sm">
-                          <%= button_to bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'approve', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-outline-success', title: 'Approve All' do %><i class="fa-solid fa-check-double"></i><% end %>
-                          <%= button_tag type: 'button', class: 'btn btn-outline-primary', title: 'Select Specific', data: { bs_toggle: 'modal', bs_target: '#approveRecurringModal', dates: bookings.map { |b| [b.id, "#{b.start_time.strftime("%b %e")} (#{b.start_time.strftime("%l:%M%P")}-#{b.end_time.strftime("%l:%M%P")})"] } } do %><i class="fa-solid fa-list"></i><% end %>
-                          <%= button_to bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'decline', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-outline-danger', title: 'Reject All' do %><i class="fa-solid fa-xmark"></i><% end %>
+                          <%= button_to bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'approve', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-outline-success', title: t('sub_space_booking.series_actions.approve_all') do %><i class="fa-solid fa-check-double"></i><% end %>
+                          <%= button_tag type: 'button', class: 'btn btn-outline-primary', title: t('sub_space_booking.series_actions.select_specific'), data: { bs_toggle: 'modal', bs_target: '#approveRecurringModal', dates: bookings.map { |b| [b.id, "#{b.start_time.strftime("%b %e")} (#{b.start_time.strftime("%l:%M%P")}-#{b.end_time.strftime("%l:%M%P")})"] } } do %><i class="fa-solid fa-list"></i><% end %>
+                          <%= button_to bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'decline', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-outline-danger', title: t('sub_space_booking.series_actions.reject_all') do %><i class="fa-solid fa-xmark"></i><% end %>
                         </div>
                       <% else %>
                         <div class="d-flex gap-2 justify-content-end">
@@ -146,20 +146,19 @@
                       <span class="badge text-bg-secondary"><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></span>
                     </td>
                     <td><strong class="text-body-emphasis"><%= booking.name %></strong></td>
-                    <td><%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none text-primary') %></td>
+                    <td><%= staff_user_link(booking.display_user, class: 'text-decoration-none text-primary') %></td>
                     <td>
                       <strong class="text-body-emphasis"><%= booking.start_time.strftime("%b %e, %Y") %></strong><br>
                       <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>
                     </td>
                     <td>
-                      <span class="badge <%= booking.public ? 'text-bg-info text-dark' : 'text-bg-dark' %>"><%= booking.public ? 'Public' : 'Private' %></span>
+                      <span class="badge <%= booking.public ? 'text-bg-info' : 'text-bg-dark' %>"><%= booking.public ? 'Public' : 'Private' %></span>
                     </td>
                     <td class="text-end pe-3">
                       <div class="btn-group btn-group-sm">
                         <%= button_to sub_space_booking_publish_path(sub_space_booking_id: booking.id), method: :put, class: "btn #{booking.public ? 'btn-outline-secondary' : 'btn-outline-primary'}" do %>
                           <%= booking.public ? 'Make Private' : 'Make Public' %>
                         <% end %>
-                        <%= button_to sub_space_booking_decline_path(sub_space_booking_id: booking.id), method: :put, class: 'btn btn-outline-danger' do %><i class="fa-solid fa-xmark"></i><% end %>
                       </div>
                     </td>
                   </tr>
@@ -198,7 +197,6 @@
                   <th>Event Details</th>
                   <th>User</th>
                   <th>Schedule</th>
-                  <th class="text-end pe-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -211,13 +209,10 @@
                       <strong class="text-body-emphasis"><%= booking.name %></strong><br>
                       <small class="text-body-secondary"><%= truncate(booking.description, length: 50) %></small>
                     </td>
-                    <td><%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none text-primary') %></td>
+                    <td><%= staff_user_link(booking.display_user, class: 'text-decoration-none text-primary') %></td>
                     <td>
                       <strong class="text-body-emphasis"><%= booking.start_time.strftime("%b %e, %Y") %></strong><br>
                       <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>
-                    </td>
-                    <td class="text-end pe-3">
-                      <%= button_to sub_space_booking_approve_path(sub_space_booking_id: booking.id), method: :put, class: 'btn btn-sm btn-success' do %><i class="fa-solid fa-check"></i> Approve<% end %>
                     </td>
                   </tr>
                 <% end %>
@@ -238,18 +233,24 @@
         <div class="card-body p-4 bg-body">
           <%= form_with url: approve_access_sub_space_booking_index_path, method: :put, class: 'mb-4' do |f| %>
             <div class="input-group">
-              <%= f.select :user_id, [], {}, { class: 'form-select', id: 'user_booking_select', aria: { label: t('common.names.user_to_permit') }, data: { min_length: User::DIRECTORY_SEARCH_MIN_LENGTH, hint: t('sub_space_booking.picker.min_length', count: User::DIRECTORY_SEARCH_MIN_LENGTH) } } %>
+              <%= f.select :user_id, [], {}, { class: 'form-select', id: 'user_booking_select', aria: { label: t('common.names.user_to_permit') }, data: { controller: 'booking-user-picker', min_length: User::DIRECTORY_SEARCH_MIN_LENGTH, hint: t('sub_space_booking.picker.min_length', count: User::DIRECTORY_SEARCH_MIN_LENGTH) } } %>
               <%= f.submit 'Permit Access', class: 'btn btn-primary fw-bold' %>
             </div>
           <% end %>
 
           <h5 class="mt-4 text-warning border-bottom border-warning-subtle pb-2">Pending Requests</h5>
-          <%= form_with url: bulk_approve_access_sub_space_booking_index_path, method: :put do |f| %>
+          <%# One approve and one decline form per request, all outside the bulk form; each row's controls name their form. %>
+          <% @pending_access_requests.each do |req| %>
+            <%= form_with url: approve_access_sub_space_booking_index_path(id: req.id), method: :put, id: "approve-access-#{req.id}" do %><% end %>
+            <%= form_with url: deny_access_sub_space_booking_index_path(id: req.id), method: :put, id: "deny-access-#{req.id}" do %><% end %>
+          <% end %>
+          <%= form_with url: bulk_approve_access_sub_space_booking_index_path, method: :put, id: 'bulkApproveAccessForm' do %><% end %>
+          <div>
             <div class="table-responsive">
-              <table class="table table-hover align-middle border border-secondary-subtle">
+              <table class="table table-hover align-middle border border-secondary-subtle" data-controller="select-all">
                 <thead class="table-secondary">
                   <tr>
-                    <th class="ps-3"><input type="checkbox" id="userRequestSelectAll" class="form-check-input" aria-label="<%= t('common.names.select_all_requests') %>" /></th>
+                    <th class="ps-3"><input type="checkbox" id="userRequestSelectAll" class="form-check-input" data-action="change->select-all#toggle" aria-label="<%= t('common.names.select_all_requests') %>" /></th>
                     <th>Name</th>
                     <th>Reason</th>
                     <th>Date</th>
@@ -257,9 +258,9 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <% UserBookingApproval.includes(:user).where(approved: false).find_each do |req| %>
+                  <% @pending_access_requests.each do |req| %>
                     <tr>
-                      <td class="ps-3"><%= check_box_tag 'user_booking_approval_ids[]', req.id, false, class: 'form-check-input user-request-select', aria: { label: t('common.names.select_access_request', id: req.id) } %></td>
+                      <td class="ps-3"><%= check_box_tag 'user_booking_approval_ids[]', req.id, false, class: 'form-check-input user-request-select', data: { select_all_target: 'row' }, form: 'bulkApproveAccessForm', aria: { label: t('common.names.select_access_request', id: req.id) } %></td>
                       <td>
                         <strong class="text-body-emphasis"><%= req.user.name %></strong><br>
                         <small class="text-body-secondary"><%= req.user.email %></small>
@@ -267,9 +268,12 @@
                       <td class="text-body-emphasis"><%= req.comments %></td>
                       <td class="text-body-secondary"><%= req.created_at.strftime("%b %e, %Y") %></td>
                       <td class="text-end pe-3">
-                        <div class="btn-group btn-group-sm">
-                          <%= button_to approve_access_sub_space_booking_index_path(id: req.id), method: :put, class: 'btn btn-outline-success' do %><i class="fa-solid fa-check"></i><% end %>
-                          <%= button_to deny_access_sub_space_booking_index_path(id: req.id), method: :put, class: 'btn btn-outline-danger' do %><i class="fa-solid fa-xmark"></i><% end %>
+                        <div class="d-flex justify-content-end align-items-center gap-2">
+                          <%= text_field_tag :reason, nil, form: "deny-access-#{req.id}", id: "decline_reason_#{req.id}", class: 'form-control form-control-sm', maxlength: UserBookingApproval::REASON_MAX_LENGTH, placeholder: t('sub_space_booking.deny.reason_placeholder'), aria: { label: t('sub_space_booking.deny.decline_reason_label', name: req.user.name) } %>
+                          <div class="btn-group btn-group-sm">
+                            <button type="submit" form="approve-access-<%= req.id %>" class="btn btn-outline-success"><i class="fa-solid fa-check"></i></button>
+                            <button type="submit" form="deny-access-<%= req.id %>" class="btn btn-outline-danger" aria-label="<%= t('sub_space_booking.deny.decline_label', name: req.user.name) %>"><i class="fa-solid fa-xmark"></i></button>
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -277,8 +281,8 @@
                 </tbody>
               </table>
             </div>
-            <%= f.submit 'Bulk Approve Selected', class: 'btn btn-success btn-sm mt-2' %>
-          <% end %>
+            <button type="submit" form="bulkApproveAccessForm" class="btn btn-success btn-sm mt-2">Bulk Approve Selected</button>
+          </div>
 
           <h5 class="mt-5 text-success border-bottom border-success-subtle pb-2">Approved Users</h5>
           <div class="table-responsive">
@@ -292,16 +296,19 @@
                 </tr>
               </thead>
               <tbody>
-                <% UserBookingApproval.includes(:user, :staff).where(approved: true).find_each do |req| %>
+                <% UserBookingApproval.approved.from_active_accounts.includes(:user, :display_staff).find_each do |req| %>
                   <tr>
                     <td class="ps-3">
                       <strong class="text-body-emphasis"><%= req.user.name %></strong><br>
                       <small class="text-body-secondary"><%= req.user.email %></small>
                     </td>
                     <td class="text-body-emphasis"><%= truncate(req.comments, length: 40) %></td>
-                    <td class="text-body-secondary"><%= req.staff.name %></td>
+                    <td class="text-body-secondary"><%= req.display_staff&.name %></td>
                     <td class="text-end pe-3">
-                      <%= button_to deny_access_sub_space_booking_index_path(id: req.id), method: :put, class: 'btn btn-sm btn-outline-danger' do %>Revoke<% end %>
+                      <%= form_with url: deny_access_sub_space_booking_index_path(id: req.id), method: :put, class: 'd-flex justify-content-end align-items-center gap-2' do |f| %>
+                        <%= f.text_field :reason, id: "revoke_reason_#{req.id}", class: 'form-control form-control-sm', maxlength: UserBookingApproval::REASON_MAX_LENGTH, placeholder: t('sub_space_booking.deny.reason_placeholder'), aria: { label: t('sub_space_booking.deny.revoke_reason_label', name: req.user.name) } %>
+                        <%= f.button 'Revoke', type: 'submit', class: 'btn btn-sm btn-outline-danger' %>
+                      <% end %>
                     </td>
                   </tr>
                 <% end %>
@@ -350,7 +357,7 @@
                       <strong class="text-body-emphasis"><%= booking.name %></strong><br>
                       <small class="text-body-secondary"><%= truncate(booking.description, length: 50) %></small>
                     </td>
-                    <td><%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none text-primary') %></td>
+                    <td><%= staff_user_link(booking.display_user, class: 'text-decoration-none text-primary') %></td>
                     <td>
                       <strong class="text-body-emphasis"><%= booking.start_time.strftime("%b %e, %Y") %></strong><br>
                       <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>
@@ -402,7 +409,7 @@
                       <strong class="text-body-emphasis"><%= booking.name %></strong><br>
                       <small class="text-body-secondary"><%= truncate(booking.description, length: 50) %></small>
                     </td>
-                    <td><%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none text-primary') %></td>
+                    <td><%= staff_user_link(booking.display_user, class: 'text-decoration-none text-primary') %></td>
                     <td>
                       <strong class="text-body-emphasis"><%= booking.start_time.strftime("%b %e, %Y") %></strong><br>
                       <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>
@@ -454,7 +461,7 @@
                       <strong class="text-body-emphasis"><%= booking.name %></strong><br>
                       <small class="text-body-secondary"><%= truncate(booking.description, length: 50) %></small>
                     </td>
-                    <td><%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none text-primary') %></td>
+                    <td><%= staff_user_link(booking.display_user, class: 'text-decoration-none text-primary') %></td>
                     <td>
                       <strong class="text-body-emphasis"><%= booking.start_time.strftime("%b %e, %Y") %></strong><br>
                       <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>

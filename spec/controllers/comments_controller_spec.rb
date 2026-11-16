@@ -56,7 +56,7 @@ RSpec.describe CommentsController, type: :controller do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         delete :destroy, params: { id: @comment.id }
-        expect(flash[:alert]).to eq("Something went wrong")
+        expect(flash[:alert]).to eq("Only the author of a comment or an admin can delete it.")
       end
     end
 
@@ -76,7 +76,7 @@ RSpec.describe CommentsController, type: :controller do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        repository = create(:repository)
+        create(:repository)
       end
 
       it "should upvote the comment" do
@@ -105,14 +105,14 @@ RSpec.describe CommentsController, type: :controller do
     end
 
     context "voted" do
-      before(:each) { repository = create(:repository) }
+      before(:each) { create(:repository) }
 
       it "should downvote an upvoted comment" do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         comment = create(:comment)
-        Upvote.create(user_id: user.id, comment_id: comment.id, downvote: false)
+        Upvote.cast(user, comment, false)
         post :vote,
              params: {
                comment_id: comment.id,
@@ -127,7 +127,7 @@ RSpec.describe CommentsController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         comment = create(:comment)
-        Upvote.create(user_id: user.id, comment_id: comment.id, downvote: true)
+        Upvote.cast(user, comment, true)
         post :vote,
              params: {
                comment_id: comment.id,

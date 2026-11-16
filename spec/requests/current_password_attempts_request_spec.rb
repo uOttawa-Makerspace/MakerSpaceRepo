@@ -258,9 +258,9 @@ RSpec.describe "Current-password re-authentication", type: :request do
   it "reports a database error, keeps the session and asks to try again" do
     log_in!
     allow_any_instance_of(User).to receive(:bump_token_version!).and_raise(ActiveRecord::StatementInvalid, "boom")
-    expect(Rails.error).to receive(:report).with(an_instance_of(ActiveRecord::StatementInvalid), handled: true)
+    expect(Rails.error).to receive(:report).with(an_instance_of(ActiveRecord::StatementInvalid), hash_including(handled: true))
     change_password!(password)
-    expect(flash[:alert]).to eq("Your password could not be changed. Please try again.")
+    expect(flash[:alert]).to start_with("Your new password could not be saved because of a problem on our side. Nothing was changed.")
     expect(signed_in?).to be(true)
   end
 

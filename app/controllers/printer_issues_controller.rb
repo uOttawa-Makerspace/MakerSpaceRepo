@@ -1,21 +1,16 @@
 class PrinterIssuesController < StaffAreaController
   layout "staff_area"
 
+  before_action :ensure_admin, only: :update_notification_email
+
   def index
-    @issues = PrinterIssue.all.order(:printer_id)
-    @issues_summary =
-      @issues
-        .filter(&:active)
-        .group_by do |issue|
-          PrinterIssue.summaries.values.detect do |s|
-            issue.summary.include? s
-          end || "Other"
-        end
+    @issues = PrinterIssue.includes(:reporter).order(:printer_id)
+    @issues_summary = PrinterIssue.group_by_summary(@issues.filter(&:active))
 
     @maintenance_email = Setting.maintenance_email
 
     respond_to do |format|
-      format.html
+      format.html { preload_printers(@issues) }
       format.json do
         render json: {
           issues: @issues.map do |issue|
@@ -35,19 +30,13 @@ class PrinterIssuesController < StaffAreaController
   end
 
   def show
-    @issue = PrinterIssue.find_by(id: params[:id])
+    @issue = PrinterIssue.find(params[:id])
   end
 
   def new
     @issue ||= PrinterIssue.new
-    @printers = Printer.show_options.all
-    @issueSummary =
-      @printers
-        .filter_map do |printer|
-          count = printer.count_printer_issues.count
-          [printer.id, printer.count_printer_issues] if count.positive?
-        end
-        .to_h
+    @printers = Printer.with_type.to_a
+    @issueSummary = Printer.active_issue_counts(@printers, except: @issue.id)
   end
 
   def create
@@ -62,27 +51,26 @@ class PrinterIssuesController < StaffAreaController
       )
 
     if @issue.save
-      send_notification_email(@issue)
-      redirect_to @issue
+      redirect_to @issue, alert: (I18n.t("errors.printers.notification_not_sent") unless send_notification_email(@issue))
     else
       new
-      flash[:alert] = "Failed to create issue: #{helpers.sanitize(@issue.errors.full_messages.join("<br />"))}"
+      flash.now[:alert] = validation_message(@issue, "errors.printers.issue_not_created")
       render :new, status: :unprocessable_content
     end
   end
 
   def edit
-    new
     @issue = PrinterIssue.find(params[:id])
+    new
     render :new, locals: { is_edit: true }
   end
 
   def update
     # Ideally, all updates happen from /printer_issues
-    issue = PrinterIssue.find_by(id: params[:id])
+    issue = PrinterIssue.find(params[:id])
     unless issue.update(printer_issue_params.except(:printer_id))
-      flash[:alert] = "Failed to update printer issue #{params[:id]}, #{issue.errors.full_messages.join(";")}"
-      redirect_to printer_issues_path
+      flash[:alert] = validation_message(issue, "errors.printers.issue_not_updated")
+      return redirect_to printer_issues_path
     end
     if issue.active
       redirect_to issue
@@ -92,24 +80,22 @@ class PrinterIssuesController < StaffAreaController
   end
 
   # POST /printer_issues/:id/resolve (MakerRepo React app): same as the staff
-  # UI's resolve, i.e. update(active: false).
+  # UI's resolve (PrinterIssue#resolve!).
   def resolve
     issue = PrinterIssue.find(params[:id])
-    if issue.update(active: false)
-      head :ok
-    else
-      render json: { errors: issue.errors.full_messages }, status: :unprocessable_content
-    end
+    issue.resolve!
+    head :ok
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { errors: e.record.errors.full_messages }, status: :unprocessable_content
   end
 
   def destroy
     unless current_user.admin?
-      redirect_to printer_issues_path
+      redirect_to printer_issues_path, alert: I18n.t("errors.printers.issue_delete_admin_only")
       return
     end
-    unless PrinterIssue.find_by(id: params[:id]).destroy
-      flash[:alert] = "Failed to destroy issue"
-    end
+    issue = PrinterIssue.find(params[:id])
+    flash[:alert] = validation_message(issue, "errors.printers.issue_not_deleted") unless issue.destroy
     redirect_to printer_issues_path, status: :see_other
   end
 
@@ -131,6 +117,17 @@ class PrinterIssuesController < StaffAreaController
 
   private
 
+  # The page names each issue's printer; the JSON list does not, so only the page loads them.
+  def preload_printers(issues)
+    ActiveRecord::Associations::Preloader.new(records: issues.to_a, associations: { printer: :printer_type }).call
+  end
+
+  def ensure_admin
+    return if current_user.admin?
+
+    redirect_to printer_issues_path, alert: "Only admins can change the notification email."
+  end
+
   def printer_issue_params
     params.require(:printer_issue).permit(
       :printer_id,
@@ -140,12 +137,16 @@ class PrinterIssuesController < StaffAreaController
     )
   end
 
+  # Queues the maintenance notification; false when the queue refused it (reported). The issue is
+  # already saved, so that is a notice to the reporter and not an error page.
   def send_notification_email(issue)
     recipient = Setting.maintenance_email
-    return if recipient.blank?
+    return true if recipient.blank?
 
     MsrMailer.new_printer_issue(issue, recipient).deliver_later
-  rescue StandardError => e
-    Rails.logger.error("Failed to send printer issue notification email: #{e.message}")
+    true
+  rescue ActiveJob::EnqueueError, ActiveRecord::ActiveRecordError => e
+    report_unexpected(e, source: "printer_issues#create")
+    false
   end
 end

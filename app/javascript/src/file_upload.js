@@ -52,8 +52,9 @@ function appendFileToPreview(file, previewContainer, fieldPrefix, fieldSuffix) {
     preview.appendChild(handle);
   }
 
-  //  Thumbnail
+  //  Thumbnail (decorative: the file name beside it names the item)
   const img = document.createElement("img");
+  img.alt = "";
   const objectURL = URL.createObjectURL(file);
   img.addEventListener("error", (e) => {
     URL.revokeObjectURL(objectURL);
@@ -213,62 +214,44 @@ function setupDropZone(dropZone, fileInput) {
     ).length;
     const accept = fileInput.accept || "";
 
-    Array.from(e.dataTransfer.files).forEach((file, i) => {
-      if (accept && !isFileAccepted(file, accept)) return;
-      if (!limit || i + current < limit) {
-        appendFileToPreview(
-          file,
-          previewContainer,
-          fileInput.dataset.fileUploadPrefix,
-          fileInput.dataset.fileUploadSuffix,
-        );
-      }
-    });
+    Array.from(e.dataTransfer.files)
+      .filter((file) => isFileAccepted(file, accept))
+      .forEach((file, i) => {
+        if (!limit || i + current < limit) {
+          appendFileToPreview(
+            file,
+            previewContainer,
+            fileInput.dataset.fileUploadPrefix,
+            fileInput.dataset.fileUploadSuffix,
+          );
+        }
+      });
   });
 }
 
 //
 // BOOTSTRAP
 //
-function createFileInput(target) {
-  if (target.dataset.fileUploadInitialized) return;
-  target.dataset.fileUploadInitialized = "true";
-
-  // Fallback to name if data-file-upload-prefix is missing
-  const prefix =
+// Fallback to name if data-file-upload-prefix is missing
+function fieldPrefix(target) {
+  return (
     target.dataset.fileUploadPrefix ||
-    (target.name ? target.name.replace(/\[\]$/, "") : null);
-
-  if (!prefix) {
-    console.warn("file_upload: data-file-upload-prefix is required on", target);
-    return;
-  }
-  target.dataset.fileUploadPrefix = prefix;
-
-  // Infer default suffix for nested attributes if not specified
-  if (!target.dataset.fileUploadSuffix) {
-    if (prefix.includes("photos_attributes")) {
-      target.dataset.fileUploadSuffix = "image";
-    } else if (prefix.includes("repo_files_attributes")) {
-      target.dataset.fileUploadSuffix = "file";
-    }
-  }
-
-  target.removeAttribute("name");
-  target.addEventListener("change", onFileUpload);
-
-  const preview = document.querySelector(
-    target.dataset.fileUploadPreviewSelector,
+    (target.name ? target.name.replace(/\[\]$/, "") : null)
   );
-  if (!preview) {
-    console.warn(
-      "file_upload: preview pane not found for selector " +
-        target.dataset.fileUploadPreviewSelector,
-    );
-    return;
-  }
+}
 
-  // Pre-existing items: hook up delete buttons
+// Infer default suffix for nested attributes if not specified
+function applyDefaultSuffix(target, prefix) {
+  if (target.dataset.fileUploadSuffix) return;
+  if (prefix.includes("photos_attributes")) {
+    target.dataset.fileUploadSuffix = "image";
+  } else if (prefix.includes("repo_files_attributes")) {
+    target.dataset.fileUploadSuffix = "file";
+  }
+}
+
+// Pre-existing items: hook up delete buttons
+function setupExistingDeletes(preview) {
   preview.querySelectorAll(".file-upload-item-preview").forEach((box) => {
     const deleteBtn = box.querySelector("[data-file-upload-item-delete]");
     const destroyInput = box.querySelector("[data-file-upload-hidden-destroy]");
@@ -282,6 +265,37 @@ function createFileInput(target) {
       });
     }
   });
+}
+
+function createFileInput(target) {
+  if (target.dataset.fileUploadInitialized) return;
+  target.dataset.fileUploadInitialized = "true";
+
+  const prefix = fieldPrefix(target);
+  if (!prefix) {
+    console.warn("file_upload: data-file-upload-prefix is required on", target);
+    return;
+  }
+
+  // Without its preview pane the input stays a plain file field: it keeps its
+  // name, so the chosen files are still submitted with the form.
+  const preview = document.querySelector(
+    target.dataset.fileUploadPreviewSelector,
+  );
+  if (!preview) {
+    console.warn(
+      "file_upload: preview pane not found for selector " +
+        target.dataset.fileUploadPreviewSelector,
+    );
+    return;
+  }
+
+  target.dataset.fileUploadPrefix = prefix;
+  applyDefaultSuffix(target, prefix);
+  target.removeAttribute("name");
+  target.addEventListener("change", onFileUpload);
+
+  setupExistingDeletes(preview);
 
   // Sortable reordering (gallery images)
   if (preview.hasAttribute("data-file-upload-sortable")) {

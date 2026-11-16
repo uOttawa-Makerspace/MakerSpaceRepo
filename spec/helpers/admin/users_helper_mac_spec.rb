@@ -9,4 +9,12 @@ RSpec.describe Admin::UsersHelper, type: :helper do
     rfid = create(:rfid, mac_address: "aa:bb:cc:dd:ee:ff")
     expect(helper.rfid_options_list([rfid], rfid.user).to_s).to include("Bench 4")
   end
+
+  it "shows just the mac for a card whose reader is not registered, and nothing for a card with no mac" do
+    unknown = create(:rfid, mac_address: "de:ad:be:ef:00:01")
+    no_mac = create(:rfid, mac_address: nil)
+    labels = helper.rfid_options_list([unknown, no_mac], unknown.user).map(&:first)
+    expect(labels[1]).to end_with(" - de:ad:be:ef:00:01")
+    expect(labels[2]).to end_with("ago)")
+  end
 end

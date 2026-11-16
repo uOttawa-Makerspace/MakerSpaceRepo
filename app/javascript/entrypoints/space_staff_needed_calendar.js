@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("link-container").append(clone);
     clone.removeAttribute("id");
     clone.querySelectorAll("input").forEach((input) => {
-      input.value = "";
+      input.value = input.defaultValue;
     });
     clone.querySelector("button").addEventListener("click", (el) => {
       el.target.closest("button").parentNode.remove();

@@ -4,14 +4,14 @@
             <div class="card">
                 <div class="card-body">
                     <p class="fs-4"><%= t('lockers.locker') %> #<%= locker_rental.locker.specifier %></p>
-                    <p><%= t('lockers.owned_until') %> <%= locker_rental.owned_until&.to_fs :long %></p>
+                    <p><%= t('lockers.owned_until') %> <%= l(locker_rental.owned_until, format: :rental_time) if locker_rental.owned_until %></p>
                     <%= link_to t('lockers.view_locker_request'), locker_rental_path(locker_rental), class: 'btn btn-primary stretched-link' %>
                 </div>
             </div>
         </div>
     <% end %>
     <% if @locker_rentals.active.blank? %>
-        <p class="fs-4">No active rentals...</p>
-        <%= link_to "Submit a locker request", locker_rentals_path %>
+        <p class="fs-4"><%= t('lockers.profile_tab.no_active') %></p>
+        <%= link_to t('lockers.profile_tab.submit_request'), locker_rentals_path %>
     <% end %>
 </div>

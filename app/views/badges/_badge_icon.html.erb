@@ -1,4 +1,4 @@
-<svg width="<%= width %>" height="<%= height %>" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img">
+<svg <%= tag.attributes(width: local_assigns[:width].presence, height: local_assigns[:height].presence) %> viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img">
     <title><%= name %></title>
     <style>
      text { font: bold 0.5rem sans-serif; };

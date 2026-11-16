@@ -221,6 +221,15 @@ RSpec.describe "/api/v1 printer types, assignments and issues", type: :request d
       expect(issue.reload.active).to be(false)
     end
 
+    it "422s with the validation errors and leaves the issue active when the issue is invalid" do
+      issue.update_columns(summary: "")
+      api_send :patch, path, { active: false }, as: staff
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(error["code"]).to eq("validation_failed")
+      expect(error["fields"]).to have_key("summary")
+      expect(issue.reload.active).to be(true)
+    end
+
     it "ignores other fields in the body" do
       api_send :patch, path, { active: false, summary: "hacked", printer_id: 0 }, as: staff
       expect(issue.reload).to have_attributes(summary: "Bed issue", printer_id: printer.id)

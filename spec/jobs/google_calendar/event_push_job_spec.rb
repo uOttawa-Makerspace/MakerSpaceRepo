@@ -28,6 +28,26 @@ RSpec.describe GoogleCalendar::EventPushJob, type: :job do
     expect(sent.last.summary).to eq("Open Lab")
   end
 
+  it "settles the pending push once Google has it, and keeps it when Google fails" do
+    GoogleCalendar::PendingChange.ask_push(event.id)
+    allow(service).to receive(:update_event).and_raise(Google::Apis::ServerError.new("down", status_code: 500))
+    described_class.perform_now(event.id)
+    expect(GoogleCalendar::PendingChange.count).to eq(1)
+
+    allow(service).to receive(:update_event)
+    described_class.perform_now(event.id)
+    expect(GoogleCalendar::PendingChange.count).to eq(0)
+  end
+
+  it "settles the pending push of a draft or a missing event, which has nothing to send" do
+    draft = create(:event, :draft, space: space)
+    [draft.id, 0].each do |id|
+      GoogleCalendar::PendingChange.ask_push(id)
+      described_class.perform_now(id)
+    end
+    expect(GoogleCalendar::PendingChange.count).to eq(0)
+  end
+
   it "reads the event when it runs, so the latest state is what is sent" do
     event.update_columns(title: "Renamed")
     sent = nil

@@ -26,4 +26,17 @@ RSpec.describe StaffExternalUnavailability, type: :model do
     record = described_class.create!(user: user, ics_url: "https://x.test/a.ics")
     expect(user.staff_external_unavailabilities).to eq([record])
   end
+
+  describe "#source_host" do
+    let(:user) { create(:user, :staff) }
+
+    it "is the host of the link without its path or query" do
+      record = described_class.new(user: user, ics_url: "https://calendar.example.org/private/token/basic.ics?key=abc")
+      expect(record.source_host).to eq("calendar.example.org")
+    end
+
+    it "is nil for a link that cannot be read" do
+      expect(described_class.new(user: user, ics_url: "not a url").source_host).to be_nil
+    end
+  end
 end

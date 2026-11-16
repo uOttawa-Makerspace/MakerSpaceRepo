@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="<%= I18n.locale %>">
+<html lang="<%= I18n.locale %>" <%= tag.attributes(request_text_attributes) %>>
   <head>
     <%= render 'shared/theme_init' %>
     <title><%= page_title(yield(:title), base_title: 'Admin Area | MakerRepo') %></title>
@@ -7,15 +7,12 @@
 
     <%# Vite Core %>
     <%= vite_client_tag %>
-    <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
-    <%= vite_stylesheet_tag 'application.scss', 'data-turbo-track': 'reload' %>
+    <%= render 'layouts/head_assets' %>
     <%= vite_javascript_tag controller_name if Rails.root.join("app/javascript/entrypoints/#{controller_name}.js").exist? %>
 
     <%= csrf_meta_tags %>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="MakerRepo is the uOttawa Makerspace's platform. Share and download projects for 3D printers, CNCs, Arduino and much more!" />
-    <script>(function(d){var s = d.createElement("script");s.setAttribute("data-account", "va12Fyrpbl");s.setAttribute("src", "https://cdn.userway.org/widget.js");(d.body || d.head).appendChild(s);})(document)</script>
-    <noscript><div id="noscript-warning">Please ensure Javascript is enabled for purposes of <a href="https://userway.org">website accessibility</a></div></noscript>
   </head>
   <body>
     <%= render 'layouts/skip_link' %>
@@ -33,5 +30,6 @@
     </main>
 
     <%= render 'layouts/footer' %>
+    <%= render 'layouts/accessibility_widget' %>
   </body>
 </html>

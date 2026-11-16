@@ -1,16 +1,16 @@
 <section>
-  <h2 class="m-0 fw-bold py-4 text-center">Key Requests</h2>
+  <h2 class="m-0 fw-bold py-4 text-center"><%= t('admin_pages.keys.requests_title') %></h2>
 
   <div class="d-flex flex-row gap-2 justify-content-center mb-4">
-    <%= link_to 'Key Management', admin_keys_path, class: 'btn btn-primary' %>
-    <%= link_to 'Key Transactions', admin_key_transactions_path, class: 'btn btn-primary' %>
+    <%= link_to t('admin_pages.keys.management'), admin_keys_path, class: 'btn btn-primary' %>
+    <%= link_to t('admin_pages.keys.key_transactions'), admin_key_transactions_path, class: 'btn btn-primary' %>
   </div>
   <div>
     <div class="accordion" id="keysAccordion">
       <div class="accordion-item">
         <h2 class="accordion-header" id="waitingForApproval">
           <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-            Waiting for Approval
+            <%= t('admin_pages.keys.waiting_for_approval') %>
           </button>
         </h2>
         <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="waitingForApproval" data-bs-parent="#keysAccordion">
@@ -22,12 +22,24 @@
       <div class="accordion-item">
         <h2 class="accordion-header" id="keysAll">
           <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-            Approved
+            <%= t('admin_pages.keys.approved') %>
           </button>
         </h2>
         <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="keysAll" data-bs-parent="#keysAccordion">
           <div class="accordion-body">
             <%= render partial: 'admin/keys/keys_requests_table', locals: { key_requests: @key_requests.where(status: :approved), table_name: 'key-requests-table-approved' } %>
+          </div>
+        </div>
+      </div>
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="keysDenied">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+            <%= t('admin_pages.keys.denied') %>
+          </button>
+        </h2>
+        <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="keysDenied" data-bs-parent="#keysAccordion">
+          <div class="accordion-body">
+            <%= render partial: 'admin/keys/keys_requests_table', locals: { key_requests: @key_requests.where(status: :denied), table_name: 'key-requests-table-denied' } %>
           </div>
         </div>
       </div>

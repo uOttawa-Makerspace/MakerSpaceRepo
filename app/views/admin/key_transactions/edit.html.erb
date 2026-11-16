@@ -1,21 +1,21 @@
 <section>
-  <h2 class="mb-3 fw-bold py-3 text-center">Return Deposit</h2>
+  <h2 class="mb-3 fw-bold py-3 text-center"><%= t('admin_pages.key_transactions.return_deposit') %></h2>
 
   <%= form_for @key_transaction, url: { controller: 'admin/key_transactions', action: 'update' } do |f| %>
     <div class="row">
       <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
         <div class="mb-5">
-          <%= f.label :deposit_return_date, class: 'form-label' %>
+          <%= f.label :deposit_return_date, for: 'deposit-return-date', class: 'form-label' %>
           <div class="input-group">
             <%= f.text_field :deposit_return_date, value: Time.zone.today.to_s, id: 'deposit-return-date', autocomplete: 'off', class: 'form-control inanimate', required: true %>
-            <button class="btn btn-danger" id="deposit-return-date-clear" type="button">
+            <button class="btn btn-danger" id="deposit-return-date-clear" type="button" aria-label="<%= t('common.names.clear_deposit_return_date') %>">
               <i class="fa fa-times"></i>
             </button>
           </div>
         </div>
 
         <div class="text-center">
-          <%= f.submit 'Update Deposit', class: 'btn btn-primary' %>
+          <%= f.submit t('admin_pages.key_transactions.update_deposit'), class: 'btn btn-primary' %>
         </div>
       </div>
     </div>

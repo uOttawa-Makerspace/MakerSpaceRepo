@@ -16,17 +16,13 @@ module AnnouncementsHelper
     user = current_user
     admin, staff, volunteer = role_flag(:admin?), role_flag(:staff?), role_flag(:volunteer?)
     dismissed = AnnouncementDismiss.where(user_id: user.id)
-    key = ["announcements-bar/v2", user.id || "guest", admin, staff, volunteer, signed_in?, Time.zone.today,
+    key = ["announcements-bar/v3", user.id || "guest", admin, staff, volunteer, signed_in?, Time.zone.today,
            Announcement.all.cache_key_with_version, dismissed.cache_key_with_version]
     Rails.cache.fetch(key, expires_in: 10.minutes) do
       visible = Announcement.active.where.not(id: dismissed.select(:announcement_id))
-      groups = []
-      groups << [:admins, visible.admins] if admin
-      groups << [:staff, visible.staff] if staff
-      groups << [:all_users, visible.all_users] if signed_in? && Announcement.active.regular_user.exists?
-      groups << [:all_visitors, visible.all_users]
-      groups << [:volunteers, visible.volunteers] if volunteer || staff
-      groups.flat_map { |group, scope| scope.order(:id).pluck(:id, :description).map { |id, text| [group, id, text] } }
+      announcement_groups(visible, admin:, staff:, volunteer:).flat_map do |group, scope|
+        scope.order(:id).pluck(:id, :description).map { |id, text| [group, id, text] }
+      end
     end
   end
 
@@ -38,30 +34,33 @@ module AnnouncementsHelper
     volunteers: ["alert-warning", "To Volunteers:"]
   }.freeze
   def return_active(a)
-    if (a.end_date == nil) or (a.end_date >= Date.today)
+    if (a.end_date == nil) or (a.end_date >= Time.zone.today)
       case a.active
       when true
-        "Yes"
+        t("admin_pages.common.yes")
       when false
-        "No"
+        t("admin_pages.common.no")
       end
     else
-      "Yes but the publishing date is over."
+      t("admin_pages.announcements.expired")
     end
   end
 
+  # The label of an announcement's audience, or nil for an unknown one.
   def return_public(public)
-    case public
-    when "volunteer"
-      "Volunteers"
-    when "staff"
-      "Staff"
-    when "regular_user"
-      "All Users"
-    when "admin"
-      "Admins"
-    when "all"
-      "All Visitors (Even not signed in)"
-    end
+    t(public, scope: "admin_pages.announcements.audiences") if Announcement::PUBLIC_GOALS.include?(public)
+  end
+
+  private
+
+  # The bar's [group, scope of visible announcements] pairs for these roles, in display order.
+  def announcement_groups(visible, admin:, staff:, volunteer:)
+    groups = []
+    groups << [:admins, visible.admins] if admin
+    groups << [:staff, visible.staff] if staff
+    groups << [:all_users, visible.regular_user] if signed_in?
+    groups << [:all_visitors, visible.all_users]
+    groups << [:volunteers, visible.volunteers] if volunteer || staff
+    groups
   end
 end

@@ -1,9 +1,10 @@
 class Admin::CertificationsController < AdminAreaController
   before_action :set_certification, only: %i[update destroy]
   before_action :require_certification_user, only: :update
+  before_action :refuse_duplicate_restore, only: :update
 
   def show
-    @certification = Certification.includes(:training_session).includes(:training).find(params[:id])
+    @certification = Certification.includes(training_session: :training).find(params[:id])
     @earner = @certification.user || raise(ActiveRecord::RecordNotFound)
   end
 
@@ -30,19 +31,15 @@ class Admin::CertificationsController < AdminAreaController
         user.flagged = true
       end
       user.save
-      flash[:notice] = "Action completed."
+      flash[:notice] = t("admin_area.certifications.flash.updated")
     else
-      flash[:alert] = "Something went wrong. Try again later."
+      flash[:alert] = validation_message(@cert, "errors.admin.certifications.not_updated")
     end
     redirect_to @cert.active ? demotions_admin_certifications_path : user_path(@cert.user.username)
   end
 
   def destroy
-    if @cert.destroy
-      flash[:notice] = "Certification deleted. This action can't be undone"
-    else
-      flash[:alert] = "Something went wrong. Try again later."
-    end
+    flash_write(@cert, "certifications.not_deleted", t("admin_area.certifications.flash.deleted"), destroy: true) { @cert.destroy }
     redirect_to demotions_admin_certifications_path
   end
 
@@ -70,6 +67,15 @@ class Admin::CertificationsController < AdminAreaController
 
   def set_certification
     @cert = Certification.unscoped.find(params[:id])
+  end
+
+  # Restoring a deactivated certification is refused while the user holds an active one for the
+  # same training and level; nothing is changed.
+  def refuse_duplicate_restore
+    return unless ActiveModel::Type::Boolean.new.cast(certification_params[:active]) && @cert.duplicate_held?
+
+    flash[:alert] = I18n.t("errors.admin.certifications.restore_duplicate")
+    redirect_to demotions_admin_certifications_path
   end
 
   # A certification row with no user cannot be demoted or reinstated (there is no one to flag

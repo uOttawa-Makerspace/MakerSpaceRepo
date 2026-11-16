@@ -3,6 +3,20 @@
 require Rails.root.join("lib/jwt_authenticator")
 
 module ApplicationHelper
+  # The translated texts the page's JavaScript shows when a request fails and the server gave no reason
+  # (see app/javascript/src/request_error.js), and the texts of the page widgets (tables, pickers, date
+  # pickers; see app/javascript/src/page_locale.js). Rendered as data attributes of the layout's <html> element.
+  def request_text_attributes
+    {
+      data: {
+        request_failed: t("errors.generic.request_failed"),
+        request_network: t("errors.generic.network"),
+        request_copy_failed: t("errors.generic.copy_failed"),
+        widget_texts: t("widgets")
+      }
+    }
+  end
+
   # A date worded in the current language with its own day rule: "November 3rd, 2026",
   # "1er novembre 2026", "3 novembre 2026" (see config/locales/number.rb).
   def issued_date(date)
@@ -10,6 +24,16 @@ module ApplicationHelper
       day: t("date.day_ordinal", number: date.day),
       month: l(date, format: "%B"),
       year: date.year)
+  end
+
+  # The year-of-study choices 1 to 10 for a profile form, plus the user's current
+  # year when it is another value (such as Alumni), so saving another field does
+  # not blank it.
+  def year_of_study_options(user)
+    options = (1..10).map { |year| [year, year.to_s] }
+    current = user.current_year_of_study
+    options.unshift([current, current]) if current.present? && options.none? { |_, value| value == current }
+    options
   end
 
   # Keys that are not about who is signed in and must survive the session
@@ -129,6 +153,12 @@ module ApplicationHelper
     role_flag(:dev_program?)
   end
 
+  # Whether the page loads the third-party accessibility widget: for visitors and members, never for
+  # staff or admins, who see member records.
+  def accessibility_widget?
+    !role_flag(:staff?)
+  end
+
   # The URL when it is an absolute http(s) link, else nil (for links that come from outside the app).
   def http_url(value)
     uri = URI.parse(value.to_s.strip)
@@ -175,6 +205,20 @@ module ApplicationHelper
     }
   end
 
+  # Data attributes that make a button, link or form ask `message` before it acts (the
+  # confirmation Stimulus controller). It asks on click.
+  def confirmation_data(message)
+    { controller: 'confirmation', action: 'click->confirmation#ask', confirmation_message_value: message }
+  end
+
+  # Options for a button that asks for confirmation: rendered disabled until the controller
+  # connects and enables it, so a click before the page script has run cannot skip the prompt.
+  # Splat it into the call and do not pass your own `disabled:` or `data:` next to it: the
+  # later key would replace this one.
+  def confirmation_options(message)
+    { disabled: true, data: confirmation_data(message) }
+  end
+
   private
 
   # Forget who was resolved earlier in this request (cookie user, current user,
@@ -190,8 +234,8 @@ module ApplicationHelper
     curr_page.empty? ? base_title : curr_page + " | " + base_title
   end
 
-  def youtube_video(url)
-    render partial: "partials/streaming", locals: { url: url }
+  def youtube_video(url, title)
+    render partial: "partials/streaming", locals: { url: url, title: title }
   end
 
   def load_rakes
@@ -200,15 +244,16 @@ module ApplicationHelper
   end
 
   def end_of_this_semester
-    if DateTime.now.month in 9..12
+    today = Date.current
+    if today.month in 9..12
       # End of Fall
-      DateTime.new(DateTime.now.year, 12).end_of_month
-    elsif DateTime.now.month in 1..4
+      DateTime.new(today.year, 12).end_of_month
+    elsif today.month in 1..4
       # End of Winter
-      DateTime.new(DateTime.now.year, 4).end_of_month
-    elsif DateTime.now.month in 5..8
+      DateTime.new(today.year, 4).end_of_month
+    elsif today.month in 5..8
       # End of Summer
-      DateTime.new(DateTime.now.year, 8).end_of_month
+      DateTime.new(today.year, 8).end_of_month
     end
   end
 

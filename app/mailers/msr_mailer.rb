@@ -4,30 +4,40 @@ class MsrMailer < ApplicationMailer
   def confirmation_email(user, hash)
     @user = user
     @hash = hash
-    mail(to: @user.email, subject: "Makerepo | Please confirm your email")
+    mail(to: @user.email)
+  end
+
+  # Sent to an address that already has an account when someone tries to sign up with it.
+  # French first, then English. Nothing is sent when no account has the address any more.
+  def sign_up_attempt_email(email)
+    @user = User.where("lower(email) = ?", email.to_s.strip.downcase).first
+    return if @user.nil?
+
+    @subject = "MakerRepo - #{I18n.t('msr_mailer.sign_up_attempt.subject', locale: :fr)} // #{I18n.t('msr_mailer.sign_up_attempt.subject', locale: :en)}"
+    mail(to: @user.email, subject: @subject)
   end
 
   def email_confirmation_email(new_email, user, token)
     @new_email = new_email
     @user = user
     @token = token
-    mail(to: new_email, subject: "Makerepo | Please confirm your new email")
+    mail(to: new_email, locale: user.locale)
   end
 
   def email_changed_email(user, old_email)
     @user = user
-    mail(to: old_email, subject: "Makerepo | Email has changed")
+    mail(to: old_email, locale: user.locale)
   end
 
   def confirm_password_change(user)
     @user = user
-    mail(to: @user.email, subject: "MakerRepo | Your password has been changed")
+    mail(to: @user.email)
   end
 
   def welcome_email(user)
     @user = user
     @url = "http://makerepo.com/login"
-    mail(to: @user.email, subject: "Welcome to MakerRepo")
+    mail(to: @user.email)
   end
 
   def send_profile_update(bcc_emails)
@@ -41,13 +51,13 @@ class MsrMailer < ApplicationMailer
   def send_cc_money_email(email, cc, hash)
     @cc = cc
     @hash = hash
-    mail(to: email, subject: "Your CC Money order")
+    mail(to: email) # subject from msr_mailer.send_cc_money_email.subject, in the recipient's language
   end
 
   def send_kit_email(user, pp)
     @user = user
     @pp = pp
-    mail(to: @user.email, subject: "Your proficient project kit order")
+    mail(to: @user.email)
   end
 
   def send_admin_pp_evaluation(pp)
@@ -70,7 +80,7 @@ class MsrMailer < ApplicationMailer
       else
         "mtc@uottawa.ca"
       end
-    mail(to: @user.email, subject: "Your Proficient Project Request")
+    mail(to: @user.email)
   end
 
   def send_results_pp(oi, user, result)
@@ -78,37 +88,26 @@ class MsrMailer < ApplicationMailer
     @pp = oi.proficient_project
     @oi = oi
     @user = user
-    mail(to: @user.email, subject: "Your Proficient Project Results")
+    mail(to: @user.email)
   end
-
-  # def send_ommic
-  #   all_users = User.where('email like ? and length(email) = 19', '%@uottawa.ca').pluck(:email).uniq
-  #   attachments['ommic1.png'] = File.read("#{Rails.root}/app/assets/images/mail/ommic1.png")
-  #   attachments['ommic2.jpg'] = File.read("#{Rails.root}/app/assets/images/mail/ommic2.jpg")
-  #   attachments['ommic1.jpg'] = File.read("#{Rails.root}/app/assets/images/mail/ommic3.jpg")
-  #   mail(to: 'bruno.mrlima@gmail.com', subject: 'OMMIC Conference | Discount for students', bcc: all_users)
-  # end
 
   def repo_report(repository, user)
     @repository = repository
     @user = user
     mail(
-      from: user.email,
+      reply_to: user.email,
       to: "uottawa.makerepo@gmail.com",
       subject: "Repository #{repository.title} reported"
     )
   end
 
-  # THIS IS DEPRECATED
-  # def reset_password_email(email, newpassword)
-  #   @user = User.find_by email: email
-  #   @password = newpassword
-  #   mail(to: email, subject: 'New password for MakerRepo')
-  # end
-
+  # Mail can wait in the queue or be retried for hours, so the link is checked when the mail is built: one
+  # whose link has expired is not sent (the person asks again).
   def forgot_password(email, token)
+    return skip_expired_link("forgot_password", User.find_by(email: email)&.id) unless User.password_reset_link_valid?(token)
+
     @token = token
-    mail(to: email, subject: "Reset your MakerRepo password")
+    mail(to: email)
   end
 
   def send_training_report(to)
@@ -233,34 +232,26 @@ class MsrMailer < ApplicationMailer
       to: user.email,
       reply_to: "makerspace@uottawa.ca",
       bcc: "uottawa.makerepo@gmail.com",
-      subject: "Your 3D print on #{printer.number} has failed"
+      subject: subject_for(user.email, printer: printer.number)
     )
   end
 
-  # Not in use currently
-  # def send_checklist_reminder(email, master_email)
-  #   @email = email
-  #   mail(to: email, subject: 'Checklist Reminder', bcc: master_email)
-  # end
-
+  # A signed-in user's copy of their help request, in their language. The team gets its own copy
+  # from issue_email_copy_to_team, called with the same arguments.
   # contact_email: the address the reporter typed, shown to the team when they chose to share it
   # (the mail itself always goes to +email+). account: the signed-in user, always shown to the
   # team because the typed name and contact details are not verified.
   def issue_email(name, email, subject, comments, share_email, app_version = nil, contact_email: nil, account: nil)
-    @account = account
-    @name = name
-    @email = email
-    @contact_email = contact_email.presence || email
-    @subject = subject
-    @comments = comments
-    @share_email = share_email
-    @app_version = app_version
+    assign_issue(name, email, subject, comments, share_email, app_version, contact_email:, account:)
+    mail(to: @email, subject: subject_for(@email, subject: @subject))
+  end
 
-    mail(
-      to: @email,
-      bcc: "uottawa.makerepo@gmail.com",
-      subject: "Issue Report | #{@subject}"
-    )
+  # The team's copy of a signed-in user's help request: the same mail as issue_email, in English.
+  def issue_email_copy_to_team(name, email, subject, comments, share_email, app_version = nil, contact_email: nil,
+                               account: nil)
+    assign_issue(name, email, subject, comments, share_email, app_version, contact_email:, account:)
+    mail(to: "uottawa.makerepo@gmail.com", locale: :en, template_name: "issue_email",
+         subject: I18n.t("msr_mailer.issue_email.subject", locale: :en, subject: @subject))
   end
 
   # Anonymous /api/v1 support requests: goes to the team only. The reporter's (unverified)
@@ -284,7 +275,7 @@ class MsrMailer < ApplicationMailer
     @user = user
     @training_session = training_session
     email = @user.email
-    mail(to: email, subject: "An exam was sent to you")
+    mail(to: email)
   end
 
   def finishing_exam(user, exam)
@@ -292,7 +283,7 @@ class MsrMailer < ApplicationMailer
     @exam = exam
     @training_session = exam.training_session
     email = @user.email
-    mail(to: email, subject: "You finished your exam")
+    mail(to: email)
   end
 
   def exam_results_staff(user, exam)
@@ -303,7 +294,7 @@ class MsrMailer < ApplicationMailer
     email = @staff.email
     mail(
       to: email,
-      subject: "#{@user.name.split.first.capitalize} finished an exam"
+      subject: subject_for(email, name: @user.name.split.first.capitalize)
     )
   end
 
@@ -323,7 +314,7 @@ class MsrMailer < ApplicationMailer
     email_staff = (staff ? staff.email : "volunteer@makerepo.com")
     mail(
       to: email_staff,
-      subject: "New join in task: #{@volunteer_task.title.capitalize}"
+      subject: subject_for(email_staff, task: @volunteer_task.title.capitalize)
     )
   end
 
@@ -343,7 +334,7 @@ class MsrMailer < ApplicationMailer
     email_volunteer = volunteer.email
     mail(
       to: email_volunteer,
-      subject: "New join in task: #{@volunteer_task.title.capitalize}"
+      subject: subject_for(email_volunteer, task: @volunteer_task.title.capitalize)
     )
   end
 
@@ -354,30 +345,51 @@ class MsrMailer < ApplicationMailer
     email_volunteer = volunteer.email
     mail(
       to: email_volunteer,
-      subject: "New Request for task: #{@volunteer_task.title.capitalize}",
+      subject: subject_for(email_volunteer, task: @volunteer_task.title.capitalize),
       bcc: @email_staff
     )
   end
 
   def send_notification_for_task_request_update(volunteer_task_request_id)
+    @email_staff = "volunteer@makerepo.com"
     volunteer_task_request =
       VolunteerTaskRequest.find(volunteer_task_request_id)
     @volunteer_task = volunteer_task_request.volunteer_task
     email_volunteer = volunteer_task_request.user.email
     mail(
       to: email_volunteer,
-      subject: "Your request was updated: #{@volunteer_task.title.capitalize}"
+      subject: subject_for(email_volunteer, task: @volunteer_task.title.capitalize)
     )
   end
 
   def unlock_account(user, user_hash)
+    return skip_expired_link("unlock_account", user.id) unless User.unlock_link_valid?(user_hash)
+
     @user = user
     @user_hash = user_hash
-    mail(to: @user.email, subject: "Unlock your MakerRepo Account")
+    mail(to: @user.email)
   end
 
   def new_printer_issue(issue, recipient_email)
     @issue = issue
     mail(to: recipient_email, subject: "New Printer Issue: #{issue.summary}")
+  end
+
+  private
+
+  def assign_issue(name, email, subject, comments, share_email, app_version, contact_email:, account:)
+    @account = account
+    @name = name
+    @email = email
+    @contact_email = contact_email.presence || email
+    @subject = subject
+    @comments = comments
+    @share_email = share_email
+    @app_version = app_version
+  end
+
+  # Building no mail makes Action Mailer deliver nothing. The token itself is never logged.
+  def skip_expired_link(mail_name, user_id)
+    Rails.logger.info("MsrMailer##{mail_name} not sent: its link expired before delivery (user #{user_id.inspect})")
   end
 end

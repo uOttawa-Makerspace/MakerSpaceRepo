@@ -1,0 +1,33 @@
+<% provide(:title, t('admin_pages.deleted_repositories.title')) %>
+<section>
+  <div class="text-center pb-4">
+    <h2 class="fw-bold py-3"><%= t('admin_pages.deleted_repositories.title') %></h2>
+
+    <% if @repositories.empty? %>
+      <p><%= t('admin_pages.deleted_repositories.empty') %></p>
+    <% else %>
+      <table class="table table-striped mb-5">
+        <thead class="table-primary">
+          <tr class="text-center">
+            <th><%= t('admin_pages.deleted_repositories.repository_title') %></th>
+            <th><%= t('admin_pages.deleted_repositories.owner') %></th>
+            <th><%= t('admin_pages.common.action') %></th>
+          </tr>
+        </thead>
+        <% @repositories.each do |repository| %>
+          <tr>
+            <td><%= repository.title %></td>
+            <td><%= repository.owner&.username || t('admin_pages.deleted_repositories.deleted_account') %></td>
+            <td>
+              <%= button_to t('admin_pages.deleted_repositories.restore'), admin_deleted_repository_restoration_path(repository),
+                            class: 'btn btn-primary', **confirmation_options(t('confirmations.repositories.restore')) %>
+            </td>
+          </tr>
+        <% end %>
+      </table>
+      <% if @pagy.pages > 1 %>
+        <nav class="d-flex justify-content-center"><%== @pagy.series_nav(:bootstrap) %></nav>
+      <% end %>
+    <% end %>
+  </div>
+</section>

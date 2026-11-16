@@ -1,0 +1,55 @@
+# The words of the calendars drawn by app/javascript/src/page_calendar.js, given to each calendar element as JSON
+# (CalendarHelper#calendar_texts_data, which turns the keys into the camelCase names the script reads).
+# "$0" is filled in by FullCalendar, "{hours}" by the admin calendar.
+en:
+  calendar_texts:
+    # FullCalendar options: the names of a popover's close button, of the time and event columns of a list, and of
+    # a link to a day.
+    hints:
+      close_hint: "Close"
+      time_hint: "Time"
+      event_hint: "Event"
+      nav_link_hint: "Go to $0"
+    # The opening-hours calendar steps by a few days, a span FullCalendar has no name for.
+    days_button_hints:
+      prev: "Previous days"
+      next: "Next days"
+    show_my_shifts_only: "Show My Shifts Only"
+    show_all_shifts: "Show All Shifts"
+    enable_overlap: "Enable Event Overlap"
+    disable_overlap: "Disable Event Overlap"
+    show_weekends: "Show Weekends"
+    hide_weekends: "Hide Weekends"
+    # By the view shown.
+    publish_drafts:
+      time_grid_week: "Publish This Week's Drafts"
+      day_grid_month: "Publish This Month's Drafts"
+    delete_drafts:
+      time_grid_week: "Delete This Week's Drafts"
+      day_grid_month: "Delete This Month's Drafts"
+    hours: "{hours} hrs"
+    book: "Book"
+fr:
+  calendar_texts:
+    hints:
+      close_hint: "Fermer"
+      time_hint: "Heure"
+      event_hint: "Événement"
+      nav_link_hint: "Aller au $0"
+    days_button_hints:
+      prev: "Jours précédents"
+      next: "Jours suivants"
+    show_my_shifts_only: "Afficher seulement mes quarts"
+    show_all_shifts: "Afficher tous les quarts"
+    enable_overlap: "Activer le chevauchement des événements"
+    disable_overlap: "Désactiver le chevauchement des événements"
+    show_weekends: "Afficher les fins de semaine"
+    hide_weekends: "Masquer les fins de semaine"
+    publish_drafts:
+      time_grid_week: "Publier les brouillons de cette semaine"
+      day_grid_month: "Publier les brouillons de ce mois-ci"
+    delete_drafts:
+      time_grid_week: "Supprimer les brouillons de cette semaine"
+      day_grid_month: "Supprimer les brouillons de ce mois-ci"
+    hours: "{hours} h"
+    book: "Réserver"

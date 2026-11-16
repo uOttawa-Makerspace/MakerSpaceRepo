@@ -7,11 +7,12 @@
 module CalendarJsHelpers
   WEEK_MIDDAY = "2027-03-16T12:00:00.000Z"
 
-  # The instant (UTC, to the minute) the browser reads from a datetime-local
-  # value: the browser parses it in its own time zone.
-  def browser_utc(local_value)
-    iso = page.evaluate_script("new Date('#{local_value}').toISOString()")
-    Time.iso8601(iso).utc
+  TORONTO = ActiveSupport::TimeZone["America/Toronto"]
+
+  # The instant (UTC) of a datetime-local value: the modals read their fields
+  # as Toronto wall-clock time, like the calendars.
+  def toronto_utc(field_value)
+    TORONTO.parse(field_value).utc
   end
 
   # The admin calendar page attaches its event modal's handlers once the
@@ -19,6 +20,14 @@ module CalendarJsHelpers
   # drawn. It then marks the modal ready (and enables "+ Add Event").
   def wait_for_admin_calendar_scripts
     expect(page).to have_css("#eventModal[data-ready='true']", visible: :all)
+    page.execute_script("window.sameDocument = true")
+  end
+
+  # A dialog save closes the dialog and redraws the calendar in the same document: no page was loaded since
+  # the calendar scripts were ready.
+  def expect_saved_in_place
+    expect(page).to have_no_css("#eventModal.show")
+    expect(page.evaluate_script("window.sameDocument")).to be(true)
   end
 
   # Types into a datetime-local field the way a person would (Capybara fires
@@ -37,16 +46,10 @@ module CalendarJsHelpers
     page.find(".fc-event", text: title, visible: :all)
   end
 
-  # The value a datetime-local field shows for an instant: the browser's own
-  # local wall clock, as YYYY-MM-DDTHH:MM.
-  def browser_local(time)
-    page.evaluate_script(<<~JS)
-      (function (d) {
-        var p = function (n) { return String(n).padStart(2, "0"); };
-        return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) +
-          "T" + p(d.getHours()) + ":" + p(d.getMinutes());
-      })(new Date("#{time.utc.iso8601}"))
-    JS
+  # The value a datetime-local field shows for an instant: its Toronto wall
+  # clock, as YYYY-MM-DDTHH:MM.
+  def toronto_field(time)
+    time.in_time_zone(TORONTO).strftime("%Y-%m-%dT%H:%M")
   end
 
   # A one-event ICS feed (UTC times).

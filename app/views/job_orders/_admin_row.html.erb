@@ -1,16 +1,16 @@
 <td style="vertical-align: middle" class="px-1">
-  <% if jo.expedited? %>
+  <% if expedited %>
     <i class='fa fa-exclamation-circle fa-2x text-success'></i>
     <%# span so that datatables can sort it! %>
     <span class="d-none">Expedited</span>
   <% end %>
 </td>
 <td>
-  <% if jo.chat_messages.count_unread_by_admin(jo) > 0 %>
+  <% if unread > 0 %>
     <div class="mx-auto position-relative" style="width: min-content;">
       <i class="fa fa-bell text-danger" style="scale: 1.7;"></i>
       <span class="position-absolute translate-middle badge rounded-pill bg-danger">
-        <%= jo.chat_messages.count_unread_by_admin(jo) %>
+        <%= unread %>
         <span class="visually-hidden">unread messages</span>
       </span>
     </div>
@@ -25,12 +25,11 @@
   <% end %>
 </td>
 <td><%= jo.id %></td>
-<td data-sort="<%= jo.created_at %>"><%= l(jo.created_at, format: :long) %></td>
-</td>
+<td data-sort="<%= jo.created_at.utc.iso8601 %>"><%= l(jo.created_at, format: :long) %></td>
 <td>
   <% jo.job_tasks.each_with_index do |task, i| %>
     <%= "," if i != 0 %>
-    <%= task.job_type&.name || "Unselected" %>
+    <%= task.job_type&.name || t("job_orders.order.no_job_type") %>
   <% end %>
 </td>
 <td><%= jo.latest_status.job_status.name %></td>
@@ -39,7 +38,7 @@
     <%= link_to jo.assigned_staff.name, user_path(jo.assigned_staff.username) %>
   <% else %>
     <% if current_user.admin? %>
-      <button type="button" class="btn btn-link fw-bold" style="font-size: 0.9rem !important;" data-bs-toggle="modal" data-bs-target="#assignStaffModal">
+      <button type="button" class="btn btn-link fw-bold" style="font-size: 0.9rem !important;" data-bs-toggle="modal" data-bs-target="#assignStaffModal-<%= jo.id %>">
         Assign Staff
       </button>
     <% else %>
@@ -52,20 +51,3 @@
     link_to 'View', job_order_path(jo.id), class: 'btn btn-primary btn-sm'
   %>
 </td>
-
-<div class="modal fade" id="assignStaffModal" tabindex="-1" aria-labelledby="assignStaffModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="assignStaffModalLabel">Assign Staff</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
-      </div>
-      <div class="modal-body">
-        <%= render "assign_staff", jo: jo, staff: @staff %>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      </div>
-    </div>
-  </div>
-</div>

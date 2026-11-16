@@ -7,6 +7,8 @@ class VolunteerTask < ApplicationRecord
   belongs_to :space, optional: true
   has_many :volunteer_hours, dependent: :destroy
   has_many :volunteer_task_joins, dependent: :destroy
+  # The staff and admins now on the task: the ones the task list names as responsible.
+  has_many :responsible_staff_joins, -> { joined.where(user_type: %w[Staff Admin]) }, class_name: "VolunteerTaskJoin"
   has_many :require_trainings, dependent: :destroy
   has_many :volunteer_task_requests, dependent: :destroy
   has_many :cc_moneys, dependent: :destroy
@@ -22,6 +24,14 @@ class VolunteerTask < ApplicationRecord
   # created or edited there. Other updates (completing a task) and stored tasks are not checked.
   validates :hours, numericality: { greater_than: 0 }, on: %i[create task_form]
 
+  # What the task forms offer: a title, a whole number of CC of 0 or more, at least 1 seat, and a status
+  # of open or completed.
+  STATUSES = %w[open completed].freeze
+  validates :title, presence: true
+  validates :cc, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validates :joins, numericality: { only_integer: true, greater_than_or_equal_to: 1 }
+  validates :status, inclusion: { in: STATUSES }
+
   # Awarded means: an approved volunteer hour row, or any CC money row, belongs to the task.
   def awarded?
     volunteer_hours.approved.exists? || cc_moneys.exists?
@@ -30,16 +40,16 @@ class VolunteerTask < ApplicationRecord
   # Applies a whole task form (a new task or an edit) as one unit: the task's attributes, its required
   # trainings and its joins. Any step that fails undoes every step, leaves the reason in errors and
   # returns false. `joins` takes :add_staff, :add_volunteers, :remove_staff and :remove_volunteers
-  # (lists of user ids).
-  def update_from_form(attributes, certification_ids: [], joins: {})
+  # (lists of user ids). `by` is the user making the edit.
+  def update_from_form(attributes, by:, certification_ids: [], joins: {})
     transaction do
       assign_attributes(attributes)
       save!(context: :task_form)
       replace_certifications(certification_ids)
       add_joins(joins[:add_staff], "staff", staff: true)
       add_joins(joins[:add_volunteers], "volunteer", staff: false)
-      Array(joins[:remove_staff]).each { |user_id| remove_staff(user_id) }
-      Array(joins[:remove_volunteers]).each { |user_id| remove_join(user_id, "volunteer") }
+      Array(joins[:remove_staff]).each { |user_id| remove_staff(user_id, by: by) }
+      Array(joins[:remove_volunteers]).each { |user_id| remove_join(user_id, "volunteer", by: by) }
     end
     true
   rescue ActiveRecord::RecordInvalid => e
@@ -53,8 +63,8 @@ class VolunteerTask < ApplicationRecord
   # Removes one user from the task on its own (the task page's remove forms, or a user leaving):
   # the same removal as the edit form, with the same creator handover. Returns false and leaves the
   # reason in errors when the user is not on the task or is the creator with nobody to take over.
-  def remove_user(user_id)
-    transaction { remove_staff(user_id, "user") }
+  def remove_user(user_id, by:)
+    transaction { remove_staff(user_id, "user", by: by) }
     true
   rescue EditRefused => e
     errors.add(:base, e.message)
@@ -73,13 +83,13 @@ class VolunteerTask < ApplicationRecord
 
   private
 
-  def refuse!(message)
-    raise EditRefused, message
+  def refuse!(key, **options)
+    raise EditRefused, I18n.t(key, scope: "activerecord.errors.models.volunteer_task.edit_refused", **options)
   end
 
   def replace_certifications(certification_ids)
     ids = Array(certification_ids).compact_blank
-    refuse!("A required training does not exist.") unless Training.where(id: ids).count == ids.uniq.size
+    refuse!(:training_missing) unless Training.where(id: ids).count == ids.uniq.size
     delete_all_certifications
     create_certifications(ids)
   end
@@ -87,32 +97,38 @@ class VolunteerTask < ApplicationRecord
   def add_joins(user_ids, label, staff:)
     Array(user_ids).each do |user_id|
       user = User.find_by(id: user_id)
-      refuse!("The #{label} to add could not be found.") unless user
-      volunteer_task_joins.create!(user: user, user_type: staff ? user.role.capitalize : "Volunteer", active: true)
+      refuse!(:"add_not_found.#{label}") unless user
+      join = volunteer_task_joins.build(user: user, user_type: staff ? user.role.capitalize : "Volunteer", active: true)
+      join.save || raise(ActiveRecord::RecordInvalid, join)
     end
   end
 
-  # A removed user's joins are kept as history and marked inactive.
-  def remove_join(user_id, label)
-    joins = volunteer_task_joins.active.where(user_id: user_id)
-    refuse!("The #{label} to remove is not on this task.") if joins.empty?
-    joins.update_all(active: false, updated_at: Time.current)
+  # A removed user's joins are kept as history: left when the user ends their own, removed when someone
+  # else does.
+  def remove_join(user_id, label, by:)
+    joins = volunteer_task_joins.joined.where(user_id: user_id).to_a
+    refuse!(:"remove_not_on_task.#{label}") if joins.empty?
+    ending = by.id == user_id.to_i ? :left : :removed
+    joins.each { |join| join.finish!(ending, by: by) }
+  rescue VolunteerTaskJoin::NotJoined
+    # Someone else ended a join between the lookup and the change: the user is no longer on the task.
+    refuse!(:"remove_not_on_task.#{label}")
   end
 
   # The task's creator can only leave when another joined user can take over as creator.
-  def remove_staff(user_id, label = "staff")
+  def remove_staff(user_id, label = "staff", by:)
     if self.user_id == user_id.to_i
-      successor = volunteer_task_joins.active.where.not(user_id: user_id).order(:id).first
-      refuse!("There must be at least one staff member assigned to this task.") unless successor
+      successor = volunteer_task_joins.joined.where.not(user_id: user_id).order(:id).first
+      refuse!(:no_successor) unless successor
       update!(user_id: successor.user_id)
     end
-    remove_join(user_id, label)
+    remove_join(user_id, label, by: by)
   end
 
   def refuse_deletion_while_awarded
     return unless awarded?
 
-    errors.add(:base, "This task has approved hours or CC awarded and cannot be deleted.")
+    errors.add(:base, :awarded_cannot_delete)
     throw :abort
   end
 

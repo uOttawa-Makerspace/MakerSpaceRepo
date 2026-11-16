@@ -1,16 +1,16 @@
 <div class="container mt-5">
-  <h1>Membership Tiers</h1>
+  <h1><%= t('admin_pages.memberships.title') %></h1>
 
   <table class="table table-striped mt-4">
     <thead>
       <tr>
-        <th scope="col">ID</th>
-        <th scope="col">Title (EN)</th>
-        <th scope="col">Title (FR)</th>
-        <th scope="col">Internal Price ($)</th>
-        <th scope="col">External Price ($)</th>
-        <th scope="col">Duration (days)</th>
-        <th scope="col">Actions</th>
+        <th scope="col"><%= t('admin_pages.memberships.id') %></th>
+        <th scope="col"><%= t('admin_pages.memberships.title_en') %></th>
+        <th scope="col"><%= t('admin_pages.memberships.title_fr') %></th>
+        <th scope="col"><%= t('admin_pages.memberships.internal_price') %></th>
+        <th scope="col"><%= t('admin_pages.memberships.external_price') %></th>
+        <th scope="col"><%= t('admin_pages.memberships.duration') %></th>
+        <th scope="col"><%= t('admin_pages.common.actions') %></th>
       </tr>
     </thead>
     <tbody>
@@ -25,7 +25,7 @@
             <td><%= f.number_field :external_price, class: "form-control", step: 0.01, disabled: disabled %></td>
             <td><%= f.number_field :duration, class: "form-control", step: 1, disabled: disabled %></td>
             <td>
-                <%= f.submit "Save", class: "btn btn-primary btn-sm", disabled: disabled %>
+                <%= f.submit t("admin_pages.common.save"), class: "btn btn-primary btn-sm", disabled: disabled %>
             </td>
           <% end %>
         </tr>

@@ -142,8 +142,11 @@ section#home-categories {
       //  font-size: 1.25rem;
       //}
 
+      // Hover shows white on the brand orange: bold text of 1.25rem (20px) counts
+      // as large text; the 1.75rem text above does at any weight.
       @media (max-width: 575.98px) {
         font-size: 1.25rem;
+        font-weight: 700;
       }
 
       &:hover,
@@ -152,7 +155,7 @@ section#home-categories {
         color: white;
         text-decoration: none;
 
-        background: #13686b;
+        background: $primary;
         transition: background-color 200ms ease-in-out;
       }
     }

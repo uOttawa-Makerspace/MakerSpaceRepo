@@ -3,12 +3,12 @@
 # The ONE place that configures ShopifyAPI::Context (api key/secret, shop host, API version).
 #
 # The Shopify Admin client builds /admin/api/<version>/graphql.json from the Context, so a
-# process that never ran Context.setup posts to /admin/api//graphql.json. Production's master
-# set it up on every start_shopify_session; 3358306d0 dropped that and left only a
-# ShopifyService call that staff lockers pages happened to trigger.
+# process that never ran Context.setup posts to /admin/api//graphql.json. It used to be set up
+# on every Shopify session; when that was dropped, only the locker product lookup on the staff
+# lockers pages happened to set it up.
 #
 # Called at boot (config/initializers/shopify_api.rb) AND before every Shopify session
-# (via start_session!: ShopifyConcern, ShopifyService; the homepage calls ensure_setup!), so a failed boot setup heals on the
+# (via start_session!: Payments::ShopifyAdapter.admin_client; the homepage collections call ensure_setup!), so a failed boot setup heals on the
 # next draft order. Idempotent and cheap, and it never raises: failures are logged and
 # reported in production/staging only (Rails.error, which Airbrake subscribes to) and ensure_setup! returns false.
 require Rails.root.join("lib/report_throttle")
@@ -49,6 +49,17 @@ module ShopifyContext
 
   REQUIRED_KEYS = %i[api_key password shop_name api_version].freeze
 
+  # The Admin API version the credentials give (credentials.<env>.shopify.api_version); "" when it is not set.
+  # Every request goes to /admin/api/<this version>/graphql.json.
+  def self.configured_api_version
+    (Rails.application.credentials.dig(Rails.env.to_sym, :shopify) || {})[:api_version].to_s
+  end
+
+  # Logs the configured Admin API version (the boot initializer calls it).
+  def self.log_api_version
+    Rails.logger.info("[shopify_context] Shopify Admin API version #{configured_api_version.presence || '(not set)'}")
+  end
+
   # Makes sure the Context is set up. Never raises: a failure is logged (and reported in
   # production/staging) and this returns false.
   def self.ensure_setup!
@@ -60,8 +71,8 @@ module ShopifyContext
 
   # The ONE way to start a Shopify Admin/Storefront session: reads the credentials ONCE, makes sure
   # the Context is set up for them (raising NotConfigured when it cannot be), then builds the
-  # session from that same validated config and activates it. ShopifyConcern
-  # and ShopifyService both call this.
+  # session from that same validated config and activates it. Payments::ShopifyAdapter.admin_client
+  # calls this.
   def self.start_session!
     config, error = setup_context
     if error

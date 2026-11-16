@@ -21,8 +21,8 @@ module PageCrawl
   SKIP_ROUTES = [
     [%r{\A/logout\z}, "destroys the session"],
     [%r{\A/staff_dashboard/sign_out_all_users\z}, "mutates: signs everyone out"],
-    [%r{\A/cc_moneys/redeem\z}, "mutates: credits CC (D-B... redeem is a GET)"],
-    [%r{\A/cc_moneys/link_cc_to_user\z}, "mutates: links CC to a user"],
+    [%r{\A/rewards/redeem\z}, "mutates: credits CC (redeem is POST only)"],
+    [%r{\A/rewards/link_cc_to_user\z}, "needs a mailed claim token"],
     [%r{/join_}, "mutates: joins a program/proposal"],
     [%r{/unjoin_}, "mutates: leaves a proposal"],
     [%r{\A/project_proposals/(un)?join_project_proposal\z}, "mutates"],
@@ -42,8 +42,7 @@ module PageCrawl
     [%r{/download_files\z}, "streams a zip"],
     [%r{\A/learning_area/:id/scorm_launch\z}, "SCORM package launch"],
     [%r{\A/open_hours\z}, "fetches external ICS calendars"],
-    [%r{\A/rfid/get_unset_rfids\z}, "consumes RFID reader state"],
-    [%r{\A/kiosk}, "kiosk screens (device-bound)"]
+    [%r{\A/_system_test_entrypoint\z}, "test-only route added by the view_component gem"]
   ].freeze
 
   # Segments that are not routable params in this crawl.
@@ -74,7 +73,7 @@ module PageCrawl
   # Substitutes :params from the world. Returns [path, nil] or [nil, reason].
   def fill(route, world)
     missing = nil
-    path = route.path_spec.gsub(/:(\w+)/) do
+    path = route.path_spec.gsub(/[:*](\w+)/) do
       value = world.value_for(route.controller, Regexp.last_match(1))
       if value.nil?
         missing ||= Regexp.last_match(1)
@@ -96,10 +95,10 @@ module PageCrawl
     CONTROLLER_KEYS = {
       "learning_area" => :learning_module,
       "unavailabilities" => :staff_unavailability,
-      "my_calendar" => :staff_needed_calendar,
+      "my_calendar" => :space, # staff/my_calendar/json/:id is a space id
       "calendar" => :staff_needed_calendar,
       "sub_space_booking" => :sub_space_booking,
-      "kiosk" => :user,
+      "kiosk" => :space, # the kiosk :id is a space id
       "key_requests" => :key_request,
       "badges" => :certification,
       "faqs" => :faq,
@@ -107,6 +106,7 @@ module PageCrawl
       "staff_spaces" => :staff_space,
       "staff_availabilities" => :staff_availability,
       "walk_in_safety_sheets" => :walk_in_safety_sheet,
+      "project_proposals" => :project_proposal_param, # the canonical URL carries the slug
       "users" => :user,
       "uni_programs" => :uni_program
     }.freeze
@@ -128,7 +128,8 @@ module PageCrawl
       "order_item_id" => :order_item,
       "proficient_project_id" => :proficient_project,
       "project_kit_id" => :project_kit,
-      "key_request_id" => :key_request
+      "key_request_id" => :key_request,
+      "path" => :scorm_path
     }.freeze
 
     # ctx: the running example group (gives access to the job-order seed helpers)
@@ -175,26 +176,47 @@ module PageCrawl
       make(:exam) { create(:exam, user: records[:target], training_session: records[:training_session]) }
       make(:skill) { create(:skill) }
       make(:certification) { create(:certification, :basic_training, user_id: records[:target].id) }
-      make(:repository) { create(:repository, owner: records[:target]) }
-      make(:proficient_project) { create(:proficient_project, training: records[:training]) }
+      # a video link, so the repository page renders its embedded player
+      make(:repository) { create(:repository, owner: records[:target], youtube_link: "https://www.youtube.com/watch?v=dQw4w9WgXcQ") }
+      # a wiki link and an attached file, so the project page renders both frames
+      make(:proficient_project) do
+        create(:proficient_project, training: records[:training], description: "See https://wiki.makerepo.com/en/page")
+          .tap { |pp| create(:repo_file, proficient_project: pp) }
+      end
       make(:project_kit) { create(:project_kit, proficient_project: records[:proficient_project]) }
-      make(:learning_module) { create(:learning_module, training: records[:training]) }
+      make(:learning_module) do
+        # a ready SCORM package, extracted now, so the asset route has a file to serve
+        create(:learning_module, :with_scorm_object, training: records[:training], shortcut_name: "crawl").tap do |lm|
+          ExtractScormJob.perform_now(lm.id)
+        end.reload
+      end
       make(:faq) { create(:faq) }
       make(:announcement) { create(:announcement) }
       make(:project_proposal) { create(:project_proposal) }
+      make(:project_proposal_param) { records[:project_proposal].to_param }
       make(:printer_type) { create(:printer_type, :Random) }
       make(:printer) { create(:printer, :Random) }
       make(:printer_issue) { create(:printer_issue, printer: records[:printer], reporter: records[:target]) }
       make(:locker) { create(:locker) }
       make(:locker_rental) { create(:locker_rental, :active, rented_by: records[:target], locker: records[:locker]) }
       make(:volunteer_task) { create(:volunteer_task, space: records[:space]) }
+      # the volunteer directory lists active and inactive volunteers with their rows; the active one has joined a
+      # task, so its active-tasks cell is rendered too
+      make(:volunteers) do
+        [create(:program, :volunteer_program, user: records[:target], active: true),
+         create(:program, :volunteer_program, user: create(:user, :regular_user), active: false)]
+      end
+      make(:volunteer_task_join) { create(:volunteer_task_join, :active, user: records[:target], volunteer_task: records[:volunteer_task]) }
       make(:volunteer_hour) { create(:volunteer_hour, user: records[:target]) }
       make(:key) { create(:key, space: records[:space]) }
       make(:key_request) do
         create(:key_request, :status_waiting_for_approval, :all_questions_answered, user: records[:target],
                                                                    space: records[:space], supervisor: create(:user, :admin))
       end
-      make(:key_certification) { create(:key_certification, user: records[:target]) }
+      # one attached document, so the certification page renders its frame
+      make(:key_certification) do
+        create(:key_certification, user: records[:target]).tap { |kc| kc.pdf_file_1.attach(FilesTestHelper.pdf) }
+      end
       make(:key_transaction) { create(:key_transaction, user: records[:target], key: records[:key]) }
       make(:order) { create(:order, user: records[:target]) }
       make(:order_item) { create(:order_item, order: records[:order], proficient_project: records[:proficient_project]) }
@@ -227,8 +249,9 @@ module PageCrawl
       make(:job_order) { seed_job_order_world }
       make(:job_task) { records[:job_order]&.job_tasks&.first }
       make(:sub_space_booking) { seed_booking_world }
+      records[:scorm_path] = "index.html" # a file inside the learning module's package
       records[:slug] = "crawl-slug"
-      records[:shortcut] = "crawl"
+      records[:shortcut] = "crawl" # the learning module's shortcut_name
       records[:subskill] = "crawl"
       records[:filename] = "x.txt"
       records[:file_number] = "1"
@@ -244,7 +267,7 @@ module PageCrawl
     end
 
     def seed_booking_world
-      ids = %w[Pending Approved Rejected].map { |n| BookingStatus.find_by(name: n) || BookingStatus.create!(name: n) }
+      ids = %w[Pending Approved Declined].map { |n| BookingStatus.find_by(name: n) || BookingStatus.create!(name: n) }
       records[:booking_statuses] = ids
       create(:sub_space_booking, sub_space: records[:sub_space], user: records[:target]).tap do |b|
         b.change_status!(ids.first)

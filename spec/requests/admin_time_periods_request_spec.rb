@@ -81,7 +81,7 @@ RSpec.describe "Admin time periods", type: :request do
 
     it "does not save an update that inverts the range" do
       patch admin_time_period_path(period), params: { time_period: { end_date: "2000-01-01" } }
-      expect(flash[:alert]).to eq("Something went wrong")
+      expect(flash[:alert]).to eq("The time period was not updated. End date must not be before the start date")
       expect(period.reload.end_date).to eq(Date.new(2027, 12, 20))
     end
 

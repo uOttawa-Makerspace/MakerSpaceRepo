@@ -65,31 +65,67 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
         select "24x24", from: "locker_size_id", visible: :all
         find("input[type=submit]").click
       end
-      expect(page).to have_text("Lockers created")
+      expect_flash("Some lockers were not created (the number may already exist): 1, 2, 3, and 7")
       expect(Locker.pluck(:specifier)).to match_array(%w[1 2 3 4 5 6 7 8 9])
       expect(Locker.find_by(specifier: "5").locker_size).to eq(size_large)
       expect(Locker.find_by(specifier: "1").locker_size).to eq(size_small)
     end
 
-    it "is refused by the server for a one-number range" do
+    it "creates the one locker of a one-number range" do
       type_range("50", "50")
       expect(page).to have_css("#newRangeLockersPossible li", text: "50")
       within("#newRangeLockerModal") do
         select "24x24", from: "locker_size_id", visible: :all
         find("input[type=submit]").click
       end
-      expect(page).to have_text("Range end must be larger than range start")
-      expect(Locker.where(specifier: "50")).to be_empty
+      expect_flash("Lockers created")
+      expect(Locker.where(specifier: "50").count).to eq(1)
     end
 
-    it "compares the range ends as text on the server, so 9 to 10 is refused" do
+    it "creates the lockers of a range such as 9 to 10" do
       type_range("9", "10")
       within("#newRangeLockerModal") do
         select "24x24", from: "locker_size_id", visible: :all
         find("input[type=submit]").click
       end
-      expect(page).to have_text("Range end must be larger than range start")
-      expect(Locker.where(specifier: %w[9 10])).to be_empty
+      expect_flash("Lockers created")
+      expect(Locker.where(specifier: %w[9 10]).count).to eq(2)
+    end
+  end
+
+  describe "range preview of lockers the table is not showing" do
+    it "counts the lockers that the table search has filtered out" do
+      find(".dt-search input[type=search]").fill_in(with: "#7")
+      expect(page).to have_css("#locker_inventory_table tbody tr", count: 1)
+      open_modal "Make a range of lockers", "#newRangeLockerModal"
+      fill_in "newLockerRangeStart", with: "1"
+      fill_in "newLockerRangeEnd", with: "4"
+      within("#newRangeLockersAlreadyPresent") do
+        expect(page).to have_css("li", text: "Range from 1 to 3")
+        expect(page).to have_css("li", count: 1)
+      end
+      within("#newRangeLockersPossible") do
+        expect(page).to have_css("li", text: "4")
+        expect(page).to have_css("li", count: 1)
+      end
+    end
+
+    it "offers a number as new when only a locker with a leading zero exists, as the server creates it" do
+      create(:locker, specifier: "05", locker_size: size_small)
+      visit lockers_path
+      expect(page).to have_css("#locker_inventory_table")
+      wait_for_app_js
+      open_modal "Make a range of lockers", "#newRangeLockerModal"
+      fill_in "newLockerRangeStart", with: "5"
+      fill_in "newLockerRangeEnd", with: "5"
+      expect(page).to have_css("#newRangeLockersPossible li", text: "5")
+      expect(page).to have_css("#newRangeLockersAlreadyPresent", visible: :hidden)
+      within("#newRangeLockerModal") do
+        select "24x24", from: "locker_size_id", visible: :all
+        find("input[type=submit]").click
+      end
+      expect_flash("Lockers created")
+      expect(Locker.where(specifier: %w[5 05]).count).to eq(2)
     end
   end
 
@@ -101,7 +137,7 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
         select "24x24", from: "locker_locker_size_id", visible: :all
         click_button "Create Locker"
       end
-      expect(page).to have_text("Created locker #55")
+      expect_flash("Created locker #55")
       created = Locker.find_by(specifier: "55")
       expect(created.locker_size).to eq(size_large)
       expect(page).to have_current_path(locker_path(created))
@@ -149,22 +185,23 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
       expect(page).to have_no_css("#lockerBulkEditList li")
     end
 
-    it "is refused with a missing-parameter error, so no locker size changes" do
+    it "changes the size of the selected lockers only" do
       select_rows(l1, l3)
       open_modal "Bulk edit", "#lockerBulkEditModal"
       within("#lockerBulkEditModal") do
-        select "24x24", from: "locker_size_id", visible: :all
+        select "24x24", from: "locker_locker_size_id", visible: :all
         click_button "Update Lockers"
       end
-      expect(page).to have_text("param is missing or the value is empty or invalid: locker")
-      expect([l1, l2, l3].map { |l| l.reload.locker_size }).to all(eq(size_small))
+      expect_flash("Lockers updated")
+      expect([l1, l3].map { |l| l.reload.locker_size }).to all(eq(size_large))
+      expect(l2.reload.locker_size).to eq(size_small)
     end
 
     it "deletes the selected lockers after confirmation" do
       select_rows(l2)
       open_modal "Bulk edit", "#lockerBulkEditModal"
       accept_confirm { click_button "Delete Selected" }
-      expect(page).to have_text("Selected lockers deleted")
+      expect_flash("Selected lockers deleted")
       expect(Locker.exists?(l2.id)).to be(false)
       expect(Locker.exists?(l1.id)).to be(true)
     end
@@ -236,13 +273,23 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
       wait_until("size not deleted") { !LockerSize.exists?(unused.id) }
     end
 
-    it "shows no options in the size dropdown of the single locker modal" do
+    it "still lists the sizes in the size dropdown of the single locker modal" do
       visit lockers_path
       wait_for_app_js
       open_modal "Make a single locker", "#newLockerModal"
       within("#newLockerModal") do
         find(".ts-wrapper .ts-control").click
-        expect(page).to have_no_css(".ts-dropdown .option")
+        expect(page).to have_css(".ts-dropdown .option", text: "99x99")
+      end
+    end
+
+    it "still lists the sizes in the size dropdown of the range modal" do
+      visit lockers_path
+      wait_for_app_js
+      open_modal "Make a range of lockers", "#newRangeLockerModal"
+      within("#newRangeLockerModal") do
+        find(".ts-wrapper .ts-control").click
+        expect(page).to have_css(".ts-dropdown .option", text: "99x99")
       end
     end
   end

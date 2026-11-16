@@ -1,22 +1,29 @@
 # frozen_string_literal: true
 
 class StaffDashboardController < StaffAreaController
-  # NOTE: @space is set by StaffAreaController
+  # The only user fields the search JSON sends (what the staff app reads, plus id).
+  SEARCH_JSON_FIELDS = %i[id name username email].freeze
+
+  # NOTE: @space is set by StaffAreaController, and is always a space the user may work in.
+  before_action :require_space, only: %i[
+    index refresh_capacity refresh_tables import_excel sign_out_users add_signed_in_users_to_teams
+    sign_out_all_users sign_in_users search present_users_report
+  ]
   
   def index
     # Strict loading because this is used in table views
     # FIXME: Temporarily disabled because of space 119
-    @signed_in_users = User
-      .where(id: LabSession.active.where(space: @space).select(:user_id))
-      .includes(certifications: {training_session: [:training, :user]})
-      .includes(:lab_sessions)
+    @signed_in_users = @space.including_walk_in_sheets(
+      User
+        .where(id: LabSession.active.where(space: @space).select(:user_id))
+        .includes(certifications: {training_session: [:training, :user]})
+        .includes(:lab_sessions)
+    )
 
     respond_to do |format|
       format.html do
         @signed_out_users = @space.recently_signed_out_users_with_history
         load_table_context
-        @printers_in_use =
-          PrinterSession.order(created_at: :desc).where(in_use: true)
         @table_column_count = 0
       end
       format.json do
@@ -24,6 +31,8 @@ class StaffDashboardController < StaffAreaController
         users_with_certs = User
           .where(id: signed_in_user_ids)
           .includes(certifications: { training_session: :training })
+        with_membership = Membership.active.where(user_id: signed_in_user_ids).reorder(nil).distinct.pluck(:user_id)
+        with_sheet = WalkInSafetySheet.where(user_id: signed_in_user_ids).distinct.pluck(:user_id)
 
         render json: {
           space: @space.as_json,
@@ -37,13 +46,13 @@ class StaffDashboardController < StaffAreaController
                       name: c.training_session&.training&.name_en || "Unknown"
                     }
                     end,
-                    "signed_safety_sheet" => u.walk_in_safety_sheets.any?,
-                    "membership_status" => u.has_active_membership?
+                    "signed_safety_sheet" => with_sheet.include?(u.id),
+                    "membership_status" => with_membership.include?(u.id)
                   }
                 )
               end
               .as_json,
-          space_list: Space.all.pluck(:name, :id)
+          space_list: @all_spaces.pluck(:name, :id)
         }
       end
     end
@@ -57,11 +66,9 @@ class StaffDashboardController < StaffAreaController
 
   def refresh_tables
     signed_in_users = @space.signed_in_users
-    return head :not_modified if params[:token] == signed_in_users.map(&:id).join("")
+    return head :not_modified if params[:token] == signed_in_users.map(&:id).join(",")
 
     load_table_context
-    @printers_in_use =
-      PrinterSession.order(created_at: :desc).where(in_use: true)
     @all_user_memberships = Membership.where(user_id: signed_in_users.map(&:id)).active.pluck(:user_id)
     @all_sign_out_memberships = Membership.where(user_id: @space.recently_signed_out_users.pluck(:id)).active.pluck(:user_id)
     render json: latest_sign_in_details(signed_in_users).merge(
@@ -91,79 +98,35 @@ class StaffDashboardController < StaffAreaController
   end
 
   def import_excel
-    begin
-      file = params[:file]
-      file_ext = File.extname(file.original_filename)
-      faulty_users = 0
-      faulty_user_data = []
-      raise "Unknown file type: #{file.original_filename}" unless %w[.xls .xlsx].include?(file_ext)
-      spreadsheet =
-        (
-          if file_ext == ".xls"
-            Roo::Excel.new(file.path)
-          else
-            Roo::Excelx.new(file.path)
-          end
-        )
-      (1..spreadsheet.last_row).each do |i|
-        next if spreadsheet.row(i)[0].blank?
-        user_data = spreadsheet.row(i)[0].downcase
-        user =
-          User.where(
-            "lower(email) = ? OR lower(name) = ? OR lower(username) = ?",
-            user_data,
-            user_data,
-            user_data
-          )
-        faulty_users += 1 and faulty_user_data << user_data and
-          next if user.blank?
-        LabSession.create(
-          user: user.last,
-          space_id: @space.id,
-          sign_in_time: Time.zone.now,
-          sign_out_time: Time.zone.now + 8.hours
-        )
-      end
-      flash[
-        :notice
-      ] = "The file has been processed and users have been signed in ! "
-      if faulty_users > 0
-        flash[
-          :alert_yellow
-        ] = "Please note that #{faulty_users} user(s) did not get signed in because they were not found in the system."
-        flash[:alert] = "Users with error: #{faulty_user_data.join(", ")}"
-      end
-    rescue StandardError => e
-      flash[
-        :alert
-      ] = "An error occured while uploading the log in file, please try again later: #{e}"
+    file = params[:file]
+    return refuse_import(:no_file) if file.blank?
+    unless IMPORT_EXTENSIONS.include?(File.extname(file.original_filename))
+      return refuse_import(:file_type, name: file.original_filename)
     end
+
+    faulty_user_data = sign_in_listed_users(read_spreadsheet(file))
+    flash[:notice] = I18n.t("staff_dashboard.flash.import_done")
+    if faulty_user_data.any?
+      flash[:alert_yellow] = I18n.t("staff_dashboard.flash.import_not_found", count: faulty_user_data.size)
+      flash[:alert] = I18n.t("staff_dashboard.flash.import_errors", users: faulty_user_data.join(", "))
+    end
+    redirect_to staff_dashboard_index_path
+  rescue Zip::Error, Roo::Error, Ole::Storage::FormatError
+    # The file is not a readable spreadsheet of the type its name says.
+    refuse_import(:unreadable)
+  rescue StandardError => e
+    report_unexpected(e, source: "staff_dashboard#import_excel")
+    flash[:alert] = unexpected_error_message
     redirect_to staff_dashboard_index_path
   end
 
-  # Signs each listed user out of their latest active session. Users who are not
+  # Signs each listed user out of their active sessions in the current space. Users who are not
   # signed in, and usernames that match no user, change nothing and are reported
   # back (flash for HTML; JSON lists signed_out, not_signed_in and not_found).
   def sign_out_users
-    # An array of strings, or a single string, is accepted; blanks, hashes and repeats are ignored.
-    dropped = params[:dropped_users]
-    dropped = [dropped] if dropped.is_a?(String)
-    usernames = (dropped.is_a?(Array) ? dropped : [])
-                      .select { |name| name.is_a?(String) }.map(&:strip).reject(&:blank?).uniq(&:downcase)
+    usernames = dropped_usernames
     users = User.where(username: usernames).to_a
-    signed_out = []
-    not_signed_in = []
-
-    users.each do |user|
-      # get only the latest session, if they're not signed out yet
-      session = LabSession.active_for_user(user).last
-      if session
-        session.sign_out
-        signed_out << user
-      else
-        not_signed_in << user
-      end
-    end
+    signed_out, not_signed_in = users.partition { |user| LabSession.sign_out(user, @space).positive? }
     # users.username is case-insensitive (citext), so compare the same way.
     found = users.map { |user| user.username.downcase }
     not_found = usernames.reject { |name| found.include?(name.downcase) }
@@ -171,8 +134,8 @@ class StaffDashboardController < StaffAreaController
     respond_to do |format|
       format.html do
         notes = []
-        notes << "Not signed in: #{not_signed_in.map(&:name).join(', ')}" if not_signed_in.any?
-        notes << "Unknown username: #{not_found.join(', ')}" if not_found.any?
+        notes << I18n.t("staff_dashboard.flash.not_signed_in", names: not_signed_in.map(&:name).join(", ")) if not_signed_in.any?
+        notes << I18n.t("staff_dashboard.flash.unknown_username", names: not_found.join(", ")) if not_found.any?
         flash[:alert] = notes.join(". ") if notes.any?
         redirect_to staff_dashboard_index_path
       end
@@ -191,24 +154,19 @@ class StaffDashboardController < StaffAreaController
   def add_signed_in_users_to_teams
     if @space.jmts?
       @space.signed_in_users.each do |user|
-        user.programs.find_or_create_by(program_type: Program::TEAMS)
+        Program.join(user, Program::TEAMS)
       end
 
-      flash[:notice] = "Successfully added all users to teams program"
+      flash[:notice] = I18n.t("staff_dashboard.flash.added_to_teams")
     else
-      flash[:alert] = "You can't perform this operation in this space."
+      flash[:alert] = I18n.t("staff_dashboard.flash.teams_not_here")
     end
 
     redirect_to staff_dashboard_index_path
   end
 
   def sign_out_all_users
-    space = @space
-
-    space.signed_in_users.each do |user|
-      # Lab sessions where sign out did not happen yet (greater than time now)
-      LabSession.active_for_user(user).last&.sign_out
-    end
+    LabSession.sign_out_all(@space)
     respond_to do |format|
       format.html do
         redirect_to staff_dashboard_index_path(space_id: @space.id)
@@ -218,27 +176,13 @@ class StaffDashboardController < StaffAreaController
   end
 
   def sign_in_users
-    alert = []
-
     # Staff dashboard changed, but we keep compat with app.
     user_query = params[:added_users] || params[:username]
 
-    users = User.where(username: user_query).find_each do |user|
-      lab_session =
-        LabSession.new(
-          user_id: user.id,
-          space_id: @space.id,
-          sign_in_time: Time.zone.now,
-          sign_out_time: Time.zone.now + 6.hours
-        )
-      alert << user.name unless lab_session.save
-    end
+    User.where(username: user_query).find_each { |user| LabSession.sign_in(user, @space) }
 
     respond_to do |format|
-      format.html do
-        flash[:alert] = "Error signing #{alert.join(', ')} in" if alert.length > 0
-        redirect_to staff_dashboard_index_path(space_id: @space.id)
-      end
+      format.html { redirect_to staff_dashboard_index_path(space_id: @space.id) }
       format.js { load_table_context }
       format.json { render json: { status: 'ok' } }
     end
@@ -250,9 +194,12 @@ class StaffDashboardController < StaffAreaController
     if new_space.nil?
       http_status = :not_found
       message = "Space not found"
+    elsif !current_user.can_work_in?(new_space)
+      http_status = :not_found
+      message = "You are not assigned to that space"
     elsif current_user.update(space_id: new_space.id)
       @space = new_space
-      flash[:notice] = "Space changed successfully"
+      flash[:notice] = I18n.t("staff_dashboard.flash.space_changed")
     else
       errors = current_user.errors.full_messages
       http_status = :unprocessable_content
@@ -282,9 +229,9 @@ class StaffDashboardController < StaffAreaController
     respond_to do |format|
       format.html do
         if error
-          flash[:alert] = "RFID not linked: #{error}"
+          flash[:alert] = I18n.t("staff_dashboard.flash.rfid_not_linked", error: error)
         else
-          flash[:notice] = "RFID linked successfully"
+          flash[:notice] = I18n.t("staff_dashboard.flash.rfid_linked")
         end
         redirect_back(fallback_location: root_path)
       end
@@ -309,9 +256,9 @@ class StaffDashboardController < StaffAreaController
         if error
           flash[:alert] = error
         elsif outcome == :already_unlinked
-          flash[:notice] = "RFID was already unlinked"
+          flash[:notice] = I18n.t("staff_dashboard.flash.rfid_already_unlinked")
         else
-          flash[:notice] = "RFID unlinked successfully"
+          flash[:notice] = I18n.t("staff_dashboard.flash.rfid_unlinked")
         end
         redirect_back(fallback_location: root_path)
       end
@@ -334,30 +281,23 @@ class StaffDashboardController < StaffAreaController
     elsif params[:query].present?
       redirect_to staff_dashboard_search_path(query: params[:query])
     else
-      flash[:alert] = "A valid user must be selected"
+      flash[:alert] = I18n.t("staff_dashboard.flash.select_valid_user")
       redirect_to staff_dashboard_index_path
     end
   end
 
   def search
+    return reject_blank_search if params[:query].blank? && params[:username].blank?
+
+    if params[:username].present?
+      @users = User.where("username = ?", params[:username])
+    else
+      @query = params[:query]
+      @users = User.text_search(@query).order(:updated_at)
+    end
     respond_to do |format|
-      if params[:query].blank? and params[:username].blank?
-        format.html do
-          redirect_to staff_dashboard_index_path, alert: "No search parameters."
-        end
-        format.json { render json: { error: "no params" } }
-      elsif params[:username].present?
-        @users = User.where("username = ?", params[:username])
-      else
-        @query = params[:query]
-        @users =
-          User
-            .text_search(@query)
-            .includes(:lab_sessions)
-            .order(:updated_at)
-      end
-      format.html
-      format.json { render json: @users.as_json }
+      format.html { @users = @users.includes(:lab_sessions) if @query.present? }
+      format.json { render json: @users.as_json(only: SEARCH_JSON_FIELDS) }
     end
   end
 
@@ -374,7 +314,7 @@ class StaffDashboardController < StaffAreaController
                     .to_stream
                     .read,
                   filename:
-                    "#{@space.name}_#{Time.new.strftime("%Y-%m-%d_%Hh%M")}_present_users_report.xlsx"
+                    "#{@space.name}_#{Time.current.strftime("%Y-%m-%d_%Hh%M")}_present_users_report.xlsx"
       end
     end
   end
@@ -385,6 +325,14 @@ class StaffDashboardController < StaffAreaController
   end
 
   private
+
+  # A search with neither a query nor a username: the page goes back to the dashboard, the staff app gets an error object.
+  def reject_blank_search
+    respond_to do |format|
+      format.html { redirect_to staff_dashboard_index_path, alert: I18n.t("staff_dashboard.flash.no_search_parameters") }
+      format.json { render json: { error: "no params" } }
+    end
+  end
 
   # Returns [error, status]; error is nil when the card was linked.
   def link_rfid_error
@@ -411,7 +359,49 @@ class StaffDashboardController < StaffAreaController
 
     [outcome, nil, nil]
   rescue Rfid::OwnerChanging
-    [nil, "card is changing, try again", :conflict]
+    [nil, I18n.t("errors.staff.dashboard.card_changing"), :conflict]
+  end
+
+  # An array of strings, or a single string, is accepted; blanks, hashes and repeats are ignored.
+  def dropped_usernames
+    dropped = params[:dropped_users]
+    dropped = [dropped] if dropped.is_a?(String)
+    return [] unless dropped.is_a?(Array)
+
+    dropped.grep(String).map(&:strip).reject(&:blank?).uniq(&:downcase)
+  end
+
+  IMPORT_EXTENSIONS = %w[.xls .xlsx].freeze
+
+  def refuse_import(cause, **options)
+    flash[:alert] = I18n.t("errors.staff.dashboard.import_#{cause}", **options)
+    redirect_to staff_dashboard_index_path
+  end
+
+  def read_spreadsheet(file)
+    if File.extname(file.original_filename) == ".xls"
+      Roo::Excel.new(file.path)
+    else
+      Roo::Excelx.new(file.path)
+    end
+  end
+
+  # Signs in the user named on each row (by email, name or username, first column) for the standard session length;
+  # returns the cell values that matched no user.
+  def sign_in_listed_users(spreadsheet)
+    not_found = []
+    (1..spreadsheet.last_row).each do |i|
+      user_data = spreadsheet.row(i)[0].to_s.downcase
+      next if user_data.blank?
+
+      user = User.where("lower(email) = ? OR lower(name) = ? OR lower(username) = ?", user_data, user_data, user_data)
+      if user.blank?
+        not_found << user_data
+        next
+      end
+      LabSession.sign_in(user.last, @space)
+    end
+    not_found
   end
 
   # What the table partials (refresh_tables, the sign out JS response) read.
@@ -447,7 +437,7 @@ class StaffDashboardController < StaffAreaController
       has_membership: latest.has_active_membership?,
       expiration_date: latest.memberships.active.order(end_date: :desc).first&.end_date&.to_date || "",
       is_student: latest.student?,
-      signed_sheet: latest.walk_in_safety_sheets.any?
+      signed_sheet: WalkInSafetySheet.exists?(user_id: latest.id)
     }
   end
 

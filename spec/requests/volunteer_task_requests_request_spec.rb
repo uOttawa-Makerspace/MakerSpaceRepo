@@ -123,6 +123,15 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       expect { get "/volunteer_task_requests/create_request", params: { id: task.id } }.not_to change(VolunteerTaskRequest, :count)
     end
 
+    it "gives the reason when the request cannot be saved" do
+      assign!(volunteer)
+      vol_login!(volunteer)
+      allow_any_instance_of(VolunteerTaskRequest).to receive(:save) { |r| r.errors.add(:base, "Task is closed") && false }
+      expect { request! }.not_to change(VolunteerTaskRequest, :count)
+      expect(flash[:alert]).to eq("Your request for this task was not sent. Task is closed")
+      expect(vol_deliveries).to be_empty
+    end
+
     it "creates a pending request, redirects back with a notice, emails the requester with staff bcc'd" do
       assign!(volunteer)
       vol_login!(volunteer)
@@ -205,8 +214,8 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("You must be assigned to this task to submit it.")
     end
 
-    it "refuses a user whose join is no longer active" do
-      create(:volunteer_task_join, :not_active, volunteer_task: task, user: volunteer)
+    it "refuses a user whose join has ended" do
+      %i[completed left not_active].each { |trait| create(:volunteer_task_join, trait, volunteer_task: task, user: volunteer) }
       vol_login!(volunteer)
       expect { request! }.not_to change(VolunteerTaskRequest, :count)
     end
@@ -252,7 +261,9 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
     end
 
     context "approving as staff" do
-      before { vol_login!(create(:user, :staff)) }
+      let(:staff) { create(:user, :staff) }
+
+      before { vol_login!(staff) }
 
       it "dates the created hour with the completion request's created_at, not the approval time" do
         reported = Time.zone.parse("2026-02-10 14:00")
@@ -261,13 +272,14 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
         expect(VolunteerHour.last.date_of_task).to eq(reported)
       end
 
-      it "approves, deactivates the join, creates CC money + approved hours, updates the wallet and emails the requester" do
+      it "approves, completes the join, creates CC money + approved hours, updates the wallet and emails the requester" do
         join = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
         approve!("true")
         expect(response).to redirect_to(volunteer_task_requests_path)
         expect(flash[:notice]).to eq("Task request updated")
         expect(req.reload.approval).to be(true)
-        expect(join.reload.active).to be(false)
+        expect(join.reload).to have_attributes(active: false, state: "completed", state_changed_by_id: staff.id)
+        expect(join.state_changed_at).to be_within(1.minute).of(Time.current)
 
         money = CcMoney.last
         expect([money.user_id, money.volunteer_task_id, money.cc]).to eq([volunteer.id, task.id, 12])
@@ -284,8 +296,25 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
         join = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
         expect { approve!("false") }.not_to change { [CcMoney.count, VolunteerHour.count] }
         expect(req.reload.approval).to be(false)
-        expect(join.reload.active).to be(true)
+        expect(join.reload).to have_attributes(active: true, state: "joined", state_changed_by_id: nil)
         expect(vol_deliveries.map(&:subject)).to eq(["Your request was updated: Tour guide"])
+      end
+
+      it "approves and pays when the join ended after the lookup, leaving that join as it is" do
+        join = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
+        allow_any_instance_of(VolunteerTaskJoin).to receive(:with_lock).and_wrap_original do |original, *args, &block|
+          VolunteerTaskJoin.where(id: original.receiver.id).update_all(state: "left", active: false)
+          original.call(*args, &block)
+        end
+        expect { approve!("true") }.to change(CcMoney, :count).by(1).and change(VolunteerHour, :count).by(1)
+        expect(req.reload.approval).to be(true)
+        expect(join.reload).to have_attributes(state: "left", state_changed_by_id: nil)
+      end
+
+      it "leaves a join that already ended as it was" do
+        join = create(:volunteer_task_join, :left, volunteer_task: task, user: volunteer)
+        expect { approve!("true") }.not_to(change { join.reload.attributes })
+        expect(req.reload.approval).to be(true)
       end
 
       # approving an already-approved request is a no-op (no second award, no second email)
@@ -321,12 +350,31 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
         expect(CcMoney.count).to eq(1)
       end
 
-      it "treats a missing approval param as 'unprocessed': keeps the join and still emails" do
+      it "treats a missing approval param as 'unprocessed': keeps the join and sends no mail as nothing changed" do
         join = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
-        put update_approval_volunteer_task_requests_path, params: { id: req.id }
+        perform_enqueued_jobs { put update_approval_volunteer_task_requests_path, params: { id: req.id } }
         expect(req.reload.approval).to be_nil
-        expect(join.reload.active).to be(true)
+        expect(join.reload.state).to eq("joined")
+        expect(flash[:notice]).to eq("Task request was not changed")
         expect(response).to redirect_to(volunteer_task_requests_path)
+        expect(vol_deliveries).to be_empty
+      end
+
+      it "mails once when the approval changes and not again when the same value is sent repeatedly" do
+        approve!("false")
+        expect(vol_deliveries.size).to eq(1)
+        expect { approve!("false") }.not_to change { vol_deliveries.size }
+        expect(flash[:notice]).to eq("Task request was not changed")
+        approve!("true")
+        expect(vol_deliveries.size).to eq(2)
+      end
+
+      it "gives the reason when the update is refused, and sends no mail" do
+        allow_any_instance_of(VolunteerTaskRequest).to receive(:update) { |r| r.errors.add(:base, "Already closed") && false }
+        approve!("true")
+        expect(flash[:alert]).to eq("The task request was not updated. Already closed")
+        expect(response).to redirect_to(volunteer_task_requests_path)
+        expect(vol_deliveries).to be_empty
       end
 
       it "404s for a missing request" do

@@ -1,0 +1,98 @@
+en:
+  licenses:
+    layout_title: "License | MakerRepo"
+    sidebar:
+      title: "Licenses"
+      cca: "Creative Commons - Attribution"
+      ccasa: "Creative Commons - Attribution - Share Alike"
+      ccand: "Creative Commons - Attribution - No Derivatives"
+      ccanc: "Creative Commons - Attribution - Non-Commercial"
+      ancsa: "Attribution - Non-Commercial - Share Alike"
+      ancnd: "Attribution - Non-Commercial - No Derivatives"
+    titles:
+      cca: "Creative Commons - Attribution"
+      ccasa: "Creative Commons - Attribution - Share Alike"
+      ccand: "Creative Commons - Attribution - No Derivatives"
+      ccanc: "Creative Commons - Attribution - Non-Commercial"
+      ancsa: "Attribution - Non-Commercial - Share Alike"
+      ancnd: "Attribution - Non-Commercial - No Derivatives"
+    page:
+      free_to: "You are free to:"
+      under_terms: "Under the following terms:"
+      revoke: "The licensor cannot revoke these freedoms as long as you follow the license terms."
+      formal: "Formal License"
+    freedoms:
+      share:
+        label: "Share"
+        text: "copy and redistribute the material in any medium or format."
+      adapt:
+        label: "Adapt"
+        text: "remix, transform, and build upon the material for any purpose, even commercially."
+    terms:
+      attribution:
+        label: "Attribution"
+        text: "You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use."
+      non_commercial:
+        label: "Non-Commercial"
+        text: "You may not use the material for commercial purposes."
+      share_alike:
+        label: "ShareAlike"
+        text: "If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original."
+      no_derivatives:
+        label: "No Derivatives"
+        text: "If you remix, transform, or build upon the material, you may not distribute the modified material."
+      no_derivatives_hyphenated:
+        label: "No-Derivatives"
+        text: "If you remix, transform, or build upon the material, you may not distribute the modified material."
+      no_restrictions:
+        label: "No additional restrictions"
+        text: "You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits."
+fr:
+  licenses:
+    layout_title: "Licence | MakerRepo"
+    sidebar:
+      title: "Licences"
+      cca: "Creative Commons - Attribution"
+      ccasa: "Creative Commons - Attribution - Partage dans les mêmes conditions"
+      ccand: "Creative Commons - Attribution - Pas de modification"
+      ccanc: "Creative Commons - Attribution - Pas d'utilisation commerciale"
+      ancsa: "Attribution - Pas d'utilisation commerciale - Partage dans les mêmes conditions"
+      ancnd: "Attribution - Pas d'utilisation commerciale - Pas de modification"
+    titles:
+      cca: "Creative Commons - Attribution"
+      ccasa: "Creative Commons - Attribution - Partage dans les mêmes conditions"
+      ccand: "Creative Commons - Attribution - Pas de modification"
+      ccanc: "Creative Commons - Attribution - Pas d'utilisation commerciale"
+      ancsa: "Attribution - Pas d'utilisation commerciale - Partage dans les mêmes conditions"
+      ancnd: "Attribution - Pas d'utilisation commerciale - Pas de modification"
+    page:
+      free_to: "Vous êtes autorisé à :"
+      under_terms: "Selon les conditions suivantes :"
+      revoke: "L'offrant ne peut pas retirer ces autorisations tant que vous respectez les termes de la licence."
+      formal: "Licence officielle"
+    freedoms:
+      share:
+        label: "Partager"
+        text: "copier, distribuer et communiquer le matériel par tous moyens et sous tous formats."
+      adapt:
+        label: "Adapter"
+        text: "remixer, transformer et créer à partir du matériel pour toute utilisation, y compris commerciale."
+    terms:
+      attribution:
+        label: "Attribution"
+        text: "Vous devez créditer l'œuvre, intégrer un lien vers la licence et indiquer si des modifications ont été effectuées. Vous pouvez le faire par tout moyen raisonnable, sans toutefois suggérer que l'offrant vous soutient ou soutient l'utilisation que vous faites de son œuvre."
+      non_commercial:
+        label: "Pas d'utilisation commerciale"
+        text: "Vous n'êtes pas autorisé à faire un usage commercial de ce matériel."
+      share_alike:
+        label: "Partage dans les mêmes conditions"
+        text: "Si vous remixez, transformez ou créez à partir du matériel, vous devez diffuser vos contributions sous la même licence que l'original."
+      no_derivatives:
+        label: "Pas de modification"
+        text: "Si vous remixez, transformez ou créez à partir du matériel, vous n'êtes pas autorisé à distribuer le matériel modifié."
+      no_derivatives_hyphenated:
+        label: "Pas de modification"
+        text: "Si vous remixez, transformez ou créez à partir du matériel, vous n'êtes pas autorisé à distribuer le matériel modifié."
+      no_restrictions:
+        label: "Pas de restrictions complémentaires"
+        text: "Vous n'êtes pas autorisé à appliquer des conditions légales ou des mesures techniques qui restreindraient légalement les autres à faire ce que la licence permet."

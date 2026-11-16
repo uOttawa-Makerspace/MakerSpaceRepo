@@ -39,6 +39,10 @@ en:
         program: Program
         year_of_study: Year of study
         identity: Identity
+        uoeng_record: uOttawa record
+        full_time: Full time
+        current_semester: Enrolled this semester
+        checked_at: "checked %{date}"
         edit_profile: Edit your profile
 
     # User#identity_readable. The student phrases take the identity name and the year of study,
@@ -98,6 +102,10 @@ fr:
         program: Programme
         year_of_study: Année d'études
         identity: Identité
+        uoeng_record: Dossier uOttawa
+        full_time: Temps plein
+        current_semester: Inscrit ce trimestre
+        checked_at: "vérifié le %{date}"
         edit_profile: Modifier votre profil
 
     identity_readable:

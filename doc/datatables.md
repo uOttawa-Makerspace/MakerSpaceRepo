@@ -35,6 +35,28 @@ For more information on how to use data attributes:
 - [Table specific configuration](https://datatables.net/examples/advanced_init/html5-data-options.html)
 - [Cell specific configuration](https://datatables.net/examples/advanced_init/html5-data-attributes.html)
 
+# Language
+
+Every table is started with `dataTableOptions` from
+`/app/javascript/src/page_locale.js`, which gives DataTables its texts (search,
+"Showing 1 to 10 of N entries", empty table, paging names) in the language of
+the page. The texts come from `config/locales/widgets-en.yml` and
+`widgets-fr.yml`, rendered on the layout's `<html>` element as
+`data-widget-texts`. A new table started from a script does the same:
+`new DataTable(table, dataTableOptions(table, { ...options }))`.
+
+# Turbo
+
+DataTables moves a table into markup of its own and keeps in the page only the
+rows shown, so a copy of the page, as Turbo keeps for going back to it, cannot
+build the table again. A page with a table is therefore left out of Turbo's
+cache, and going back to it loads it again. `tabledata.js` does this for
+`data-datatable` tables. A page script that builds its own table uses
+`pageTable(table, options)` from `/app/javascript/src/page_table.js`, called
+through `onEveryPageLoad` (`/app/javascript/src/on_page.js`) so a Turbo visit
+builds it too: it builds the table once, with the page's language, and keeps
+the page out of the cache.
+
 # Pagination
 
 The plugin auto-paginates rows delivered via HTML, and also supports server-side

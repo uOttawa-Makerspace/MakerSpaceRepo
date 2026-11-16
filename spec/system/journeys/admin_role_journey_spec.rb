@@ -4,7 +4,7 @@ require "rails_helper"
 
 # End-to-end admin journey: an admin promotes a regular user to staff from the
 # user's profile (Roles tab) and the user's new access becomes visible.
-RSpec.describe "Journey: admin changes a role", type: :system, skip_bullet: true do
+RSpec.describe "Journey: admin changes a role", type: :system do
   let!(:admin) { create(:user, :admin) }
   let!(:space) { create(:space, name: "Role Space") }
   let!(:member) { create(:user, :regular_user, name: "Morgan Member") }
@@ -41,7 +41,8 @@ RSpec.describe "Journey: admin changes a role", type: :system, skip_bullet: true
 
     as_actor(:member) do
       visit staff_dashboard_index_path
-      expect(page).to have_text(/search for users to sign them in or out/i)
+      # Newly promoted staff are assigned to no space yet, so the dashboard says so.
+      expect(page).to have_text(I18n.t("common.no_assigned_spaces"))
     end
 
     as_actor(:admin) do

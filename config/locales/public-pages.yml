@@ -1,0 +1,68 @@
+en:
+  static_pages:
+    about:
+      heading: "About Us"
+      organization: "The Centre for Entrepreneurship and Engineering Design (CEED)"
+      offers: "CEED offers you engineering design and entrepreneurship education and experience that includes:"
+      items:
+        design: "Giving you opportunities throughout your studies to design, build and test products that meet customer needs"
+        business: "Developing your business acumen by introducing you to essential business concepts and exposing you to industry"
+        client: "Discovering a better client approach, one that allows the public to discover products and validate the design"
+        sales: "Building your sales and communication skills"
+        experiential: "Offering you experiential learning opportunities with industry in the areas of design and prototyping services and commercialization of technologies"
+    contact:
+      title: "Contact"
+      follow: "Follow Us"
+  email_links:
+    cancel: "Cancel"
+    nothing_changes: "Nothing changes until you press the button."
+    confirm:
+      title: "Confirm your email"
+      heading: "Confirm your email address"
+      body: "Press the button to confirm your email address and finish setting up your account."
+      button: "Confirm my email"
+    unlock:
+      title: "Unlock your account"
+      heading: "Unlock your account"
+      body: "Press the button to unlock your account so you can sign in again."
+      button: "Unlock my account"
+    resend:
+      title: "Resend confirmation email"
+      heading: "Resend the confirmation email"
+      body_html: "Send a new confirmation email to %{email}?"
+      nothing_sent: "Nothing is sent until you press the button."
+      button: "Send the email"
+fr:
+  static_pages:
+    about:
+      heading: "À propos de nous"
+      organization: "Le Centre d'entrepreneuriat et de conception technique (CEED)"
+      offers: "Le CEED vous offre une formation et une expérience en conception technique et en entrepreneuriat, notamment :"
+      items:
+        design: "Des occasions, tout au long de vos études, de concevoir, de fabriquer et de mettre à l'essai des produits qui répondent aux besoins des clients"
+        business: "Le développement de votre sens des affaires, en vous initiant aux notions commerciales essentielles et en vous mettant en contact avec l'industrie"
+        client: "La découverte d'une meilleure approche client, qui permet au public de découvrir des produits et de valider la conception"
+        sales: "Le renforcement de vos compétences en vente et en communication"
+        experiential: "Des occasions d'apprentissage par l'expérience avec l'industrie dans les domaines des services de conception et de prototypage et de la commercialisation des technologies"
+    contact:
+      title: "Contact"
+      follow: "Suivez-nous"
+  email_links:
+    cancel: "Annuler"
+    nothing_changes: "Rien ne change tant que vous n'appuyez pas sur le bouton."
+    confirm:
+      title: "Confirmez votre courriel"
+      heading: "Confirmez votre adresse courriel"
+      body: "Appuyez sur le bouton pour confirmer votre adresse courriel et terminer la création de votre compte."
+      button: "Confirmer mon courriel"
+    unlock:
+      title: "Déverrouillez votre compte"
+      heading: "Déverrouillez votre compte"
+      body: "Appuyez sur le bouton pour déverrouiller votre compte et pouvoir vous connecter de nouveau."
+      button: "Déverrouiller mon compte"
+    resend:
+      title: "Renvoyer le courriel de confirmation"
+      heading: "Renvoyer le courriel de confirmation"
+      body_html: "Envoyer un nouveau courriel de confirmation à %{email}?"
+      nothing_sent: "Rien n'est envoyé tant que vous n'appuyez pas sur le bouton."
+      button: "Envoyer le courriel"

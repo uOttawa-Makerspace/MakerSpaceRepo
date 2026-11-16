@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="<%= I18n.locale %>" data-bs-theme="<%= cookies[:theme] %>">
+<html lang="<%= I18n.locale %>" <%= tag.attributes(request_text_attributes) %> data-bs-theme="<%= cookies[:theme] %>">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -20,8 +20,7 @@
     
     <%# Vite Entrypoints %>
     <%= vite_client_tag %>
-    <%= vite_stylesheet_tag 'application.scss', 'data-turbo-track': 'reload' %>
-    <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
+    <%= render 'layouts/head_assets' %>
     
     <%# Namespaced and controller-specific JS entrypoints %>
     <% namespaced_entry = controller_path.tr('/', '_') %>
@@ -34,11 +33,6 @@
     <%# Favicons %>
     <%= favicon_link_tag '/favicon.ico' %>
     <%= favicon_link_tag '/apple-touch-icon.png', rel: 'apple-touch-icon', type: 'image/png' %>
-
-    <% if yield(:insert_turnstile_scripts) %>
-      <link rel="preconnect" href="https://challenges.cloudflare.com">
-      <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-    <% end %>
 
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
@@ -55,8 +49,6 @@
     </main>
     <%= render 'layouts/footer' %>
 
-    <%# Move 3rd-party widget to the bottom of body so it doesn't block CSS/HTML rendering %>
-    <script>(function(d){var s = d.createElement("script");s.setAttribute("data-account", "va12Fyrpbl");s.setAttribute("src", "https://cdn.userway.org/widget.js");(d.body || d.head).appendChild(s);})(document)</script>
-    <noscript><div id="noscript-warning">Please ensure Javascript is enabled for purposes of <a href="https://userway.org">website accessibility</a></div></noscript>
+    <%= render 'layouts/accessibility_widget' %>
   </body>
 </html>

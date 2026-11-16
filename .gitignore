@@ -71,6 +71,8 @@ node_modules
 *.dump
 *.bak
 *.sql
+# Versioned view definitions (scenic) are code, not dumps
+!/db/views/*.sql
 # Release notes written by CI for the image (never tracked)
 /CHANGELOG.md
 /release-notes.md

@@ -1,56 +1,65 @@
 <% provide(:title, 'My Unavailabilities') %>
-<%= vite_javascript_tag 'unavailabilities' %>
 
 <div class="my-4">
     <h1>My Unavailabilities</h1>
-    <p>Add your schedule unavailabilities (classes, appointments, etc.) by clicking the button below or dragging on the calendar. Click on an event to delete or edit it. <%= link_to "View your work schedule here", "/staff/my_calendar", data: { turbo: true } %>.</p>
+    <p>Add your schedule unavailabilities (classes, appointments, etc.) by clicking the button below or dragging on the calendar. Click on an event to delete or edit it; events imported from a linked calendar open a read-only view instead. <%= link_to "View your work schedule here", "/staff/my_calendar", data: { turbo: true } %>.</p>
 </div>
 
-<div id="calendar_container">
-    <button type="button" id="addUnavailabilityButton" class="btn btn-outline-primary my-4" data-bs-toggle="modal" data-bs-target="#unavailabilityModal">
-        + Add Unavailability
-    </button>
+<div id="unavailabilities_calendar" data-controller="unavailabilities-calendar" data-unavailabilities-calendar-failure-template-value="<%= t('staff_unavailabilities.could_not_load') %>" data-unavailabilities-calendar-unknown-host-value="<%= t('staff_unavailabilities.unknown_calendar') %>" data-unavailabilities-calendar-feed-failure-value="<%= t('staff_unavailabilities.feed_failed') %>" data-unavailabilities-calendar-feed-url-value="<%= json_staff_unavailabilities_path %>" data-unavailabilities-calendar-unavailability-form-outlet="#unavailabilityModal" data-unavailabilities-calendar-imported-event-details-outlet="#importedEventModal">
+    <div id="calendar_container" data-unavailabilities-calendar-target="container">
+        <button type="button" id="addUnavailabilityButton" class="btn btn-outline-primary my-4" data-action="click->unavailabilities-calendar#addUnavailability">
+            + Add Unavailability
+        </button>
 
-    <div id="calendar"></div>
-</div>
+        <div class="alert alert-warning" role="status" hidden data-unavailabilities-calendar-target="failures"></div>
 
-<div id="spinner_container">
-    <div id='spinner' class="spinner-border" role="status"></div>
+        <div id="calendar" data-unavailabilities-calendar-target="calendar" <%= tag.attributes(data: calendar_texts_data) %>></div>
+    </div>
+
+    <div id="spinner_container" data-unavailabilities-calendar-target="spinner">
+        <div id='spinner' class="spinner-border" role="status"></div>
+    </div>
 </div>
 
 <br>
 
-<div class="my-3">
+<div class="my-3" data-controller="ics-links">
     <h4>Imported Unavailability Calendars</h4>
     <p>Paste in any ICS link (from Google Calendar, Outlook, Apple Calendar, etc.) to be used as your unavailabilities.</p>
     <%= form_with url: update_external_unavailabilities_staff_unavailabilities_path, method: :patch, local: false, html: { class: "useTurbo" } do |f| %>
-        <div id="link-container">
+        <div id="link-container" data-ics-links-target="list">
             <% @external_unavailabilities.each_with_index do |calendar, i| %>
-                <div class="d-flex mb-2 gap-1">
+                <div class="d-flex mb-2 gap-1" data-ics-links-row>
                     <%= text_field_tag 'external_calendar[]', calendar.ics_url, { class: 'form-control', placeholder: 'Enter ICS URL...' } %>
-                    <button class="btn btn-danger calendar-delete-button ms-2" type="button">
+                    <button class="btn btn-danger calendar-delete-button ms-2" type="button" data-action="click->ics-links#remove">
                         <i class="fa fa-trash"></i>
                     </button>
                 </div>
             <% end %>
         </div>
-        <button type="button" class="btn btn-outline-primary" id="new-calendar">New Calendar</button>
+        <button type="button" class="btn btn-outline-primary" id="new-calendar" data-action="click->ics-links#add">New Calendar</button>
         <%= f.submit 'Save Calendars', class: 'btn btn-primary' %>
     <% end %>
-    <%# template %>
-    <div class="d-flex mb-2 gap-1" style="visibility: hidden;" id="new-link-input">
-        <%= text_field_tag 'external_calendar[]', nil, { class: 'form-control', placeholder: 'Enter ICS URL...' } %>
-        <button class="btn btn-danger calendar-delete-button ms-2" type="button">
-            <i class="fa fa-trash"></i>
-        </button>
-    </div>
+    <template data-ics-links-target="template">
+        <div class="d-flex mb-2 gap-1" data-ics-links-row>
+            <%= text_field_tag 'external_calendar[]', nil, { class: 'form-control', placeholder: 'Enter ICS URL...', id: nil } %>
+            <button class="btn btn-danger calendar-delete-button ms-2" type="button" data-action="click->ics-links#remove">
+                <i class="fa fa-trash"></i>
+            </button>
+        </div>
+    </template>
 </div>
 
 <%= render 'form' %>
+<%= render 'imported_event' %>
 
 <style>
     #calendar_container {
         display: none;
+    }
+
+    .imported-event-description {
+        white-space: pre-wrap;
     }
 
     #spinner_container {

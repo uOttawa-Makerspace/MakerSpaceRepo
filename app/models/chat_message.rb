@@ -14,12 +14,24 @@ class ChatMessage < ApplicationRecord
          .where(is_read: false)
   }
 
-  def self.count_unread_by_admin(job_order)
-    where(job_order: job_order)
-      # .where.not(sender_id: current_user.id)
-      .order(created_at: :desc)
-      .take_while { |msg| msg.sender_id == job_order.user_id }
-      .count
+  # A message from the order's owner newer than every message from anyone else on the order.
+  UNANSWERED_SQL = <<~SQL.squish
+    chat_messages.sender_id = job_orders.user_id AND chat_messages.created_at > COALESCE((
+      SELECT MAX(answers.created_at) FROM chat_messages answers
+      WHERE answers.job_order_id = chat_messages.job_order_id AND answers.sender_id IS DISTINCT FROM job_orders.user_id
+    ), '-infinity')
+  SQL
+
+  # How many messages of each order +reader+ has not read and did not send, keyed by order id; an order with none
+  # is absent. One query however many orders.
+  def self.unread_counts(job_orders, reader)
+    where(job_order_id: job_orders.map(&:id)).unread(reader).group(:job_order_id).count
+  end
+
+  # How many of each order's newest messages its owner wrote in a row (not yet answered), keyed by
+  # order id; an order with none is absent. One query however many orders.
+  def self.unread_by_admin_counts(job_orders)
+    joins(:job_order).where(job_order_id: job_orders.map(&:id)).where(UNANSWERED_SQL).group(:job_order_id).count
   end
 
   def timestamp

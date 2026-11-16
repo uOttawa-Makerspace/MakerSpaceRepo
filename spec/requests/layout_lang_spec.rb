@@ -83,8 +83,8 @@ RSpec.describe "The lang attribute on every layout", type: :request do
   end
 
   it "mailer layout names the locale the mail is rendered in" do
-    user = create(:user, :regular_user)
-    mail = I18n.with_locale(:fr) { MsrMailer.welcome_email(user).message }
+    user = create(:user, :regular_user, locale: "fr")
+    mail = MsrMailer.welcome_email(user).message
     html = (mail.html_part || mail).body.to_s
 
     expect(html[/<html[^>]*>/]).to include('lang="fr"')

@@ -6,15 +6,15 @@
                 <% if user.has_active_membership? %>
                     <% if user.active_membership.membership_tier.title_en.downcase.include?('faculty') %>
                         <p class="text-success"> <i class="fa-solid fa-gears"></i>
-                        Has an Engineering Membership</p>
+                        <%= t('staff_dashboard.membership.engineering') %></p>
                     <% elsif user.student? %>
                     <p class="text-success">
                         <i class="fa-solid fa-building-columns"></i>
-                        Has a Community Membership</p>
+                        <%= t('staff_dashboard.membership.community') %></p>
                     <% else %>
                     <p class="text-success">
                         <i class="fa-solid fa-circle-check"></i>
-                        Has an External Membership</p>
+                        <%= t('staff_dashboard.membership.external') %></p>
                     <% end %>
                 <% end %>
             </td>
@@ -23,7 +23,7 @@
             </td>
             <td class="sign_out_time-cell align-middle" style="horizontal-alginment:center;">
                 <% here = user.latest_lab_session_in(@space) %>
-                <%= "#{time_ago_in_words(here.sign_out_time)} ago at #{here.space.name}" if here %>
+                <%= t('staff_dashboard.visit', time: time_ago_in_words(here.sign_out_time), space: here.space.name) if here %>
             </td>
             <td class="action-cell align-middle">
                 <%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username] }, method: :put, class: 'btn btn-default check-button', aria: { label: t('common.sign_in') } %>

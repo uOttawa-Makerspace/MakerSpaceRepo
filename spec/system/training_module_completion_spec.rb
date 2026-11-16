@@ -32,13 +32,13 @@ RSpec.describe "Training module completion", type: :system do
 
     click_button "Start Module"
     expect(page).to have_current_path(learning_area_path(learning_module.id))
-    expect(page).to have_content("You have successfully started the learning module !")
+    expect_flash("You have successfully started the learning module !")
     expect(page).to have_content("In Progress")
     expect(page).to have_no_button("Start Module")
     expect(user.learning_module_tracks.last.status).to eq("in_progress")
 
     click_button "Mark Completed"
-    expect(page).to have_content("You have successfully completed the learning module !")
+    expect_flash("You have successfully completed the learning module !")
     expect(page).to have_content("You've completed this module")
     expect(page).to have_no_button("Mark Completed")
     expect(page).to have_no_button("Start Module")

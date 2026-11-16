@@ -4,8 +4,8 @@ require "rails_helper"
 require Rails.root.join("lib/shopify_context")
 
 # ShopifyContext.ensure_setup! is the single place that calls ShopifyAPI::Context.setup
-# (boot initializer, ShopifyConcern, ShopifyService). Credentials come
-# from spec/support/shopify_http_helpers.rb's fake config (shpat_test_fake, fake-shop, 2025-01).
+# (boot initializer, Payments::ShopifyAdapter.admin_client). Credentials come
+# from spec/support/shopify_http_helpers.rb's fake config (shpat_test_fake, fake-shop, 2026-10).
 RSpec.describe ShopifyContext, :shopify_context do
   include ActiveSupport::Testing::TimeHelpers
 
@@ -61,7 +61,7 @@ RSpec.describe ShopifyContext, :shopify_context do
     blank_context! # a Context already holding these values (left by an earlier example) would skip setup
     expect(ShopifyAPI::Context).to receive(:setup).with(
       api_key: "fake_api_key", api_secret_key: "shpat_test_fake", host: "fake-shop.myshopify.com",
-      is_embedded: false, is_private: true, api_version: "2025-01"
+      is_embedded: false, is_private: true, api_version: "2026-10"
     )
     expect(described_class.ensure_setup!).to be(true)
   end
@@ -69,7 +69,7 @@ RSpec.describe ShopifyContext, :shopify_context do
   it "configures a cold Context" do
     blank_context!
     expect(described_class.ensure_setup!).to be(true)
-    expect(ShopifyAPI::Context.api_version).to eq("2025-01")
+    expect(ShopifyAPI::Context.api_version).to eq("2026-10")
     expect(ShopifyAPI::Context.api_key).to eq("fake_api_key")
     expect(ShopifyAPI::Context.host).to eq("fake-shop.myshopify.com")
     expect(ShopifyAPI::Context.private?).to be(true)
@@ -280,7 +280,7 @@ RSpec.describe ShopifyContext, :shopify_context do
     it "ensures the Context is set up, then builds and activates a session for the configured shop" do
       blank_context!
       session = described_class.start_session!
-      expect(ShopifyAPI::Context.api_version).to eq("2025-01")
+      expect(ShopifyAPI::Context.api_version).to eq("2026-10")
       expect(session).to be_a(ShopifyAPI::Auth::Session)
       expect(session.shop).to eq("fake-shop.myshopify.com")
       expect(session.access_token == "shpat_test_fake").to be(true)
@@ -307,23 +307,22 @@ RSpec.describe ShopifyContext, :shopify_context do
     it "primes a cold Context before the session is used" do
       blank_context!
       described_class.start_session!
-      expect(ShopifyAPI::Context.api_version).to eq("2025-01")
+      expect(ShopifyAPI::Context.api_version).to eq("2026-10")
     end
 
-    it "is what ShopifyService, and the draft client delegate to" do
+    it "is what the Admin client builder delegates to" do
       sentinel = Object.new
       allow(described_class).to receive(:start_session!).and_return(sentinel)
-      expect(ShopifyService.start_shopify_session).to equal(sentinel)
       allow(ShopifyAPI::Clients::Graphql::Admin).to receive(:new)
       allow(ShopifyAPI::Context).to receive(:active_session).and_return(sentinel)
       expect(ShopifyAPI::Clients::Graphql::Admin).to receive(:new).with(session: sentinel)
-      ShopifyConcern::DraftOrders.client
+      Payments::ShopifyAdapter.admin_client
     end
 
-    it "ShopifyService digs: a missing shopify section raises NotConfigured, not NoMethodError" do
+    it "digs: a missing shopify section raises NotConfigured, not NoMethodError" do
       allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return(nil)
       allow(Rails.application.credentials).to receive(:[]).with(:test).and_return({})
-      expect { ShopifyService.start_shopify_session }.to raise_error(ShopifyContext::NotConfigured)
+      expect { described_class.start_session! }.to raise_error(ShopifyContext::NotConfigured)
     end
 
     describe "when the Context cannot be set up" do

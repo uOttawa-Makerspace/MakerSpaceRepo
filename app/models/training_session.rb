@@ -5,8 +5,11 @@ class TrainingSession < ApplicationRecord
   # The instructor, including one whose account was soft-deleted: past sessions keep their instructor.
   belongs_to :user, -> { including_deleted }, optional: true
   belongs_to :space, optional: true
-  has_many :certifications, dependent: :destroy
-  has_many :exams, dependent: :destroy
+  has_many :certifications
+  # Every certification the session awarded, demoted ones too (certifications are active-only by default):
+  # a session that awarded any, or has exams, cannot be deleted.
+  has_many :awarded_certifications, -> { unscope(where: :active) }, class_name: "Certification", dependent: :restrict_with_error
+  has_many :exams, dependent: :restrict_with_error
   # This used to be a has_many
   #has_many :users, through: :training_sessions_users, uniq: true
   has_and_belongs_to_many :users
@@ -17,6 +20,11 @@ class TrainingSession < ApplicationRecord
   validates :level, presence: true
   validates :space, presence: true
   validate :is_staff
+  validate :locked_fields_unchanged, on: :session_edit
+  # Rules for a session a trainer opens (web form and /api/v1); see `open_by`.
+  validate :level_allowed, on: :session_opening
+  validate :training_offered_in_space, on: :session_opening
+  validates :course, length: { maximum: 255 }, on: :session_opening
   before_save :check_course
 
   default_scope -> { order(updated_at: :desc) }
@@ -77,8 +85,72 @@ class TrainingSession < ApplicationRecord
     errors.add(:user, :must_be_staff) unless user&.staff?
   end
 
+  # Saves a new session with the rules for opening one: the level is one of `levels` and the training is
+  # offered in the space (they are not checked on other writes, which also handle older sessions).
+  # Returns false, saving nothing, when `actor` may not name the session's instructor.
+  def open_by(actor)
+    return false unless instructor_assignable_by?(actor)
+
+    save(context: %i[create session_opening])
+  end
+
+  # An admin may name any instructor; anyone else only themselves.
+  def instructor_assignable_by?(actor)
+    actor.admin? || user_id == actor.id
+  end
+
+  # Staff open sessions only in a space they may work in (User#can_work_in?); a missing space is left to validation.
+  def space_workable_by?(actor)
+    space.nil? || actor.can_work_in?(space)
+  end
+
   def completed?
     certifications.any?
+  end
+
+  # Saving with `context: :session_edit` (the staff and admin edit paths) enforces the lock; other writes,
+  # such as merging a duplicate trainer into another account, are not edits of the session.
+  # The fields a certification copies from its session: once the session has awarded any
+  # certification (demoted ones included) they can no longer change.
+  LOCKED_ONCE_AWARDED = %w[training_id level user_id].freeze
+
+  # Admins and the session's own trainer may open, change and certify it.
+  def editable_by?(user)
+    return false if user.id.blank?
+
+    user.admin? || user_id == user.id
+  end
+
+  def editable?
+    !awarded_certifications.exists?
+  end
+
+  # True when the attributes would change a locked field of a session that no longer allows it.
+  def locked_change?(attributes)
+    return false if editable?
+
+    attributes.to_h.any? { |name, value| LOCKED_ONCE_AWARDED.include?(name.to_s) && self[name].to_s != value.to_s }
+  end
+
+  RosterResult = Struct.new(:saved, :failed_certifications, keyword_init: true) do
+    def saved? = saved
+  end
+
+  # Saves the edited fields, enrols the added users and removes the dropped ones (by username), and
+  # deactivates the dropped trainees' certifications of this session, all in one transaction with the
+  # session row locked. When the session cannot be saved (the reason is left in `errors`) nothing else
+  # is written. A certification that cannot be deactivated does not undo the rest: its user is listed in
+  # `failed_certifications`.
+  def update_roster(attributes, added:, dropped:, by:)
+    failed = []
+    saved = false
+    with_lock do
+      assign_attributes(attributes)
+      self.course_name = CourseName.find_by(name: course) || course_name
+      saved = save(context: :session_edit)
+      failed = replace_roster(User.where(username: added), User.where(username: dropped), by) if saved
+    end
+    RosterResult.new(saved: saved, failed_certifications: failed)
   end
 
   CertifyResult = Struct.new(:duplicates, :failed, :self_skipped, keyword_init: true) do
@@ -131,29 +203,31 @@ class TrainingSession < ApplicationRecord
     %w[General Beginner Intermediate Advanced]
   end
 
-  def self.filter_by_attribute(value)
-    if value.present?
-      if value == "search="
-        all
-      else
-        value = value.split("=").last.gsub("+", " ").gsub("%20", " ")
-        joins(:user).where(
-          "LOWER(trainings.name_en) LIKE LOWER(?) OR
-           LOWER(users.name) LIKE LOWER(?) OR
-           CAST(to_char(training_sessions.created_at, 'HH:MI mon DD YYYY') AS text) LIKE LOWER(?) OR
-           LOWER(training_sessions.course) LIKE LOWER(?)",
-          "%#{value}%",
-          "%#{value}%",
-          "%#{value}%",
-          "%#{value}%"
-        )
-      end
-    else
-      all
+  private
+
+  def replace_roster(added, dropped, by)
+    self.users = (users.to_a - dropped.to_a + added.to_a).uniq
+    dropped.filter_map do |user|
+      cert = certifications.find_by(user_id: user.id)
+      user if cert && !cert.deactivate(by)
     end
   end
 
-  private
+  def level_allowed
+    return if level.blank? || levels.include?(level)
+
+    errors.add(:level, :not_allowed, levels: levels.join(", "))
+  end
+
+  def training_offered_in_space
+    return if training.nil? || space.nil? || space.trainings.exists?(training.id)
+
+    errors.add(:training, :not_offered_in_space)
+  end
+
+  def locked_fields_unchanged
+    errors.add(:base, :locked_once_awarded) if changed.intersect?(LOCKED_ONCE_AWARDED) && !editable?
+  end
 
   def check_course
     self.course = nil if course == "no course"

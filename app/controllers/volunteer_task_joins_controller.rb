@@ -3,13 +3,15 @@
 class VolunteerTaskJoinsController < SessionsController
   include VolunteerAreaAccess
 
+  skip_authorization only: :remove,
+                     reason: "#{Authorization::ROLLOUT_PENDING}checked inline (staff or the joined user)"
   before_action :signed_in
   before_action :volunteer_access, only: :create
 
   def create
     volunteer_join = VolunteerTaskJoin.new(volunteer_task_joins_params)
     volunteer_task = volunteer_join.volunteer_task
-    if volunteer_task.volunteer_task_joins.active.user_type_volunteer.count <
+    if volunteer_task.volunteer_task_joins.joined.user_type_volunteer.count <
          volunteer_task.joins || current_user.staff?
       volunteer_join.user_id =
         if current_user.staff?
@@ -18,34 +20,14 @@ class VolunteerTaskJoinsController < SessionsController
           current_user.id
         end
       volunteer_join.user_type = volunteer_join.user.role.capitalize
-      if volunteer_join.save!
-        flash[
-          :notice
-        ] = "An user was successfully joined to this volunteer task."
-        staff_join =
-          volunteer_task
-            .volunteer_task_joins
-            .active
-            .where(
-              "volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?",
-              "Staff",
-              "Admin"
-            )
-            .last
-        staff_id = staff_join&.user&.id
-        MsrMailer.send_notification_to_staff_for_joining_task(
-          volunteer_task.id,
-          volunteer_join.user_id,
-          staff_id
-        ).deliver
-        MsrMailer.send_notification_to_volunteer_for_joining_task(
-          volunteer_task.id,
-          volunteer_join.user_id,
-          staff_id
-        ).deliver
+      if volunteer_join.save
+        flash[:notice] = I18n.t("volunteer_area.flash.join_added")
+        notify_joined(volunteer_task, volunteer_join)
+      else
+        flash[:alert] = volunteer_join.errors.full_messages.to_sentence
       end
     else
-      flash[:alert] = "This task is already full"
+      flash[:alert] = I18n.t("volunteer_area.flash.join_full")
     end
     redirect_back(fallback_location: root_path)
   end
@@ -57,12 +39,12 @@ class VolunteerTaskJoinsController < SessionsController
     user_id = join_params[:user_id]
     volunteer_task_id = join_params[:volunteer_task_id]
     unless current_user.staff? || user_id.to_s == current_user.id.to_s
-      flash[:alert] = "You are not authorized to remove this user from the task."
+      flash[:alert] = I18n.t("volunteer_area.flash.join_remove_refused")
       return redirect_back(fallback_location: root_path)
     end
     volunteer_task = VolunteerTask.find(volunteer_task_id)
-    if volunteer_task.remove_user(user_id)
-      flash[:notice] = "User was removed from the Volunteer Task"
+    if volunteer_task.remove_user(user_id, by: current_user)
+      flash[:notice] = I18n.t("volunteer_area.flash.join_removed")
     else
       flash[:alert] = volunteer_task.errors.full_messages.to_sentence
     end
@@ -70,6 +52,18 @@ class VolunteerTaskJoinsController < SessionsController
   end
 
   private
+
+  def notify_joined(volunteer_task, volunteer_join)
+    staff_join =
+      volunteer_task
+        .volunteer_task_joins
+        .joined
+        .where("volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?", "Staff", "Admin")
+        .last
+    staff_id = staff_join&.user&.id
+    MsrMailer.send_notification_to_staff_for_joining_task(volunteer_task.id, volunteer_join.user_id, staff_id).deliver
+    MsrMailer.send_notification_to_volunteer_for_joining_task(volunteer_task.id, volunteer_join.user_id, staff_id).deliver
+  end
 
   def volunteer_task_joins_params
     params.require(:volunteer_task_join).permit(:volunteer_task_id, :user_id)

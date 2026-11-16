@@ -91,6 +91,21 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(response.body).to include("A-100")
     end
 
+    it "GET index shows the store product and variant images with an empty alt, beside their visible titles" do
+      variant = { title: "Small", sku: "S1", id: "gid://shopify/ProductVariant/1", price: "10.00",
+                  displayName: "Lockers - Small", image: "https://img.example.test/variant.png" }
+      allow(LockerOption).to receive(:locker_product_info).and_return(
+        { title: "Lockers", status: "ACTIVE", id: "gid://shopify/Product/1", price: "10.00",
+          image: "https://img.example.test/product.png", variants: { variant[:id] => variant } }
+      )
+      get lockers_path
+      page = Nokogiri::HTML(response.body)
+      product = page.at_css("img[src='https://img.example.test/product.png']")
+      variant_img = page.at_css("img[src='https://img.example.test/variant.png']")
+      expect([product&.[]("alt"), variant_img&.[]("alt")]).to eq(["", ""])
+      expect(page.text).to include("Lockers", "Small")
+    end
+
     it "GET show renders a locker" do
       locker = create(:locker, specifier: "B-200")
       get locker_path(locker)
@@ -120,7 +135,27 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
         post lockers_path, params: { locker: { specifier: "C-2", locker_size_id: existing.locker_size_id } }
       end.not_to change(Locker, :count)
       expect(response).to have_http_status(:unprocessable_entity)
-      expect(flash[:alert]).to eq("Specifier has already been taken")
+      expect(flash[:alert]).to eq("The locker could not be saved: Specifier has already been taken")
+    end
+
+    it "POST create that fails shows the alert on the full index page, with the lockers and store sizes" do
+      variant = { title: "Small", sku: "S1", id: "gid://shopify/ProductVariant/1", price: "10.00",
+                  displayName: "Lockers - Small" }
+      allow(LockerOption).to receive(:locker_product_info).and_return(
+        { title: "Lockers", status: "ACTIVE", id: "gid://shopify/Product/1", price: "10.00",
+          variants: { variant[:id] => variant } }
+      )
+      size = create(:locker_size, size: "Small", shopify_gid: variant[:id])
+      create(:locker, specifier: "C-4", locker_size: size)
+      create(:locker, specifier: "C-5", locker_size: size)
+
+      post lockers_path, params: { locker: { specifier: "C-4", locker_size_id: size.id } }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      page = Nokogiri::HTML(response.body)
+      expect(page.text).to include("The locker could not be saved: Specifier has already been taken")
+      expect(page.css("#locker_inventory_table tbody").text).to include("C-4", "C-5")
+      expect(page.text).to include("Linked to", "S1")
     end
 
     it "POST create with a duplicate specifier does not show its alert on the next page" do
@@ -145,13 +180,19 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       other = create(:locker, specifier: "D-2")
       patch locker_path(locker), params: { locker: { specifier: other.specifier } }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to eq("Specifier has already been taken")
+      expect(flash[:alert]).to eq("The locker could not be saved: Specifier has already been taken")
       expect(locker.reload.specifier).to eq("D-1")
 
       patch locker_path(locker, format: :json), params: { locker: { specifier: other.specifier } }
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body["specifier"]).to eq(["has already been taken"])
       expect(locker.reload.specifier).to eq("D-1")
+    end
+
+    it "DELETE destroy of a locker with history names the locker and the reason" do
+      rental = create(:locker_rental, :active)
+      delete locker_path(rental.locker)
+      expect(flash[:alert]).to start_with("Locker #{rental.locker.specifier} was not deleted: ")
     end
 
     it "DELETE destroy removes a locker that never had a rental" do
@@ -172,7 +213,7 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       end
     end
 
-    it "POST create_multiple builds the range and rejects end <= start" do
+    it "POST create_multiple builds the range and rejects end < start" do
       size = create(:locker_size)
       expect do
         post create_multiple_lockers_path,
@@ -183,9 +224,56 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
 
       expect do
         post create_multiple_lockers_path,
-             params: { range_start: "310", range_end: "310", locker_size_id: size.id }
+             params: { range_start: "312", range_end: "310", locker_size_id: size.id }
       end.not_to change(Locker, :count)
-      expect(flash[:alert]).to eq("Range end must be larger than range start")
+      expect(flash[:alert]).to eq("Enter a first and last locker number, the last not smaller than the first")
+    end
+
+    it "POST create_multiple compares the range ends as numbers, so 9 to 10 is made" do
+      size = create(:locker_size)
+      expect do
+        post create_multiple_lockers_path, params: { range_start: "9", range_end: "10", locker_size_id: size.id }
+      end.to change(Locker, :count).by(2)
+      expect(Locker.pluck(:specifier)).to match_array(%w[9 10])
+    end
+
+    it "POST create_multiple makes one locker for a one-number range" do
+      size = create(:locker_size)
+      expect do
+        post create_multiple_lockers_path, params: { range_start: "50", range_end: "50", locker_size_id: size.id }
+      end.to change(Locker, :count).by(1)
+      expect(flash[:notice]).to eq("Lockers created")
+    end
+
+    it "POST create_multiple answers a range that is not numbers with a message and makes nothing" do
+      size = create(:locker_size)
+      expect do
+        post create_multiple_lockers_path, params: { range_start: "a", range_end: "", locker_size_id: size.id }
+      end.not_to change(Locker, :count)
+      expect(flash[:alert]).to start_with("Enter a first and last locker number")
+    end
+
+    it "POST create_multiple only redirects, so it does not ask Shopify for the locker product" do
+      allow(LockerOption).to receive(:locker_product_info).and_call_original
+      LockerOption.locker_product_link = "gid://shopify/Product/123"
+      allow(Payments::ShopifyCatalog).to receive(:product).and_return(nil)
+      size = create(:locker_size)
+
+      post create_multiple_lockers_path, params: { range_start: "60", range_end: "61", locker_size_id: size.id }
+      expect(response).to redirect_to(lockers_path(anchor: "lockerInventory"))
+      post create_multiple_lockers_path, params: { range_start: "9", range_end: "8", locker_size_id: size.id }
+      expect(response).to redirect_to(lockers_path(anchor: "lockerInventory"))
+      expect(Payments::ShopifyCatalog).not_to have_received(:product)
+
+      get locker_path(Locker.find_by!(specifier: "60"))
+      expect(Payments::ShopifyCatalog).to have_received(:product).with("gid://shopify/Product/123")
+    end
+
+    it "POST create_multiple lists the skipped numbers in numeric order" do
+      size = create(:locker_size)
+      %w[2 10].each { |n| create(:locker, specifier: n) }
+      post create_multiple_lockers_path, params: { range_start: "1", range_end: "11", locker_size_id: size.id }
+      expect(flash[:alert]).to eq("Some lockers were not created (the number may already exist): 2 and 10")
     end
 
     it "PATCH bulk_edit updates or deletes the selected ids" do
@@ -201,6 +289,70 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
               params: { id: [a.id], bulk_delete: "1", locker: { notes: "x" } }
       end.to change(Locker, :count).by(-1)
       expect(flash[:notice]).to eq("Selected lockers deleted")
+    end
+
+    it "GET index names the bulk edit size field so the form submits it under locker" do
+      log_in!(admin)
+      create(:locker)
+      get lockers_path
+      form = Nokogiri::HTML(response.body).at_css("#lockerBulkEditModal form")
+      expect(form.at_css("select")["name"]).to eq("locker[locker_size_id]")
+    end
+
+    it "PATCH bulk_edit with no size chosen changes no locker and says so" do
+      size = create(:locker_size)
+      lockers = create_list(:locker, 2, locker_size: size)
+      patch bulk_edit_lockers_path, params: { id: lockers.map(&:id), locker: { locker_size_id: "" } }
+      expect(lockers.map { |l| l.reload.locker_size_id }).to all(eq(size.id))
+      expect(Locker.count).to eq(2)
+      expect(flash[:alert]).to start_with("Some lockers were not updated")
+    end
+
+    it "PATCH bulk_edit with no locker selected refuses and changes nothing" do
+      locker = create(:locker, notes: "keep")
+      [{}, { id: [""] }, { id: [] }].each do |selection|
+        patch bulk_edit_lockers_path, params: selection.merge(locker: { notes: "bulk" })
+        expect(response).to redirect_to(lockers_path(anchor: "lockerInventory"))
+        expect(flash[:notice]).to be_nil
+        expect(flash[:alert]).to eq("Select at least one locker.")
+        expect(locker.reload.notes).to eq("keep")
+      end
+      expect { patch bulk_edit_lockers_path, params: { bulk_delete: "1" } }.not_to change(Locker, :count)
+      expect(flash[:alert]).to eq("Select at least one locker.")
+    end
+
+    it "PATCH update answers an invalid JSON edit with the field errors and the sentence to show as error" do
+      locker = create(:locker, specifier: "E-1")
+      other = create(:locker, specifier: "E-2")
+      patch locker_path(locker, format: :json), params: { locker: { specifier: other.specifier } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to eq(
+        "specifier" => ["has already been taken"],
+        "error" => "The locker could not be saved: Specifier has already been taken"
+      )
+    end
+
+    it "POST create_multiple names the lockers it could not create instead of saying all were created" do
+      size = create(:locker_size)
+      create(:locker, specifier: "401")
+      expect do
+        post create_multiple_lockers_path, params: { range_start: "400", range_end: "402", locker_size_id: size.id }
+      end.to change(Locker, :count).by(2)
+      expect(flash[:notice]).to be_nil
+      expect(flash[:alert]).to eq("Some lockers were not created (the number may already exist): 401")
+    end
+
+    it "PATCH bulk_edit names the lockers it could not update" do
+      a = create(:locker, specifier: "501")
+      b = create(:locker, specifier: "502")
+      patch bulk_edit_lockers_path, params: { id: [a.id, b.id], locker: { specifier: "501" } }
+      expect(flash[:notice]).to be_nil
+      expect(flash[:alert]).to eq("Some lockers were not updated: 502")
+    end
+
+    it "says the range is wrong in French" do
+      post create_multiple_lockers_path, params: { range_start: "9", range_end: "8", locker_size_id: create(:locker_size).id, locale: "fr" }
+      expect(flash[:alert]).to eq("Indiquez un premier et un dernier numéro de casier, le dernier n'étant pas inférieur au premier")
     end
 
     it "DELETE destroy refuses a locker that someone listed as preferred (preferred_locker_id) and deletes nothing" do
@@ -260,6 +412,7 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
         post locker_sizes_path, params: { locker_size: { size: "", shopify_gid: "" } }
       end.not_to change(LockerSize, :count)
       expect(response).to redirect_to(lockers_path(anchor: "productVariants"))
+      expect(flash[:alert]).to start_with("The locker size could not be saved: ")
       expect(flash[:alert]).to include("Size")
     end
 

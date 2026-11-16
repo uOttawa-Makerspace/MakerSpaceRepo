@@ -40,6 +40,7 @@ RSpec.describe "/api/v1 RFID", type: :request do
     end
 
     it "lists the assigned space's unlinked cards, newest first, as exactly {card_number, tapped_at} (ISO 8601)" do
+      StaffSpace.create!(user: staff, space: space_a)
       staff.update_columns(space_id: space_a.id)
       api_get "/api/v1/rfid_cards", as: staff, params: { linked: "false" }
       expect(response).to have_http_status(:ok)
@@ -49,11 +50,12 @@ RSpec.describe "/api/v1 RFID", type: :request do
       expect(Time.iso8601(body.first["tapped_at"])).to be_within(1.second).of(newer_a.updated_at)
     end
 
-    it "gives the same set as the legacy get_unset_rfids, for staff and admin (every space when none is assigned)" do
-      [staff, admin].each do |caller|
-        api_get "/api/v1/rfid_cards", as: caller, params: { linked: "false" }
-        expect(body.map { |c| c["card_number"] }).to match_array([newer_a, card_a, card_b].map(&:card_number))
-      end
+    it "lists every space's unlinked cards for an admin, and none for staff with no assignment" do
+      api_get "/api/v1/rfid_cards", as: admin, params: { linked: "false" }
+      expect(body.map { |c| c["card_number"] }).to match_array([newer_a, card_a, card_b].map(&:card_number))
+      staff.update_columns(space_id: space_a.id)
+      api_get "/api/v1/rfid_cards", as: staff, params: { linked: "false" }
+      expect(body).to eq([])
     end
 
     it "caps the list at 5" do
@@ -245,7 +247,35 @@ RSpec.describe "/api/v1 RFID", type: :request do
       expect(card.reload.mac_address).to eq("aa:aa:aa:aa:aa:aa")
     end
 
+    it "keeps the card's mac when the staff member has only a saved space they are not assigned to" do
+      staff.update_columns(space_id: space_a.id)
+      api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff
+      expect(card.reload.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+    end
+
+    it "re-homes to the assigned space's reader, not a stale saved space's" do
+      StaffSpace.create!(user: staff, space: space_b)
+      staff.update_columns(space_id: space_a.id)
+      api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff
+      expect(card.reload.mac_address).to eq(reader_b.pi_mac_address)
+    end
+
+    it "re-homes to the lowest-id reader of the space" do
+      StaffSpace.create!(user: staff, space: space_a)
+      later = create(:pi_reader, space: space_a)
+      api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff
+      expect(card.reload.mac_address).to eq(reader_a.pi_mac_address)
+      expect(later.id).to be > reader_a.id
+    end
+
+    it "re-homes for an admin to the first space's reader, as before" do
+      admin.update_columns(space_id: space_b.id)
+      api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: admin
+      expect(card.reload.mac_address).to eq(reader_b.pi_mac_address)
+    end
+
     it "re-homes the card to the first reader of the staff member's assigned space, whatever space they last signed in to" do
+      StaffSpace.create!(user: staff, space: space_a)
       staff.update_columns(space_id: space_a.id)
       create(:lab_session, user: staff, space: space_b, sign_in_time: 1.hour.ago, sign_out_time: 1.hour.from_now)
       api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff
@@ -253,6 +283,7 @@ RSpec.describe "/api/v1 RFID", type: :request do
     end
 
     it "then lists the card among the unlinked taps of the staff member's assigned space" do
+      StaffSpace.create!(user: staff, space: space_a)
       staff.update_columns(space_id: space_a.id)
       api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff
       api_get "/api/v1/rfid_cards", as: staff, params: { linked: "false" }
@@ -277,6 +308,8 @@ RSpec.describe "/api/v1 RFID", type: :request do
   describe "POST /api/v1/rfid_taps" do
     let!(:card) { create(:rfid, user: owner, mac_address: nil) }
 
+    before { StaffSpace.create!(user: staff, space: space_a) }
+
     def tap(payload = { card_number: card.card_number, space_id: space_a.id }, as: staff)
       api_send :post, "/api/v1/rfid_taps", payload, as: as
     end
@@ -290,12 +323,23 @@ RSpec.describe "/api/v1 RFID", type: :request do
       end.not_to change { [LabSession.count, Rfid.count, TapBoxLog.count] }
     end
 
+    it "403s staff tapping in a space they are not assigned to, writing nothing" do
+      other = { card_number: card.card_number, space_id: space_b.id }
+      expect { tap(other) }.not_to change { [LabSession.count, Rfid.count, TapBoxLog.count] }
+      expect(response).to have_http_status(:forbidden)
+      expect(error).to include("code" => "space_not_assigned", "message" => "You are not assigned to that space")
+      staff.update_columns(space_id: space_b.id)
+      expect { tap(other) }.not_to change(LabSession, :count)
+      expect(response).to have_http_status(:forbidden)
+    end
+
     it "signs the card's owner in with exactly {success: 'RFID sign in'} (staff and admin), then out" do
       [staff, admin].each do |caller|
         tap(as: caller)
         expect(response).to have_http_status(:ok)
         expect(body).to eq("success" => "RFID sign in")
         expect(LabSession.where(user: owner, space: space_a).active.count).to eq(1)
+        travel(RfidTap::REPEAT_WINDOW + 1.second)
         tap(as: caller)
         expect(body).to eq("success" => "RFID sign out")
         expect(LabSession.where(user: owner).active).to be_empty

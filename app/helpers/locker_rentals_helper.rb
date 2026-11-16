@@ -23,8 +23,15 @@ module LockerRentalsHelper
       if icon_class
         concat tag.i(class: "#{icon_class} me-1")
       end
-      concat locker_rental.state.humanize
+      concat t("lockers.state_badge.#{locker_rental.state}")
     end
+  end
+
+  # How the rental was requested (general, staff, student) in the page language; blank when it was not recorded.
+  def requested_as_label(locker_rental)
+    return "" if locker_rental.requested_as.blank?
+
+    t("lockers.requested_as_types.#{locker_rental.requested_as}")
   end
 
   # What staff should do about a HELD payment, chosen by the rental's state: "assign the locker" cannot settle a

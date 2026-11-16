@@ -15,6 +15,9 @@ RSpec.describe "RFID endpoints", type: :request do
   let(:owner) { create(:user, :regular_user) }
   let!(:rfid) { create(:rfid, user: owner, mac_address: pi_reader.pi_mac_address) }
 
+  # Staff taps work only in a space the staff member is assigned to.
+  def assigned_staff = create(:user, :staff).tap { |u| StaffSpace.create!(user: u, space: space) }
+
   def tap_card(card: rfid.card_number, **extra)
     post rfid_card_number_path, params: { rfid: card, mac_address: pi_reader.pi_mac_address }.merge(extra), as: :json
   end
@@ -38,6 +41,7 @@ RSpec.describe "RFID endpoints", type: :request do
 
     it "signs the same user out again" do
       tap_card
+      travel(RfidTap::REPEAT_WINDOW + 1.second)
       tap_card
       expect(body[:success]).to eq("RFID sign out")
       expect(LabSession.where(user: owner).active).to be_empty
@@ -62,6 +66,7 @@ RSpec.describe "RFID endpoints", type: :request do
       tap_card_with(mac: pi_reader.pi_mac_address.upcase.tr(":", "-"))
       expect(LabSession.where(user: owner).last.mac_address).to eq(pi_reader.pi_mac_address)
       expect(TapBoxLog.where(event_type: [TapBoxLog::CARD_TAP, TapBoxLog::SIGN_IN]).pluck(:mac_address).uniq).to eq([pi_reader.pi_mac_address])
+      travel(RfidTap::REPEAT_WINDOW + 1.second)
       tap_card_with(mac: pi_reader.pi_mac_address.upcase)
       expect(TapBoxLog.where(event_type: TapBoxLog::SIGN_OUT).last.mac_address).to eq(pi_reader.pi_mac_address)
     end
@@ -135,12 +140,13 @@ RSpec.describe "RFID endpoints", type: :request do
     it "returns only the success string, for sign in and sign out" do
       tap_card
       expect(body).to eq(success: "RFID sign in")
+      travel(RfidTap::REPEAT_WINDOW + 1.second)
       tap_card
       expect(body).to eq(success: "RFID sign out")
     end
 
     it "returns only the success string to a staff Bearer JWT too" do
-      post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id }, headers: { "Authorization" => "Bearer #{create(:user, :staff).token}" }, as: :json
+      post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id }, headers: { "Authorization" => "Bearer #{assigned_staff.token}" }, as: :json
       expect(body).to eq(success: "RFID sign in")
     end
   end
@@ -154,17 +160,47 @@ RSpec.describe "RFID endpoints", type: :request do
 
     %i[staff admin].each do |role|
       it "signs the card owner in then out for a #{role} Bearer JWT without any session" do
-        user = create(:user, role)
+        user = create(:user, role).tap { |u| StaffSpace.create!(user: u, space: space) if role == :staff }
         expect { tap_as(bearer(user)) }.to change { LabSession.where(user: owner, space: space).active.count }.from(0).to(1)
         expect(response).to have_http_status(:ok)
         expect(body[:success]).to eq("RFID sign in")
+        travel(RfidTap::REPEAT_WINDOW + 1.second)
         tap_as(bearer(user))
         expect(body[:success]).to eq("RFID sign out")
       end
     end
 
+    it "refuses a staff tap for a space the staff member is not assigned to, writing nothing" do
+      away = create(:space)
+      staff = assigned_staff
+      staff.update_columns(space_id: away.id)
+      expect { tap_as(bearer(staff), space_id: away.id) }.not_to change { [LabSession.count, Rfid.count] }
+      expect(response).to have_http_status(:forbidden)
+      expect(body).to eq(error: "You are not assigned to that space.")
+    end
+
+    it "refuses the unassigned space in French for a French-speaking staff member" do
+      staff = assigned_staff
+      staff.update_columns(locale: "fr")
+      tap_as(bearer(staff), space_id: create(:space).id)
+      expect(response).to have_http_status(:forbidden)
+      expect(body).to eq(error: "Vous n'êtes pas affecté à cet espace.")
+    end
+
+    it "lets an admin with no assignments tap in any space" do
+      tap_as(bearer(create(:user, :admin)), space_id: create(:space).id)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "leaves a reader tap unchanged: the reader's space decides, whatever space_id says" do
+      away = create(:space)
+      expect { tap_card(space_id: away.id) }.to change { LabSession.where(user: owner, space: space).active.count }.from(0).to(1)
+      expect(response).to have_http_status(:ok)
+      expect(body).to eq(success: "RFID sign in")
+    end
+
     it "accepts a staff browser session" do
-      sign_in_as(:staff)
+      log_in!(assigned_staff)
       tap_as({})
       expect(response).to have_http_status(:ok)
       expect(body[:success]).to eq("RFID sign in")
@@ -186,13 +222,13 @@ RSpec.describe "RFID endpoints", type: :request do
     end
 
     it "answers 422 for a staff tap with an unknown space_id and no registered mac" do
-      tap_as(bearer(create(:user, :staff)), space_id: 0)
+      tap_as(bearer(assigned_staff), space_id: 0)
       expect(response).to have_http_status(:unprocessable_content)
       expect(LabSession.count).to eq(0)
     end
 
     it "never stores a stringified hash/array mac from a staff tap (sessions and logs get nil)" do
-      headers = { "Authorization" => "Bearer #{create(:user, :staff).token}" }
+      headers = { "Authorization" => "Bearer #{assigned_staff.token}" }
       [{ a: 1 }, [1, 2]].each do |bad|
         post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id, mac_address: bad }, headers: headers, as: :json
         expect(response).to have_http_status(:ok)
@@ -202,21 +238,39 @@ RSpec.describe "RFID endpoints", type: :request do
     end
 
     it "stores a normalized unregistered mac from a staff tap" do
-      headers = { "Authorization" => "Bearer #{create(:user, :staff).token}" }
+      headers = { "Authorization" => "Bearer #{assigned_staff.token}" }
       post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id, mac_address: " AA-BB-CC-00-11-22" }, headers: headers, as: :json
       expect(LabSession.where(user: owner).last.mac_address).to eq("aa:bb:cc:00:11:22")
     end
 
     it "answers 422 no_space for a staff tap that names neither a space nor a reader with a space" do
       legacy = create(:pi_reader, space: nil)
-      post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: legacy.pi_mac_address }, headers: { "Authorization" => "Bearer #{create(:user, :staff).token}" }, as: :json
+      post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: legacy.pi_mac_address }, headers: { "Authorization" => "Bearer #{assigned_staff.token}" }, as: :json
       expect(response).to have_http_status(:unprocessable_content)
       expect(TapBoxLog.where(event_type: TapBoxLog::ERROR).last.details["reason"]).to eq("no_space")
     end
 
-    it "falls back to a registered reader's space when staff omit space_id" do
-      post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: pi_reader.pi_mac_address }, headers: bearer(create(:user, :staff)), as: :json
-      expect(body[:success]).to eq("RFID sign in")
+    it "never takes a staff tap's space from a reader's mac_address, even a reader of an assigned space" do
+      expect do
+        post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: pi_reader.pi_mac_address }, headers: bearer(assigned_staff), as: :json
+      end.not_to change(LabSession, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(body).to eq(new_rfid: "Error, missing space_id or mac_address param")
+    end
+
+    it "does not let staff tap into an unassigned space through that space's reader mac_address" do
+      away = create(:pi_reader, space: create(:space))
+      expect do
+        post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: away.pi_mac_address }, headers: bearer(assigned_staff), as: :json
+      end.not_to change { [LabSession.count, Rfid.count] }
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "signs in at the named assigned space even when the request carries another space's reader mac_address" do
+      away = create(:pi_reader, space: create(:space))
+      post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id, mac_address: away.pi_mac_address }, headers: bearer(assigned_staff), as: :json
+      expect(body).to eq(success: "RFID sign in")
+      expect(LabSession.where(user: owner).active.pluck(:space_id)).to eq([space.id])
     end
   end
 
@@ -242,15 +296,17 @@ RSpec.describe "RFID endpoints", type: :request do
 
     it "ends the session and logs sign_out on the second tap" do
       tap_card
+      travel(RfidTap::REPEAT_WINDOW + 1.second)
       expect { tap_card }.to change { TapBoxLog.where(event_type: TapBoxLog::SIGN_OUT).count }.by(1)
       expect(LabSession.where(user: owner).active).to be_empty
     end
 
     it "lets staff tap with space_id only, and toggles sign in/out (integer space comparison)" do
-      staff = create(:user, :staff)
+      staff = assigned_staff
       headers = { "Authorization" => "Bearer #{staff.token}" }
       post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id.to_s }, headers: headers, as: :json
       expect(body[:success]).to eq("RFID sign in")
+      travel(RfidTap::REPEAT_WINDOW + 1.second)
       post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id.to_s }, headers: headers, as: :json
       expect(body[:success]).to eq("RFID sign out")
     end
@@ -275,17 +331,17 @@ RSpec.describe "RFID endpoints", type: :request do
       expect {
         post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: other_reader.pi_mac_address }, as: :json
       }.to have_enqueued_job(CardTapJob).with(rfid, other_space.id)
-                                         .and have_broadcasted_to("signed_in_table_space_#{space.id}").from_channel(Turbo::StreamsChannel)
+                                         .and have_broadcasted_to(StaffDashboardChannel.table_stream(space.id, :en)).from_channel(Turbo::StreamsChannel)
       expect(old_session.reload.sign_out_time).to be <= Time.zone.now
-      expect { perform_enqueued_jobs }.to have_broadcasted_to("space_event_#{other_space.id}").with(
+      expect { 2.times { perform_enqueued_jobs } }.to have_broadcasted_to("space_event_#{other_space.id}").with(
         a_hash_including("add_user" => a_hash_including("id" => owner.id))
-      ).and have_broadcasted_to("signed_in_table_space_#{other_space.id}").from_channel(Turbo::StreamsChannel)
+      ).and have_broadcasted_to(StaffDashboardChannel.table_stream(other_space.id, :en)).from_channel(Turbo::StreamsChannel)
     end
 
     it "leaves the user signed in where they were when the switch cannot create the new session" do
       other_space = create(:space)
       tap_card
-      allow(LabSession).to receive(:create_session).and_raise(ActiveRecord::RecordInvalid)
+      allow(LabSession).to receive(:sign_in).and_raise(ActiveRecord::RecordInvalid)
       expect {
         RfidTap.call(card: rfid.card_number, space: other_space, mac_address: nil)
       }.to raise_error(ActiveRecord::RecordInvalid)
@@ -307,7 +363,8 @@ RSpec.describe "RFID endpoints", type: :request do
 
     it "broadcasts a table update (and no modal) to the signed-in table stream on sign out" do
       tap_card
-      expect { tap_card }.to have_broadcasted_to("signed_in_table_space_#{space.id}").from_channel(Turbo::StreamsChannel)
+      travel(RfidTap::REPEAT_WINDOW + 1.second)
+      expect { tap_card }.to have_broadcasted_to(StaffDashboardChannel.table_stream(space.id, :en)).from_channel(Turbo::StreamsChannel)
       expect { tap_card }.not_to have_broadcasted_to("space_event_#{space.id}")
     end
 
@@ -388,7 +445,7 @@ RSpec.describe "RFID endpoints", type: :request do
     end
 
     it "rejects a staff tap without space_id or mac_address and logs no_space" do
-      post rfid_card_number_path, params: { rfid: rfid.card_number }, headers: { "Authorization" => "Bearer #{create(:user, :staff).token}" }, as: :json
+      post rfid_card_number_path, params: { rfid: rfid.card_number }, headers: { "Authorization" => "Bearer #{assigned_staff.token}" }, as: :json
       expect(response).to have_http_status(:unprocessable_content)
       expect(body).to eq(new_rfid: "Error, missing space_id or mac_address param")
       expect(TapBoxLog.where(event_type: TapBoxLog::ERROR).last.details["reason"]).to eq("no_space")
@@ -445,7 +502,7 @@ RSpec.describe "RFID endpoints", type: :request do
 
     it "writes nothing for a registered reader or a staff tap" do
       tap_card
-      post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id, mac_address: new_mac }, headers: { "Authorization" => "Bearer #{create(:user, :staff).token}" }, as: :json
+      post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id, mac_address: new_mac }, headers: { "Authorization" => "Bearer #{assigned_staff.token}" }, as: :json
       expect(trace_rows.count).to eq(0)
     end
   end
@@ -475,6 +532,7 @@ RSpec.describe "RFID endpoints", type: :request do
 
     it "lists unset cards of the staff member's space as JSON" do
       staff = log_in!(create(:user, :staff))
+      StaffSpace.find_or_create_by!(user: staff, space: space)
       staff.update!(space: space)
       get rfid_get_unset_rfids_path
       expect(response).to have_http_status(:ok)
@@ -499,6 +557,7 @@ RSpec.describe "RFID endpoints", type: :request do
 
       it "returns at most 5 cards, newest first, only those tapped at the staff member's space readers" do
         staff = log_in!(create(:user, :staff))
+        StaffSpace.find_or_create_by!(user: staff, space: space)
         staff.update!(space: space)
 
         get rfid_get_unset_rfids_path
@@ -510,6 +569,7 @@ RSpec.describe "RFID endpoints", type: :request do
 
       it "scopes a staff member of the other space to that space's readers" do
         staff = log_in!(create(:user, :staff))
+        StaffSpace.find_or_create_by!(user: staff, space: other_space)
         staff.update!(space: other_space)
 
         get rfid_get_unset_rfids_path
@@ -610,8 +670,8 @@ RSpec.describe "RFID endpoints", type: :request do
     end
 
     it "counts per staff user for the React app" do
-      staff = create(:user, :staff)
-      other_staff = create(:user, :staff)
+      staff = assigned_staff
+      other_staff = assigned_staff
       call = ->(u) { post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id }, headers: { "Authorization" => "Bearer #{u.token}" }, as: :json }
       60.times { call.(staff) }
       call.(staff)

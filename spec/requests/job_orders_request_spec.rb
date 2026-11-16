@@ -114,8 +114,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).not_to include(I18n.t("job_orders.public_page.admin_page"))
     end
 
-    # N+1 pinned
-    it "splits draft orders (partly created) from submitted ones", skip_bullet: true do
+    it "splits draft orders (partly created) from submitted ones" do
       draft = order_with_task!(owner: owner, status_key: :draft)
       empty_draft = make_job_order!(owner: owner, status_key: :draft)
       submitted = order_with_task!(owner: owner, status_key: :staff_approval)
@@ -219,32 +218,122 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         .to eq("#{I18n.t('job_orders.alerts.missing_info')} Task #1")
     end
 
-    # the Submit-for-Approval button_to resolves
-    # job_order_job_task_path with @job_order.job_tasks.first == nil →
-    # UrlGenerationError → 500.
-    it "renders 500 (UrlGenerationError) for a DRAFT order with no tasks" do
+    it "reads the service groups of many tasks in one query when looking for missing information" do
+      order = make_job_order!(owner: owner, status_key: :staff_approval)
+      3.times do |i|
+        type = create(:job_type)
+        create(:job_service_group, job_type: type)
+        order.job_tasks.create!(title: "Task ##{i + 1}", job_type: type)
+      end
+      http_login!(owner)
+      tables = Hash.new(0)
+      subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*, payload|
+        %w[job_service_groups].each { |t| tables[t] += 1 if payload[:sql].match?(/FROM "#{t}"/) }
+      end
+      begin
+        get job_order_path(order)
+      ensure
+        ActiveSupport::Notifications.unsubscribe(subscriber)
+      end
+
+      expect(response).to have_http_status(:ok)
+      expect(flash[:alert]).to eq("#{I18n.t('job_orders.alerts.missing_info')} Task #1, Task #2, Task #3")
+      expect(tables["job_service_groups"]).to eq(1)
+    end
+
+    it "shows a draft order with no tasks without the Submit for Approval button" do
       order = make_job_order!(owner: owner, status_key: :draft)
       http_login!(owner)
       get job_order_path(order)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("Action Controller: Exception caught")
-      expect(response.body).to include("UrlGenerationError")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("Submit for Approval")
     end
 
-    # @message is dereferenced BEFORE the nil check, so the
-    # "job order not found" flash/redirect branch is dead code.
-    it "renders 500 (NoMethodError) for a missing or deleted order" do
+    it "shows the Submit for Approval button for a complete draft order" do
+      order = order_with_task!(owner: owner)
+      seed_job_types!
+      complete_type = JobType.all.find { |type| type.job_service_groups.none? }
+      order.job_tasks.first.update!(job_type: complete_type)
+      http_login!(owner)
+      get job_order_path(order)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Submit for Approval")
+    end
+
+    it "words the Submit for Approval button and its confirm text in the request's language" do
+      order = order_with_task!(owner: owner)
+      seed_job_types!
+      order.job_tasks.first.update!(job_type: JobType.all.find { |type| type.job_service_groups.none? })
+      http_login!(owner)
+      get job_order_path(order, locale: "fr")
+      expect(response.body).to include(I18n.t("job_orders.order.submit_for_approval", locale: :fr))
+      expect(response.body).to include(ERB::Util.html_escape(I18n.t("job_orders.order.submit_for_approval_confirm", locale: :fr)))
+      expect(response.body).not_to include("Submit for Approval")
+    end
+
+    it "redirects to the order list with a not-found message for a missing or deleted order" do
       order = order_with_task!(owner: owner)
       http_login!(owner)
 
       get job_order_path(id: 999_999_999)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("NoMethodError")
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
 
       order.update!(is_deleted: true)
       get job_order_path(order)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("NoMethodError")
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
+    end
+
+    it "says so in French when the locale is French" do
+      http_login!(owner)
+      get job_order_path(id: 999_999_999, locale: "fr")
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found", locale: :fr))
+    end
+
+    describe "task loading" do
+      def add_complete_task!(order, title)
+        group = create(:job_service_group)
+        service = create(:job_service, job_service_group: group)
+        option = create(:job_option)
+        task = order.job_tasks.create!(title: title, job_type: group.job_type, job_service: service)
+        task.job_task_options.create!(job_option: option)
+        task
+      end
+
+      def show_queries(order)
+        queries = []
+        counter = lambda do |*, payload|
+          queries << payload[:sql] if payload[:sql].match?(/FROM "(job_types|job_services|job_task_options)"|COUNT\(\*\) FROM "job_tasks"/)
+        end
+        ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { get job_order_path(order) }
+        queries
+      end
+
+      it "lists the tasks oldest first with their type and service" do
+        order = make_job_order!(owner: owner, status_key: :draft)
+        second = add_complete_task!(order, "Second task")
+        first = add_complete_task!(order, "First task")
+        first.update_columns(created_at: 2.days.ago) # rubocop:disable Rails/SkipsModelValidations
+        http_login!(owner)
+
+        get job_order_path(order)
+
+        expect(response.body.index("First task")).to be < response.body.index("Second task")
+        expect(response.body).to include(first.job_type.name, first.job_service.name, second.job_service.job_service_group.name)
+      end
+
+      it "runs the same number of type, service, option and count queries however many tasks the order has" do
+        order = make_job_order!(owner: owner, status_key: :draft)
+        add_complete_task!(order, "Task 1")
+        http_login!(owner)
+        show_queries(order) # warm up the schema cache
+        one_task = show_queries(order).size
+
+        3.times { |i| add_complete_task!(order, "More #{i}") }
+
+        expect(show_queries(order).size).to eq(one_task)
+      end
     end
   end
 
@@ -288,11 +377,11 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(JobOrder.order(:id).last.job_tasks.first.job_type).to be_nil
     end
 
-    it "redirects to root with the raw parameter_missing message when job_order param is absent" do
+    it "redirects to root with the missing-field message when job_order param is absent" do
       post job_orders_path, params: { other: "x" }
       expect(response).to redirect_to(root_path)
       expect(flash[:alert])
-        .to eq("param is missing or the value is empty or invalid: job_order")
+        .to eq("The form is missing required information (job_order). Reload the page and try again.")
     end
 
     it "POST /job_orders/new is wired to #new in the routes (renders the choice page, does not create)" do
@@ -315,6 +404,15 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).to include(I18n.t("job_orders.new.need_design_help.title"))
       expect(response.body).to include('name="job_order[job_type_id]"')
       expect(response.body).to include('name="redirect_step"')
+    end
+
+    it "submits each entry card with a plain submit button and no inline script handler" do
+      http_login!(owner)
+      seed_job_types!
+      get new_job_orders_path
+      page = Nokogiri::HTML(response.body)
+      expect(page.css("form button[type=submit]").size).to be >= 2
+      expect(page.css("[onclick]")).to be_empty
     end
 
     it "shows the Ready to Make card with its type when the type exists" do
@@ -358,9 +456,24 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       http_login!(owner)
       delete job_order_path(order)
       expect(response).to redirect_to(job_orders_path)
-      expect(flash[:notice]).to eq("Job order deleted successfully.")
+      expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.deleted"))
       expect(order.reload.is_deleted).to be(true)
       expect(JobOrder.where(id: order.id, is_deleted: false)).to be_empty
+    end
+
+    it "words the flash in the visitor's language" do
+      order = order_with_task!(owner: owner)
+      http_login!(owner)
+      delete job_order_path(order, locale: "fr")
+      expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.deleted", locale: :fr))
+      expect(flash[:notice]).not_to eq(I18n.t("job_orders.alerts.deleted", locale: :en))
+    end
+
+    it "asks for the delete confirmation in the visitor's language on the order page" do
+      order = order_with_task!(owner: owner)
+      http_login!(owner)
+      get job_order_path(order, locale: "fr")
+      expect(response.body).to include(CGI.escapeHTML(I18n.t("job_orders.are_you_sure_you_want_to_delete", locale: :fr)))
     end
 
     it "sends the admin back to the admin index" do
@@ -434,13 +547,10 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         patch job_order_user_approval_path(order), params: { approved: "true" }
       end.not_to change(JobOrderStatus, :count)
       expect(response).to redirect_to(job_order_path(order))
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.wrong_state"))
     end
 
-    # format.js renders admin_row but points at _assign_staff,
-    # which dereferences @staff (nil outside the admin page) → Template::Error
-    # → 500.
-    it "responds 500 (ActionView::Template::Error, HTML debug page) to format.js on row actions" do
+    it "answers format.js on row actions with a redirect to the order page, as for html" do
       order = order_with_task!(owner: owner)
       advance_to!(order, :user_approval)
       http_login!(owner)
@@ -448,10 +558,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
             params: { approved: "true" },
             headers: { "ACCEPT" => "text/javascript" }
 
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.headers["Content-Type"]).to start_with("text/html")
-      expect(response.body).to include("Action Controller: Exception caught")
-      expect(response.body).to include("ActionView::Template::Error")
+      expect(response).to redirect_to(job_order_path(order))
+      expect(order.reload.latest_status.job_status).to eq(JobStatus.waiting_processed)
     end
   end
 
@@ -473,7 +581,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
     it "requires staff/admin (a regular user is bounced to root)" do
       http_login!(owner)
-      patch job_order_quote_path(order), params: quote_params(order, order.job_tasks.first)
+      patch_quote order, quote_params(order, order.job_tasks.first)
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.cannot_access_area"))
     end
@@ -484,7 +592,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       it "saves task quote, staff comments, chat message, sets USER_APPROVAL and emails the quote" do
         task = order.job_tasks.first
         expect do
-          patch job_order_quote_path(order), params: quote_params(order, task)
+          patch_quote order, quote_params(order, task)
         end.to change { ActionMailer::Base.deliveries.size }.by(1)
 
         expect(response).to redirect_to(job_order_path(order))
@@ -514,8 +622,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
       it "switches to the re-approved wording after a second quote submission" do
         task = order.job_tasks.first
-        patch job_order_quote_path(order), params: quote_params(order, task)
-        patch job_order_quote_path(order), params: quote_params(order, task)
+        patch_quote order, quote_params(order, task)
+        patch_quote order, quote_params(order, task)
 
         second = ActionMailer::Base.deliveries.last
         expect(second.subject)
@@ -524,7 +632,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
       it "attaches staff files and prefixes stored filenames with the order id" do
         task = order.job_tasks.first
-        patch job_order_quote_path(order), params: quote_params(order, task).merge(
+        patch_quote order, quote_params(order, task).merge(
           "task_#{task.id}_staff_files" => [FilesTestHelper.stl]
         )
         task.reload
@@ -536,7 +644,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       it "replaces job quote line items from submitted params" do
         order.job_quote_line_items.create!(description: "old", price: 1)
         task = order.job_tasks.first
-        patch job_order_quote_path(order), params: quote_params(order, task).merge(
+        patch_quote order, quote_params(order, task).merge(
           job_quote_line_items: {
             "0" => { description: "Expedited SLA resin", price: "12.5" },
             "1" => { description: "", price: "" }
@@ -549,8 +657,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       it "declines: sets DECLINED, emails the user, no USER_APPROVAL status" do
         task = order.job_tasks.first
         expect do
-          patch job_order_quote_path(order),
-                params: quote_params(order, task).merge(approved: "false")
+          patch_quote order, quote_params(order, task).merge(approved: "false")
         end.to change { ActionMailer::Base.deliveries.size }.by(1)
 
         expect(status_names(order)).to end_with("Declined")
@@ -563,11 +670,10 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
       it "blank approved just flashes the error and renders nothing (204)" do
         task = order.job_tasks.first
-        patch job_order_quote_path(order),
-              params: quote_params(order, task).merge(approved: "")
+        patch_quote order, quote_params(order, task).merge(approved: "")
         expect(response.status).to eq(204)
         expect(response.body).to be_blank
-        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+        expect(flash[:alert]).to eq(I18n.t("errors.job_orders.quote_choice_missing"))
         expect(status_names(order)).to eq(["Waiting for Staff Approval"])
       end
     end
@@ -669,18 +775,16 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
                 params: { flow.fetch(:ok_param) => "false" }
 
           expect(status_names(order)).to eq([JobOrderSpecHelpers::JOB_STATUS_NAMES.fetch(flow.fetch(:from))])
-          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.not_requested"))
         end
 
-        # applying #{action} to a Draft flashes the generic update
-        # error; no guard rail explains WHY the transition was refused.
-        it "errors from an unexpected current status" do
+        it "says the order is not in a state that allows the change when the status is unexpected" do
           order = order_with_task!(owner: owner, status_key: :draft)
           expect do
             patch send("job_order_#{action}_path", order),
                   params: { flow.fetch(:ok_param) => "true" }
           end.not_to change(JobOrderStatus, :count)
-          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.wrong_state"))
         end
       end
     end
@@ -815,6 +919,18 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(order.reload.assigned_staff).to eq(staff)
     end
 
+    it "does not email again when the same staff member is assigned again" do
+      order = order_with_task!(owner: owner)
+      http_login!(admin)
+      perform_enqueued_jobs do
+        patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
+        patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
+      end
+
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      expect(order.reload.assigned_staff).to eq(staff)
+    end
+
     it "does NOT email when the admin assigns themselves" do
       order = order_with_task!(owner: owner)
       http_login!(admin)
@@ -856,33 +972,63 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    # the else-flash dereferences @job_order.assigned_staff.name
-    # with no assigned staff → NoMethodError → 500 instead of a friendly flash.
-    it "renders 500 (NoMethodError) when a non-admin staff member tries to assign someone else" do
+    it "tells a non-admin staff member that only an admin can assign someone else, and assigns nobody" do
       order = order_with_task!(owner: owner)
       http_login!(staff)
       patch job_order_assign_staff_path(order), params: { staff_id: admin.id }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("NoMethodError")
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("errors.job_orders.assign_not_allowed"))
       expect(order.reload.assigned_staff).to be_nil
     end
 
-    # an unknown job order takes the same else branch,
-    # @job_order is nil. (The route's key is job_order_id.)
-    it "renders 500 (NoMethodError) for an unknown job order id" do
+    it "says the order no longer exists for an unknown job order id" do
       http_login!(staff)
       patch job_order_assign_staff_path(job_order_id: 999_999_999),
             params: { staff_id: staff.id }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("NoMethodError")
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("errors.job_orders.assign_order_missing"))
+    end
+
+    it "says the order no longer exists for a soft-deleted order" do
+      order = order_with_task!(owner: owner)
+      order.update_column(:is_deleted, true)
+      http_login!(admin)
+      patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
+      expect(flash[:alert]).to eq(I18n.t("errors.job_orders.assign_order_missing"))
+    end
+
+    it "says the staff member does not exist for an unknown staff id and assigns nobody" do
+      order = order_with_task!(owner: owner)
+      http_login!(admin)
+      patch job_order_assign_staff_path(order), params: { staff_id: 999_999_999 }
+      expect(flash[:alert]).to eq(I18n.t("errors.job_orders.assign_staff_missing"))
+      expect(order.reload.assigned_staff).to be_nil
+    end
+
+    it "gives the validation reason when the assignment cannot be saved" do
+      order = order_with_task!(owner: owner)
+      http_login!(admin)
+      allow_any_instance_of(JobOrder).to receive(:save) do |record|
+        record.errors.add(:base, "is locked")
+        false
+      end
+      patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
+      expect(flash[:alert]).to eq("#{I18n.t("errors.job_orders.assign_failed")} is locked")
+    end
+
+    it "answers in French when the locale is French" do
+      order = order_with_task!(owner: owner)
+      http_login!(staff)
+      patch job_order_assign_staff_path(order), params: { staff_id: admin.id, locale: "fr" }
+      expect(flash[:alert]).to eq(I18n.t("errors.job_orders.assign_not_allowed", locale: :fr))
+      expect(flash[:alert]).to include("administrateur")
     end
   end
 
   # ------------------------------------------------------- admin / settings
 
   describe "GET /job_orders/admin" do
-    # N+1 pinned
-    it "lists non-draft orders for staff and keeps the drafts out (no # anchor markers)", skip_bullet: true do
+    it "lists non-draft orders for staff and keeps the drafts out (no # anchor markers)" do
       draft = make_job_order!(owner: owner, status_key: :draft)
       listed = order_with_task!(owner: owner, status_key: :staff_approval)
 
@@ -893,6 +1039,20 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       # The admin table prints the id as a bare <td>, not "Order #N".
       expect(response.body).to include("<td>#{listed.id}</td>")
       expect(response.body).not_to include("<td>#{draft.id}</td>")
+    end
+
+    it "puts each order's assign-staff dialog outside the table, one per order with its staff picker" do
+      first = order_with_task!(owner: owner, status_key: :staff_approval)
+      second = order_with_task!(owner: owner, status_key: :staff_approval)
+
+      http_login!(admin)
+      get admin_job_orders_path
+      html = Nokogiri::HTML(response.body)
+      expect(html.css("table .modal")).to be_empty
+      [first, second].each do |order|
+        expect(html.css("tr#job-order-row-#{order.id} button[data-bs-target='#assignStaffModal-#{order.id}']").size).to eq(1)
+        expect(html.css("#assignStaffModal-#{order.id} select#jo-staff-select-#{order.id}").size).to eq(1)
+      end
     end
 
     it "bounces regular users to root" do
@@ -954,7 +1114,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
   describe "GET /job_orders/:id/timeline_modal" do
     # N+1 pinned
-    it "renders the status history (layout: false) newest-first for staff", skip_bullet: true do
+    it "renders the status history (layout: false) newest-first for staff" do
       order = order_with_task!(owner: owner)
       advance_to!(order, :staff_approval)
       http_login!(staff)
@@ -966,7 +1126,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     end
 
     # JobOrderStatus#user is optional (rows from before its presence validation have none)
-    it "names a missing actor 'Unknown' instead of raising, on processing and sent-back rows", skip_bullet: true do
+    it "names a missing actor 'Unknown' instead of raising, on processing and sent-back rows" do
       order = order_with_task!(owner: owner)
       advance_to!(order, :being_processed)
       sent_back = order.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: owner, reason: "owner_change")
@@ -979,6 +1139,60 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       text = Nokogiri::HTML(response.body).text.squish
       expect(text).to include("Currently being Processed (By: Unknown)")
       expect(text).to include("#{I18n.t('job_orders.status_reasons.owner_change')} (By: Unknown)")
+    end
+
+    describe "approvals and declines answered for the customer" do
+      let(:order) { order_with_task!(owner: owner).tap { |o| advance_to!(o, :user_approval) } }
+
+      def timeline_text
+        get job_order_timeline_modal_path(order)
+        Nokogiri::HTML(response.body).text.squish
+      end
+
+      it "names the staff member who approved on the customer's behalf" do
+        http_login!(staff)
+        patch job_order_user_approval_path(order), params: { approved: "true" }
+
+        expect(timeline_text).to include("Approved by #{staff.name} for the customer")
+      end
+
+      it "names the staff member who declined" do
+        http_login!(staff)
+        patch job_order_user_approval_path(order), params: { approved: "false" }
+
+        expect(timeline_text).to include("Declined by #{staff.name}")
+      end
+
+      it "adds no name when the customer answered" do
+        http_login!(owner)
+        patch job_order_user_approval_path(order), params: { approved: "true" }
+        http_login!(staff)
+
+        text = timeline_text
+        expect(text).to include("Waiting to be Processed")
+        expect(text).not_to include("Approved by")
+        expect(text).not_to match(/Waiting to be Processed \(By:/)
+      end
+
+      it "does not show the staff name to the customer on the order page" do
+        http_login!(staff)
+        patch job_order_user_approval_path(order), params: { approved: "true" }
+        http_login!(owner)
+        get job_order_path(order)
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).not_to include(staff.name)
+      end
+
+      it "renders an approval row with no recorded actor without claiming a staff member" do
+        http_login!(staff)
+        patch job_order_user_approval_path(order), params: { approved: "true" }
+        order.job_order_statuses.find_by!(job_status: JobStatus.waiting_processed).update_columns(user_id: nil)
+
+        text = timeline_text
+        expect(text).to include("Waiting to be Processed")
+        expect(text).not_to include("Approved by")
+      end
     end
 
     # Round 2 review 9: no N+1 (runs with Bullet on): statuses and their JobStatus in one query, users only for the
@@ -1171,7 +1385,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
               params: { token: "not-a-token", approved: "true" }
         expect(response).to redirect_to(job_orders_path)
         expect(flash[:alert])
-          .to eq(I18n.t("job_orders.alerts.error_accept_deny_order"))
+          .to eq(I18n.t("job_orders.alerts.approval_magic_link_expired"))
         expect(status_names(magic_order)).not_to include("Waiting to be Processed")
       end
 
@@ -1209,8 +1423,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
           patch user_magic_approval_confirmation_job_orders_path,
                 params: { token: token, approved: "true" }
           expect(response).to have_http_status(:ok)
-          expect(response.body)
-            .to include("An error occured while trying to Approve/Deny the Job Order...")
+          expect(response.body).to include(I18n.t("errors.job_orders.approval_failed_title"))
+          expect(response.body).to include(I18n.t("job_orders.alerts.status_change.wrong_state"))
           expect(JobOrderStatus.count).to eq(count)
           expect(status_names(magic_order)).to end_with("Waiting to be Processed")
         end
@@ -1246,7 +1460,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
           patch user_magic_approval_confirmation_job_orders_path,
                 params: { token: token, approved: "true" }
         end
-        expect(response.body).to include("An error occured while trying to Approve/Deny the Job Order...")
+        expect(response.body).to include(I18n.t("errors.job_orders.approval_failed_title"))
+        expect(response.body).to include(I18n.t("job_orders.alerts.status_change.wrong_state"))
         expect(status_names(magic_order)).to eq(["Waiting for User Approval", "Waiting to be Processed"])
       end
 
@@ -1376,6 +1591,7 @@ RSpec.describe "GET /job_orders/new design help card", type: :request do
 
   it "still offers the card when create fails and the page is rendered again" do
     JobType.find_by(name: "Design Services") || JobType.create!(name: "Design Services", description: "d")
+    seed_job_statuses! # create builds the Draft status row before it saves
     allow_any_instance_of(JobOrder).to receive(:save).and_return(false)
     expect { post job_orders_path, params: { job_order: { job_type_id: "" }, redirect_step: 1 } }
       .not_to change(JobOrder, :count)

@@ -1,4 +1,5 @@
 import { csrfHeaders, csrfParam, csrfToken } from "./csrf";
+import { pageText, resultError, showFailure } from "./request_error";
 
 // sendBeacon queues at most about 64 KiB per page (all pending beacons together),
 // and returns false past that: the data is not sent, silently. Stay well under it.
@@ -44,20 +45,35 @@ export class ScormCommitService {
       "Content-Type": "application/json;charset=UTF-8",
       Accept: "application/json",
     });
-    Object.entries(headers).forEach(([name, value]) => xhr.setRequestHeader(name, value));
+    Object.entries(headers).forEach(([name, value]) =>
+      xhr.setRequestHeader(name, value),
+    );
     try {
       xhr.send(JSON.stringify(params));
     } catch (e) {
+      showFailure(pageText("requestNetwork"));
       return this.failure;
     }
-    return xhr.status >= 200 && xhr.status <= 299 ? this.success : this.failure;
+    if (xhr.status >= 200 && xhr.status <= 299) return this.success;
+
+    showFailure(
+      resultError({
+        text: xhr.responseText,
+        requestId: xhr.getResponseHeader("X-Request-Id") ?? "",
+      }),
+    );
+    return this.failure;
   }
 
   terminate(url, params) {
-    const body = new Blob([JSON.stringify({ ...params, [csrfParam()]: csrfToken() })], {
-      type: "application/json",
-    });
-    if (body.size <= BEACON_LIMIT_BYTES && this.queueBeacon(url, body)) return this.success;
+    const body = new Blob(
+      [JSON.stringify({ ...params, [csrfParam()]: csrfToken() })],
+      {
+        type: "application/json",
+      },
+    );
+    if (body.size <= BEACON_LIMIT_BYTES && this.queueBeacon(url, body))
+      return this.success;
 
     return this.post(url, params);
   }

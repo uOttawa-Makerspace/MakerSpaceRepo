@@ -10,7 +10,7 @@ require "rails_helper"
 #                               volunteer-program member, staff or admin (`grant_access`)
 #   emails, populate_users, volunteer_list, new_event, create_event, delete_event
 #                               staff/admin only (`grant_access_list`)
-# Google Calendar is never reached: ShadowingHour.create_event/delete_event are stubbed.
+# Google Calendar is never reached: ShadowingHour.create_event/delete_event are stubbed (creation runs in a queued job).
 RSpec.describe "Volunteers (HTTP contract)", type: :request do
   HUBSPOT_URL = "https://5oe8xl.share-na3.hsforms.com/20slW0brbQJCsdeEck-8vuQ"
 
@@ -114,6 +114,35 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
     end
   end
 
+  describe "GET /volunteers/volunteer_list active tasks" do
+    it "shows the title of a task an active volunteer has joined" do
+      volunteer = create(:user, :volunteer_with_volunteer_program, name: "Abe")
+      create(:volunteer_task_join, :active, volunteer_task: create(:volunteer_task, title: "Current chore"), user: volunteer)
+      vol_login!(create(:user, :staff))
+
+      get volunteer_list_volunteers_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body.scan("Current chore").size).to eq(1)
+    end
+  end
+
+  describe "GET /volunteers/volunteer_list previous tasks" do
+    it "lists each task once, however many times the volunteer joined and left it" do
+      volunteer = create(:user, :unactive_volunteer_with_volunteer_program, name: "Abe")
+      task = create(:volunteer_task, title: "Repeat chore")
+      create(:volunteer_task_join, :left, volunteer_task: task, user: volunteer)
+      create(:volunteer_task_join, :not_active, volunteer_task: task, user: volunteer)
+      create(:volunteer_task_join, :completed, volunteer_task: create(:volunteer_task, title: "One-off chore"), user: volunteer)
+      vol_login!(create(:user, :staff))
+
+      get volunteer_list_volunteers_path
+
+      expect(response.body.scan(%(href="#{volunteer_task_path(task.id)}")).size).to eq(1)
+      expect(response.body.scan("One-off chore").size).to eq(1)
+    end
+  end
+
   describe "GET /volunteers/emails" do
     it "lists volunteer emails: all, active and inactive" do
       a = create(:user, :volunteer_with_volunteer_program)
@@ -214,6 +243,16 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
         expect(user.volunteer?).to be(true)
       end
 
+      it "#{verb}: joining again keeps the one row and still sends the user to the form" do
+        user = create(:user, :regular_user)
+        create(:program, :volunteer_program, user: user, active: false)
+        vol_login!(user)
+        expect { send(verb, join_volunteer_program_volunteers_path) }.not_to change(Program, :count)
+        expect(response).to redirect_to(HUBSPOT_URL)
+        expect(flash[:notice]).to eq("You've joined the Volunteer Program")
+        expect(user.programs.sole.active).to be(false)
+      end
+
       it "#{verb}: staff are not enrolled; notice says they already have access" do
         staff = create(:user, :staff)
         vol_login!(staff)
@@ -266,7 +305,17 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       get transcript_volunteers_path
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include("<nav")
+      expect(response.body).to include("CCs Earned")
+      expect(response.body).not_to include("CC Points")
       expect(ivar(:@volunteer)).to eq(user)
+    end
+
+    it "links only the app's own stylesheets, none from another host" do
+      vol_login!(create(:user, :regular_user))
+      get transcript_volunteers_path
+      hrefs = Nokogiri::HTML(response.body).css("link[rel=stylesheet]").map { |l| l["href"] }
+      expect(hrefs).to include(a_string_matching(/volunteer_transcript.*\.css\z/))
+      expect(hrefs).to all(start_with("/"))
     end
 
     it "computes totals from approved requests, approved hours and CC money" do
@@ -317,6 +366,25 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
       expect(ivar(:@processed_volunteer_task_requests).size).to eq(2)
     end
+
+    it "counts the learning modules of the next level and the share the user completed" do
+      user = create(:user, :volunteer_with_volunteer_program)
+      training = create(:training, skill: create(:skill))
+      session = create(:training_session, training: training, level: "Beginner")
+      create(:certification, user: user, training: training, training_session: session, level: "Beginner")
+      create(:learning_module, training: training, level: "Beginner")
+      done = create(:learning_module, training: training, level: "Intermediate")
+      create(:learning_module, training: training, level: "Intermediate")
+      create(:learning_module_track, :completed, user: user, learning_module: done)
+      vol_login!(user)
+
+      get my_stats_volunteers_path
+
+      page = Nokogiri::HTML(response.body)
+      bar = page.at_css(%(.progress[aria-label="#{I18n.t("common.names.progress_modules")}"]))
+      expect(bar["aria-valuenow"]).to eq("50")
+      expect(page.text.squish).to include("1 / 2")
+    end
   end
 
   describe "shadowing" do
@@ -337,6 +405,19 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       end
     end
 
+    describe "GET shadowing_shifts with a stored shift missing its start time" do
+      it "renders the page and leaves that shift out of both lists" do
+        whole = ShadowingHour.create!(user: staff, space: makerspace, start_time: 1.day.from_now, end_time: 2.days.from_now, event_id: "a")
+        broken = ShadowingHour.create!(user: staff, space: makerspace, start_time: 1.day.from_now, end_time: 2.days.from_now, event_id: "b")
+        broken.update_columns(start_time: nil)
+        vol_login!(staff)
+        get shadowing_shifts_volunteers_path
+        expect(response).to have_http_status(:ok)
+        expect(ivar(:@shifts)).to eq([whole])
+        expect(ivar(:@all_shifts)).to eq([whole])
+      end
+    end
+
     describe "POST create_event" do
       let(:params) do
         { space: "makerspace", datepicker_start: "2030-05-06 09:00", datepicker_end: "2030-05-06 11:30", user_id: volunteer.id }
@@ -344,38 +425,66 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
 
       before { vol_login!(staff) }
 
-      it "creates the calendar event and a ShadowingHour, redirecting to the calendar" do
-        expect(ShadowingHour).to receive(:create_event)
-          .with("2030-05-06T 9:00:00", "2030-05-06T11:30:00", volunteer, "makerspace").and_return(event)
-        expect { post create_event_volunteers_path, params: params }.to change(ShadowingHour, :count).by(1)
+      it "stores the shift with the id its calendar event will have, queues the event and redirects to the calendar" do
+        expect { post create_event_volunteers_path, params: params }
+          .to change(ShadowingHour, :count).by(1).and have_enqueued_job(GoogleCalendar::ShadowingPushJob)
         expect(response).to redirect_to(calendar_volunteers_path)
         expect(flash[:notice]).to eq("The shadowing shift has been added")
         shift = ShadowingHour.last
-        expect([shift.user_id, shift.event_id, shift.space_id]).to eq([volunteer.id, "evt-123", makerspace.id])
+        expect([shift.user_id, shift.space_id]).to eq([volunteer.id, makerspace.id])
+        expect(shift.event_id).to match(/\A[0-9a-f]{32}\z/)
         expect(shift.start_time.strftime("%H:%M")).to eq("09:00")
         expect(shift.end_time.strftime("%H:%M")).to eq("11:30")
+        expect(GoogleCalendar::ShadowingPushJob).to have_been_enqueued.with(shift.id)
       end
 
-      it "flashes an error and stores nothing when Google reports the event cancelled" do
-        allow(ShadowingHour).to receive(:create_event).and_return(double(id: "x", status: "cancelled"))
-        expect { post create_event_volunteers_path, params: params }.not_to change(ShadowingHour, :count)
+      it "does not reach Google itself, and records the event as waiting until the job has created it" do
+        expect(ShadowingHour).not_to receive(:create_event)
+        post create_event_volunteers_path, params: params
+        expect(GoogleCalendar::PendingChange.where(action: "shadow_push").pluck(:shadowing_hour_id)).to eq([ShadowingHour.last.id])
+      end
+
+      it "creates the calendar event under the shift's id when the queued job runs" do
+        expect(ShadowingHour).to receive(:create_event)
+          .with("2030-05-06T09:00:00", "2030-05-06T11:30:00", volunteer, "makerspace", /\A[0-9a-f]{32}\z/).and_return(event)
+        perform_enqueued_jobs { post create_event_volunteers_path, params: params }
+        expect(GoogleCalendar::PendingChange.count).to eq(0)
+      end
+
+      it "keeps the shift and tells the staff member when the job cannot be queued; the resend job takes it up later" do
+        allow(GoogleCalendar::ShadowingPushJob).to receive(:perform_later).and_raise(ActiveRecord::ConnectionNotEstablished)
+        expect { post create_event_volunteers_path, params: params }.to change(ShadowingHour, :count).by(1)
         expect(response).to redirect_to(calendar_volunteers_path)
-        expect(flash[:alert]).to eq("An Error occurred")
+        expect(flash[:alert]).to eq(I18n.t("errors.volunteers.calendar_event_missing"))
+        expect(GoogleCalendar::PendingChange.where(action: "shadow_push").count).to eq(1)
+
+        allow(GoogleCalendar::ShadowingPushJob).to receive(:perform_later).and_call_original
+        GoogleCalendar::PendingChange.update_all(updated_at: 1.hour.ago)
+        expect { GoogleCalendar::ResendJob.perform_now }.to have_enqueued_job(GoogleCalendar::ShadowingPushJob).with(ShadowingHour.last.id)
       end
 
       it "rejects an unknown space name without calling Google" do
         expect(ShadowingHour).not_to receive(:create_event)
         post create_event_volunteers_path, params: params.merge(space: "garage")
         expect(response).to redirect_to(calendar_volunteers_path)
-        expect(flash[:alert]).to eq("An error occurred, please make sure you choose a space.")
+        expect(flash[:alert]).to eq("Choose a space (Makerspace or Brunsfield Centre) for the shadowing shift.")
       end
 
-      it "rejects missing dates or user_id" do
+      it "says which of the dates or the volunteer is missing" do
         expect(ShadowingHour).not_to receive(:create_event)
+        dates = "Choose a valid start and end date and time for the shadowing shift."
         post create_event_volunteers_path, params: params.except(:datepicker_end)
-        expect(flash[:alert]).to eq("An error occurred, please make sure you choose a space.")
+        expect(flash[:alert]).to eq(dates)
+        post create_event_volunteers_path, params: params.merge(datepicker_start: "not a date")
+        expect(flash[:alert]).to eq(dates)
         post create_event_volunteers_path, params: params.except(:user_id)
-        expect(flash[:alert]).to eq("An error occurred, please make sure you choose a space.")
+        expect(flash[:alert]).to eq("Choose the volunteer who will shadow.")
+      end
+
+      it "answers in French when the locale is French" do
+        expect(ShadowingHour).not_to receive(:create_event)
+        post create_event_volunteers_path, params: params.merge(space: "garage", locale: "fr")
+        expect(flash[:alert]).to eq(I18n.t("errors.volunteers.no_space", locale: :fr))
       end
 
       it "404s for a nonexistent user_id" do
@@ -423,8 +532,8 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
 
       it "accepts 'brunsfield centre' as a space" do
         brunsfield = create(:space, name: "Brunsfield Centre")
-        expect(ShadowingHour).to receive(:create_event).with(anything, anything, volunteer, "brunsfield centre").and_return(event)
-        post create_event_volunteers_path, params: params.merge(space: "brunsfield centre")
+        expect(ShadowingHour).to receive(:create_event).with(anything, anything, volunteer, "brunsfield centre", anything).and_return(event)
+        perform_enqueued_jobs { post create_event_volunteers_path, params: params.merge(space: "brunsfield centre") }
         expect(ShadowingHour.last.space_id).to eq(brunsfield.id)
       end
     end
@@ -450,15 +559,25 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       it "keeps the row and alerts when Google returns 'error'" do
         allow(ShadowingHour).to receive(:delete_event).and_return("error")
         expect { delete delete_event_volunteers_path(event_id: "evt-9") }.not_to change(ShadowingHour, :count)
-        expect(flash[:alert]).to eq("An error occured while deleting the shift.")
+        expect(flash[:alert]).to eq("The shift could not be removed from the calendar, so it was not cancelled. Try again in a moment.")
+      end
+
+      it "tells the staff member the shift was not found when another request cancelled it first" do
+        stale = ShadowingHour.find(shift.id)
+        ShadowingHour.where(id: shift.id).delete_all
+        allow(ShadowingHour).to receive(:find_by).with(event_id: "evt-9").and_return(stale)
+        expect(ShadowingHour).not_to receive(:delete_event)
+        delete delete_event_volunteers_path(event_id: "evt-9")
+        expect(response).to redirect_to(calendar_volunteers_path)
+        expect(flash[:alert]).to eq("This shift has not been found. It may already have been cancelled.")
       end
 
       it "alerts for an unknown or missing event_id without calling Google" do
         expect(ShadowingHour).not_to receive(:delete_event)
         delete delete_event_volunteers_path(event_id: "nope")
-        expect(flash[:alert]).to eq("This shift has not been found.")
+        expect(flash[:alert]).to eq("This shift has not been found. It may already have been cancelled.")
         delete delete_event_volunteers_path
-        expect(flash[:alert]).to eq("This shift has not been found.")
+        expect(flash[:alert]).to eq("This shift has not been found. It may already have been cancelled.")
         expect(response).to redirect_to(calendar_volunteers_path)
       end
     end

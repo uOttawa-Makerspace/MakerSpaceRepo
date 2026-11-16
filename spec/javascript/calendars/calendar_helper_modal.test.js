@@ -14,7 +14,7 @@ vi.mock("bootstrap", () => ({
   },
 }));
 
-const { addEventClick, eventClick, eventCreate, toLocalDatetimeString } =
+const { addEventClick, eventClick, eventCreate } =
   await import("../../../app/javascript/src/calendar_helper.js");
 
 const $ = (id) => document.getElementById(id);
@@ -102,51 +102,11 @@ describe("addEventClick", () => {
     ).toBe("event[space_id]");
   });
 
-  it("fills the staff list from the server once, when it is empty", async () => {
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => [
-        { id: 1, name: "Ada" },
-        { id: 2, name: "Wanda" },
-      ],
-    });
-    addEventClick();
-    await vi.waitFor(() => expect($("staff_select").options.length).toBe(2));
-    expect(fetch).toHaveBeenCalledWith("/admin/calendar/staff_json/7");
-    expect([...$("staff_select").options].map((o) => o.textContent)).toEqual([
-      "Ada",
-      "Wanda",
-    ]);
-  });
-
-  it("leaves the staff list empty when the server answers with an error", async () => {
-    fetch.mockResolvedValueOnce({ ok: false, json: async () => [] });
-    addEventClick();
-    await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
-    expect($("staff_select").options.length).toBe(0);
-  });
-
-  it("logs the failure when the staff request throws", async () => {
-    const log = vi.spyOn(console, "error").mockImplementation(() => {});
-    fetch.mockRejectedValueOnce(new Error("offline"));
-    addEventClick();
-    await vi.waitFor(() => expect(log).toHaveBeenCalled());
-    expect(log.mock.calls[0][0]).toBe("Error fetching staff data:");
-  });
-
-  it("takes the space from the form's own field when the page has no space picker", async () => {
-    $("space_id").remove();
-    addEventClick();
-    await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
-    expect(fetch).toHaveBeenCalledWith("/admin/calendar/staff_json/7");
-  });
-
-  it("does not ask for staff when no space field exists at all", async () => {
-    $("space_id").remove();
-    document.querySelector('input[name="event[space_id]"]').remove();
+  it("leaves the staff list to the event form and asks the server for nothing", async () => {
     addEventClick();
     await Promise.resolve();
     expect(fetch).not.toHaveBeenCalled();
+    expect($("staff_select").options.length).toBe(0);
   });
 
   it("points the form at unavailabilities when that type is chosen, and back", () => {
@@ -210,24 +170,31 @@ describe("eventClick", () => {
     expect($("delete_all_form").style.display).toBe("none");
   });
 
-  it("writes the start and end in the browser's local time", () => {
+  it("writes the start and end in Toronto time", () => {
     eventClick(fcEvent());
-    expect($("start_time_field").value).toBe(
-      toLocalDatetimeString(new Date("2027-03-17T10:00:00-04:00")),
-    );
-    expect($("end_time_field").value).toBe(
-      toLocalDatetimeString(new Date("2027-03-17T11:30:00-04:00")),
-    );
+    expect($("start_time_field").value).toBe("2027-03-17T10:00");
+    expect($("end_time_field").value).toBe("2027-03-17T11:30");
     expect($("end_time_field").disabled).toBe(false);
     expect($("all_day_checkbox").checked).toBe(false);
   });
 
   it("defaults the end to one hour after the start when the event has none", () => {
     eventClick(fcEvent({ end: null, endStr: "" }));
-    const start = new Date("2027-03-17T10:00:00-04:00");
-    expect($("end_time_field").value).toBe(
-      toLocalDatetimeString(new Date(start.getTime() + 3600000)),
+    expect($("end_time_field").value).toBe("2027-03-17T11:00");
+  });
+
+  // FullCalendar drops the end of an occurrence whose wall-clock end is its start: one real hour from the first
+  // 01:30 of the night the clocks go back.
+  it("ends an occurrence FullCalendar gives no end one wall-clock hour after its start on the night the clocks go back", () => {
+    eventClick(
+      fcEvent({
+        startStr: "2027-11-07T01:30:00-04:00",
+        end: null,
+        endStr: "",
+      }),
     );
+    expect($("start_time_field").value).toBe("2027-11-07T01:30");
+    expect($("end_time_field").value).toBe("2027-11-07T02:30");
   });
 
   it("checks all-day and locks the end field", () => {
@@ -296,12 +263,53 @@ describe("eventClick", () => {
     expect($("publish_form").style.display).toBe("none");
   });
 
+  it("offers to unpublish a published event and hides the button for a draft", () => {
+    eventClick(fcEvent({ props: { draft: false } }));
+    expect($("unpublish_form").style.display).toBe("block");
+    expect($("unpublish_form").action).toContain(
+      "/admin/events/12/publication",
+    );
+    eventClick(fcEvent({ props: { draft: true } }));
+    expect($("unpublish_form").style.display).toBe("none");
+  });
+
+  it("leaves no end date, weekdays or rule of the previous series when a series without an end is opened next", () => {
+    const series = (origOptions) =>
+      fcEvent({
+        def: {
+          recurringDef: {
+            typeData: { rruleSet: { _rrule: [{ origOptions }] } },
+          },
+        },
+      });
+    eventClick(
+      series({
+        freq: 2,
+        dtstart: new Date(Date.UTC(2027, 2, 15, 14)),
+        byweekday: [0, 2],
+        until: new Date(Date.UTC(2027, 2, 31, 23, 59, 59)),
+      }),
+    );
+    expect($("recurrence_until").value).toBe("2027-03-31");
+
+    eventClick(
+      series({ freq: 3, dtstart: new Date(Date.UTC(2027, 2, 16, 14)) }),
+    );
+
+    expect($("recurrence_frequency").value).toBe("DAILY");
+    expect($("recurrence_until").value).toBe("");
+    expect($("weekly_options").style.display).toBe("none");
+    expect($("day_MO").checked).toBe(false);
+    expect($("day_WE").checked).toBe(false);
+    expect($("recurrence_rule_field").value).not.toContain("UNTIL");
+  });
+
   it("restores a repeat rule from the series definition of the calendar", () => {
     const origOptions = {
       freq: 2,
       dtstart: new Date(Date.UTC(2027, 2, 15, 14)),
       byweekday: [0, 2],
-      until: new Date(2027, 2, 31, 23, 59, 59),
+      until: new Date(Date.UTC(2027, 2, 31, 23, 59, 59)),
     };
     eventClick(
       fcEvent({
@@ -319,7 +327,10 @@ describe("eventClick", () => {
     expect($("day_WE").checked).toBe(true);
     expect($("day_TU").checked).toBe(false);
     expect($("recurrence_until").value).toBe("2027-03-31");
-    expect($("recurrence_rule_field").value).toContain("FREQ=WEEKLY");
+    // the field holds the rule as stored, from the clicked occurrence's start
+    expect($("recurrence_rule_field").value).toBe(
+      "DTSTART;TZID=America/Toronto:20270317T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20270401T035959Z",
+    );
     expect($("delete_following_form").style.display).toBe("block");
     expect($("delete_all_form").style.display).toBe("block");
     expect($("update_dropdown").style.display).toBe("block");
@@ -354,31 +365,38 @@ describe("eventClick", () => {
     expect($("recurrence_frequency").value).toBe("MONTHLY");
   });
 
-  it("restores a repeat rule from a rule string, with or without the prefix", () => {
-    eventClick(fcEvent({ props: { rrule: "RRULE:FREQ=DAILY" } }));
-    expect($("recurrence_frequency").value).toBe("DAILY");
-    eventClick(fcEvent({ props: { rrule: "FREQ=WEEKLY;BYDAY=FR" } }));
-    expect($("recurrence_frequency").value).toBe("WEEKLY");
-    expect($("day_FR").checked).toBe(true);
-  });
-
-  it("cannot read a rule string that starts with a start date", () => {
-    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  it("fills the title from the stored title rather than the calendar label", () => {
     eventClick(
       fcEvent({
-        props: { rrule: "DTSTART:20270315T140000Z\nRRULE:FREQ=DAILY" },
+        def: { title: "🚫 Wanda Worker - Lecture" },
+        props: { eventType: "unavailability", title: "Lecture", userId: 3 },
       }),
     );
-    expect(log).toHaveBeenCalledWith("RRule parse error", expect.anything());
-    expect($("recurrence_frequency").value).toBe("");
+    expect($("title").value).toBe("Lecture");
   });
 
-  it("logs and carries on when the rule string cannot be read", () => {
-    const log = vi.spyOn(console, "log").mockImplementation(() => {});
-    eventClick(fcEvent({ props: { rrule: "RRULE:FREQ=NEVER" } }));
-    expect(log).toHaveBeenCalledWith("RRule parse error", expect.anything());
-    expect(shown).toEqual(["eventModal"]);
-    expect($("recurrence_frequency").value).toBe("");
+  it("leaves the title field empty for an entry whose stored title is null", () => {
+    eventClick(
+      fcEvent({
+        def: { title: "🚫 Wanda Worker - " },
+        props: { eventType: "unavailability", title: null, userId: 3 },
+      }),
+    );
+    expect($("title").value).toBe("");
+  });
+
+  it("falls back to the label without its pencil when no stored title is sent", () => {
+    eventClick(fcEvent({ def: { title: "✎ Team sync" } }));
+    expect($("title").value).toBe("Team sync");
+  });
+
+  it("notes the times it filled, and forgets them when the dialog opens for a new event", () => {
+    eventClick(fcEvent());
+    expect($("keep_series_times").dataset.filled).toBe(
+      "2027-03-17T10:00|2027-03-17T11:30|false",
+    );
+    addEventClick();
+    expect($("keep_series_times").dataset.filled).toBeUndefined();
   });
 
   it("sets the date every delete form sends", () => {
@@ -395,9 +413,12 @@ describe("eventClick", () => {
   it("opens an unavailability with the type locked, its own URLs and its owner", () => {
     eventClick(
       fcEvent({
-        id: "31",
+        id: "31@1805202000",
         props: {
           eventType: "unavailability",
+          recordId: 31,
+          series: null,
+          occurrenceStart: "2027-03-17T13:00:00Z",
           userId: 4,
           name: "Wanda Worker (Admin)",
           draft: true,
@@ -422,21 +443,64 @@ describe("eventClick", () => {
       [...$("staff_select").options].map((o) => [o.value, o.textContent]),
     ).toEqual([["4", "Wanda Worker"]]);
     expect($("publish_form").style.display).toBe("none");
+    expect($("unpublish_form").style.display).toBe("none");
     expect($("delete_single_form").action).toContain(
+      "/staff/unavailabilities/31/delete_with_scope",
+    );
+    expect($("delete_following_form").style.display).toBe("none");
+    expect(
+      [...document.querySelectorAll(".delete_start_date")].map((i) => i.value),
+    ).toEqual(["2027-03-17T13:00:00Z", "2027-03-17T13:00:00Z"]);
+  });
+
+  it("restores the repeat of an unavailability series from what the feed sent", () => {
+    eventClick(
+      fcEvent({
+        id: "31@1805202000",
+        props: {
+          eventType: "unavailability",
+          recordId: 31,
+          occurrenceStart: "2027-03-17T14:00:00Z",
+          series: {
+            frequency: "WEEKLY",
+            weekdays: ["MO", "WE"],
+            until: "2027-03-31",
+          },
+          userId: 4,
+        },
+      }),
+    );
+    expect($("recurrence_frequency").value).toBe("WEEKLY");
+    expect($("weekly_options").style.display).toBe("block");
+    expect($("day_MO").checked).toBe(true);
+    expect($("day_WE").checked).toBe(true);
+    expect($("day_TU").checked).toBe(false);
+    expect($("recurrence_until").value).toBe("2027-03-31");
+    expect($("recurrence_rule_field").value).toBe(
+      "DTSTART;TZID=America/Toronto:20270317T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20270401T035959Z",
+    );
+    expect($("delete_following_form").style.display).toBe("block");
+    expect($("delete_all_form").action).toContain(
       "/staff/unavailabilities/31/delete_with_scope",
     );
   });
 
   it("falls back to 'User' when the unavailability has no owner name", () => {
     eventClick(
-      fcEvent({ id: "31", props: { eventType: "unavailability", userId: 4 } }),
+      fcEvent({
+        id: "31",
+        props: { eventType: "unavailability", recordId: 31, userId: 4 },
+      }),
     );
     expect($("staff_select").options[0].textContent).toBe("User");
   });
 
   it("removes the lock again when the next modal is opened for a new event", () => {
     eventClick(
-      fcEvent({ id: "31", props: { eventType: "unavailability", userId: 4 } }),
+      fcEvent({
+        id: "31",
+        props: { eventType: "unavailability", recordId: 31, userId: 4 },
+      }),
     );
     addEventClick();
     expect($("event_type_select").disabled).toBe(false);
@@ -458,12 +522,8 @@ describe("eventCreate", () => {
 
     expect(click).toHaveBeenCalledTimes(1);
     // the reset that follows the click leaves the dragged times in place
-    expect($("start_time_field").value).toBe(
-      toLocalDatetimeString(new Date("2027-03-17T10:00:00-04:00")),
-    );
-    expect($("end_time_field").value).toBe(
-      toLocalDatetimeString(new Date("2027-03-17T12:00:00-04:00")),
-    );
+    expect($("start_time_field").value).toBe("2027-03-17T10:00");
+    expect($("end_time_field").value).toBe("2027-03-17T12:00");
     expect($("save_button").value).toBe("Save Draft");
   });
 });

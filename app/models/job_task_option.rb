@@ -1,8 +1,7 @@
 class JobTaskOption < ApplicationRecord
+  include PrefixedFileNames
   belongs_to :job_task
   belongs_to :job_option
-
-  after_save :set_filename
 
   has_one_attached :option_file
   validates :option_file,
@@ -28,12 +27,8 @@ class JobTaskOption < ApplicationRecord
               if: -> { option_file.attached? }
             }
 
-  private
-
-  def set_filename
-    return unless option_file.attached?
-      return if option_file.filename.to_s.start_with?("JMTS")
-        option_file.blob.update(filename: "JMTS_#{option_file.filename}")
-      
+  # Prefixes the stored name of the option file with JMTS, as set by the action that attaches it.
+  def prefix_file_names
+    prefix_blob_names(%i[option_file_attachment], "JMTS_", already: "JMTS")
   end
 end

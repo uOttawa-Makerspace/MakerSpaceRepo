@@ -1,7 +1,7 @@
 <% provide(:title, @subskill) %>
 
 <div class="mb-3">
-    <%= link_to 'Back', learning_area_index_path, class: 'btn btn-sm btn-outline-secondary' %>
+    <%= link_to t('learning_area.subskill.back'), learning_area_index_path, class: 'btn btn-sm btn-outline-secondary' %>
 </div>
 
 <h1 class="mb-3"><%= @subskill %></h1>
@@ -9,8 +9,8 @@
 <% @learning_modules.each do |learning_module| %>
     <hr />
     <% if learning_module.scorm_package.attached? %>
-        <%= render 'scorm', learning_module: %>
+        <%= render 'scorm', learning_module:, track: @tracks_by_module[learning_module.id] %>
     <% else %>
-        <%= render 'content', learning_module: %>
+        <%= render 'content', learning_module:, track: @tracks_by_module[learning_module.id] %>
     <% end %>
 <% end %>

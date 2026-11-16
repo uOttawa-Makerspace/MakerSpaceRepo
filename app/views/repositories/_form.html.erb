@@ -7,16 +7,16 @@
         <div class="form-text"><%= t('repository.title_msg') %></div>
     </div>
     <div class="mb-3">
-        <%= f.label :description, class: 'form-label' %>
+        <%= f.trix_label :description, class: 'form-label' %>
         <div>
-            <%= f.trix_editor :description, class: 'form-control', 'aria-label': Repository.human_attribute_name(:description), style: 'height: auto!important;', required: true %>
+            <%= f.trix_editor :description, class: 'form-control', style: 'height: auto!important;', required: true %>
         </div>
     </div>
 
     <%# ════════════════════════════════════════════════════════ %>
     <%# PROJECT FILES — drag-and-drop upload, no reordering    %>
     <%# ════════════════════════════════════════════════════════ %>
-    <%= label_tag :file, t('repository.proj_files'), class: 'form-label mb-2' %>
+    <%= label_tag :repository_repo_files_attributes, t('repository.proj_files'), class: 'form-label mb-2' %>
     <div class="mb-3 file-upload-drop-zone">
         <div class="input-group">
             <%= file_field_tag 'repository[repo_files_attributes]',
@@ -40,7 +40,7 @@
                 <% if p.object.file.attached? && p.object.file.persisted? %>
                     <div class="file-upload-item-preview">
                         <% if p.object.file.image? %>
-                            <%= image_tag p.object.file %>
+                            <%= image_tag p.object.file, alt: '' %>
                         <% else %>
                             <div class="file-upload-preview-failed"></div>
                         <% end %>
@@ -59,7 +59,7 @@
     <%# GALLERY PHOTOS — drag-and-drop upload, reordering     %>
     <%# ════════════════════════════════════════════════════════ %>
     <div class="mb-3 required">
-        <%= label_tag :photo, t('repository.gallery') , class: 'form-label' %>
+        <%= label_tag :repository_photos, t('repository.gallery') , class: 'form-label' %>
         <div class="file-upload-drop-zone">
             <div class="input-group mb-3">
                 <%= f.file_field :photos, name: 'repository[photos_attributes]',
@@ -89,7 +89,7 @@
                 <%= f.fields_for :photos do |p| %>
                     <% if p.object.image.attached? && p.object.image.persisted? %>
                         <div class="file-upload-item-preview">
-                            <%= image_tag p.object.image %>
+                            <%= image_tag p.object.image, alt: '' %>
                             <%= p.hidden_field :image, value: p.object.image.signed_id %>
                             <span title="<%= p.object.image.filename %>"><%= p.object.image.filename %></span>
                             <%= p.hidden_field :position, data: {file_upload_position: true} %>
@@ -115,8 +115,8 @@
         <%= f.select :categories, options_for_select(
             CategoryOption.show_options.collect(&:name),
             selected: @repository.categories.collect(&:name)),
-         { multiple: true, class: 'form-control form-select', include_blank: t('repository.sel_cat') },
-         { aria: { label: t('repository.cat') } }
+         { include_blank: t('repository.sel_cat') },
+         { multiple: true, class: 'form-control form-select', aria: { label: t('repository.cat') } }
         %>
         <span class="form-text"><%= t('repository.cat_msg') %></span>
     </div>
@@ -126,8 +126,8 @@
         <%= f.select :equipments, options_for_select(
             (EquipmentOption.show_options.collect(&:name) + @repository.equipments.pluck(:name)).uniq,
             selected: @repository.equipments.pluck(:name)),
-         { multiple: true, class: 'form-control form-select', include_blank: t('repository.sel_cat') },
-         { aria: { label: t('repository.equip') } }
+         { include_blank: t('repository.sel_cat') },
+         { multiple: true, class: 'form-control form-select', aria: { label: t('repository.equip') } }
          %>
         <span class="form-text"><%= t('repository.equip_msg') %></span>
     </div>
@@ -151,7 +151,7 @@
     </div>
 
     <div class="mb-3">
-        <%= label_tag(:owner, t('repository.new_owner') , class: 'form-label') %>
+        <%= label_tag(:owner_select, t('repository.new_owner') , class: 'form-label') %>
         <%= select_tag(:owner, '', prompt: t('repository.search_user'), class: 'owner_select form-control', id: 'owner_select', aria: { label: t('repository.new_owner') }, multiple: true, autocomplete: false) %>
     </div>
 
@@ -171,7 +171,7 @@
             </div>
 
             <div id="pass" class="mb-3" style="display: <%= @repository.share_type == 'private' ? 'block' : 'none' %>;">
-                <%= f.label :password, 'Set repository password', class: 'form-label' %>
+                <%= f.label :password, 'Set repository password', for: 'password_repo_field', class: 'form-label' %>
                 <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', 'aria-label': t('common.names.password'), class: 'form-control' %>
             </div>
             <div class="invalid-feedback">

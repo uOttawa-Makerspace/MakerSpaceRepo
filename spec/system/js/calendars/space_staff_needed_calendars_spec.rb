@@ -53,9 +53,11 @@ RSpec.describe "Space settings: staff needed calendars", type: :system do
     new_row.all("input[type=text]")[1].set("https://feeds.example.org/b.ics")
     click_button "Save Calendars"
 
-    expect(page).to have_text("Calendars updated successfully.")
+    expect_flash("Calendars updated successfully.")
     expect(StaffNeededCalendar.where(space_id: space.id).pluck(:name, :calendar_url))
       .to contain_exactly(["A", "https://feeds.example.org/a.ics"], ["Timetable", "https://feeds.example.org/b.ics"])
+    # a new row's colour input starts empty, which the browser submits as black
+    expect(StaffNeededCalendar.find_by!(name: "Timetable").color).to eq("#000000")
   end
 
   it "keeps a removed row out of what is saved", js: true, skip_bullet: true do
@@ -64,7 +66,7 @@ RSpec.describe "Space settings: staff needed calendars", type: :system do
     find("#link-container .snc-delete-button").click
     click_button "Save Calendars"
 
-    expect(page).to have_text("Calendars updated successfully.")
+    expect_flash("Calendars updated successfully.")
     expect(StaffNeededCalendar.where(space_id: space.id)).to be_empty
   end
 end

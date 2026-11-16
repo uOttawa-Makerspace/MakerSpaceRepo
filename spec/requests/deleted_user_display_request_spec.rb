@@ -73,7 +73,7 @@ RSpec.describe "Pages that show a deleted user", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(page_text).to include("Gone Person (deleted account)", "gone.person@uottawa.ca")
-      expect(response.body).to include("cancel Gone Person (deleted account)&#39;s shadowing shift")
+      expect(response.body).to include(ERB::Util.html_escape(I18n.t("confirmations.shadowing_shifts.cancel_for", name: "Gone Person (deleted account)")))
       name = Nokogiri::HTML(response.body).at_css("span.fw-bold.text-body-emphasis.d-block.lh-sm.small")
       expect(name.text).to eq("Gone Person (deleted account)")
       expect(response.body).not_to include(user_path(username: "goneperson"))
@@ -232,6 +232,40 @@ RSpec.describe "Pages that show a deleted user", type: :request do
     end
   end
 
+  describe "repository comments" do
+    let(:repository) { create(:repository, owner: create(:user), share_type: "public") }
+    let!(:comment) { create(:comment, repository: repository, user: gone, username: gone.username, content: "Still here") }
+
+    before { delete_account!(gone) }
+
+    it "shows a neutral author to a guest, with no username, profile link or reputation" do
+      get repository_path(repository.user_username, repository.slug)
+
+      expect(response).to have_http_status(:ok)
+      expect(page_text).to include("Still here", "Deleted user")
+      expect(response.body).not_to include("goneperson")
+    end
+
+    it "shows the same neutral author to a signed-in user" do
+      viewer = create(:user, :regular_user)
+      sign_in!(viewer)
+      get repository_path(repository.user_username, repository.slug)
+
+      expect(page_text).to include("Still here", "Deleted user")
+      expect(response.body).not_to include("goneperson")
+    end
+
+    it "counts a vote on the comment without changing any reputation" do
+      voter = create(:user, :regular_user)
+      sign_in!(voter)
+      post comments_vote_path(repository.id), params: { comment_id: comment.id, downvote: "f" }
+
+      expect(response).to have_http_status(:found)
+      expect(comment.reload.upvote).to eq(1)
+      expect(Upvote.where(comment_id: comment.id, user_id: voter.id).count).to eq(1)
+    end
+  end
+
   describe "the real associations" do
     before { delete_account!(gone, gone_supervisor) }
 
@@ -252,7 +286,7 @@ RSpec.describe "Pages that show a deleted user", type: :request do
       status = JobOrderStatus.new(user_id: gone.id)
       order = create(:order, user: create(:user)).tap { |o| o.update_columns(user_id: gone.id) }
       log = TapBoxLog.log!(event_type: TapBoxLog::INFO, message: "x", user: gone)
-      shift = ShadowingHour.create!(user: gone, space: space)
+      shift = ShadowingHour.create!(user: gone, space: space, start_time: 1.day.from_now, end_time: 1.day.from_now + 1.hour)
       proposal = create(:project_proposal, user: gone, admin: gone_supervisor)
 
       expect([status, Order.find(order.id), log.reload, shift.reload, proposal.reload].map(&:user)).to all(be_nil)

@@ -89,7 +89,8 @@ displayed at `/rfid/get_unset_rfids`.
 
 If an RFID record already exists with a linked user, it instead signs the user
 in or out of a space. Users can tap into a space to sign in, and tap out at the
-same space to sign out. They can tap into a different space to sign out of
+same space to sign out. A second tap in the same space within 60 seconds of
+the sign in is ignored (the answer is still "RFID sign in"). They can tap into a different space to sign out of
 previous sessions and create a new session in the new space.
 
 ## Access notes

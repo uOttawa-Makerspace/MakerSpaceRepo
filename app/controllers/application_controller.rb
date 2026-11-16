@@ -2,7 +2,12 @@
 
 class ApplicationController < ActionController::Base
   include RateLimitStore
+  include ErrorReporting
+  include Authorization
+  include FlashWrite
+  include RequestLocale
   rescue_from ActionController::ParameterMissing, with: :parameter_missing
+  rescue_from ActiveRecord::RecordNotFound, with: :record_not_found
 
   # CSRF: every non-GET request must carry the session's token (Rails
   # helpers and Turbo add it; fetch() calls use src/csrf.js). A GET answered
@@ -40,17 +45,6 @@ class ApplicationController < ActionController::Base
                   }
   helper_method :current_order
 
-  # I18n.locale is thread-global, so scope it to the request (with_locale
-  # restores it afterwards) and ignore unsupported values instead of raising
-  # I18n::InvalidLocale.
-  def switch_locale(&action)
-    available = I18n.available_locales.map(&:to_s)
-    candidate = [params[:locale], session[:locale]].find { |l| l.to_s.presence_in(available) }
-    locale = candidate ? candidate.to_s.to_sym : I18n.default_locale
-    session[:locale] = locale
-    I18n.with_locale(locale, &action)
-  end
-
   def current_order
     session_order = Order.find_by(id: session[:order_id]) unless session[:order_id].nil?
     if session_order.present? && current_user.id.present? &&
@@ -60,12 +54,7 @@ class ApplicationController < ActionController::Base
     end
     session[:order_id] = nil
 
-    if current_user.orders.last.present? &&
-         current_user.orders.last.order_status.name.eql?("In progress")
-      current_user.orders.last
-    else
-      Order.new
-    end
+    current_user.open_cart || Order.new
   end
 
   private
@@ -182,8 +171,8 @@ class ApplicationController < ActionController::Base
   # Same-site paths only: url_from drops foreign hosts, and anything
   # unsafe_redirect_path? refuses (a backslash, a control character, a leading "//")
   # is refused outright.
-  def safe_back_to
-    target = params[:back_to].to_s
+  def safe_back_to(target = params[:back_to])
+    target = target.to_s
     return if unsafe_redirect_path?(target)
 
     safe = url_from(target)
@@ -193,10 +182,39 @@ class ApplicationController < ActionController::Base
   end
   helper_method :login_back_to, :safe_back_to
 
+  def saved_user_locale = (current_user.locale if signed_in?)
+
+  # A form post or call without a required field: the HTML request goes to the home
+  # page with a message naming the field, a JSON request gets the same message.
   def parameter_missing(exception)
+    with_request_locale do
+      message = I18n.t("errors.generic.parameter_missing", param: exception.param)
+      respond_to do |format|
+        format.html { redirect_to root_path, alert: message }
+        format.json { render json: { error: message, reference: error_reference }, status: :bad_request }
+      end
+    end
+  end
+
+  # A record that does not exist (a deleted or mistyped id): the translated 404 page,
+  # or the JSON error for a JSON request.
+  def record_not_found(_exception)
+    with_request_locale do
+      respond_to do |format|
+        format.html { render "errors/not_found", layout: "error", status: :not_found }
+        format.json do
+          render json: { error: I18n.t("errors.generic.not_found"), reference: error_reference }, status: :not_found
+        end
+        format.any { head :not_found }
+      end
+    end
+  end
+
+  # A request refused by authorize!: a page goes home with a message, anything else gets 403.
+  def authorization_denied
     respond_to do |format|
-      format.html { redirect_to root_path, alert: exception.message }
-      format.json { render json: { error: exception.message }, status: 400 }
+      format.html { redirect_to root_path, alert: "You cannot access this area." }
+      format.any { head :forbidden }
     end
   end
 end

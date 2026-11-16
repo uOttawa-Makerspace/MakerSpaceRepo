@@ -7,16 +7,19 @@ require Rails.root.join("lib/learning_module_track_merge")
 # differs from the primary's row for the same key). It stops that pair only: the run reports
 # the pair and goes on with the others. Neither row is ever deleted.
 class UserMergeRefused < StandardError
-  attr_reader :primary_id, :duplicate_id, :table, :row_ids
+  attr_reader :primary_id, :duplicate_id, :table, :row_ids, :note
 
-  def initialize(primary_id:, duplicate_id:, table:, row_ids:)
+  # `reason`: why the rows block the merge (by default: they differ from the primary's row for the same key);
+  # `note`: the same, in a few words for the summary.
+  def initialize(primary_id:, duplicate_id:, table:, row_ids:, reason: "differ from the primary's row for the same key", note: 'differ')
     @primary_id = primary_id
     @duplicate_id = duplicate_id
     @table = table
     @row_ids = row_ids
+    @note = note
     super(
       "Cannot merge user #{duplicate_id} into #{primary_id}: #{table} rows #{row_ids.join(', ')} of the " \
-      'duplicate differ from the primary\'s row for the same key. Settle them by hand and run the task again.'
+      "duplicate #{reason}. Settle them by hand and run the task again."
     )
   end
 end
@@ -162,7 +165,7 @@ namespace :users do
     end
 
     # Check if there's one and only one user deleted
-    if users.where(deleted: false) == 1
+    if users.where(deleted: false).count == 1
       # the rest are deleted users, change those instead
       users = users.where(deleted: true)
     end
@@ -197,16 +200,22 @@ namespace :users do
     skipped_pairs.flat_map { |pair| [pair[:primary_id], pair[:duplicate_id]] }.uniq
   end
 
-  # One line per pair, then the totals. A skipped pair is listed with the table and rows to settle by hand.
+  # One line per pair, then the totals. A skipped pair is listed with the table and rows to settle by hand. Every pair
+  # also lists the duplicate's pending memberships closed before the merge, also when the merge was then refused.
   def print_merge_summary(merged_pairs, skipped_pairs)
     puts "Merged #{merged_pairs.count} pairs, skipped #{skipped_pairs.count} pairs."
     merged_pairs.each do |pair|
-      puts "\tmerged: user #{pair[:duplicate_id]} into #{pair[:primary_id]}"
+      puts "\tmerged: user #{pair[:duplicate_id]} into #{pair[:primary_id]}#{closed_checkouts_note(pair)}"
     end
     skipped_pairs.each do |pair|
       puts "\tskipped: user #{pair[:duplicate_id]} into #{pair[:primary_id]} " \
-           "(#{pair[:table]} rows #{pair[:row_ids].join(', ')} differ)"
+           "(#{pair[:table]} rows #{pair[:row_ids].join(', ')} #{pair.fetch(:note, 'differ')})#{closed_checkouts_note(pair)}"
     end
+  end
+
+  def closed_checkouts_note(pair)
+    closed = pair.fetch(:closed_membership_ids, [])
+    closed.empty? ? '' : "; pending memberships closed (restorable): #{closed.join(', ')}"
   end
 
   # Merges every duplicate of the email into one user. A pair that is refused is rolled back
@@ -233,13 +242,17 @@ namespace :users do
 
     merged_any = false
     duplicates.each do |duplicate|
+      closed = []
       begin
+        close_pending_conflicts(primary, duplicate, closed)
         ActiveRecord::Base.transaction { merge_record(primary, duplicate) }
-        merged_pairs << { primary_id: primary.id, duplicate_id: duplicate.id }
+        duplicate.disconnect_cable!
+        merged_pairs << { primary_id: primary.id, duplicate_id: duplicate.id, closed_membership_ids: closed }
         merged_any = true
       rescue UserMergeRefused => e
         puts "\tSkipped: #{e.message}"
-        skipped_pairs << { primary_id: e.primary_id, duplicate_id: e.duplicate_id, table: e.table, row_ids: e.row_ids }
+        skipped_pairs << { primary_id: e.primary_id, duplicate_id: e.duplicate_id, table: e.table, row_ids: e.row_ids,
+                           note: e.note, closed_membership_ids: closed }
       end
     end
 
@@ -247,11 +260,59 @@ namespace :users do
     merged_any ? primary.username : nil
   end
 
+  # Both accounts with a pending membership (an open checkout) for the same tier: the primary's row checkout serves is
+  # kept and the duplicate's is closed like a duplicate checkout (Membership#close_as_duplicate_of: its Shopify draft
+  # deleted, the row marked failed and recorded in membership_duplicate_closures, so
+  # memberships:restore_duplicate_closures can put it back). Runs before the merge transaction, as Shopify is called.
+  # A row that cannot be closed (its draft is paid, Shopify keeps it payable or does not answer, or it changed) refuses
+  # the merge of the pair; rows closed before it stay closed and are added to `closed`. A primary row that vanished
+  # meanwhile leaves nothing to close against: the row is reported and left pending.
+  def close_pending_conflicts(primary, duplicate, closed = [])
+    Membership.pending_conflicts(primary, duplicate).each do |row|
+      outcome = close_pending_conflict(primary, duplicate, row)
+      puts "\tPending membership #{row.id} of the duplicate, closed in favour of the kept user's: #{outcome}"
+      closed << row.id if outcome == :closed
+      next if %i[closed vanished].include?(outcome)
+
+      raise UserMergeRefused.new(primary_id: primary.id, duplicate_id: duplicate.id, table: 'memberships', row_ids: [row.id],
+                                 **pending_conflict_refusal(row, outcome))
+    end
+  end
+
+  def close_pending_conflict(primary, duplicate, row)
+    kept = Membership.served_pending(primary.id, row.membership_tier_id)
+    return :vanished unless kept
+
+    row.close_as_duplicate_of(kept, allowed_user_ids: [primary.id, duplicate.id])
+  rescue *Payments::ShopifyAdapter::DraftOrders::FAILURES => e
+    raise UserMergeRefused.new(primary_id: primary.id, duplicate_id: duplicate.id, table: 'memberships', row_ids: [row.id],
+                               reason: "is a pending checkout whose draft could not be closed: Shopify failed (#{e.class})",
+                               note: "is a pending checkout, Shopify failed (#{e.class})")
+  end
+
+  def pending_conflict_refusal(row, outcome)
+    if outcome == :paid
+      return { reason: "is a pending checkout whose Shopify draft #{row.shopify_draft_order_id} is paid; apply its order first",
+               note: 'is a pending checkout with a paid draft' }
+    end
+
+    { reason: "is a pending checkout for a tier the primary also has pending and could not be closed (#{outcome})",
+      note: "is a pending checkout that could not be closed (#{outcome})" }
+  end
+
+  # The duplicate's closed checkouts move to the primary unchanged (update_all keeps updated_at), so their closure
+  # records still match them and they can be restored.
+  def move_closed_checkouts(primary, duplicate)
+    Membership.where(user_id: duplicate.id, id: Membership::DuplicateClosure.unrestored.select(:membership_id))
+              .update_all(user_id: primary.id)
+  end
+
   def merge_record(primary, duplicate)
     # https://api.rubyonrails.org/classes/ActiveRecord/Reflection/ClassMethods.html#method-i-reflect_on_all_associations
     # Reflect on all table-level associations
     # User.reflect_on_all_associations.map(&:macro).uniq
     merge_shared_tracks(primary, duplicate)
+    move_closed_checkouts(primary, duplicate)
     discard_rows_primary_already_has(primary, duplicate)
     # We're going to hit all possible assocs, need to make sure there's a record to update
     User.reflect_on_all_associations.each do |assoc|
@@ -289,12 +350,13 @@ namespace :users do
     )
   end
 
-  # Foreign keys to users that the database does not clear by itself (no action or restrict).
+  # Foreign keys to users that the database would not keep: no action or restrict (it refuses the delete) and
+  # nullify (it would erase the recorded user, for example who ended a volunteer task join).
   def user_reference_columns
     connection = ActiveRecord::Base.connection
     connection.tables.flat_map do |table|
       connection.foreign_keys(table).filter_map do |foreign_key|
-        next unless foreign_key.to_table == 'users' && [nil, :restrict].include?(foreign_key.on_delete)
+        next unless foreign_key.to_table == 'users' && [nil, :restrict, :nullify].include?(foreign_key.on_delete)
 
         [table, foreign_key.column]
       end

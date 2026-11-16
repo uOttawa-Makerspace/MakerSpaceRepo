@@ -7,6 +7,7 @@ export const EVENT_MODAL_HTML = `
 <div id="content">
 <div class="modal fade" id="eventModal">
   <h5 id="eventModalLabel">Add Event</h5>
+  <div id="calendar_dialog_alert"></div>
   <form id="eventForm" action="/admin/events" method="post">
     <div id="staff_select_container" class="mb-3">
       <select name="staff_select[]" id="staff_select" multiple></select>
@@ -51,6 +52,7 @@ export const EVENT_MODAL_HTML = `
     <input type="hidden" name="event[utc_start_time]" id="utc_start_time">
     <input type="hidden" name="event[utc_end_time]" id="utc_end_time">
     <input type="hidden" name="event[recurrence_rule]" id="recurrence_rule_field">
+    <input type="hidden" name="keep_series_times" id="keep_series_times" value="1" disabled>
     <input type="hidden" name="event[space_id]" value="7">
     <div id="accordion"><div class="collapse"></div></div>
     <input type="text" name="event[title]" id="title">
@@ -68,6 +70,7 @@ export const EVENT_MODAL_HTML = `
   </form>
   <div id="publish_and_delete_forms" style="display: none;">
     <form id="publish_form" action="#" style="display: none;"></form>
+    <form id="unpublish_form" action="#" style="display: none;"></form>
     <form id="delete_single_form" action="#"><input class="delete_start_date" name="start_date"></form>
     <form id="delete_following_form" action="#"><input class="delete_start_date" name="start_date"></form>
     <form id="delete_all_form" action="#"></form>
@@ -75,52 +78,58 @@ export const EVENT_MODAL_HTML = `
 </div>
 </div>`;
 
-// The same for app/views/staff/unavailabilities/_form.html.erb.
+// The same for app/views/staff/unavailabilities/_form.html.erb: the targets
+// and actions of the unavailability-form controller, with the same ids.
+const T = (name) => `data-unavailability-form-target="${name}"`;
+const A = (action) => `data-action="${action}"`;
 export const UNAVAILABILITY_MODAL_HTML = `
 <div id="content">
-<button type="button" id="addUnavailabilityButton"></button>
-<div class="modal fade" id="unavailabilityModal">
-  <h5 id="unavailabilityModalLabel">Add Unavailability</h5>
-  <form id="unavailForm" action="/staff/unavailabilities" method="post">
-    <input type="checkbox" id="all_day_checkbox">
-    <input type="datetime-local" id="start_time_field">
-    <input type="datetime-local" id="end_time_field">
-    <div id="time_error" class="d-none"></div>
-    <select id="recurrence_frequency">
+<div class="modal fade" id="unavailabilityModal" data-controller="unavailability-form" data-unavailability-form-exit-message-value="Are you sure you want to exit? All changes will be lost."
+  ${A("hide.bs.modal->unavailability-form#confirmExit hidden.bs.modal->unavailability-form#reset show.bs.modal->unavailability-form#proposeTimes")}>
+  <h5 id="unavailabilityModalLabel" ${T("label")}>Add Unavailability</h5>
+  <div id="calendar_dialog_alert"></div>
+  <form id="unavailForm" action="/staff/unavailabilities" method="post" ${T("form")} ${A("submit->unavailability-form#sendInstants")}>
+    <input type="hidden" name="_method" value="patch" disabled ${T("methodField")}>
+    <input type="checkbox" id="all_day_checkbox" ${T("allDay")} ${A("change->unavailability-form#allDayChanged")}>
+    <input type="datetime-local" id="start_time_field" ${T("startTime")} ${A("change->unavailability-form#startChanged")}>
+    <input type="datetime-local" id="end_time_field" ${T("endTime")} ${A("change->unavailability-form#validateTimeRange")}>
+    <div id="time_error" class="d-none" ${T("timeError")}></div>
+    <select id="recurrence_frequency" ${T("frequency")} ${A("change->unavailability-form#frequencyChanged")}>
       <option value="">Does not repeat</option>
       <option value="DAILY">Daily</option>
       <option value="WEEKLY">Weekly</option>
       <option value="MONTHLY">Monthly</option>
     </select>
-    <div id="recurrence_options" style="display: none;">
-      <input type="date" id="recurrence_until">
-      <div id="weekly_options" style="display: none;">
+    <div id="recurrence_options" style="display: none;" ${T("options")}>
+      <input type="date" id="recurrence_until" ${T("until")} ${A("change->unavailability-form#warnWithoutWeekday")}>
+      <div id="weekly_options" style="display: none;" ${T("weeklyOptions")}>
         ${["SU", "MO", "TU", "WE", "TH", "FR", "SA"]
           .map(
             (d) =>
-              `<input class="dayCheckbox" type="checkbox" value="${d}" id="day_${d}">`,
+              `<input class="dayCheckbox" type="checkbox" value="${d}" id="day_${d}" ${T("dayCheckbox")} ${A("change->unavailability-form#warnWithoutWeekday")}>`,
           )
           .join("")}
-        <div id="day_freq_error" class="d-none"></div>
+        <div id="day_freq_error" class="d-none" ${T("dayFreqError")}></div>
       </div>
     </div>
-    <input type="hidden" id="utc_start_time">
-    <input type="hidden" id="utc_end_time">
-    <input type="hidden" id="recurrence_rule_field">
-    <div id="accordion"><div class="collapse"></div></div>
-    <input type="text" id="title">
-    <textarea id="description"></textarea>
-    <div id="modal_buttons">
-      <input type="submit" value="Update" id="save_button">
-      <div id="update_dropdown">
-        <div id="update_dropdown_items"><input type="radio" name="update_scope" id="update_this" value="this" checked></div>
+    <input type="hidden" id="utc_start_time" ${T("utcStart")}>
+    <input type="hidden" id="utc_end_time" ${T("utcEnd")}>
+    <input type="hidden" id="recurrence_rule_field" ${T("ruleField")}>
+    <input type="hidden" name="keep_series_times" id="keep_series_times" value="1" disabled ${T("keepTimes")}>
+    <div id="accordion"><div class="collapse" ${T("collapse")}></div></div>
+    <input type="text" id="title" ${T("titleField")}>
+    <textarea id="description" ${T("descriptionField")}></textarea>
+    <div id="modal_buttons" ${T("modalButtons")}>
+      <input type="submit" value="Update" id="save_button" ${T("saveButton")}>
+      <div id="update_dropdown" ${T("updateDropdown")}>
+        <div id="update_dropdown_items" ${T("updateDropdownItems")} ${A("click->unavailability-form#keepMenuOpen")}><input type="radio" name="update_scope" id="update_this" value="this" checked></div>
       </div>
     </div>
   </form>
-  <div id="delete_forms" style="display: none">
-    <form id="delete_single_form" action="#"><input class="delete_start_date" name="start_date"></form>
-    <form id="delete_following_form" action="#"><input class="delete_start_date" name="start_date"></form>
-    <form id="delete_all_form" action="#"></form>
+  <div id="delete_forms" style="display: none" ${T("deleteChoices")}>
+    <form id="delete_single_form" action="#" ${T("deleteForm")}><input class="delete_start_date" name="start_date" ${T("deleteStartDate")}></form>
+    <form id="delete_following_form" action="#" data-repeating-only="true" ${T("deleteForm")}><input class="delete_start_date" name="start_date" ${T("deleteStartDate")}></form>
+    <form id="delete_all_form" action="#" data-repeating-only="true" ${T("deleteForm")}></form>
   </div>
 </div>
 </div>`;

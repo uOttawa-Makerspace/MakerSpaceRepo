@@ -35,3 +35,208 @@ fr:
     pricing:
       title: "Tarifs"
       text: "Les tarifs internes et externes varient selon le service. Les matériaux sont vendus séparément. Une consultation d’une heure est offerte gratuitement."
+    # The pages a customer opens from the emailed links: pay, quote approval and its confirmation
+    customer_pages:
+      thank_you_for_ordering: "Merci d'avoir passé une commande!"
+      pay_intro: "Vous pouvez maintenant payer votre commande! Veuillez vérifier le prix avant de procéder au paiement. Une fois le paiement effectué, il ne pourra plus être annulé."
+      no_payment_data_saved_html: "<b>Nous ne conservons aucune information de paiement</b>. Toutes les données sont conservées sur les serveurs de notre fournisseur de paiement."
+      # %{amount} = the order total, as money
+      total_quote: "Total du devis : %{amount}"
+      proceed_to_payment: "Passer à la page de paiement"
+      approval_intro: "Vous pouvez accepter ou refuser votre devis sur cette page! Veuillez vérifier le devis et son prix avant de l'accepter. Une fois le devis accepté, il pourrait ne plus être possible de l'annuler."
+      approve_quote: "Approuver le devis"
+      deny_quote: "Refuser le devis"
+      thank_you_for_answering: "Merci d'avoir approuvé ou refusé la commande!"
+    # Contact lines at the bottom of the customer pages; %{email} = a mail link
+    contact:
+      title: "Vous éprouvez des difficultés ou avez des questions? Écrivez-nous!"
+      general_html: "%{email} (questions générales et administratives)"
+      technical_html: "%{email} (problèmes techniques du site Web)"
+    # The printable invoice
+    invoice_page:
+      title: "Facture de la commande"
+      number: "Facture n° %{id}"
+      address:
+        name: "Makerspace Richard-L'Abbé de l'Université d'Ottawa"
+        room: "STM 107"
+        street: "150, rue Louis-Pasteur"
+        city: "Ottawa (Ontario) K1N 6N5"
+      client: "Client : %{name}"
+      date: "Date : %{date}"
+      payment_method: "Mode de paiement"
+      # %{link} = link to the wiki page on paying for an order
+      payment_details_html: "Consultez %{link} pour les détails du paiement"
+      item: "Article"
+      price: "Prix"
+      # %{task} = the task's title
+      base_fee: "%{task} - Frais de base"
+      # Shown when the task has no service of its own
+      service: "Service"
+      # Shown when the service has no unit of its own
+      unit: "unité"
+      # %{name} = the option's name
+      option: "%{name} (option)"
+      # Shown when a line item has no description
+      line_item: "Article"
+      # %{amount} = an amount of money
+      amount: "%{amount} CA"
+      # %{amount} = the total, from amount
+      total: "Total : %{amount}"
+      print: "Imprimer cette page"
+    # The customer's order list
+    list:
+      chats: "Messages"
+      user: "Utilisateur"
+      id: "N°"
+      submitted: "Soumise le"
+      type: "Type"
+      status: "Statut"
+      view: "Voir"
+      # After the number of unread chat messages, for screen readers
+      unread_messages: "messages non lus"
+    # Links of the job order menu shown to staff and admins
+    navigation:
+      all_job_orders_staff_only: "Toutes les commandes (personnel seulement)"
+      settings_admin_only: "Paramètres (administrateurs seulement)"
+    # The staff quote modal on an order's page; %{unit} = the service's unit, %{name} = an option's name
+    quote_modal:
+      # Heading of a task that has no title
+      task_number: "Tâche n° %{id}"
+      base_fee: "Frais de base ($ CA)"
+      # Shown when the service has no unit of its own
+      unit: "unité"
+      service_quantity: "Quantité (%{unit})"
+      service_price: "Prix par %{unit} ($ CA)"
+      option_price: "%{name} ($ CA)"
+      # Placeholder of the price and quantity fields
+      value: "valeur"
+      staff_files: "Fichiers du personnel (GCode, PDF, etc.)"
+      line_items: "Articles supplémentaires"
+      description: "Description"
+      new_line_item: "Nouvel article"
+      user_comments: "Commentaires pour l'utilisateur (envoyés dans le clavardage)"
+      user_comments_placeholder: "Je devrai ajouter des supports"
+      staff_comments: "Commentaires pour les membres du personnel"
+      staff_comments_placeholder: "Utiliser la Raise 3D"
+      # %{amount} = the running total, updated by the page as prices are typed
+      total_html: "Total : %{amount} $ CA"
+      approve: "Approuver"
+  job_order_mailer:
+    quote_notes: "Note du personnel :"
+    hello: "Bonjour,"
+    see_order: "Voir la commande"
+    # Subject of a mail to staff about an expedited order; %{subject} = the usual subject
+    expedited_subject: "PRIORITAIRE : %{subject}"
+    send_job_submitted:
+      subject: "Une nouvelle commande a été soumise"
+      preheader: "MakerRepo - Commande créée"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'une nouvelle commande a été créée sur %{site_link}."
+      # %{link} = link to the job order admin page, text from page_link
+      body_html: "Un utilisateur a créé la commande numéro %{id}. Consultez la %{link} pour les détails."
+      page_link: "page des commandes"
+    send_job_requote_needed:
+      subject: "La commande #%{id} a besoin d'un nouveau devis"
+      preheader: "MakerRepo - Une commande a besoin d'un nouveau devis"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'une commande ayant reçu un devis sur %{site_link} a besoin d'un nouveau devis."
+      body: "La commande %{id} est revenue à l'état « En attente de l'approbation du personnel ». Son devis précédent ne peut plus être approuvé et son lien de paiement précédent ne fonctionne plus. Veuillez examiner la commande et envoyer un nouveau devis."
+    send_job_quote:
+      # The quote mail is in French, then English; subject: "<French> // <English>"
+      subject_approved: "Votre commande #%{id} a été approuvée"
+      subject_reapproved: "Votre commande #%{id} a été réapprouvée"
+      preheader: "MakerRepo - Approbation de la commande"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'une commande a été approuvée sur %{site_link}."
+      reminder: "Ceci est un rappel que les administrateurs ont approuvé une commande. Veuillez consulter le devis et l'approuver ou le refuser."
+      # %{link} = link to the approval page, text from page_link
+      approved_html: "Votre commande numéro #%{id} a été approuvée. Consultez la %{link} pour approuver ou refuser le devis."
+      page_link: "page de la commande"
+      pricing: "Prix :"
+      # %{amount} = an amount of money, already with its "$"
+      amount: "%{amount} CA"
+      # Start of the price breakdown of a task, followed by "<quantity> <unit> × <unit price>"
+      base_fee: "frais de base de %{amount} plus"
+      # Shown when the service has no unit of its own
+      unit: "unité"
+      pending: "Prix en attente"
+      line_items: "Articles détaillés :"
+      grand_total: "Total général :"
+      # Button text: "<French> / <English>"
+      button: "Voir"
+    send_job_declined:
+      subject: "Votre commande #%{id} a été refusée"
+      preheader: "MakerRepo - Commande refusée"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'une commande a été refusée sur %{site_link}."
+      body: "Les administrateurs ont refusé la commande numéro #%{id}."
+      comments: "Veuillez consulter les commentaires suivants des administrateurs pour plus de détails :"
+      # %{contact} = the makerspace address, as a mail link
+      contact_html: "Si vous avez besoin d'aide ou avez des questions au sujet de cette commande refusée, écrivez-nous à %{contact}. Veuillez indiquer le numéro de commande #%{id} dans votre courriel."
+    send_job_user_approval:
+      subject: "Un utilisateur a approuvé une commande"
+      preheader: "MakerRepo - Approbation d'une commande par l'utilisateur"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'un utilisateur a approuvé une commande sur %{site_link}."
+      # %{link} = link to the job order admin page, text from page_link
+      body_html: "Un utilisateur a approuvé la commande numéro %{id}. Consultez la %{link} pour les détails."
+      page_link: "page des commandes"
+    send_job_user_declined:
+      subject: "Un utilisateur a refusé une commande"
+      preheader: "MakerRepo - Refus d'une commande par l'utilisateur"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'un utilisateur a refusé une commande sur %{site_link}."
+      # %{link} = link to the job order admin page, text from page_link
+      body_html: "Un utilisateur a refusé la commande numéro %{id}. Consultez la %{link} pour les détails."
+      page_link: "page des commandes"
+    send_job_decision_confirmation:
+      # The confirmation is in French, then English; subject: "<French> // <English>"
+      subject_approved: "Votre approbation de la commande #%{id} est enregistrée"
+      subject_declined: "Votre refus de la commande #%{id} est enregistré"
+      # Preheader: "MakerRepo - <French> // <English>"
+      confirmation: "Confirmation"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce que vous avez répondu au devis de votre commande de travail sur %{site_link}."
+      approved: "Nous avons bien enregistré votre approbation du devis de la commande de travail #%{id}. Le personnel du MakerRepo va maintenant s'en occuper."
+      declined: "Nous avons bien enregistré votre refus du devis de la commande de travail #%{id}."
+      # %{contact} = the makerspace address, as a mail link
+      questions_html: "Pour toute question, écrivez à %{contact} en indiquant le numéro de la commande."
+    send_job_completed:
+      subject: "Votre commande #%{id} est terminée"
+      preheader: "MakerRepo - Commande terminée"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'une commande a été approuvée sur %{site_link}."
+      button: "Payer par carte de crédit"
+    payment_succeeded:
+      subject: "Votre commande #%{id} est prête à être ramassée"
+      preheader: "MakerRepo - Paiement de la commande réussi"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce que le paiement de votre commande a été effectué sur %{site_link}."
+      body: "Nous avons le plaisir de vous informer que le paiement de la commande #%{id} a bien été effectué ! Veuillez écrire à makerspace@uottawa.ca pour convenir du ramassage de votre pièce ou pour toute question."
+      button: "Voir la commande"
+    staff_assigned:
+      subject: "Vous avez été assigné(e) à la commande #%{id}"
+      preheader: "MakerRepo - Avis d'assignation"
+      # The mail is in French, then English. %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'un administrateur vous a assigné à une commande de travail sur %{site_link}."
+      hello: "Bonjour %{name},"
+      body: "Vous avez été assigné(e) à la commande de travail #%{id} par un administrateur."
+      details: "Détails de la commande :"
+      client: "Client : %{name}"
+      expedited: "(COMMANDE PRIORITAIRE)"
+      button: "Voir la commande"
+  chat_message_mailer:
+    new_message:
+      # The mail is in French, then English; subject: "MakerRepo - <French> // <English>"
+      subject: "Nouveau message"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce qu'un nouveau message a été posté sur votre commande de travail sur %{site_link}."
+      hello: "Bonjour,"
+      # %{sender} = the sender's name
+      body: "Vous avez reçu un nouveau message concernant votre commande de travail #%{id} de la part de %{sender}."
+      message: "Message :"
+      button: "Voir la commande"
+  time:
+    formats:
+      # The date on the printable invoice
+      job_order_invoice: "%d/%m/%Y"

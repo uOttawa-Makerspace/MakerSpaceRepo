@@ -65,6 +65,29 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(response.body).not_to include("Other space question")
     end
 
+    it "lists a question that has no author with the deleted user label" do
+      create(:question, description: "Orphan question here now please", user: nil, trainings: [training])
+      get questions_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Orphan question here")
+      expect(response.body).to include("Deleted user")
+    end
+
+    it "lists a question that has no author with the deleted user label in French" do
+      create(:question, description: "Orphan question here now please", user: nil, trainings: [training])
+      get questions_path(locale: "fr")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Utilisateur supprimé")
+    end
+
+    it "lists several questions with their trainings and authors in a fixed number of queries" do
+      second = create(:training, spaces: [space])
+      3.times { |i| create(:question, description: "Listed #{i}", level: "Beginner", trainings: [training, second]) }
+      get questions_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Listed 0", "Listed 2", second.name)
+    end
+
     it "falls back to the first space when the admin has none" do
       admin.update!(space: nil)
       get questions_path
@@ -162,6 +185,37 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(response.body).to include("A question must have exactly one correct answer")
     end
 
+    it "refuses a question with one answer, showing the error in English and French and creating nothing" do
+      params = valid_params
+      params[:question][:answers_attributes].delete("1")
+      expect { post questions_path, params: params }.not_to change(Question, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("A question needs at least two answers")
+      expect { post questions_path(locale: "fr"), params: params }.not_to change(Question, :count)
+      expect(response.body).to include("Une question doit avoir au moins deux réponses")
+    end
+
+    it "refuses a question with no description, level or answer text, creating nothing" do
+      params = { question: { description: "", level: "", answers_attributes: { "0" => { description: "" }, "1" => { description: "" } } } }
+      expect { post questions_path, params: params }.not_to change(Question, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(CGI.unescapeHTML(response.body)).to include("Description This field is required", "Level Selection is not valid",
+                                                         "Every answer needs a description")
+    end
+
+    it "refuses a level that is not one of the question levels" do
+      expect { post questions_path, params: valid_params(level: "Expert") }.not_to change(Question, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "refuses an answer without text" do
+      params = valid_params
+      params[:question][:answers_attributes]["0"][:description] = ""
+      expect { post questions_path, params: params }.not_to change(Answer, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Every answer needs a description")
+    end
+
     it "stores uploaded PNG images" do
       img = fixture_file_upload(Rails.root.join("spec/support/assets/test.png"), "image/png")
       post questions_path, params: valid_params(images: [img])
@@ -242,11 +296,20 @@ RSpec.describe "Questions (admin question bank)", type: :request do
 
     # removal is a DELETE scoped to the question's own answers
     it "destroys the question's own answer and redirects to the edit form with a notice" do
+      Answer.create!(question: question, correct: false, description: "A third answer")
       victim = question.answers.where(correct: false).first
       expect { delete remove_answer_question_path(question, answer_id: victim.id) }.to change(Answer, :count).by(-1)
       expect(response).to redirect_to(edit_question_path(question))
       expect(flash[:notice]).to eq("Successfully removed answer")
       expect(Answer.exists?(victim.id)).to be(false)
+    end
+
+    it "refuses a removal that would leave one answer, in English and French, destroying nothing" do
+      expect { delete remove_answer_question_path(question, answer_id: question.answers.find_by!(correct: false).id) }.not_to change(Answer, :count)
+      expect(response).to redirect_to(edit_question_path(question))
+      expect(flash[:alert]).to eq("A question needs at least two answers")
+      expect { delete remove_answer_question_path(question, answer_id: question.answers.find_by!(correct: false).id, locale: "fr") }.not_to change(Answer, :count)
+      expect(flash[:alert]).to eq("Une question doit avoir au moins deux réponses")
     end
 
     it "404s and keeps the correct answer" do
@@ -280,17 +343,64 @@ RSpec.describe "Questions (admin question bank)", type: :request do
     it "updates nested answers by id" do
       answer = question.answers.order(:id).last
       patch question_path(question),
-            params: { question: { answers_attributes: { "0" => { id: answer.id, description: "A hammer", correct: "true" } } } }
+            params: { question: { answers_attributes: { "0" => { id: answer.id, description: "A hammer" } } } }
+      expect(flash[:notice]).to eq("Question updated")
       expect(answer.reload.description.to_plain_text).to eq("A hammer")
-      expect(answer.correct).to be(true)
-      expect(question.answers.where(correct: true).count).to eq(2)
+      expect(answer.correct).to be(false)
+    end
+
+    it "saves the whole edit form, every answer included" do
+      answers = question.answers.order(:id).to_a
+      patch question_path(question), params: { question: { description: "Kerf?", level: "Intermediate", answers_attributes: {
+        "0" => { id: answers[0].id, description: "Cut width" }, "1" => { id: answers[1].id, description: "Saw" }, "2" => { description: "Drill" }
+      } } }
+      expect(flash[:notice]).to eq("Question updated")
+      expect(question.reload.answers.order(:id).map { |a| [a.description.to_plain_text, a.correct] })
+        .to eq([["Cut width", true], ["Saw", false], ["Drill", false]])
+    end
+
+    it "refuses an update that would leave two correct answers, changing nothing" do
+      answer = question.answers.find_by!(correct: false)
+      patch question_path(question),
+            params: { question: { answers_attributes: { "0" => { id: answer.id, description: "A hammer", correct: "true" } } } }
+      expect(flash[:alert]).to eq("The question was not updated. A question must have exactly one correct answer")
+      expect(answer.reload.correct).to be(false)
+      expect(answer.description.to_plain_text).to eq("A tool")
+    end
+
+    it "refuses a blank description or answer text, changing nothing" do
+      other = create(:training, spaces: [space])
+      answer = question.answers.find_by!(correct: false)
+      patch question_path(question), params: { question: { description: "", training_ids: [other.id.to_s],
+                                                           answers_attributes: { "0" => { id: answer.id, description: "" } } } }
+      expect(response).to redirect_to(questions_path)
+      expect(flash[:alert]).to eq("The question was not updated. Description This field is required. and Every answer needs a description")
+      question.reload
+      expect(question.description).to eq("What is a kerf?")
+      expect(question.trainings).to eq([training])
+      expect(answer.reload.description.to_plain_text).to eq("A tool")
+    end
+
+    it "refuses an edit once removals leave one answer, in English and French, changing nothing" do
+      question.answers.find_by!(correct: false).destroy
+      patch question_path(question), params: { question: { description: "Changed?" } }
+      expect(flash[:alert]).to eq("The question was not updated. A question needs at least two answers")
+      patch question_path(question, locale: "fr"), params: { question: { description: "Changed?" } }
+      expect(flash[:alert]).to eq("La question n'a pas été modifiée. Une question doit avoir au moins deux réponses")
+      expect(question.reload.description).to eq("What is a kerf?")
+    end
+
+    it "refuses a level that is not one of the question levels" do
+      patch question_path(question), params: { question: { level: "Expert" } }
+      expect(flash[:alert]).to eq("The question was not updated. Level Selection is not valid.")
+      expect(question.reload.level).to eq("Beginner")
     end
 
     it "alerts and redirects when the update is invalid" do
       stl = fixture_file_upload(Rails.root.join("spec/support/assets/test.stl"), "application/octet-stream")
       patch question_path(question), params: { question: { images: [stl] } }
       expect(response).to redirect_to(questions_path)
-      expect(flash[:alert]).to eq("Something went wrong")
+      expect(flash[:alert]).to start_with("The question was not updated. ")
     end
   end
 

@@ -7,6 +7,7 @@
 #   COVERAGE=1 bin/parallel_rspec              + merged coverage report (coverage/index.html)
 #   CI=1 COVERAGE=1 bin/parallel_rspec         exactly what CI runs (eager_load + Bullet raise)
 #   SETUP=1 bin/parallel_rspec                 (re)create + load the schema into the worker DBs first
+#   SPEC_SHARD=2/3 bin/parallel_rspec          only the second of three CI shards (.github/scripts/spec-shard.rb)
 #
 # Worker databases are makerspacerepo_test, makerspacerepo_test2 ... (see
 # config/database.yml). The dev database is never touched. Runtime-balanced
@@ -21,6 +22,11 @@ if [ -n "$SETUP" ]; then
   bundle exec rake parallel:setup
 fi
 
+specs=spec
+if [ -n "$SPEC_SHARD" ]; then
+  specs=$(bundle exec ruby .github/scripts/spec-shard.rb "$SPEC_SHARD")
+fi
+
 # Build the Vite test assets once, before the workers fork (no-op when current).
 bundle exec rails vite:build >/dev/null
 
@@ -30,9 +36,9 @@ fi
 
 set +e
 if [ -n "$SEED" ]; then
-  bundle exec parallel_rspec --test-options "--order rand:$SEED" "$@" spec
+  bundle exec parallel_rspec --test-options "--order rand:$SEED" "$@" $specs
 else
-  bundle exec parallel_rspec "$@" spec
+  bundle exec parallel_rspec "$@" $specs
 fi
 status=$?
 set -e

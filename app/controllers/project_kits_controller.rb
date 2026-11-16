@@ -5,10 +5,10 @@ class ProjectKitsController < DevelopmentProgramsController
   before_action :staff_admin_access, only: %i[new create destroy mark_delivered populate_kit_users]
 
   def index
-    @pagy, @kits = pagy(current_user.project_kits.order("delivered ASC"), limit: 20)
+    @pagy, @kits = pagy(current_user.project_kits.includes(:proficient_project).order("delivered ASC"), limit: 20)
 
     if current_user.admin?
-      @pagy_all, @all_kits = pagy(ProjectKit.order("delivered ASC"), page_key: "page_all", limit: 20)
+      @pagy_all, @all_kits = pagy(ProjectKit.includes(:proficient_project, :user).order("delivered ASC"), page_key: "page_all", limit: 20)
     end
   end
 
@@ -31,18 +31,14 @@ class ProjectKitsController < DevelopmentProgramsController
       ).deliver_now
       flash[:notice] = "The kit for #{@kit.user.name} has been created !"
     else
-      flash[:alert] = "There was an error creating the kit"
+      flash[:alert] = validation_message(@kit, "errors.project_kits.not_created")
     end
     redirect_to project_kits_path
   end
 
   def destroy
-    if params[:id].present? and ProjectKit.find(params[:id]).present?
-      ProjectKit.find(params[:id]).destroy
-      flash[:notice] = "The kit has been deleted"
-    else
-      flash[:alert] = "There was an error, try again later"
-    end
+    kit = ProjectKit.find(params[:id])
+    write_flash(kit, "errors.project_kits.not_deleted", "The kit has been deleted") { kit.destroy }
     redirect_to project_kits_path
   end
 

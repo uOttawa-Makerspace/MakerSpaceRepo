@@ -19,14 +19,12 @@ class TapBoxLog < ApplicationRecord
 
   scope :recent, -> { order(created_at: :desc).limit(500) }
 
-  # The unregistered-reader trace can be triggered by anyone (even bounded), so it is
-  # never pushed live to the staff console; it stays in the console's history.
-  after_create_commit :broadcast_log, unless: :unknown_reader_trace?
-
   # Generic Log
 
+  # Every log row is written here. The row is pushed to the staff console once the real commit has happened, also
+  # when the caller is inside a transaction (a row that is rolled back is never shown).
   def self.log!(event_type:, message:, card_number: nil, user: nil, space: nil, mac_address: nil, details: nil)
-    create!(
+    log = create!(
       event_type: event_type,
       message: message,
       card_number: card_number,
@@ -35,8 +33,11 @@ class TapBoxLog < ApplicationRecord
       mac_address: mac_address,
       details: details
     )
-  rescue => e
-    Rails.logger.error("[TapBoxLog] Failed to write log: #{e.message}")
+    ActiveRecord.after_all_transactions_commit { log.broadcast_log }
+    log
+  rescue StandardError => e
+    # A log row that cannot be written must not break the tap or the job that wrote it.
+    HandledError.report(e, source: "tap_box_log.log!", event_type: event_type)
   end
 
   # RFID loggers
@@ -219,8 +220,7 @@ class TapBoxLog < ApplicationRecord
       details: {
         reason: "not_engineering",
         student_this_semester: api_details["student_this_semester"],
-        faculty: api_details["faculty"],
-        courses_enrolled: api_details["courses_enrolled"]
+        faculty: api_details["faculty"]
       }
     )
   end
@@ -236,34 +236,34 @@ class TapBoxLog < ApplicationRecord
     )
   end
 
-  def self.log_name_mismatch(user:, uoeng_name:, card_number: nil, space: nil)
+  # Only the name of the field that differs is stored, never the uOEng value.
+  def self.log_name_mismatch(user:, card_number: nil, space: nil)
     log!(
       event_type: WARNING,
-      message: "Name mismatch: uOEng says '#{uoeng_name}' but account is '#{user.name}'",
+      message: "Name mismatch: uOEng and the account differ in name",
       card_number: card_number,
       user: user,
       space: space,
       details: {
         reason: "name_mismatch",
-        uoeng_name: uoeng_name,
-        makerepo_name: user.name,
+        differing_field: "name",
         suggestion: "Student may have linked someone else's card, or changed their name"
       }
     )
   end
 
-  def self.log_student_id_mismatch(user:, uoeng_student_id:, card_number: nil, space: nil)
+  def self.log_student_id_mismatch(user:, card_number: nil, space: nil)
     log!(
       event_type: WARNING,
-      message: "Student ID mismatch: account has '#{user.student_id}' but uOEng returned '#{uoeng_student_id}'",
+      message: "Student ID mismatch: uOEng and the account differ in student number",
       card_number: card_number,
       user: user,
       space: space,
       details: {
         reason: "student_id_mismatch",
-        makerepo_student_id: user.student_id,
-        uoeng_student_id: uoeng_student_id,
-        suggestion: "Student may have mistyped their student number during sign-up"
+        differing_field: "student number",
+        faculty_membership: "not granted",
+        suggestion: "No faculty membership was granted from this answer. Check the student card against the account, then correct the student number or the card link"
       }
     )
   end
@@ -283,7 +283,7 @@ class TapBoxLog < ApplicationRecord
     )
   end
 
-  def self.log_api_http_error(user:, http_status:, elapsed_ms:, response_body: nil, card_number: nil, space: nil)
+  def self.log_api_http_error(user:, http_status:, elapsed_ms:, response: nil, card_number: nil, space: nil)
     log!(
       event_type: ERROR,
       message: "uOEng API returned HTTP #{http_status} for #{user.name}",
@@ -294,7 +294,7 @@ class TapBoxLog < ApplicationRecord
         reason: "uoeng_http_error",
         http_status: http_status,
         elapsed_ms: elapsed_ms,
-        response_body: response_body&.truncate(500)
+        response: uoeng_response_summary(response)
       }
     )
   end
@@ -315,7 +315,7 @@ class TapBoxLog < ApplicationRecord
     )
   end
 
-  def self.log_api_bad_json(user:, exception:, response_body: nil, card_number: nil, space: nil)
+  def self.log_api_bad_json(user:, exception:, response: nil, card_number: nil, space: nil)
     log!(
       event_type: ERROR,
       message: "uOEng API returned unparseable response for #{user.name}",
@@ -324,10 +324,16 @@ class TapBoxLog < ApplicationRecord
       space: space,
       details: {
         reason: "uoeng_bad_json",
-        response_body: response_body&.truncate(500),
-        exception_message: exception.message
+        response: uoeng_response_summary(response),
+        exception_class: exception.class.name,
+        error: bad_json_reason(exception)
       }
     )
+  end
+
+  # A parser error quotes part of the body, so only a fixed description is kept.
+  def self.bad_json_reason(exception)
+    exception.is_a?(User::UoengConcern::UnexpectedShape) ? "unexpected answer shape" : "could not be read as JSON"
   end
 
   def self.log_engineering_check_error(user:, exception:, card_number: nil, space: nil)
@@ -347,24 +353,70 @@ class TapBoxLog < ApplicationRecord
     Rails.logger.fatal exception
   end
 
+  # What is kept of a uOEng answer that could not be used: its size and content
+  # type, and for a JSON object the key names and the few values the membership
+  # check reads. The body itself is never stored, because a real answer also
+  # carries personal fields the app does not use.
+  UOENG_LOGGED_VALUES = %w[student_this_semester faculty].freeze
+
+  def self.uoeng_response_summary(response)
+    return if response.nil?
+
+    body = response.body.to_s
+    summary = { body_size: body.bytesize, content_type: response.headers["Content-Type"].to_s.truncate(100) }
+    parsed = parse_json_object(body)
+    return summary unless parsed
+
+    summary.merge(
+      keys: parsed.keys.first(50).map { |key| key.to_s.truncate(50) },
+      values: parsed.slice(*UOENG_LOGGED_VALUES).transform_values { |value| loggable_value(value) }
+    )
+  end
+
+  def self.parse_json_object(body)
+    parsed = JSON.parse(body)
+    parsed if parsed.is_a?(Hash)
+  rescue JSON::ParserError
+    nil
+  end
+
+  # Strings are cut and anything that is not a plain value is replaced by its
+  # class name, so an answer of an unexpected shape cannot carry other data in.
+  def self.loggable_value(value)
+    case value
+    when nil, true, false then value
+    when String then value.truncate(100)
+    else value.class.name
+    end
+  end
+
+  private_class_method :parse_json_object, :loggable_value
+
   # Housekeeping
 
   def self.purge_old!(days: 30)
     where("created_at < ?", days.days.ago).delete_all
   end
 
-  private
-
-  def unknown_reader_trace?
-    message == UNKNOWN_READER_MESSAGE
-  end
-
+  # Pushes the row to the staff console. The unregistered-reader trace can be triggered by anyone (even bounded),
+  # so it is never pushed live; it stays in the console's history. A failed push is reported and never raised:
+  # the row is already stored.
   def broadcast_log
+    return if unknown_reader_trace?
+
     Turbo::StreamsChannel.broadcast_prepend_to(
       "tap_box_console",
       target: "console-body",
       partial: "staff/tap_box_console/log_row",
       locals: { log: self, streamed: true }
     )
+  rescue StandardError => e
+    HandledError.report(e, source: "tap_box_log.broadcast_log", event_type: event_type)
+  end
+
+  private
+
+  def unknown_reader_trace?
+    message == UNKNOWN_READER_MESSAGE
   end
 end

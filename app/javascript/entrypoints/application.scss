@@ -14,22 +14,73 @@ $utilities: (
 );
 
 @import "../stylesheets/shared/variables";
+
+// One breakpoint above Bootstrap's xxl. The main navbar stays collapsed below it:
+// its links are large text (bold, 14pt) on the orange, and the longest link set (a
+// signed-in admin, in French) needs about 1560px, so it expands only from 1600px.
+$grid-breakpoints: (
+  xs: 0,
+  sm: 576px,
+  md: 768px,
+  lg: 992px,
+  xl: 1200px,
+  xxl: 1400px,
+  xxxl: 1600px,
+);
 @import "bootstrap/scss/bootstrap";
 
 // Orange used as text: a darker shade on light pages, a lighter one on the dark theme.
 :root {
   --primary-text: #{$primary-text};
+  --secondary-text: #{$secondary};
 }
 [data-bs-theme="dark"] {
   --primary-text: #{$primary-text-dark};
   --secondary-text: #{$secondary-text-dark};
   --bs-primary-text-emphasis: #{$primary-text-dark};
 
+  // The orange fill on the dark theme is darker than on the light theme, so white
+  // text on it reaches 4.5:1. Bootstrap bakes these colours in at compile time,
+  // so each component that fills with the primary colour is set here.
+  --bs-primary: #{$primary-dark};
+  --bs-primary-rgb:
+    #{red($primary-dark)}, #{green($primary-dark)}, #{blue($primary-dark)};
+  --bs-nav-pills-link-active-bg: #{$primary-dark};
+  --bs-dropdown-link-active-bg: #{$primary-dark};
+  --bs-pagination-active-bg: #{$primary-dark};
+  --bs-pagination-active-border-color: #{$primary-dark};
+  --bs-list-group-active-bg: #{$primary-dark};
+  --bs-list-group-active-border-color: #{$primary-dark};
+  .btn-primary {
+    --bs-btn-bg: #{$primary-dark};
+    --bs-btn-border-color: #{$primary-dark};
+    --bs-btn-focus-shadow-rgb: #{to-rgb(
+        mix(color-contrast($primary-dark), $primary-dark, 15%)
+      )};
+    --bs-btn-hover-bg: #{shade-color($primary-dark, 15%)};
+    --bs-btn-hover-border-color: #{shade-color($primary-dark, 20%)};
+    --bs-btn-active-bg: #{shade-color($primary-dark, 20%)};
+    --bs-btn-active-border-color: #{shade-color($primary-dark, 25%)};
+    --bs-btn-disabled-bg: #{$primary-dark};
+    --bs-btn-disabled-border-color: #{$primary-dark};
+  }
+  .form-check-input:checked {
+    background-color: #{$primary-dark};
+    border-color: #{$primary-dark};
+  }
+  .progress-bar {
+    background-color: #{$primary-dark};
+  }
+
   // Bootstrap draws these with the background shades; on the dark page they
   // need the lighter text shades to stay readable.
   .btn-outline-primary {
     --bs-btn-color: #{$primary-text-dark};
     --bs-btn-border-color: #{$primary-text-dark};
+    --bs-btn-hover-bg: #{$primary-dark};
+    --bs-btn-hover-border-color: #{$primary-dark};
+    --bs-btn-active-bg: #{$primary-dark};
+    --bs-btn-active-border-color: #{$primary-dark};
   }
   .btn-outline-secondary {
     --bs-btn-color: #{$secondary-text-dark};
@@ -60,10 +111,6 @@ $utilities: (
       color: var(--bs-dropdown-link-disabled-color);
     }
   }
-}
-.text-primary {
-  --bs-text-opacity: 1;
-  color: var(--primary-text) !important;
 }
 
 // =============================================================================
@@ -512,7 +559,7 @@ trix-toolbar .trix-button-group--file-tools {
     background-color: var(--bs-tertiary-bg) !important;
     color: var(--bs-body-color) !important;
     &:not(.collapsed) {
-      background-color: var(--bs-secondary-bg) !important;
+      background-color: var(--bs-body-bg) !important;
       color: var(--primary-text) !important;
     }
   }

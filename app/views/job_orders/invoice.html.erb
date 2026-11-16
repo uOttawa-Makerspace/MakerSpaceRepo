@@ -2,7 +2,7 @@
 <html lang="<%= I18n.locale %>">
 <head>
   <meta charset="utf-8">
-  <title>Job Order Invoice</title>
+  <title><%= t('job_orders.invoice_page.title') %></title>
 
   <style>
       .invoice-box {
@@ -121,8 +121,8 @@
       <td colspan="2">
         <table>
           <tr>
-            <td class="title"><%= vite_image_tag 'images/ceed.png' %></td>
-            <td>Invoice #<%= @job_order.id %></td>
+            <td class="title"><%= vite_image_tag 'images/ceed.png', alt: t('common.names.ceed_logo') %></td>
+            <td><%= t('job_orders.invoice_page.number', id: @job_order.id) %></td>
           </tr>
         </table>
       </td>
@@ -133,16 +133,18 @@
         <table>
           <tr>
             <td>
-              University Of Ottawa Richard L'Abbé Makerspace<br>
-              STM 107<br>
-              150 Louis Pasteur<br>
-              Ottawa, ON K1N 6N5
+              <%= t('job_orders.invoice_page.address.name') %><br>
+              <%= t('job_orders.invoice_page.address.room') %><br>
+              <%= t('job_orders.invoice_page.address.street') %><br>
+              <%= t('job_orders.invoice_page.address.city') %>
             </td>
 
             <td>
-              Client : <%= @job_order.user.name %>
+              <%# A deleted customer account is hidden from user lookups, so the order may have no customer to name. %>
+              <%= t('job_orders.invoice_page.client', name: @job_order.user&.name || t('job_orders.order.deleted_user')) %>
               <br>
-              Date : <%= @job_order.latest_status.created_at.strftime('%Y/%m/%d') %>
+              <%# The day of the latest status; an order without any status row has only its own creation day. %>
+              <%= t('job_orders.invoice_page.date', date: l((@job_order.latest_status || @job_order).created_at, format: :job_order_invoice)) %>
             </td>
           </tr>
         </table>
@@ -151,54 +153,53 @@
 
     <tr class="heading">
       <td>
-        Payment Method
+        <%= t('job_orders.invoice_page.payment_method') %>
       </td>
       <td></td>
     </tr>
 
     <tr class="details">
       <td>
-        Please see
-        <a href="https://en.wiki.makerepo.com/wiki/How_to_pay_for_an_Order">https://en.wiki.makerepo.com/wiki/How_to_pay_for_an_Order</a>
-        for payment details
+        <%= t('job_orders.invoice_page.payment_details_html', link: link_to('https://en.wiki.makerepo.com/wiki/How_to_pay_for_an_Order', 'https://en.wiki.makerepo.com/wiki/How_to_pay_for_an_Order')) %>
       </td>
       <td></td>
     </tr>
 
     <tr class="heading">
       <td>
-        Item
+        <%= t('job_orders.invoice_page.item') %>
       </td>
       <td>
-        Price
+        <%= t('job_orders.invoice_page.price') %>
       </td>
     </tr>
 
-    <% @job_order.job_tasks.each do |task| %>
+    <% @tasks.each do |task| %>
       <!-- Task Base Fee -->
       <% if task.job_task_quote&.price.to_f > 0 %>
         <tr class="item">
           <td>
-            <%= task.title %> - Base Fee
+            <%= t('job_orders.invoice_page.base_fee', task: task.title) %>
           </td>
           <td>
-            CAD <%= number_to_currency(task.job_task_quote.price) %>
+            <%= t('job_orders.invoice_page.amount', amount: number_to_currency(task.job_task_quote.price)) %>
           </td>
         </tr>
       <% end %>
 
       <!-- Task Service -->
-      <% if task.job_service && task.job_task_quote&.service_price.to_f > 0 %>
+      <% service_total = task.job_task_quote ? task.job_task_quote.service_total : 0 %>
+      <% if service_total > 0 %>
         <tr class="item">
           <td>
-            <%= task.title %> - <%= task.job_service.name %>
-            <% if task.job_service.job_service_group %>
+            <%= task.title %> - <%= task.job_service&.name || t('job_orders.invoice_page.service') %>
+            <% if task.job_service&.job_service_group %>
               (<%= task.job_service.job_service_group.name %>)
             <% end %>
-            - <%= "#{task.job_task_quote.service_quantity || 0} #{task.job_service.unit.presence || 'unit'}" %>
+            - <%= number_with_delimiter(task.job_task_quote.service_quantity || 0, delimiter: '') %> <%= task.job_service&.unit.presence || t('job_orders.invoice_page.unit') %>
           </td>
           <td>
-            CAD <%= number_to_currency((task.job_task_quote.service_price || 0) * (task.job_task_quote.service_quantity || 0)) %>
+            <%= t('job_orders.invoice_page.amount', amount: number_to_currency(service_total)) %>
           </td>
         </tr>
       <% end %>
@@ -207,10 +208,10 @@
       <% task.job_task_quote&.job_task_quote_options&.each do |option| %>
         <tr class="item">
           <td>
-            <%= task.title %> - <%= option.job_option.name %> (Option)
+            <%= task.title %> - <%= t('job_orders.invoice_page.option', name: option.job_option.name) %>
           </td>
           <td>
-            CAD <%= number_to_currency(option.price) %>
+            <%= t('job_orders.invoice_page.amount', amount: number_to_currency(option.price)) %>
           </td>
         </tr>
       <% end %>
@@ -220,10 +221,10 @@
       <% @job_order.job_quote_line_items.each do |item| %>
         <tr class="item">
           <td>
-            <%= item.description.presence || "Line Item" %>
+            <%= item.description.presence || t('job_orders.invoice_page.line_item') %>
           </td>
           <td>
-            CAD <%= number_to_currency(item.price) %>
+            <%= t('job_orders.invoice_page.amount', amount: number_to_currency(item.price)) %>
           </td>
         </tr>
       <% end %>
@@ -232,11 +233,11 @@
     <tr class="total">
       <td></td>
       <td>
-        Total: CAD <%= number_to_currency(@job_order.total_price) %>
+        <%= t('job_orders.invoice_page.total', amount: t('job_orders.invoice_page.amount', amount: number_to_currency(@job_order.total_price))) %>
       </td>
     </tr>
   </table>
-  <button class="print-button" onclick="window.print()">Print this page</button>
+  <button class="print-button" onclick="window.print()"><%= t('job_orders.invoice_page.print') %></button>
 </div>
 </body>
 </html>

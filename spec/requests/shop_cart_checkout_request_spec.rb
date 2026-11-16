@@ -146,6 +146,24 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("You have already ordered this item")
     end
 
+    it "refuses a duplicate project in French when the page is French" do
+      pp = pp_with_cc(10)
+      add_to_cart(pp)
+      post order_items_path, params: { order_item: { proficient_project_id: pp.id, quantity: 1 }, locale: "fr" }
+      expect(flash[:alert]).to eq("Vous avez déjà commandé cet article")
+    end
+
+    it "an admin revoking a badge that cannot be saved is told why" do
+      item = cart_for(user, 10).order_items.first
+      item.update_column(:quantity, 0)
+      shop_log_in!(admin)
+      post order_item_revoke_path(item)
+      expect(response).to redirect_to(admin_index_path)
+      expect(flash[:alert]).to start_with("The badge could not be revoked:")
+      expect(flash[:alert]).to include("Quantity")
+      expect(item.reload.status).not_to eq("Revoked")
+    end
+
     it "refuses when the user lacks the required training badges" do
       pp = pp_with_cc(10)
       create(:training_requirement, proficient_project: pp, training: create(:training), level: "Beginner")
@@ -370,6 +388,23 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(response.body).to match(/cart-text.*fs-4\\?">0</)
     end
 
+    it "a refused update on a checked-out cart shows the item count of the user's other open cart in the badge" do
+      close_cart_before_the_lock
+      cart_for(user, 5, 6, 7)
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response).to have_http_status(:conflict)
+      expect(response.body).to match(/cart-text.*fs-4\\?">3</)
+    end
+
+    it "the checked-out answer shows legacy fractional amounts exactly, not truncated" do
+      close_cart_before_the_lock
+      item.update_columns(quantity: 2, unit_price: 2.5, total_price: 5.5)
+      order.update_columns(subtotal: 5.5)
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response.body).to include("&times; 2 (5.5 CC)")
+      expect(response.body).to include("Total charged: 5.5 CC")
+    end
+
     it "a busy refusal keeps the cart's own badge count and session" do
       add_to_cart(other_project)
       fail_the_lock_with(ActiveRecord::LockWaitTimeout)
@@ -459,13 +494,11 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       cart = buyer.orders.last
       locked = Queue.new
       release = Queue.new
-      holder = Thread.new do
-        ActiveRecord::Base.connection_pool.with_connection do
-          Order.transaction do
-            Order.lock(Order::CART_LOCK_MODE).find(cart.id) # as checkout! holds it
-            locked << true
-            release.pop(timeout: ThreadPause::PARKED_TIMEOUT)
-          end
+      holder = race_thread do
+        Order.transaction do
+          Order.lock(Order::CART_LOCK_MODE).find(cart.id) # as checkout! holds it
+          locked << true
+          release.pop(timeout: ThreadPause::PARKED_TIMEOUT)
         end
       end
       ThreadPause.await(locked)
@@ -722,7 +755,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       add_to_cart(pp_with_cc(10))
       expect { post orders_path }.not_to change(CcMoney, :count)
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to eq("Not enough Cc Points.")
+      expect(flash[:alert]).to eq("Not enough CCs.")
       expect(user.orders.last.order_status.name).to eq("In progress")
     end
 
@@ -846,27 +879,67 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
         original.call(order.reload, payer)
       end
       post orders_path
-      expect(flash[:alert]).to eq("Something went wrong")
+      expect(flash[:alert]).to eq("This cart was already checked out or can no longer be changed. Nothing was charged. Check your orders, or start a new cart.")
       expect(flash[:notice]).not_to eq("Your Order was successfully processed.")
       expect(session[:order_id]).to eq(order.id)
       expect(CcMoney.where(order_id: order.id)).to be_empty
       expect(user.reload.wallet).to eq(50)
     end
 
-    [ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved, ActiveRecord::RecordNotFound,
-     ActiveRecord::LockWaitTimeout, ActiveRecord::Deadlocked].each do |error_class|
-      it "a #{error_class.name.demodulize} from checkout answers 'Something went wrong', not a 500" do
+    {
+      ActiveRecord::RecordNotFound => "An item in your cart was removed while you were checking out. Nothing was charged. Review your cart and try again.",
+      ActiveRecord::LockWaitTimeout => "The shop is busy right now. Nothing was charged. Please try again in a moment.",
+      ActiveRecord::Deadlocked => "The shop is busy right now. Nothing was charged. Please try again in a moment."
+    }.each do |error_class, message|
+      it "a #{error_class.name.demodulize} from checkout says what happened, not a 500" do
         credit_cc!(user, 50)
         add_to_cart(pp_with_cc(10))
         allow(Order).to receive(:checkout!).and_raise(error_class)
         post orders_path
         expect(response).to have_http_status(:redirect)
-        expect(flash[:alert]).to eq("Something went wrong")
+        expect(flash[:alert]).to eq(message)
         expect(user.orders.last.order_status.name).to eq("In progress")
       end
     end
 
-    it "a legacy negative price snapshot in the cart rolls the checkout back: 'Something went wrong', nothing debited" do
+    {
+      ActiveRecord::RecordInvalid => -> { ActiveRecord::RecordInvalid.new(Order.new) },
+      ActiveRecord::RecordNotSaved => -> { ActiveRecord::RecordNotSaved.new("secret detail", Order.new) }
+    }.each do |error_class, build|
+      it "a #{error_class.name.demodulize} from checkout is reported and answers with the reference code" do
+        credit_cc!(user, 50)
+        add_to_cart(pp_with_cc(10))
+        allow(Order).to receive(:checkout!).and_raise(build.call)
+        expect(Rails.error).to receive(:report).with(instance_of(error_class), hash_including(context: hash_including(:reference, source: "orders#create")))
+        post orders_path
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to match(/\ASomething unexpected went wrong on our side\..*quote reference \w{8}\.\z/)
+        expect(flash[:alert]).not_to include("secret detail")
+        expect(user.orders.last.order_status.name).to eq("In progress")
+      end
+    end
+
+    it "answers in French when the page is French" do
+      credit_cc!(user, 50)
+      add_to_cart(pp_with_cc(10))
+      allow(Order).to receive(:checkout!).and_raise(ActiveRecord::LockWaitTimeout)
+      post orders_path, params: { locale: "fr" }
+      expect(flash[:alert]).to eq("La boutique est occupée en ce moment. Rien n'a été débité. Veuillez réessayer dans un instant.")
+    end
+
+    it "an order that does not save is refused with its validation messages; nothing charged" do
+      credit_cc!(user, 50)
+      add_to_cart(pp_with_cc(10))
+      allow(Order).to receive(:checkout!) do |order, _user|
+        order.errors.add(:base, "Something is off")
+        [:invalid, order, []]
+      end
+      post orders_path
+      expect(flash[:alert]).to eq("Your order could not be saved, so nothing was charged. Something is off")
+      expect(user.reload.wallet).to eq(50)
+    end
+
+    it "a legacy negative price snapshot in the cart rolls the checkout back with the reference code, nothing debited" do
       credit_cc!(user, 50)
       add_to_cart(pp_with_cc(10))
       add_to_cart(pp_with_cc(5))
@@ -874,7 +947,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       order.order_items.last.update_columns(unit_price: -5, total_price: -5)
       post orders_path
       expect(response).to have_http_status(:redirect)
-      expect(flash[:alert]).to eq("Something went wrong")
+      expect(flash[:alert]).to start_with("Something unexpected went wrong on our side.")
       expect(order.reload.order_status.name).to eq("In progress")
       expect(CcMoney.where(order_id: order.id)).to be_empty
       expect(user.reload.wallet).to eq(50)
@@ -1003,6 +1076,24 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(response.body).to include(pending.order_items.first.proficient_project.title)
     end
 
+    it "the admin all-orders table shows 'Open' for open carts without pricing them (no per-row queries)" do
+      shop_log_in!(admin)
+      queries_for = lambda do
+        sqls = []
+        sub = ActiveSupport::Notifications.subscribe("sql.active_record") { |*, p| sqls << p[:sql] }
+        get orders_path
+        ActiveSupport::Notifications.unsubscribe(sub)
+        sqls.size
+      end
+      cart_for(create(:user, :regular_user), 10)
+      queries_for.call # warm-up (first-request caches)
+      one = queries_for.call
+      2.times { |i| cart_for(create(:user, :regular_user), 11 + i) }
+      three = queries_for.call
+      expect(three).to eq(one)
+      expect(response.body.scan("<td><p>Open</p></td>").size).to eq(3)
+    end
+
     it "does not show the all-orders table to staff" do
       pending = cart_for(other, 77)
       shop_log_in!(staff)
@@ -1038,7 +1129,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
         .and change(OrderItem, :count).by(-1)
         .and change(CcMoney, :count).by(-1)
       expect(response).to redirect_to(orders_path)
-      expect(flash[:notice]).to eq("The order was deleted and the CC points returned to the user.")
+      expect(flash[:notice]).to eq("The order was deleted and its CCs were given back to the user.")
       expect(other.cc_moneys.sum(:cc)).to eq(0)
       expect(other.reload.wallet).to eq(0)
     end

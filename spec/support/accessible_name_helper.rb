@@ -12,6 +12,13 @@ module AccessibleNameHelper
     doc.css("input, select, textarea").reject { |el| named?(doc, el) }.map { |el| describe_field(el) }
   end
 
+  # Rich text editors (<trix-editor> is not a labelable element, so only aria-label or aria-labelledby name it).
+  def unnamed_editors(html)
+    doc = Nokogiri::HTML(html)
+    doc.css("trix-editor").reject { |el| el["aria-label"].to_s.strip.present? || labelled_by_text?(doc, el["aria-labelledby"]) }
+       .map { |el| el.to_html.squish[0, 120] }
+  end
+
   # Links and buttons that have no text, aria-label, aria-labelledby, title or image alt.
   def unnamed_controls(html)
     doc = Nokogiri::HTML(html)

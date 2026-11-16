@@ -2,15 +2,18 @@
 
 class Like < ApplicationRecord
   belongs_to :user, optional: true
-  belongs_to :repository, optional: true
+  belongs_to :repository, -> { including_hidden }, optional: true
 
   validates :repository_id, uniqueness: { scope: :user_id }
   validates :user_id, presence: true
 
-  # Gives the like. False when the user already liked the repository: a repeated click, or two simultaneous
-  # requests of which the unique index lets only one through. Nothing is counted in that case.
+  # Gives the like and counts it on the repository in the same transaction. False when the user already liked the
+  # repository: a repeated click, or two simultaneous requests of which the unique index lets only one through.
+  # Nothing is counted in that case.
   def self.give(repository, user)
-    repository.likes.build(user_id: user.id).save
+    transaction do
+      repository.likes.build(user_id: user.id).save && count_on(repository, 1)
+    end
   rescue ActiveRecord::RecordNotUnique
     false
   end
@@ -18,10 +21,17 @@ class Like < ApplicationRecord
   # Takes the like back. False when there is none (already taken back by a simultaneous request): the row is
   # locked first, so of two requests only one removes it and counts it.
   def self.take_back(repository, user)
-    transaction { repository.likes.lock.find_by(user_id: user.id)&.destroy.present? }
+    transaction do
+      like = repository.likes.lock.find_by(user_id: user.id)
+      like.present? && like.destroy.present? && count_on(repository, -1)
+    end
   end
 
-  before_create { repository.increment!(:like) }
-
-  before_destroy { repository.decrement!(:like) }
+  # Moves the repository's counter. If no row was touched the repository is gone: the error rolls back the like
+  # that was just changed instead of leaving it uncounted.
+  def self.count_on(repository, amount)
+    Repository.update_counters(repository.id, like: amount).positive? ||
+      raise(ActiveRecord::RecordNotFound, "Repository #{repository.id} is gone; the like was not changed")
+  end
+  private_class_method :count_on
 end

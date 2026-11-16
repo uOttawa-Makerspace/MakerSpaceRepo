@@ -1,0 +1,5 @@
+// The volunteer transcript is a standalone printable page (no app layout), so
+// it uses Bootstrap's default theme and Font Awesome without the app's own
+// styles. Its page-specific styles stay inline in the view.
+@import "bootstrap/scss/bootstrap";
+@import "@fortawesome/fontawesome-free/css/all.min.css";

@@ -1,32 +1,25 @@
-import DataTable from "datatables.net-bs5";
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
-import TomSelect from "tom-select";
+import { tomSelectFor } from "../src/tom_select.js";
+
+function lockerText(data, escape) {
+  let size = escape(data.size);
+  let text = escape(data.text);
+  let staffOnly = data.staffOnly == "true" ? " - Staff only" : "";
+  return `<div>Locker ${text} - Size ${size}${staffOnly}</div>`;
+}
 
 document.addEventListener("turbo:load", () => {
-  if (document.querySelector("#locker_rental_preferred_locker_id")) {
-    new TomSelect("#locker_rental_preferred_locker_id", {
-      render: {
-        option: function (data, escape) {
-          let size = escape(data.size);
-          let text = escape(data.text);
-          let staffOnly = data.staffOnly == "true" ? " - Staff only" : "";
-          return `<div>Locker ${text} - Size ${size}${staffOnly}</div>`;
-        },
-        item: function (data, escape) {
-          let size = escape(data.size);
-          let text = escape(data.text);
-          let staffOnly = data.staffOnly == "true" ? " - Staff only" : "";
-          return `<div>Locker ${text} - Size ${size}${staffOnly}</div>`;
-        },
-      },
+  const preferredLocker = document.getElementById(
+    "locker_rental_preferred_locker_id",
+  );
+  if (preferredLocker) {
+    tomSelectFor(preferredLocker, {
+      render: { option: lockerText, item: lockerText },
     });
   }
 });
 
 document.addEventListener("turbo:load", () => {
-  // FIXME: RIP remove this what.
-  setupRentalTable();
-
   // For user facing locker request form
   let requestedAsSelect = document.getElementById("locker_rental_requested_as");
   let repoSelect = document.getElementById("repo-select");
@@ -43,65 +36,3 @@ document.addEventListener("turbo:load", () => {
     requestedAsSelect.dispatchEvent(new Event("change"));
   }
 });
-
-// Setup admin table filtering
-export function setupRentalTable() {
-  if (!document.getElementById("rental-data-table")) {
-    return;
-  }
-
-  // Pass a specific element ID, else the fixed search breaks
-  let table = new DataTable("#rental-data-table", {
-    language: {
-      emptyTable: "Nothing.",
-    },
-  });
-
-  table
-    .column(0)
-    .search.fixed(
-      "rentalType",
-      function (searchString, dataObj, rowIndex, colIndex) {
-        const all_type_inputs = document.querySelectorAll(
-          "#filter-locker-types input",
-        );
-        // For each possible checkbox
-        for (let elem of all_type_inputs) {
-          // Checkbox found
-          if (searchString.includes(elem.dataset.type)) {
-            // return checkbox value
-            return elem.checked;
-          }
-        }
-        // default to always show
-        return true;
-      },
-    );
-
-  table
-    .column(2)
-    .search.fixed(
-      "rentalState",
-      function (searchString, dataObj, rowIndex, colIndex) {
-        const all_state_inputs = document.querySelectorAll(
-          "#filter-locker-states input",
-        );
-        console.log(dataObj);
-        for (let elem of all_state_inputs) {
-          if (searchString.includes(elem.dataset.type)) {
-            return elem.checked;
-          }
-        }
-        return true;
-      },
-    );
-
-  // https://datatables.net/reference/api/search.fixed()
-  document
-    .querySelectorAll("#filter-locker-types input, #filter-locker-states input")
-    .forEach((elem) => {
-      elem.addEventListener("change", (evt) => {
-        table.draw();
-      });
-    });
-}

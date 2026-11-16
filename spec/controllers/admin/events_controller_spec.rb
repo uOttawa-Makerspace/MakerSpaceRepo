@@ -80,6 +80,88 @@ RSpec.describe Admin::EventsController, type: :controller do
       end
     end
 
+    context "with a one-off from the first 01:30 of the night the clocks go back" do
+      let(:first) { Time.zone.local(2027, 11, 7, 1, 30) }
+      let!(:night) do
+        create(:event, space: space, created_by: admin_user, event_type: "other", title: "Night lab",
+                       start_time: first, end_time: first + 1.hour)
+      end
+      let(:posted) do
+        { title: "Renamed", event_type: "other", space_id: space.id, utc_start_time: "2027-11-07T05:30:00Z", utc_end_time: "2027-11-07T07:30:00Z" }
+      end
+
+      it "keeps its stored times when the dialog sends them as it filled them" do
+        patch :update, params: { id: night.id, keep_series_times: "1", event: posted }
+
+        expect(night.reload).to have_attributes(title: "Renamed", start_time: first, end_time: first + 1.hour)
+      end
+
+      it "takes the posted times when they were changed" do
+        patch :update, params: { id: night.id, event: posted }
+
+        expect(night.reload).to have_attributes(end_time: first + 2.hours)
+      end
+    end
+
+    context "with recurring event updating all from the night the clocks go back" do
+      let(:first) { Time.zone.local(2027, 10, 31, 1, 30) }
+      let!(:weekly) do
+        create(:event, space: space, created_by: admin_user, event_type: "other", title: "Sunday lab",
+                       start_time: first, end_time: first + 1.hour,
+                       recurrence_rule: "DTSTART:20271031T053000Z\nRRULE:FREQ=WEEKLY;BYDAY=SU")
+      end
+      let(:posted) do
+        { title: "Renamed", event_type: "other", space_id: space.id, utc_start_time: "2027-11-07T05:30:00Z",
+          utc_end_time: "2027-11-07T07:30:00Z", recurrence_rule: "DTSTART;TZID=America/Toronto:20271107T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU" }
+      end
+
+      # The dialog posts the form's wall times, 01:30 to 02:30, which are two real hours that night.
+      it "keeps the series' start and length when the times are as the dialog filled them" do
+        patch :update, params: { id: weekly.id, update_scope: "all", keep_series_times: "1", event: posted }
+
+        expect(weekly.reload).to have_attributes(title: "Renamed", start_time: first, end_time: first + 1.hour)
+      end
+
+      it "takes the posted length when the times were changed" do
+        patch :update, params: { id: weekly.id, update_scope: "all", event: posted }
+
+        expect(weekly.reload).to have_attributes(start_time: first, end_time: first + 2.hours)
+      end
+    end
+
+    context "with recurring event updating this occurrence from the night the clocks go back" do
+      let(:posted) do
+        { title: "Renamed", event_type: "other", space_id: space.id, utc_start_time: "2027-11-07T05:30:00Z", utc_end_time: "2027-11-07T07:30:00Z" }
+      end
+
+      def series_from(starts_at)
+        create(:event, space: space, created_by: admin_user, event_type: "other", title: "Sunday lab", start_time: starts_at,
+                       end_time: starts_at + 1.hour, recurrence_rule: "DTSTART:#{starts_at.utc.strftime('%Y%m%dT%H%M%SZ')}\nRRULE:FREQ=WEEKLY;BYDAY=SU")
+      end
+
+      # The dialog's fields read 01:30 to 02:30 whichever 01:30 was opened, which post as two real hours from the first.
+      {
+        "the first 01:30" => [Time.utc(2027, 10, 31, 5, 30), "2027-11-07T05:30:00Z", "2027-11-07T06:30:00Z"],
+        "the second 01:30 (a series that starts there)" => [Time.utc(2027, 11, 7, 6, 30), "2027-11-07T06:30:00Z", "2027-11-07T07:30:00Z"]
+      }.each do |label, (starts_at, from, to)|
+        it "replaces and excludes #{label} with its real hour when the times are as the dialog filled them" do
+          series = series_from(starts_at)
+          patch :update, params: { id: series.id, update_scope: "this", keep_series_times: "1", event: posted }
+
+          replacement = Event.where.not(id: series.id).sole
+          expect([replacement.start_time.utc.iso8601, replacement.end_time.utc.iso8601]).to eq([from, to])
+          expect(series.reload.recurrence_rule).to include("EXDATE:#{Time.iso8601(from).strftime('%Y%m%dT%H%M%SZ')}")
+        end
+      end
+
+      it "takes the posted times when they were changed" do
+        series = series_from(Time.zone.local(2027, 10, 31, 1, 30))
+        patch :update, params: { id: series.id, update_scope: "this", event: posted }
+
+        expect(Event.where.not(id: series.id).sole.end_time).to eq(Time.utc(2027, 11, 7, 7, 30))
+      end
+    end
+
     context "with recurring event updating this occurrence only" do
       let!(:recurring_event) { create(:event, :recurring, space: space, created_by: admin_user) }
 

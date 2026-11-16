@@ -4,6 +4,7 @@ class LockerRentalsController < SessionsController
   # Also sets @locker_rental
   before_action :check_permission, except: %i[index new create]
   before_action :refuse_renter_edits_beyond_state, only: :update
+  before_action :refuse_unoffered_request_type, only: :create
   layout 'staff_area', only: [:admin]
   layout 'admin_area', only: [:assign_locker]
 
@@ -29,12 +30,8 @@ class LockerRentalsController < SessionsController
     @held_rentals = LockerRental.with_held_payment.includes(*RENTAL_TABLE_ASSOCIATIONS).order(created_at: :desc)
 
     respond_to do |format|
-      format.json do
-        # The JSON carries the rental columns, and `preferred_locker` (an old text column) reads the association of
-        # the same name, so that is the one thing it loads.
-        render json: { pending: @pending_requests.preload(:preferred_locker),
-                       active: @active_rentals.preload(:preferred_locker) }
-      end
+      # The JSON carries the rental columns only, so it loads no associations.
+      format.json { render json: { pending: @pending_requests, active: @active_rentals } }
       format.all do
         # Only the tables read the locker, tenant and payments; the JSON above serializes columns only.
         @pending_requests, @active_rentals = [@pending_requests, @active_rentals].map { |rentals| rentals.includes(*RENTAL_TABLE_ASSOCIATIONS) }
@@ -82,43 +79,21 @@ class LockerRentalsController < SessionsController
 
   def create
     # Allow staff to assign lockers
-    unless current_user.staff? || LockerOption.lockers_enabled
-      flash[:alert] = 'New locker rentals are not currently accepted.'
-      redirect_to locker_rentals_path
-      return
-    end
-
+    return lockers_not_accepted_response unless current_user.staff? || LockerOption.lockers_enabled
     # Staff named a renter who does not exist: refuse, never fall back to themself
     # (the fallback below is only for a request that names no renter at all).
-    if unknown_renter_username?
-      @locker_rental = LockerRental.new
-      @locker_rental.errors.add(:base, RENTER_NOT_FOUND)
-      new_instance_attributes
-      render :new, status: :unprocessable_content
-      return
-    end
+    return create_renter_not_found_response if unknown_renter_username?
 
     # Force all new lockers to be assigned to the user submitting the request
     @locker_rental =
       LockerRental.new(
         locker_rental_params.with_defaults(rented_by_id: current_user.id)
       )
-
     # If locker rental needs a decision
-    unless @locker_rental.reviewing?
-      @locker_rental.decided_by = current_user
-      # Explicitly handle indefinite state so it overrides any submitted dates
-      if @locker_rental.indefinite == '1'
-        @locker_rental.owned_until = nil
-      else
-        @locker_rental.owned_until ||= end_of_this_semester
-      end
-    end
+    record_create_decision unless @locker_rental.reviewing?
 
     if @locker_rental.save
-      @locker_rental.notify_after_commit
-      redirect_back fallback_location: :new_locker_rental,
-                    notice: ('Locker assigned' if @locker_rental.active?)
+      rental_created_response
     else
       new_instance_attributes
       render :new, status: :unprocessable_content
@@ -127,94 +102,13 @@ class LockerRentalsController < SessionsController
 
   def update
     @locker_rental = LockerRental.find(params[:id])
-    if unknown_renter_username?
-      respond_to do |format|
-        format.html do
-          flash[:alert] = "Failed to update locker rental#{helpers.tag.br}#{RENTER_NOT_FOUND}".html_safe
-          redirect_back fallback_location: :locker_rentals
-        end
-        format.json { render json: { base: [RENTER_NOT_FOUND] }, status: :unprocessable_entity }
-      end
-      return
-    end
+    return renter_not_found_response if unknown_renter_username?
 
-    # Everything below runs on the row locked FOR UPDATE and reloaded: the guards, the save, the settlement of
-    # held payments and the mail all see the CURRENT state (a webhook payment may have activated or the other
-    # staff member cancelled it since this page was rendered), and a concurrent webhook waits for the commit.
-    outcome = nil
-    LockerRental.transaction do
-      @locker_rental.lock!
-
-      if stale_page?
-        outcome = :stale
-      else
-        # Assign new parameters but don't commit yet
-        @locker_rental.assign_attributes(locker_rental_params)
-        @locker_rental.decided_by = current_user
-
-        # Requirement: Ideally I would like to have an 'indefinite' option for the date
-        # We check this if the state is changing to active OR if it's already active (Move Locker)
-        if @locker_rental.indefinite == '1'
-          @locker_rental.owned_until = nil
-        elsif (@locker_rental.state_changed?(to: :active) || (current_user.staff? && @locker_rental.active?)) &&
-              @locker_rental.owned_until.blank?
-          @locker_rental.owned_until = end_of_this_semester
-        end
-
-        if renter_state_change_refused?
-          outcome = :state_refused
-        elsif @locker_rental.save
-          # Assigning the rental active also settles one held payment, in the same transaction as the save.
-          if current_user.staff? && @locker_rental.saved_change_to_state? && @locker_rental.active?
-            @locker_rental.settle_held_payments!(by: current_user)
-          end
-          outcome = :saved
-        else
-          outcome = :invalid
-        end
-      end
-    end
-
-    case outcome
-    when :stale
-      stale_page_response
-    when :state_refused
-      flash[:alert] = if @locker_rental.state_was == 'active' && @locker_rental.cancelled?
-                        'Please contact administration for cancelling a locker'
-                      else
-                        'You can only cancel a pending request'
-                      end
-      respond_to do |format|
-        format.html { render :show, status: :unprocessable_content }
-        format.json { render json: { error: 'Unauthorized' }, status: :unprocessable_entity }
-      end
-    when :saved
-      @locker_rental.notify_after_commit
-      # Committed; only now the Shopify call (no transaction, no row lock held)
-      draft_synced = @locker_rental.sync_shopify_draft_order_after_commit
-      warning = draft_synced ? nil : draft_not_removed_message
-      respond_to do |format|
-        format.html do
-          if warning
-            flash[:alert] = warning
-          else
-            flash[:notice] = 'Locker rental updated'
-          end
-          redirect_back fallback_location: :locker_rentals
-        end
-        # 204 normally; 200 with { warning: ... } when the rental was updated but its Shopify checkout could not
-        # be removed, so a JSON client can tell the difference.
-        format.json { warning ? render(json: { warning: warning }, status: :ok) : head(:no_content) }
-      end
-    else
-      respond_to do |format|
-        format.html do
-          flash[:alert] = 'Failed to update locker rental' + helpers.tag.br +
-            @locker_rental.errors.full_messages.join(helpers.tag.br)
-          redirect_back fallback_location: :locker_rentals
-        end
-        format.json { render json: @locker_rental.errors, status: :unprocessable_entity }
-      end
+    case update_under_lock
+    when :stale then stale_page_response
+    when :state_refused then state_refused_response
+    when :saved then rental_updated_response
+    else update_failed_response
     end
   end
 
@@ -225,34 +119,17 @@ class LockerRentalsController < SessionsController
       return
     end
 
-    # Locked and reloaded first, so renewable? and the save see the current row.
-    outcome = nil
-    LockerRental.transaction do
-      @locker_rental.lock!
-      if @locker_rental.renewable?
-        @locker_rental.assign_attributes(
-          state: :await_payment,
-          decided_by: current_user,
-          owned_until: end_of_this_semester
-        )
-        outcome = @locker_rental.save ? :saved : :invalid
-      else
-        outcome = :not_renewable
-      end
-    end
-
-    case outcome
+    case renew_under_lock
     when :not_renewable
-      redirect_to @locker_rental, alert: 'This locker rental is not renewable.'
+      redirect_to @locker_rental, alert: t('errors.lockers.not_renewable')
     when :saved
       @locker_rental.notify_after_commit
       # Committed; only now the Shopify call: last term's draft is settled so it cannot be paid a second time
       @locker_rental.sync_shopify_draft_order_after_commit
       redirect_to @locker_rental,
-                  notice: 'Locker renewal started. Please complete checkout to renew your locker.'
+                  notice: t('lockers.flash.renewal_started')
     else
-      flash[:alert] = 'Could not start renewal: ' +
-        @locker_rental.errors.full_messages.to_sentence
+      flash[:alert] = validation_message(@locker_rental, 'errors.lockers.renewal_failed')
       render :show, status: :unprocessable_content
     end
   end
@@ -270,6 +147,23 @@ class LockerRentalsController < SessionsController
   end
 
   private
+
+  # Requirement: Ideally I would like to have an 'indefinite' option for the date
+  # We check this if the state is changing to active OR if it's already active (Move Locker)
+  def assign_requested_owned_until
+    date = @locker_rental.owned_until
+    date = locker_rental_params[:owned_until] if locker_rental_params.key?(:owned_until)
+    if @locker_rental.indefinite == '1'
+      date = nil
+    elsif date.blank? && defaults_to_semester_end?
+      date = end_of_this_semester
+    end
+    @locker_rental.assign_owned_until(date)
+  end
+
+  def defaults_to_semester_end?
+    @locker_rental.state_changed?(to: :active) || (current_user.staff? && @locker_rental.active?)
+  end
 
   def check_permission
     # If user accesses a locker rental by ID
@@ -302,28 +196,170 @@ class LockerRentalsController < SessionsController
     fields.respond_to?(:keys) ? fields.keys : []
   end
 
-  def new_instance_attributes
-    # FIXME localize this later
-    @available_fors = {
-      staff: ('CEED staff member' if current_user.staff?),
-      student: ('GNG student' if current_user.student?),
-      general: 'General request'
+  # The request types the form offers this user, as [label, value] pairs.
+  def available_request_types
+    {
+      staff: (t('lockers.request_type_labels.staff') if current_user.staff?),
+      student: (t('lockers.request_type_labels.student') if current_user.student?),
+      general: t('lockers.request_type_labels.general')
     }.compact.invert
+  end
+
+  # A new request must name one of the types the form offers this user (a student cannot file as staff).
+  def refuse_unoffered_request_type
+    return unless current_user.staff? || LockerOption.lockers_enabled
+    return if available_request_types.value?(locker_rental_params[:requested_as].to_s.to_sym)
+
+    @locker_rental = LockerRental.new
+    @locker_rental.errors.add(:requested_as, t('errors.lockers.request_type_not_offered'))
+    new_instance_attributes
+    render :new, status: :unprocessable_content
+  end
+
+  def lockers_not_accepted_response
+    flash[:alert] = t('errors.lockers.not_accepted')
+    redirect_to locker_rentals_path
+  end
+
+  def create_renter_not_found_response
+    @locker_rental = LockerRental.new
+    @locker_rental.errors.add(:base, renter_not_found_message)
+    new_instance_attributes
+    render :new, status: :unprocessable_content
+  end
+
+  # A rental created in any state but reviewing is decided by the creating user. Explicitly handle indefinite
+  # state so it overrides any submitted dates; otherwise a missing end date is the end of this semester.
+  def record_create_decision
+    @locker_rental.decided_by = current_user
+    if @locker_rental.indefinite == '1'
+      @locker_rental.owned_until = nil
+    else
+      @locker_rental.owned_until ||= end_of_this_semester
+    end
+  end
+
+  def rental_created_response
+    @locker_rental.notify_after_commit
+    redirect_back fallback_location: :new_locker_rental,
+                  notice: (t('lockers.flash.assigned') if @locker_rental.active?)
+  end
+
+  def new_instance_attributes
+    @available_fors = available_request_types
     # Don't allow new request if user already has an active or pending request
     @pending_locker_request = current_user.locker_rentals.pending.first
     @locker_product_info = LockerOption.locker_product_info || { variants: {} }
   end
 
-  RENTER_NOT_FOUND = 'User not found'
+  # Locked and reloaded, then the renewal voids last term's open checkout in the same transaction.
+  # Returns :saved, :invalid or :not_renewable.
+  def renew_under_lock
+    LockerRental.transaction do
+      @locker_rental.lock!
+      next :not_renewable unless @locker_rental.renewable?
+      next :invalid unless @locker_rental.extend_until(end_of_this_semester, state: :await_payment, decided_by: current_user)
+
+      @locker_rental.void_last_term_checkout
+      :saved
+    end
+  end
+
+  # Everything here runs on the row locked FOR UPDATE and reloaded: the guards, the save and the settlement of
+  # held payments all see the CURRENT state (a webhook payment may have activated or the other staff member
+  # cancelled it since this page was rendered), and a concurrent webhook waits for the commit. A save that starts a
+  # new term voids last term's open checkout in the same transaction. Returns the outcome: :stale, :state_refused,
+  # :saved or :invalid.
+  def update_under_lock
+    LockerRental.transaction do
+      @locker_rental.lock!
+      next :stale if stale_page?
+
+      # Assign new parameters but don't commit yet
+      @locker_rental.assign_attributes(locker_rental_params.except(:owned_until))
+      @locker_rental.decided_by = current_user
+      assign_requested_owned_until
+      next :state_refused if renter_state_change_refused?
+      next :invalid unless @locker_rental.save
+
+      @locker_rental.void_last_term_checkout
+      settle_held_payments_on_activation
+      :saved
+    end
+  end
+
+  # Assigning the rental active also settles one held payment, in the same transaction as the save.
+  def settle_held_payments_on_activation
+    return unless current_user.staff? && @locker_rental.saved_change_to_state? && @locker_rental.active?
+
+    @locker_rental.settle_held_payments!(by: current_user)
+  end
+
+  def renter_not_found_response
+    respond_to do |format|
+      format.html do
+        flash[:alert] = "#{t('errors.lockers.update_failed')}#{helpers.tag.br}#{renter_not_found_message}".html_safe
+        redirect_back fallback_location: :locker_rentals
+      end
+      format.json { render json: { base: [renter_not_found_message], error: renter_not_found_message }, status: :unprocessable_entity }
+    end
+  end
+
+  def state_refused_response
+    message = state_refused_message
+    flash[:alert] = message
+    respond_to do |format|
+      format.html { render :show, status: :unprocessable_content }
+      format.json { render json: { error: message }, status: :unprocessable_entity }
+    end
+  end
+
+  # Committed: the mail, then the Shopify call (no transaction, no row lock held).
+  def rental_updated_response
+    @locker_rental.notify_after_commit
+    draft_synced = @locker_rental.sync_shopify_draft_order_after_commit
+    warning = draft_synced ? nil : draft_not_removed_message
+    respond_to do |format|
+      format.html do
+        if warning
+          flash[:alert] = warning
+        else
+          flash[:notice] = t('lockers.flash.rental_updated')
+        end
+        redirect_back fallback_location: :locker_rentals
+      end
+      # 204 normally; 200 with { warning: ... } when the rental was updated but its Shopify checkout could not
+      # be removed, so a JSON client can tell the difference.
+      format.json { warning ? render(json: { warning: warning }, status: :ok) : head(:no_content) }
+    end
+  end
+
+  def update_failed_response
+    respond_to do |format|
+      format.html do
+        flash[:alert] = t('errors.lockers.update_failed') + helpers.tag.br +
+          @locker_rental.errors.full_messages.join(helpers.tag.br)
+        redirect_back fallback_location: :locker_rentals
+      end
+      # the field errors as before, plus the sentence to show
+      format.json do
+        render json: @locker_rental.errors.to_hash.merge(error: validation_message(@locker_rental, 'errors.lockers.update_failed')),
+               status: :unprocessable_entity
+      end
+    end
+  end
+
+  def renter_not_found_message
+    t('errors.lockers.renter_not_found')
+  end
+
+  def state_refused_message
+    t(@locker_rental.state_was == 'active' && @locker_rental.cancelled? ? 'errors.lockers.cancel_active' : 'errors.lockers.cancel_pending_only')
+  end
 
   # The cancellation is committed but Shopify did not confirm the draft order delete (reported to staff).
   def draft_not_removed_message
-    if current_user.staff?
-      'Locker rental cancelled, but its Shopify checkout could not be removed. ' \
-        'A payment made on it will appear under "Paid, needs a decision". The error was reported.'
-    else
-      "Your request was cancelled. If you still see a payment link, don't use it; staff have been notified."
-    end
+    t(current_user.staff? ? 'errors.lockers.draft_not_removed_staff' : 'errors.lockers.draft_not_removed_renter')
   end
 
   # The one rule for non-staff: the only state changes a renter may make on their own rental. Everything
@@ -343,8 +379,7 @@ class LockerRentalsController < SessionsController
   end
 
   def stale_page_response
-    message = "This locker rental changed while you had the page open (it is now #{@locker_rental.state}). " \
-              'Reload it and review before acting.'
+    message = t('errors.lockers.stale', state: @locker_rental.state)
     respond_to do |format|
       format.html do
         flash[:alert] = message

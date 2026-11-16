@@ -1,0 +1,26 @@
+<% content_for :preheader do %><%= @subject %><% end %>
+<% content_for :team_name do %><%= t("layouts.mailer.makerrepo_team") %><% end %>
+<% content_for :why_received do %>
+  <%= t("booking_mailer.declined.why_received", locale: :fr) %>
+  <br>
+  <%= t("booking_mailer.declined.why_received", locale: :en) %>
+<% end %>
+
+<% %i[fr en].each do |locale| %>
+  <% if locale == :en %>
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+  <% end %>
+  <div lang="<%= locale %>">
+    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+      <%= t("booking_mailer.declined.hello", name: @booking.user.name, locale: locale) %>
+    </p>
+    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+      <%= t("booking_mailer.declined.body", room: @sub_space.name, description: @booking.description,
+            start: l(@booking.start_time.in_time_zone, format: :long, locale: locale),
+            end: l(@booking.end_time.in_time_zone, format: :long, locale: locale), locale: locale) %>
+    </p>
+    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+      <a href="<%= sub_space_booking_index_url(locale: locale) %>" target="_blank"><%= t("booking_mailer.declined.open_page", locale: locale) %></a>
+    </p>
+  </div>
+<% end %>

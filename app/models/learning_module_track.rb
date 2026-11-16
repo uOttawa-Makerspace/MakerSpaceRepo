@@ -2,6 +2,9 @@ class LearningModuleTrack < ApplicationRecord
   belongs_to :learning_module, optional: true
   belongs_to :user, optional: true
 
+  # A track is 'In progress' or 'Completed'. There is no transition rule: the status can be
+  # assigned directly, and a Completed track can be set back to In progress. SCORM state
+  # only ever moves it forward (see check_scorm_status).
   enum :status, { in_progress: 'In progress', completed: 'Completed' }
 
   validates :learning_module, uniqueness: { scope: :user }

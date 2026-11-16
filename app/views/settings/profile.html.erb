@@ -20,7 +20,7 @@
         
         <% if @user.has_avatar? %>
           <div>
-            <%= button_tag t('settings.profile.delete_avatar'), type: 'submit', form: 'remove-avatar-form', class: "btn btn-link text-danger small text-decoration-none p-0" %>
+            <%= button_tag t('settings.profile.delete_avatar'), type: 'submit', form: 'remove-avatar-form', class: "btn btn-link text-danger small text-decoration-none p-0", **confirmation_options(t('settings.profile.delete_avatar_confirm')) %>
           </div>
         <% end %>
       </div>
@@ -38,6 +38,7 @@
     <!-- IDENTITY RADIO BUTTONS -->
     <div class="mb-4">
       <label class="form-label d-block mb-2"><%= t('users.new.form.i_am') %> <span class="text-danger">*</span></label>
+      <div class="form-text mb-2"><%= t('users.new.form.internal_proof_hint') %></div>
       
       <div class="d-flex flex-column gap-2">
         <% for account_type in User::ACCOUNT_IDENTITIES %>
@@ -81,7 +82,7 @@
 
       <div class="mb-3">
         <%= f.label :year_of_study, t('users.new.form.year_of_study'), class: 'form-label' %>
-        <%= f.select :year_of_study, (1..10).to_a.map { |n| [n, n] }, { prompt: t('users.new.form.choose.default') }, class: 'form-select profile-select' %>
+        <%= f.select :year_of_study, year_of_study_options(@user), { selected: @user.current_year_of_study, prompt: t('users.new.form.choose.default') }, class: 'form-select profile-select' %>
       </div>
     </fieldset>
 
@@ -125,5 +126,5 @@
 </div>
 <%# Outside the profile form (forms cannot nest); the Remove button targets it via the form attribute. %>
 <% if @user.has_avatar? %>
-  <%= form_with url: remove_avatar_users_path, method: :delete, id: 'remove-avatar-form', data: { turbo_confirm: t('settings.profile.delete_avatar_confirm') } do %><% end %>
+  <%= form_with url: remove_avatar_users_path, method: :delete, id: 'remove-avatar-form' do %><% end %>
 <% end %>

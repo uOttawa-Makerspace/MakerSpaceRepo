@@ -91,32 +91,36 @@ RSpec.describe "Tap box ActionCable channels" do
 
   describe StaffDashboardChannel, type: :channel do
     # only staff/admin may stream "space_event_<space_id>" (tapped users' name, email, certifications)
+    let!(:space) { create(:space) }
+
     %i[staff admin].each do |role|
-      it "streams space_event_<id> to a #{role}" do
-        stub_connection current_user: create(:user, role)
-        subscribe(space_id: 3)
+      it "streams space_event_<id> to a #{role} who may work in the space" do
+        user = create(:user, role)
+        StaffSpace.create!(user: user, space: space) if role == :staff
+        stub_connection current_user: user
+        subscribe(space_id: space.id)
         expect(subscription).to be_confirmed
-        expect(subscription).to have_stream_from("space_event_3")
+        expect(subscription).to have_stream_from("space_event_#{space.id}")
       end
     end
 
     %i[regular_user volunteer_with_dev_program].each do |trait|
       it "rejects a #{trait}" do
         stub_connection current_user: create(:user, trait)
-        subscribe(space_id: 3)
+        subscribe(space_id: space.id)
         expect(subscription).to be_rejected
       end
     end
 
     it "rejects a missing user and a non-user identity" do
       stub_connection current_user: nil
-      subscribe(space_id: 3)
+      subscribe(space_id: space.id)
       expect(subscription).to be_rejected
     end
 
     it "rejects a guest User.new" do
       stub_connection current_user: User.new
-      subscribe(space_id: 3)
+      subscribe(space_id: space.id)
       expect(subscription).to be_rejected
     end
   end

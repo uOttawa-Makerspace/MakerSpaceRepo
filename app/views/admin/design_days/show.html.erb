@@ -1,31 +1,31 @@
 <div class="pt-3">
-    <h1 class="text-center">Design day slated for <%= @design_day.day %></h1>
+    <h1 class="text-center"><%= t('admin_pages.design_days.slated_for', day: @design_day.day) %></h1>
     <hr />
     <%= form_with model: @design_day do |f| %>
         <div class="input-group mb-3">
-            <%= f.label :day, "Design day starts at:", class: 'input-group-text' %>
+            <%= f.label :day, t('admin_pages.design_days.starts_at'), class: 'input-group-text' %>
             <%= f.date_field :day, class: 'form-control' %>
         </div>
         <div class="input-group">
-            <%= f.label :sheet_key, "Google sheets ID (or url)", class: 'input-group-text' %>
+            <%= f.label :sheet_key, t('admin_pages.design_days.sheet_id'), class: 'input-group-text' %>
             <%= f.text_field :sheet_key, class: 'form-control' %>
             <div class="input-group-text">
                 <i class="fa-solid fa-check text-success" id="sheet_key_verified_icon"></i>
                 <i class="fa-solid fa-question text-warning" id="sheet_key_maybe_icon" hidden></i>
                 <i class="fa-solid fa-xmark text-danger" id="sheet_key_error_icon" hidden></i>
             </div>
-            <%= f.button "Convert URL to ID", class: 'btn btn-outline-success', id: 'verifyDesignDaySheet' %>
+            <%= f.button t('admin_pages.design_days.convert'), class: 'btn btn-outline-success', id: 'verifyDesignDaySheet' %>
         </div>
 
         <div class="form-text ms-3">
-            Current sheet url is <a id="sheet_key_preview_url" href="https://docs.google.com/spreadsheets/d/<%= @design_day.sheet_key %>">https://docs.google.com/spreadsheets/d/<%= @design_day.sheet_key %></a>
+            <%= t('admin_pages.design_days.current_url') %> <a id="sheet_key_preview_url" href="https://docs.google.com/spreadsheets/d/<%= @design_day.sheet_key %>"><%= "https://docs.google.com/spreadsheets/d/#{@design_day.sheet_key}" %></a>
             <br />
-            <span id="sheet_key_may_be_invalid" hidden="true">Current key doesn't seem valid.</span>
+            <span id="sheet_key_may_be_invalid" hidden="true"><%= t('admin_pages.design_days.invalid_key') %></span>
         </div>
         <hr />
 
         <% @design_day_schedules.each do |event_for, schedules| %>
-            <h2 class="text-center mt-3"><%= event_for.to_s.humanize %> schedules</h2>
+            <h2 class="text-center mt-3"><%= t('admin_pages.design_days.schedules', event: t(event_for, scope: 'admin_pages.design_days.event_for')) %></h2>
             <hr class="w-50 mx-auto mb-3"/>
             <div class="design-day-schedule-sort-list", data-event-for="<%= event_for %>">
                 <%# fields_for puts the id hidden attribute outside the container element. disable and place manually %>
@@ -44,7 +44,7 @@
             </div>
         <% end %>
         <div>
-            <h2 class="text-center">Floorplans</h2>
+            <h2 class="text-center"><%= t('admin_pages.design_days.floorplans') %></h2>
             <div class="d-flex flex-column align-items-center">
                 <div class="form-check form-switch mb-3 align-self-center">
                     <%= f.check_box :show_floorplans, class: 'form-check-input' %>
@@ -52,14 +52,14 @@
                 </div>
             </div>
             <div class="text-center">
-                <button class="btn btn-success mb-3" data-floorplan-add><i class="fa-solid fa-plus"></i> Add a floorplan</button>
+                <button class="btn btn-success mb-3" data-floorplan-add><i class="fa-solid fa-plus"></i> <%= t('admin_pages.design_days.add_floorplan') %></button>
             </div>
 
             <div>
-                <h2 class="text-center">Floorplans currently on display</h3>
+                <h2 class="text-center"><%= t('admin_pages.design_days.floorplans_on_display') %></h3>
                     <div>
                         <% unless @design_day.floorplans.attached? %>
-                            <p class="text-center">No floorplans attached...</p>
+                            <p class="text-center"><%= t('admin_pages.design_days.no_floorplans') %></p>
                         <% end %>
                         <% @design_day.floorplans.each do |image| %>
                             <div class="d-flex align-items-center gap-2 mb-3">

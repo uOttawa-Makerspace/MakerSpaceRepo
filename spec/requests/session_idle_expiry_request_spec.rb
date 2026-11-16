@@ -80,6 +80,7 @@ RSpec.describe "Cookie session idle expiry", type: :request do
     let(:space) { create(:space) }
 
     it "a staff kiosk in use for more than 72 hours stays signed in" do
+      StaffSpace.create!(user: user, space: space)
       start = Time.current
       log_in!
       [60, 120, 180].each do |hours|

@@ -1,0 +1,45 @@
+<% content_for :preheader do %><%= @subject %><% end %>
+<% content_for :team_name do %><%= t("layouts.mailer.makerrepo_team") %><% end %>
+<% content_for :why_received do %>
+  <%= t("msr_mailer.sign_up_attempt.why_received", locale: :fr) %>
+  <br>
+  <%= t("msr_mailer.sign_up_attempt.why_received", locale: :en) %>
+<% end %>
+
+<% %i[fr en].each do |locale| %>
+  <% if locale == :en %>
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+  <% end %>
+  <div lang="<%= locale %>">
+    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+    <%= t("msr_mailer.sign_up_attempt.hello", name: @user.name, locale: locale) %>
+    </p>
+    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+    <%= t("msr_mailer.sign_up_attempt.body", locale: locale) %>
+    </p>
+    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+    <%= t("msr_mailer.sign_up_attempt.if_you", locale: locale) %>
+    </p>
+    <table role="presentation" style="border-collapse: separate; width: auto; margin-bottom: 15px;">
+      <tbody>
+        <tr>
+          <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; border-radius: 5px; text-align: center; background-color: #e55426ff;" valign="top" align="center" bgcolor="#e55426ff">
+            <a href="<%= login_url %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;"><%= t("msr_mailer.sign_up_attempt.sign_in", locale: locale) %></a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <table role="presentation" style="border-collapse: separate; width: auto; margin-bottom: 15px;">
+      <tbody>
+        <tr>
+          <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; border-radius: 5px; text-align: center; background-color: #e55426ff;" valign="top" align="center" bgcolor="#e55426ff">
+            <a href="<%= forgot_password_url %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;"><%= t("msr_mailer.sign_up_attempt.reset_password", locale: locale) %></a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+    <%= t("msr_mailer.sign_up_attempt.if_not", locale: locale) %>
+    </p>
+  </div>
+<% end %>

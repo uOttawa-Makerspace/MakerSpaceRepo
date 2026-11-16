@@ -6,27 +6,27 @@
         <ol class="breadcrumb mb-0 small">
           <li class="breadcrumb-item">
             <%= link_to volunteers_path, class: "text-decoration-none text-body-secondary" do %>
-              <i class="fa-solid fa-hand-holding-heart me-1"></i>Volunteers
+              <i class="fa-solid fa-hand-holding-heart me-1"></i><%= t('volunteer_area.shared.volunteers') %>
             <% end %>
           </li>
           <li class="breadcrumb-item">
             <%= link_to calendar_volunteers_path, class: "text-decoration-none text-body-secondary" do %>
-              Calendar
+              <%= t('volunteer_area.shared.calendar') %>
             <% end %>
           </li>
-          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page">New Shadowing Shift</li>
+          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page"><%= t('volunteer_area.new_event.breadcrumb') %></li>
         </ol>
       </nav>
       <h1 class="h3 fw-bold text-body-emphasis mb-0 d-flex align-items-center gap-2">
         <i class="fa-solid fa-calendar-plus text-primary"></i>
-        <span>Add Shadowing Shift</span>
+        <span><%= t('volunteer_area.shared.add_shadowing_shift') %></span>
       </h1>
-      <p class="text-body-secondary small mb-0 mt-1">Schedule a volunteer shadowing shift and automatically synchronize with Google Calendar.</p>
+      <p class="text-body-secondary small mb-0 mt-1"><%= t('volunteer_area.new_event.subtitle') %></p>
     </div>
     <div class="col-12 col-md-auto">
       <%= link_to calendar_volunteers_path, class: "btn btn-outline-secondary w-100 w-md-auto d-inline-flex align-items-center justify-content-center gap-2" do %>
         <i class="fa-solid fa-arrow-left"></i>
-        <span>Back to Calendar</span>
+        <span><%= t('volunteer_area.new_event.back') %></span>
       <% end %>
     </div>
   </div>
@@ -40,7 +40,7 @@
         <div class="card-header bg-body-tertiary border-bottom py-3 px-3 px-md-4">
           <h5 class="card-title fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
             <i class="fa-solid fa-clock text-primary"></i>
-            <span>Shift Details</span>
+            <span><%= t('volunteer_area.new_event.details') %></span>
           </h5>
         </div>
 
@@ -52,27 +52,26 @@
               <!-- Space Selection -->
               <div class="col-12 col-sm-6">
                 <label for="space_input" class="form-label fw-semibold text-body">
-                  Space Location <span class="text-danger">*</span>
+                  <%= t('volunteer_area.shared.space_location') %> <span class="text-danger">*</span>
                 </label>
                 <div class="input-group">
                   <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
                     <i class="fa-solid fa-location-dot"></i>
                   </span>
                   <select name="space" id="space_input" class="form-select" required>
-                    <option value="makerspace">Makerspace</option>
-                    <option value="brunsfield centre">Brunsfield Centre</option>
+                    <%= options_for_select([[t('volunteer_area.shared.makerspace'), 'makerspace'], [t('volunteer_area.shared.brunsfield_centre'), 'brunsfield centre']]) %>
                   </select>
                 </div>
-                <div class="form-text text-body-secondary small">Select where the shift takes place.</div>
+                <div class="form-text text-body-secondary small"><%= t('volunteer_area.new_event.space_hint') %></div>
               </div>
 
               <!-- Volunteer / User Select (TomSelect Remote Search) -->
               <div class="col-12 col-sm-6">
-                <%= label_tag :user_id, class: "form-label fw-semibold text-body" do %>
-                  Volunteer <span class="text-danger">*</span>
+                <%= label_tag :user_select, id: "user_select_label", class: "form-label fw-semibold text-body" do %>
+                  <%= t('volunteer_area.shared.volunteer') %> <span class="text-danger">*</span>
                 <% end %>
-                <%= select_tag :user_id, nil, prompt: "Type to search volunteer...", class: "form-select", id: "user_select", required: true %>
-                <div class="form-text text-body-secondary small">Search volunteer by name.</div>
+                <%= select_tag :user_id, nil, prompt: t('volunteer_area.new_event.volunteer_prompt'), class: "form-select", id: "user_select", required: true, aria: { labelledby: "user_select_label" } %>
+                <div class="form-text text-body-secondary small"><%= t('volunteer_area.new_event.volunteer_hint') %></div>
               </div>
 
               <!-- Divider -->
@@ -83,26 +82,26 @@
               <!-- Start Date & Time (Flatpickr) -->
               <div class="col-12 col-sm-6">
                 <label for="datepicker_start" class="form-label fw-semibold text-body">
-                  Start Time <span class="text-danger">*</span>
+                  <%= t('volunteer_area.new_event.start') %> <span class="text-danger">*</span>
                 </label>
                 <div class="input-group">
                   <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
                     <i class="fa-regular fa-calendar-check"></i>
                   </span>
-                  <%= text_field_tag 'datepicker_start', nil, placeholder: 'Select start date & time', autocomplete: 'off', class: 'form-control', required: true, id: 'datepicker_start' %>
+                  <%= text_field_tag 'datepicker_start', nil, placeholder: t('volunteer_area.new_event.start_placeholder'), autocomplete: 'off', class: 'form-control', required: true, id: 'datepicker_start' %>
                 </div>
               </div>
 
               <!-- End Date & Time (Flatpickr) -->
               <div class="col-12 col-sm-6">
                 <label for="datepicker_end" class="form-label fw-semibold text-body">
-                  End Time <span class="text-danger">*</span>
+                  <%= t('volunteer_area.new_event.end') %> <span class="text-danger">*</span>
                 </label>
                 <div class="input-group">
                   <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
                     <i class="fa-regular fa-clock"></i>
                   </span>
-                  <%= text_field_tag 'datepicker_end', nil, placeholder: 'Select end date & time', autocomplete: 'off', class: 'form-control', required: true, id: 'datepicker_end' %>
+                  <%= text_field_tag 'datepicker_end', nil, placeholder: t('volunteer_area.new_event.end_placeholder'), autocomplete: 'off', class: 'form-control', required: true, id: 'datepicker_end' %>
                 </div>
               </div>
 
@@ -111,7 +110,7 @@
                 <div class="alert alert-info border-info-subtle bg-info-subtle text-info-emphasis d-flex align-items-start gap-2 mb-0 py-2 px-3 small rounded-3" role="alert">
                   <i class="fa-solid fa-circle-info fs-5 flex-shrink-0 mt-1"></i>
                   <div>
-                    Creating this shift will automatically create a Google Calendar event and dispatch an email calendar invite to the volunteer.
+                    <%= t('volunteer_area.new_event.note') %>
                   </div>
                 </div>
               </div>
@@ -123,11 +122,11 @@
           <div class="card-footer bg-body-tertiary border-top p-3 p-md-4">
             <div class="d-flex flex-column flex-sm-row justify-content-end gap-2">
               <%= link_to calendar_volunteers_path, class: "btn btn-outline-secondary d-inline-flex align-items-center justify-content-center" do %>
-                Cancel
+                <%= t('volunteer_area.shared.cancel') %>
               <% end %>
               <%= button_tag type: :submit, class: "btn btn-primary fw-semibold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm" do %>
                 <i class="fa-solid fa-check"></i>
-                <span>Add Shadowing Shift</span>
+                <span><%= t('volunteer_area.shared.add_shadowing_shift') %></span>
               <% end %>
             </div>
           </div>

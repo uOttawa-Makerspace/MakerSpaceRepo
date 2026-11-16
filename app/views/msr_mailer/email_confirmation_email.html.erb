@@ -1,23 +1,23 @@
 <% content_for :preheader do %>
-  Makerepo - Confirm your email change
+  <%= t(".preheader") %>
 <% end %>
 
 <% content_for :team_name do %>
-  The MakerRepo Team
+  <%= t("layouts.mailer.makerrepo_team") %>
 <% end %>
 
 <% content_for :why_received do %>
-  You have received this email because you asked for an email change on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+  <%= t(".why_received_html", site_link: link_to("makerepo.com", "https://makerepo.com", style: "text-decoration: underline; color: #999999; font-size: 12px; text-align: center;")) %>
 <% end %>
 
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.name %>,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t("msr_mailer.account.hello", name: @user.name) %></p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  We received a request to change your email address to this one for <a href="https://makerepo.com">MakerRepo.com</a>.
+  <%= t(".request_html", site_link: link_to("MakerRepo.com", "https://makerepo.com")) %>
   <br>
-  If you did ask for this change, please open the following <%= link_to 'link', confirm_edited_email_users_url(token: @token) %> while signed in to your account, and confirm the change on that page. <br>
-  If the link isn't working, try copy/pasting the following address : <%= confirm_edited_email_users_url(token: @token) %>
+  <%= t(".open_link_html", link: link_to(t(".link_text"), confirm_edited_email_users_url(token: @token))) %> <br>
+  <%= t(".copy_link", url: confirm_edited_email_users_url(token: @token)) %>
   <br>
-  If you did not request this change, you do not have to do anything.
+  <%= t(".not_requested") %>
 </p>
 <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
   <tbody>
@@ -27,7 +27,7 @@
           <tbody>
             <tr>
               <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; border-radius: 5px; text-align: center; background-color: #e55426ff;" valign="top" align="center" bgcolor="#e55426ff">
-                <a href="<%= confirm_edited_email_users_url(token: @token) %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;">Confirm Email Change</a>
+                <a href="<%= confirm_edited_email_users_url(token: @token) %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;"><%= t(".button") %></a>
               </td>
             </tr>
           </tbody>

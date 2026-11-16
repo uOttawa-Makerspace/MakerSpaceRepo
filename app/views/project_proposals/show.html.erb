@@ -14,7 +14,7 @@
                         <div class="carousel-item active">
                             <div class="carousel-slide-wrapper">
                                 <div class="ratio ratio-16x9 w-100">
-                                    <%= youtube_video(@project_proposal.youtube_link) %>
+                                    <%= youtube_video(@project_proposal.youtube_link, @project_proposal.title) %>
                                 </div>
                             </div>
                         </div>
@@ -147,7 +147,7 @@
             <div class="card mb-3 shadow-sm border">
                 <div class="card-header bg-body-tertiary fw-bold"><%= t('project_proposal.linked_proposal') %></div>
                 <div class="card-body">
-                    <%= link_to t('project_proposal.linked_proposal_button'), project_proposal_path(@linked_pp.slug), class: 'btn btn-primary btn-sm' %>
+                    <%= link_to t('project_proposal.linked_proposal_button'), project_proposal_path(@linked_pp), class: 'btn btn-primary btn-sm' %>
                 </div>
             </div>
         <% end %>
@@ -158,7 +158,7 @@
                 <div class="card-body">
                     <ul class="mb-0 ps-3">
                         <% @revisions.each do |revision| %>
-                            <li><%= link_to revision.title, project_proposal_path(revision.slug) %></li>
+                            <li><%= link_to revision.title, project_proposal_path(revision) %></li>
                         <% end %>
                     </ul>
                 </div>
@@ -255,17 +255,17 @@
                 <% if signed_in? %>
                     <%= link_to t('project_proposal.document_project'), new_repository_path(current_user.username, project_proposal_id: @project_proposal.id),
                                 class: 'btn btn-success btn-sm flex-fill',
-                                data: { confirm: 'This action will create a repository related to this project proposal' } %>
+                                data: confirmation_data(t('confirmations.project_proposals.create_repository')) %>
 
                     <% @project_join = find_project_join(current_user.id, @project_proposal.id) %>
                     <% if @project_join.present? %>
                         <%= button_to t('project_proposal.leave_project'), unjoin_project_proposal_project_proposals_path, method: :delete,
                                       params: { project_proposal_id: @project_proposal.id, project_join_id: @project_join.id },
-                                      class: 'btn btn-outline-danger btn-sm flex-fill', form: { data: { turbo_confirm: 'Are you sure you want to leave this project?' } } %>
+                                      class: 'btn btn-outline-danger btn-sm flex-fill', **confirmation_options(t('confirmations.project_proposals.leave')) %>
                     <% else %>
                         <%= button_to t('project_proposal.join_project'), join_project_proposal_project_proposals_path, method: :post,
                                       params: { project_proposal_id: @project_proposal.id },
-                                      class: 'btn btn-primary btn-sm flex-fill', form: { data: { turbo_confirm: 'Are you sure you want to join this project?' } } %>
+                                      class: 'btn btn-primary btn-sm flex-fill', **confirmation_options(t('confirmations.project_proposals.join')) %>
                     <% end %>
                 <% end %>
             </div>
@@ -277,16 +277,16 @@
 
                 <div class="d-flex gap-2 mb-3">
                     <%= button_to "<i class=\"fa-solid fa-thumbs-up\"></i> #{t('project_proposal.admin.approve')}".html_safe, approve_project_proposals_path(id: @project_proposal.id),
-                                  method: :post, class: 'btn btn-success btn-sm flex-fill', data: { confirm: 'Approve this project proposal?' } %>
+                                  method: :post, class: 'btn btn-success btn-sm flex-fill', **confirmation_options(t('confirmations.project_proposals.approve')) %>
                     <%= button_to "<i class=\"fa-solid fa-thumbs-down\"></i> #{t('project_proposal.admin.decline')}".html_safe, decline_project_proposals_path(id: @project_proposal.id),
-                                  method: :post, class: 'btn btn-danger btn-sm flex-fill', data: { confirm: 'Decline this project proposal?' } %>
+                                  method: :post, class: 'btn btn-danger btn-sm flex-fill', **confirmation_options(t('confirmations.project_proposals.decline')) %>
                 </div>
 
                 <div class="d-flex gap-2 mb-3">
                     <%= button_to t('project_proposal.create_revision'), create_revision_project_proposals_path(old_project_proposal_id: @project_proposal.id),
                                   method: :post, class: 'btn btn-outline-success btn-sm flex-fill' %>
                     <%= button_to "<i class=\"fa-solid fa-trash\"></i> #{t('project_proposal.admin.delete')}".html_safe, project_proposal_path(@project_proposal),
-                                  method: :delete, class: 'btn btn-outline-danger btn-sm flex-fill', data: { confirm: 'Delete this project proposal?' } %>
+                                  method: :delete, class: 'btn btn-outline-danger btn-sm flex-fill', **confirmation_options(t('confirmations.project_proposals.delete')) %>
                 </div>
 
                 <%= form_with model: @project_proposal do |f| %>
@@ -299,6 +299,11 @@
                     <% if @project_proposal.active_semester_label %>
                         <div class="small text-body-secondary">Currently active for <b><%= @project_proposal.active_semester_label %></b></div>
                     <% end %>
+                <% end %>
+                <% if @project_proposal.active_semester_label %>
+                    <%= button_to t('project_proposal.admin.clear_semester'), project_proposal_semester_path(@project_proposal),
+                                  method: :delete, class: 'btn btn-outline-secondary btn-sm mt-2',
+                                  **confirmation_options(t('project_proposal.admin.clear_semester_confirm')) %>
                 <% end %>
             </div>
         <% end %>

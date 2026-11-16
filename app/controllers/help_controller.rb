@@ -24,59 +24,45 @@ class HelpController < SessionsController
     @help = Help.new
   end
 
+  # Saves the request and queues its filing job (HelpFilingJob mails the copies and opens the GitHub issue). The
+  # request is recorded once the row is saved, so the user is told it was submitted even when the job cannot be
+  # queued: Help#queue_filing reports that, and the sweep queues the job again.
   def create
-    @help = Help.new(help_params)
-    @help.defang_github_text = true # the GitHub issue is public
+    @help = Help.compose(help_params.merge(share_email: params[:share_email]), user: (current_user if signed_in?),
+                         source: Help::HELP_PAGE)
 
     unless verify_turnstile
       flash[:alert] = 'Captcha check failed, please try again.'
       render :show, status: :unprocessable_entity and return
     end
 
-    if @help.save
+    if @help.submit
       redirect_to help_path, notice: 'Your issue has been submitted.'
-      text = @help.comments.to_plain_text
-      if signed_in?
-        # Signed in: the copy goes to the account's own address (bcc the team), never the typed one
-        MsrMailer.issue_email(@help.name, current_user.email, @help.subject, text, params[:share_email],
-                              contact_email: @help.email, account: current_user).deliver_later
-      else
-        MsrMailer.issue_email_to_team(@help.name, @help.email, @help.subject, text,
-                                      via: 'the MakerRepo help page').deliver_later
-      end
     else
-      flash[:alert] = 'An error occurred while receiving your issue.'
+      flash.now[:alert] = validation_message(@help, 'errors.help.not_received')
       render :show, status: :unprocessable_entity
     end
   rescue StandardError => e
-    raise e unless Rails.env.production?
-
-    flash[:alert] = 'An internal error occurred while receiving your issue.'
+    report_unexpected(e, source: 'help#create')
+    flash.now[:alert] = unexpected_error_message
     render :show, status: :unprocessable_entity
   end
-  
+
+
   # PUT /send_email: JSON endpoint used by the MakerRepo React app's Help form.
-  # Never touches a user; same validations, GitHub issue and support email as #create.
+  # Never touches a user; same validations, filing job and support email as #create.
   # The confirmation always goes to the signed-in account: the posted name/email are
-  # accepted (the React request shape) but ignored for addressing.
+  # accepted (the React request shape) but ignored for addressing. Answers once the row is saved.
   def send_email
     unless signed_in?
       render json: { error: 'Authentication required' }, status: :unauthorized and return
     end
 
     attrs = params.slice(:subject, :comments).permit(:subject, :comments)
-    @help = Help.new(attrs.merge(name: current_user.name, email: current_user.email))
-    @help.defang_github_text = true # the GitHub issue is public
+    fields = attrs.merge(share_email: params[:share_email], app_version: params[:app_version].to_s.presence)
+    @help = Help.compose(fields, user: current_user, source: Help::APP)
 
-    if @help.save
-      MsrMailer.issue_email(
-        @help.name,
-        @help.email,
-        @help.subject,
-        @help.comments.to_plain_text,
-        params[:share_email],
-        params[:app_version].to_s.presence
-      ).deliver_later
+    if @help.submit
       render json: { status: 'sent' }
     else
       render json: { errors: @help.errors.full_messages }, status: :unprocessable_content

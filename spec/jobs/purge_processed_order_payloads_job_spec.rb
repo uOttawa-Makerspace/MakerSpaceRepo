@@ -6,8 +6,8 @@ RSpec.describe PurgeProcessedOrderPayloadsJob, type: :job do
   let(:now) { Time.zone.local(2026, 11, 3, 12, 0, 0) }
   let(:body) { { "id" => 1, "email" => "x@example.com" } }
 
-  def stored(ref, status:, applied_at: nil)
-    order, = ProcessedOrder.receive!(provider: "shopify", order_id: ref, topic: "orders/paid", payload: body)
+  def stored(ref, status:, applied_at: nil, topic: "orders/paid")
+    order, = ProcessedOrder.receive!(provider: "shopify", order_id: ref, topic: topic, payload: body)
     order.update_columns(status: status, applied_at: applied_at)
     order
   end
@@ -19,6 +19,14 @@ RSpec.describe PurgeProcessedOrderPayloadsJob, type: :job do
     expect(run).to eq(1)
     expect(order.reload.payload).to eq({})
     expect(order.status).to eq("applied")
+  end
+
+  it "keeps the payload of a recorded cancellation, however old: nothing has acted on it yet" do
+    old = now - 1.year
+    cancelled = stored(1, status: "applied", applied_at: old, topic: "orders/cancelled")
+    paid = stored(1, status: "applied", applied_at: old)
+    expect(run).to eq(1)
+    expect([cancelled.reload.payload, paid.reload.payload]).to eq([body, {}])
   end
 
   it "leaves an applied order inside the retention alone" do

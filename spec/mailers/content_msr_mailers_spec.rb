@@ -71,11 +71,34 @@ RSpec.describe MsrMailer, type: :mailer do
     expect(mail.subject).to eq("New Project Proposal")
   end
 
-  it "repo_report is sent FROM the reporter's address to the MakerRepo inbox" do
+  it "repo_report is sent from the app's address, replies go to the reporter, and it reaches the MakerRepo inbox" do
     repo = create(:repository, owner: user, title: "Reported Repo")
     mail = deliver(MsrMailer.repo_report(repo, user))
-    expect(mail.from).to eq([user.email])
+    expect(mail.from).to eq(["ceedinfo@makerepo.com"])
+    expect(mail.reply_to).to eq([user.email])
     expect(mail.to).to eq(["uottawa.makerepo@gmail.com"])
     expect(mail.subject).to eq("Repository Reported Repo reported")
+  end
+
+  describe "send_cdel_monthly_report without a month" do
+    include ActiveSupport::Testing::TimeHelpers
+
+    it "covers the previous calendar month" do
+      travel_to(Time.zone.local(2026, 11, 15, 12, 0)) do
+        mail = MsrMailer.send_cdel_monthly_report("cdel@example.com")
+
+        expect(mail.to).to eq(["cdel@example.com"])
+        expect(mail.subject).to eq("CDEL Reports from 2026-10-01 to 2026-10-31")
+      end
+    end
+
+    it "takes the previous month in the app time zone when UTC is already in the next month" do
+      # 2026-11-01 03:30 UTC is 2026-10-31 23:30 Eastern
+      travel_to(Time.utc(2026, 11, 1, 3, 30)) do
+        mail = MsrMailer.send_cdel_monthly_report("cdel@example.com")
+
+        expect(mail.subject).to eq("CDEL Reports from 2026-09-01 to 2026-09-30")
+      end
+    end
   end
 end

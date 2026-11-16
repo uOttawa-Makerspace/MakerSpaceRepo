@@ -28,6 +28,14 @@ RSpec.describe GoogleCalendar::EventPayload do
     expect(payload[:summary]).to eq("Weekly")
   end
 
+  it "sends the same recurrence lines for a rule stored with a Toronto start" do
+    payload = payload_for(title: "Weekly", description: "d", start_time: Time.utc(2027, 4, 1, 14),
+                          end_time: Time.utc(2027, 4, 1, 15),
+                          recurrence_rule: "DTSTART;TZID=America/Toronto:20270401T100000\nRRULE:FREQ=WEEKLY;BYDAY=TH;COUNT=3\nEXDATE:20270408T140000Z")
+    expect(payload[:recurrence]).to eq(["RRULE:FREQ=WEEKLY;BYDAY=TH;COUNT=3", "EXDATE:20270408T140000Z"])
+    expect(payload[:start]).to eq(date_time: "2027-04-01T10:00:00-04:00", time_zone: "America/Toronto")
+  end
+
   it "builds an all-day style event from midnight to midnight" do
     expect(payload_for(title: "Closed", description: "", start_time: Time.utc(2027, 4, 2, 4),
                        end_time: Time.utc(2027, 4, 3, 4))).to eq(

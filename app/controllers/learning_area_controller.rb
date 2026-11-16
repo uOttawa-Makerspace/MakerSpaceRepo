@@ -34,6 +34,8 @@ class LearningAreaController < DevelopmentProgramsController
         .transform_values do |modules|
           modules.sort_by { |m| LearningModule.levels.keys.index(m.level) }
         end
+    load_tracks_by_module
+    @completed_module_ids = current_user.completed_learning_module_ids.to_set
   end
 
   def new
@@ -41,20 +43,24 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   def show
+    load_tracks_by_module
   end
 
   def subskill
     @subskill = params[:subskill]
-    @learning_modules = LearningModule.where(subskill: params[:subskill])
+    @learning_modules = LearningModule.where(subskill: params[:subskill]).includes(:scorm_package_attachment).to_a
+    LearningModule.preload_content_attachments(@learning_modules)
+    load_tracks_by_module
   end
 
   def create
     @learning_module = LearningModule.new(learning_module_params)
     if @learning_module.save
+      @learning_module.process_scorm_package
       redirect_to learning_area_path(@learning_module.id),
-                  notice: 'Learning Module has been successfully created.'
+                  notice: t('learning_area.flash.created')
     else
-      flash.now[:alert] = 'Something went wrong'
+      flash.now[:alert] = validation_message(@learning_module, 'errors.learning_area.not_created')
       render 'new', status: :unprocessable_content
     end
   end
@@ -64,7 +70,7 @@ class LearningAreaController < DevelopmentProgramsController
     respond_to do |format|
       format.html do
         redirect_to learning_area_index_path,
-                    notice: 'Learning Module has been successfully deleted.'
+                    notice: t('learning_area.flash.deleted')
       end
       format.json { head :no_content }
     end
@@ -75,12 +81,12 @@ class LearningAreaController < DevelopmentProgramsController
 
   def update
     if @learning_module.update(learning_module_params)
+      @learning_module.process_scorm_package
       redirect_to learning_area_path(@learning_module.id),
-                  notice: 'Learning module successfully updated.'
+                  notice: t('learning_area.flash.updated')
     else
-      flash[:alert] = "Unable to apply the changes."
+      flash[:alert] = validation_message(@learning_module, "errors.learning_area.not_updated")
       @training_categories = Training.all.order(:name).pluck(:name, :id)
-      @training_levels ||= TrainingSession.return_levels
       @files = @learning_module.project_files_attachments.order(created_at: :asc)
       @photos = @learning_module.photos || []
       @videos = @learning_module.videos_attachments.order(created_at: :asc)
@@ -126,9 +132,9 @@ class LearningAreaController < DevelopmentProgramsController
 
   def retry_scorm
     if @learning_module.retry_scorm_extraction
-      notice = 'SCORM extraction has been queued again.'
+      notice = t('learning_area.flash.retry_queued')
     else
-      alert = 'SCORM extraction is not retryable right now.'
+      alert = t('learning_area.flash.retry_refused')
     end
     redirect_to edit_learning_area_path(@learning_module.id), notice:, alert:
   end
@@ -170,13 +176,19 @@ class LearningAreaController < DevelopmentProgramsController
     respond_to do |format|
       format.html do
         redirect_to learning_area_index_path,
-                    notice: 'Successfully reordered the learning modules!'
+                    notice: t('learning_area.flash.reordered')
       end
       format.json { render json: { status: :ok } }
     end
   end
 
   private
+
+  # The signed-in user's tracks, read once for the page and keyed by module, so each module shows its status without
+  # a query of its own.
+  def load_tracks_by_module
+    @tracks_by_module = current_user.learning_module_tracks.index_by(&:learning_module_id)
+  end
 
   # A minimal answer: no success headers are set before the content is known
   # to be readable, so there is nothing to clear.
@@ -281,7 +293,7 @@ class LearningAreaController < DevelopmentProgramsController
   def set_learning_module
     @learning_module =
       if params[:shortcut]
-        LearningModule.find_by!(shortcut_name: params[:shortcut])
+        LearningModule.find_by_shortcut!(params[:shortcut])
       else
         LearningModule.find(params[:id])
       end
@@ -289,7 +301,7 @@ class LearningAreaController < DevelopmentProgramsController
 
   def form_training_data
     @training_categories ||= Training.all.order(:name).pluck(:name, :id)
-    @training_levels ||= LearningModule.levels.values
+    @training_levels ||= LearningModule.levels.keys.map { |key| [t("learning_area.levels.#{key}"), key] }
     @subskills ||= LearningModule.unscope(:order).distinct.pluck(:subskill)
   end
 
@@ -300,7 +312,6 @@ class LearningAreaController < DevelopmentProgramsController
       :shortcut_name,
       :training_id,
       :level,
-      :cc,
       :subskill,
       :scorm_package,
       :scorm_enabled,

@@ -8,7 +8,7 @@ FactoryBot.define do
     end
 
     trait :wrong do
-      correct { true }
+      correct { false }
     end
   end
 end

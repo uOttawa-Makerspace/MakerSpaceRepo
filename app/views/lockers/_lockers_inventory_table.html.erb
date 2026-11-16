@@ -2,36 +2,37 @@
 
 <div class="table-responsive">
     <table class="table table-hover align-middle border" id="locker_inventory_table"
-           data-page-length="-1" data-select-style="multi" data-select-selector="tr">
+           data-page-length="-1" data-select-style="multi" data-select-selector="tr"
+           data-search-placeholder="<%= t('lockers.inventory.search_placeholder') %>">
         <caption class="caption-top mb-2">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
                 <button type="button" data-bs-toggle="modal" data-bs-target="#lockerBulkEditModal" class="btn btn-outline-primary btn-sm">
-                    <i class="fa-solid fa-pencil"></i> Bulk edit
+                    <i class="fa-solid fa-pencil"></i> <%= t('lockers.inventory.bulk_edit') %>
                 </button>
                 <div class="form-check form-switch fs-6 mb-0">
                     <input class="form-check-input" type="checkbox" role="switch" id="lockerEditToggle"/>
-                    <label class="form-check-label text-body-secondary" for="lockerEditToggle">Inline editing</label>
+                    <label class="form-check-label text-body-secondary" for="lockerEditToggle"><%= t('lockers.inventory.inline_editing') %></label>
                 </div>
             </div>
 
             <!-- Search Hint Banner -->
             <div class="small text-body-secondary bg-body-tertiary p-2 rounded border">
                 <i class="fa-solid fa-circle-info text-primary me-1"></i>
-                <strong>Search hint:</strong> You can search by locker #, tenant name, username, student ID, email, notes, or status (<code class="text-body-secondary">expired</code>, <code class="text-body-secondary">free</code>, <code class="text-body-secondary">staff</code>, <code class="text-body-secondary">gng</code>).
+                <%= t('lockers.inventory.search_hint_html') %>
             </div>
         </caption>
         <thead class="table-secondary">
             <tr>
                 <th width="1%"></th>
-                <th scope="col">Locker</th>
-                <th scope="col" class="d-none d-md-table-cell">Size & SKU</th>
-                <th scope="col">Type</th>
-                <th scope="col">Owned by</th>
-                <th scope="col" style="min-width: 170px;">Notes</th>
-                <th scope="col" class="d-none d-sm-table-cell">Expires</th>
-                <th scope="col">Contacted</th>
-                <th scope="col" class="d-none d-lg-table-cell">Approved</th>
-                <th scope="col">Status</th>
+                <th scope="col"><%= t('lockers.locker') %></th>
+                <th scope="col" class="d-none d-md-table-cell"><%= t('lockers.inventory.size_and_sku') %></th>
+                <th scope="col"><%= t('lockers.inventory.type') %></th>
+                <th scope="col"><%= t('lockers.inventory.owned_by') %></th>
+                <th scope="col" style="min-width: 170px;"><%= t('lockers.notes') %></th>
+                <th scope="col" class="d-none d-sm-table-cell"><%= t('lockers.inventory.expires') %></th>
+                <th scope="col"><%= t('lockers.contacted') %></th>
+                <th scope="col" class="d-none d-lg-table-cell"><%= t('lockers.inventory.approved') %></th>
+                <th scope="col"><%= t('lockers.inventory.status') %></th>
             </tr>
         </thead>
         <tbody>
@@ -50,18 +51,18 @@
                         <div class="position-relative">
                             <%= select_tag 'locker[locker_size_id]', options_for_select((@locker_sizes || []).map { |size|
                                 variant_data = variants[size.shopify_gid] || {}
-                                display_name = size.size.presence || variant_data[:title] || "Size ##{size.id}"
+                                display_name = size.size.presence || variant_data[:title] || t('lockers.inventory.size_number', id: size.id)
                                 [ display_name, size.id, { 'data-data' => variant_data.to_json } ]
                             }, locker.locker_size&.id), class: 'form-select form-select-sm locker-variant-select', aria: { label: t('common.names.locker_size_of', specifier: locker.specifier) }, disabled: true, data: { locker_size_for: locker.id } %>
 
                             <div class="spinner-border spinner-border-sm position-absolute top-0 end-0 m-2" style="z-index: 999" hidden>
-                                <span class="visually-hidden">Changing size...</span>
+                                <span class="visually-hidden"><%= t('lockers.inventory.changing_size') %></span>
                             </div>
                             <i class="fa-solid fa-check position-absolute top-0 end-0 m-2 text-success" style="z-index: 999" hidden></i>
                         </div>
                     </td>
                     <td data-search="<%= locker.audience %> <%= locker.audience.humanize %>">
-                        <%= select_tag 'locker[audience]', options_for_select([['General', 'general'], ['Staff', 'staff'], ['GNG', 'gng']], locker.audience),
+                        <%= select_tag 'locker[audience]', options_for_select(%w[general staff gng].map { |audience| [t("lockers.audiences.#{audience}"), audience] }, locker.audience),
                               class: 'form-select form-select-sm locker-inline-edit', aria: { label: t('common.names.locker_audience_of', specifier: locker.specifier) }, disabled: true, data: { locker_id: locker.id } %>
                     </td>
                     <!-- Searchable by Name, Username, Student ID, and Email -->
@@ -78,25 +79,25 @@
                     <!-- Searchable by Staff Notes, Request Notes, and Locker Maintenance Notes -->
                     <td data-search="<%= "#{current_rental&.staff_notes} #{current_rental&.notes} #{locker.notes}" %>">
                         <% if current_rental.present? %>
-                            <div class="position-relative" data-bs-toggle="tooltip" data-bs-placement="top" title="<%= current_rental.staff_notes.presence || 'Staff Note (click inline editing to edit)' %>">
+                            <div class="position-relative" data-bs-toggle="tooltip" data-bs-placement="top" title="<%= current_rental.staff_notes.presence || t('lockers.inventory.staff_note_tooltip') %>">
                                 <%= text_field_tag "locker_rental[staff_notes]", current_rental.staff_notes,
                                       class: 'form-control form-control-sm locker-inline-edit border-primary-subtle',
                                       disabled: true,
                                       data: { rental_id: current_rental.id },
-                                      placeholder: 'Add staff note...' %>
+                                      placeholder: t('lockers.inventory.add_staff_note') %>
                             </div>
                         <% else %>
-                            <div class="position-relative" data-bs-toggle="tooltip" data-bs-placement="top" title="<%= locker.notes.presence || 'Locker Note (click inline editing to edit)' %>">
+                            <div class="position-relative" data-bs-toggle="tooltip" data-bs-placement="top" title="<%= locker.notes.presence || t('lockers.inventory.locker_note_tooltip') %>">
                                 <%= text_field_tag "locker[notes]", locker.notes,
                                       class: 'form-control form-control-sm locker-inline-edit',
                                       disabled: true,
                                       data: { locker_id: locker.id },
-                                      placeholder: 'Add note...' %>
+                                      placeholder: t('lockers.inventory.add_note') %>
                             </div>
                         <% end %>
                     </td>
                     <td class="d-none d-sm-table-cell" data-sort="<%= current_rental&.owned_until.to_i %>">
-                        <%= current_rental&.owned_until ? current_rental.owned_until.to_date.to_fs(:short) : 'Indefinite' %>
+                        <%= current_rental&.owned_until ? l(current_rental.owned_until.to_date, format: :rental_day) : t('lockers.indefinite') %>
                     </td>
                     <td>
                         <% if current_rental %>
@@ -112,7 +113,7 @@
                             <span class="text-body-secondary">&mdash;</span>
                         <% end %>
                     </td>
-                    <td class="d-none d-lg-table-cell"><%= current_rental&.updated_at ? current_rental.updated_at.to_fs(:short) : '&mdash;'.html_safe %></td>
+                    <td class="d-none d-lg-table-cell"><%= current_rental&.updated_at ? l(current_rental.updated_at, format: :rental_day_time) : '&mdash;'.html_safe %></td>
                     <!-- Searchable by Status -->
                     <td data-search="<%= if current_rental
 current_rental.expired? ? 'expired overdue' : 'valid active rented occupied'
@@ -122,15 +123,15 @@ end %>">
                         <% if current_rental.present? %>
                             <% if current_rental.expired? %>
                                 <%= link_to current_rental, class: "btn btn-sm btn-outline-danger" do %>
-                                    <i class="fa-solid fa-xmark"></i> <span class="d-none d-sm-inline">Expired</span>
+                                    <i class="fa-solid fa-xmark"></i> <span class="d-none d-sm-inline"><%= t('lockers.expired') %></span>
                                 <% end %>
                             <% else %>
                                 <%= link_to current_rental, class: "btn btn-sm btn-outline-success" do %>
-                                    <i class="fa-solid fa-check"></i> <span class="d-none d-sm-inline">Valid</span>
+                                    <i class="fa-solid fa-check"></i> <span class="d-none d-sm-inline"><%= t('lockers.inventory.valid') %></span>
                                 <% end %>
                             <% end %>
                         <% else %>
-                            <span class="badge bg-secondary-subtle text-secondary border">Free</span>
+                            <span class="badge bg-secondary-subtle text-secondary border"><%= t('lockers.inventory.free') %></span>
                         <% end %>
                     </td>
                 </tr>

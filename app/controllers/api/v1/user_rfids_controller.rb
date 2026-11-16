@@ -22,9 +22,9 @@ module Api
       end
 
       # Unlinks every card the user holds (normally one) through
-      # Rfid.unlink_from_user!: its mac_address becomes the first reader of the
-      # caller's assigned space, so it shows up in their unlinked list. No card is
-      # a no-op.
+      # Rfid.unlink_from_user!: its mac_address becomes the lowest-id reader of the
+      # space the caller currently works in (User#current_space), so it shows up in
+      # their unlinked list. No card is a no-op.
       def destroy
         Rfid.unlink_from_user!(find_user!, actor: current_user)
         head :no_content

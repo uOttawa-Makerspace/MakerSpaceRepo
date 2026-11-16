@@ -2,7 +2,7 @@
 
 <section class="row">
     <section id="repository-photos" class="col-lg-8 order-lg-first order-last">
-        <% photos = @repository.photos.to_a %>
+        <% photos = @repository.gallery_photos.to_a %>
         <% has_youtube = @repository.youtube_link.present? %>
         <% has_media = has_youtube || photos.any? %>
         <% total_slides = photos.size + (has_youtube ? 1 : 0) %>
@@ -14,7 +14,7 @@
                         <div class="carousel-item active">
                             <div class="carousel-slide-wrapper">
                                 <div class="ratio ratio-16x9 w-100">
-                                    <%= youtube_video(@repository.youtube_link) %>
+                                    <%= youtube_video(@repository.youtube_link, @repository.title) %>
                                 </div>
                             </div>
                         </div>
@@ -41,12 +41,12 @@
                     <button class="carousel-control-prev" type="button"
                             data-bs-target="#repositoryCarousel" data-bs-slide="prev">
                         <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Previous</span>
+                        <span class="visually-hidden"><%= t('common.previous') %></span>
                     </button>
                     <button class="carousel-control-next" type="button"
                             data-bs-target="#repositoryCarousel" data-bs-slide="next">
                         <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Next</span>
+                        <span class="visually-hidden"><%= t('common.next') %></span>
                     </button>
                 <% end %>
             </div>
@@ -86,7 +86,7 @@
                               pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :patch,
                               class: 'btn btn-primary' %>
                 <%= button_to t('repository.del'), delete_repository_admin_users_path(id: @repository.id), method: :delete,
-                              class: 'btn btn-danger', data: { confirm: 'Are you sure you want to delete this repository?' } %>
+                              class: 'btn btn-danger', **confirmation_options(t('confirmations.repositories.delete', title: @repository.title)) %>
             </div>
         <% end %>
         <hr />
@@ -108,7 +108,7 @@
         </div>
         <% if @repository.featured? %>
             <p class="text-center text-primary">
-                <i class="fa-solid fa-trophy"></i> This is a featured project!
+                <i class="fa-solid fa-trophy"></i> <%= t('.featured') %>
             </p>
         <% end %>
         <hr />
@@ -123,12 +123,12 @@
                 </div>
             <% end %>
         </div>
-        <% if @repository.owned_by?(@user) || @user.role.eql?("admin") %>
+        <% if @repository.editable_by?(@user) || @user.admin? %>
             <%= link_to "<i class=\"fa-solid fa-pencil\"></i> #{t('repository.edit_proj')}".html_safe,
                     edit_repository_path(@repository.user_username, @repository.id),
                     class: 'btn btn-sm btn-secondary align-top float-end' %>
         <% end %>
-        <p><b><%= t('repository.published') %></b> <%= @repository.created_at.strftime('%b %e %Y') %></p>
+        <p><b><%= t('repository.published') %></b> <%= l(@repository.created_at, format: :published) %></p>
         <% if @repository.repo_files.any? %>
             <div class="clearfix">
                 <b> <%= t('repository.proj_files') %> </b>
@@ -138,7 +138,7 @@
                             <li>
                                 <i class="fa-regular fa-file-lines"></i>
                                 <%= link_to f.file.filename, rails_storage_proxy_path(f.file), target: '_blank', rel: 'noopener' %>
-                                <span><%= f.file.byte_size / 1000 %> KB</span>
+                                <span><%= t('.size_kb', size: f.file.byte_size / 1000) %></span>
                             </li>
                         </ul>
                     <% end %>
@@ -189,7 +189,7 @@
             </span>
         </div>
         <div class="report mb-3">
-            <%= button_to "<i class=\"fa-solid fa-flag\"></i> #{t('repository.report_in')}".html_safe, report_repository_path(@repository.id), method: :post, class: 'repository_report btn btn-link p-0', form: { data: { turbo_confirm: t('repository.report_confirm') } } %>
+            <%= button_to "<i class=\"fa-solid fa-flag\"></i> #{t('repository.report_in')}".html_safe, report_repository_path(@repository.id), method: :post, class: 'repository_report btn btn-link p-0', **confirmation_options(t('repository.report_confirm')) %>
             <div class="spinner">
                 <div class="rect1"></div>
                 <div class="rect2"></div>
@@ -206,7 +206,7 @@
             </p>
         <% end %>
 
-        <% if @repository.owned_by?(@user) || @user.staff? %>
+        <% if @repository.editable_by?(@user) || @user.staff? %>
             <%= form_for :repo, url: { controller: 'repositories', action: 'link_to_pp' }, method: :patch do |f| %>
                 <span class="text-muted"><%= t('repository.link_to_prop') %> </span>
                 <div class="mb-3 input-group">
@@ -222,7 +222,7 @@
 
             <div class="repo-info-item">
                 <%= form_for :repo_owner, url: { controller: 'repositories', action: 'add_member' }, method: :patch do |f| %>
-                    <%= f.label t('repository.add_member'), class: 'form-label' %>
+                    <%= f.label :owner_username, t('repository.add_member'), class: 'form-label' %>
                     <div class="mb-3 input-group">
                         <%= f.hidden_field :repository_id, value: @repository.id %>
                         <%= f.select(:owner_username, '', { prompt: t('repository.search_user') }, { class: 'form-control', aria: { label: t('repository.search_user') }, data: {user_search_bar: ''} }) %>
@@ -231,7 +231,7 @@
                 <% end %>
 
                 <%= form_for :repo_owner, url: { controller: 'repositories', action: 'remove_member' }, method: :patch do |f| %>
-                    <%= f.label t('repository.rem_mem'), class: 'form-label' %>
+                    <%= f.label :owner_id, t('repository.rem_mem'), for: 'search_users_remove', class: 'form-label' %>
                     <div class="mb-3 input-group">
                         <%= f.hidden_field :repository_id, value: @repository.id %>
                         <%= f.select(:owner_id, @repository.users.pluck(:username, :id), { prompt: t('repository.search_user') }, { class: 'search_users_remove form-control', id: 'search_users_remove', aria: { label: t('repository.rem_mem') } }) %>
@@ -241,7 +241,7 @@
 
                 <% if @user.id == @repository.user_id || @user.admin? %>
                     <%= form_for :repo_owner, url: { controller: 'repositories', action: 'transfer_owner' }, method: :patch do |f| %>
-                        <%= f.label t('repository.trans_own'), class: 'form-label' %>
+                        <%= f.label :owner_id, t('repository.trans_own'), for: 'search_users_transfer', class: 'form-label' %>
                         <div class="mb-3 input-group required">
                             <%= f.hidden_field :repository_id, value: @repository.id %>
                             <%= f.collection_select :owner_id, @repository.users, :id, :username,
@@ -294,12 +294,16 @@
                         %>
                     </div>
                     <div class="comment-header">
-                        <%= link_to user_path(comment.username) do %>
-                            <div><%= comment.username %><%= tag.div(comment.user.reputation, class: 'rep') %> </div>
+                        <% if comment.user %>
+                            <%= link_to user_path(comment.username) do %>
+                                <div><%= comment.username %><%= tag.div(comment.user.reputation, class: 'rep') %> </div>
+                            <% end %>
+                        <% else %>
+                            <div><%= t('users.deleted_user') %></div>
                         <% end %>
-                        <%= content_tag :div, "#{time_ago_in_words(comment.created_at)} ago", class: 'time' %><br>
+                        <%= content_tag :div, t('common.time_ago', time: time_ago_in_words(comment.created_at)), class: 'time' %><br>
                         <% if ((@user.admin?) || (@user.id.equal? comment.user_id)) %>
-                            <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :comments, action: :destroy, id: comment.id }, method: :delete, data: { confirm: 'Are you sure you want to delete this comment?' }, class: 'text-danger float-end' %>
+                            <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :comments, action: :destroy, id: comment.id }, method: :delete, **confirmation_options(t('confirmations.comments.delete')), class: 'text-danger float-end' %>
                         <% end %>
                     </div>
                     <div class="comment-content">

@@ -1,0 +1,46 @@
+<div id="opening-hours" class="my-4">
+  <% contacts.each do |contact| %>
+    <% periods = contact.public_opening_hours %>
+    <% next if periods.empty? %>
+    <h2 class="h4 mt-4"><%= contact.name %></h2>
+    <% periods.each do |period| %>
+      <section class="mb-4">
+        <% if period.closed_closed_all_week? %>
+          <h3 class="h5"><%= period.target %></h3>
+          <p class="fw-bold"><%= t('hours.tags.closed') %></p>
+        <% else %>
+          <table class="table table-sm w-auto">
+            <caption class="caption-top fw-bold text-body"><%= period.target %></caption>
+            <thead>
+              <tr>
+                <th scope="col"><%= t('hours.day') %></th>
+                <th scope="col"><%= t('hours.times') %></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% period.visible_days.each do |entry| %>
+                <tr>
+                  <th scope="row"><%= t("hours.tags.#{entry[:day]}") %></th>
+                  <td>
+                    <% if entry[:closed] %>
+                      <%= t('hours.tags.closed') %>
+                    <% elsif entry[:opening] && entry[:closing] %>
+                      <%= "#{entry[:opening]} - #{entry[:closing]}" %>
+                    <% elsif entry[:opening] %>
+                      <%= t('hours.from', time: entry[:opening]) %>
+                    <% else %>
+                      <%= t('hours.until', time: entry[:closing]) %>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% end %>
+        <% if period.notes.present? %>
+          <div class="opening-hours-notes"><%= sanitize(period.notes) %></div>
+        <% end %>
+      </section>
+    <% end %>
+  <% end %>
+</div>
