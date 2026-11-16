@@ -93,7 +93,7 @@ RSpec.describe "Staff dashboard last visit cells", type: :request do
     end
   end
 
-  describe "refresh_tables", skip_bullet: true do
+  describe "refresh_tables" do
     before do
       rewrite_older_session do
         create(:lab_session, user: visitor, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
@@ -104,6 +104,25 @@ RSpec.describe "Staff dashboard last visit cells", type: :request do
       get "/staff_dashboard/refresh_tables"
 
       expect(cell_texts(json["signed_in"], "td.sign_out_time-cell")).to include("about 5 hours ago at Elsewhere Lab")
+    end
+
+    it "checks the walk-in sheet of every signed-in row in a space that needs one" do
+      mtc = create(:space, name: "MTC")
+      signed = create(:user, :regular_user, name: "Signed Visitor")
+      unsigned = create(:user, :regular_user, name: "Unsigned Visitor")
+      create(:walk_in_safety_sheet, :is_adult, user: signed, space: mtc)
+      [signed, unsigned, visitor].each do |user|
+        create(:lab_session, user: user, space: mtc, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+      end
+      sign_in_as(:staff, space: mtc)
+
+      get "/staff_dashboard/refresh_tables"
+      rows = Nokogiri::HTML(json["signed_in"]).css("tr[data-user-id]")
+
+      expect(rows.size).to eq(3)
+      expect(rows.count { |row| row.text.include?("Did not sign sheet") }).to eq(2)
+      get "/staff_dashboard"
+      expect(response.body.scan("Did not sign sheet").size).to eq(2)
     end
   end
 end

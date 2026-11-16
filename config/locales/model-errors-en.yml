@@ -4,6 +4,12 @@ en:
   activerecord:
     errors:
       models:
+        project_proposal:
+          attributes:
+            base:
+              semester_incomplete: "Choose both a season and a year, or neither."
+        proficient_project_session:
+          holds_certification: "This session holds a certification, so it cannot be deleted."
         key_request:
           attributes:
             user:
@@ -34,7 +40,8 @@ en:
         coupon_code:
           attributes:
             cc_cost:
-              invalid_cc_cost: "must be a number of CC points (0 or more)"
+              invalid_cc_cost: "must be a number of CCs (0 or more)"
+          claimed_cannot_delete: "A user has already claimed this coupon with CCs, so it cannot be deleted"
         program:
           attributes:
             user:
@@ -58,11 +65,16 @@ en:
               inclusion: "A level is required."
         space:
           attributes:
+            base:
+              popular_hours_not_created: "The space could not be created because its popular hours could not be stored. Try again."
             name:
               blank: "A name is required for the space"
               taken: "Space already exists"
         sub_space:
           attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "This sub space has bookings and cannot be deleted."
             name:
               blank: "A name is required for the space"
         require_training:
@@ -70,18 +82,63 @@ en:
             training_id:
               blank: "A training must be selected"
         training_session:
+          locked_once_awarded: "The training, level and trainer cannot be changed once the session has awarded certifications."
           attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "This training session has awarded certifications or has exams, so it cannot be deleted."
             training:
               blank: "A training subject is required"
+              not_offered_in_space: "is not offered in this space"
             user:
               blank: "A trainer is required"
               must_be_staff: "must be staff"
             level:
               blank: "A level is required"
+              not_allowed: "must be one of %{levels}"
+            course:
+              too_long: "must be a string of at most 255 characters"
+        membership_tier:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "This membership tier has memberships and cannot be deleted."
+        training:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "This training has sessions or projects and cannot be deleted."
+        printer_type:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "This printer type has printers and cannot be deleted."
+        printer:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "This printer has sessions or issues and cannot be removed."
+        locker_size:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "This locker size has lockers and cannot be deleted."
+        booking_status:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "This booking status is in use by bookings and cannot be deleted."
+        sub_space_booking_status:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "This booking status entry is still used by a booking and cannot be deleted."
         project_requirement:
           attributes:
             proficient_project_id:
               taken: "This project is already a pre-requisite"
+            required_project:
+              circular: "cannot depend on itself, directly or through other required projects"
         time_period:
           attributes:
             end_date:
@@ -94,6 +151,8 @@ en:
           attributes:
             base:
               one_correct_answer: "A question must have exactly one correct answer"
+              answer_text_required: "Every answer needs a description"
+              two_answers_required: "A question needs at least two answers"
         staff_unavailability:
           attributes:
             start_time:
@@ -144,14 +203,37 @@ en:
           attributes:
             expires_at:
               after_family_cap: "must not be after the family cap"
-        help:
-          attributes:
-            base:
-              issue_submission_failed: "Internal error while submitting issue."
         volunteer_task:
           attributes:
             photos:
               too_many: " can't exceed 5 photos"
+          awarded_cannot_delete: "This task has approved hours or CC awarded and cannot be deleted."
+          edit_refused:
+            training_missing: "A required training does not exist."
+            no_successor: "There must be at least one staff member assigned to this task."
+            add_not_found:
+              staff: "The staff to add could not be found."
+              volunteer: "The volunteer to add could not be found."
+            remove_not_on_task:
+              staff: "The staff to remove is not on this task."
+              volunteer: "The volunteer to remove is not on this task."
+              user: "The user to remove is not on this task."
+        volunteer_hour:
+          attributes:
+            date_of_task:
+              in_the_future: "cannot be in the future"
+        user_booking_approval:
+          already_pending: "This request was already pending."
+          already_approved: "This request was already approved."
+          already_declined: "This request was already declined."
+          already_revoked: "This request was already revoked."
+          account_deleted: "The account that sent this request has been deleted."
+          already_has_access: "You already have booking access."
+          already_requested: "You have already requested access."
+        volunteer_task_join:
+          attributes:
+            user_id:
+              taken: "is already on this task"
         learning_module:
           attributes:
             title:
@@ -159,23 +241,39 @@ en:
               taken: "Title already exists"
         proficient_project:
           attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "This project has sessions and cannot be deleted."
             title:
               blank: "A title is required."
               taken: "Title already exists"
+        photo:
+          attributes:
+            image:
+              too_large: "is larger than %{max_size}"
+          unreadable: "%{filename} could not be read as a picture. Check that it is a valid image file and try again."
         repository:
           attributes:
+            base:
+              not_hidden: "It is already restored."
+              owner_deleted: "The owner's account is deleted. Restore the account to bring its repositories back."
             title:
               blank: "Project title is required."
               taken: "Project title is already in use."
             password:
               blank: "Password is required for private projects"
             photos:
-              too_long: "Must have between 1 and 5 photos"
-              too_short: "Must have between 1 and 5 photos"
+              too_long: "Must have between 1 and 10 photos"
+              too_short: "Must have between 1 and 10 photos"
         user:
           attributes:
+            base:
+              restrict_dependent_destroy:
+                has_one: "This user has an RFID card and cannot be deleted."
             name:
               special_html_characters: "must not contain special HTML characters"
+            identity:
+              needs_uottawa_proof: "can be a uOttawa student, faculty or staff identity only with a confirmed @uottawa.ca email address. Please choose another identity or contact the Makerspace staff."
             student_id:
               wrong_digit_count: "must be between 7 and 12 digits"
             url:

@@ -131,7 +131,7 @@ RSpec.describe DispatchDueOrdersJob, type: :job do
     it "hands a row out once to two concurrent dispatchers" do
       order = stored(1)
       results = 2.times.map do
-        Thread.new { ActiveRecord::Base.connection_pool.with_connection { ProcessedOrder.dispatch_due(now: now) } }
+        race_thread { ProcessedOrder.dispatch_due(now: now) }
       end.map(&:value)
       expect(results.flatten).to eq([order.id])
       expect(queued_ids).to eq([order.id])
@@ -171,6 +171,22 @@ RSpec.describe DispatchDueOrdersJob, type: :job do
       allow(ApplyProcessedOrderJob).to receive(:perform_later).and_raise(ActiveRecord::ConnectionNotEstablished)
       expect { ProcessedOrder.dispatch_due(now: now) }.not_to raise_error
       expect(order.reload.leased_until).to be_nil
+    end
+
+    it "reports a queueing failure (class only, no message) and a failed hand-out, and does not raise" do
+      order = stored(1)
+      allow(ApplyProcessedOrderJob).to receive(:perform_later).and_raise(ActiveRecord::ConnectionNotEstablished, "secret")
+      ProcessedOrder.dispatch_due(now: now)
+      error, opts = reports.find { |e, _| e.is_a?(ProcessedOrder::DispatchFailed) }
+      expect(error.message).to eq("queueing order #{order.id} failed (ActiveRecord::ConnectionNotEstablished)")
+      expect(opts[:context]).to eq(step: "queue_order", order_id: order.id, error_class: "ActiveRecord::ConnectionNotEstablished")
+
+      reports.clear
+      allow(ProcessedOrder.connection).to receive(:select_all).and_raise(ActiveRecord::StatementInvalid, "secret")
+      expect(ProcessedOrder.dispatch_due(now: now, skip_fail_exhausted: true)).to eq([])
+      error, opts = reports.find { |e, _| e.is_a?(ProcessedOrder::DispatchFailed) }
+      expect(error.message).to eq("handing out the due orders failed (ActiveRecord::StatementInvalid)")
+      expect(opts[:context]).to eq(step: "dispatch_due", error_class: "ActiveRecord::StatementInvalid")
     end
 
     it "hands out only the one order asked for" do

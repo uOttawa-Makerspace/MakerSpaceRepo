@@ -30,11 +30,10 @@ RSpec.describe UniProgram, type: :model do
       expect(UniProgram.no_program).to eq("Undeclared")
     end
 
-    it "raises NoMethodError when no faculty-less row exists" do
-      # find_by returns nil and `.program` is called on it unguarded.
+    it "falls back to a fixed label when no faculty-less row exists" do
       create(:uni_program, faculty: "Engineering", program: "CS")
 
-      expect { UniProgram.no_program }.to raise_error(NoMethodError)
+      expect(UniProgram.no_program).to eq("My program is not in the list")
     end
   end
 
@@ -80,6 +79,63 @@ RSpec.describe UniProgram, type: :model do
 
       expect(UniProgram.where(program: "Physics").count).to eq(2)
       expect(UniProgram.programs_by_faculty).to eq("Science" => %w[Physics])
+    end
+  end
+
+  describe "inactive programs" do
+    before do
+      create(:uni_program, faculty: "Engineering", program: "CS")
+      create(:uni_program, faculty: "Engineering", program: "Old Program", active: false)
+    end
+
+    it "are active by default" do
+      expect(create(:uni_program)).to be_active
+    end
+
+    it ".active leaves them out" do
+      expect(UniProgram.active.pluck(:program)).to eq(%w[CS])
+    end
+
+    it ".programs_by_faculty leaves them out, unless one is the program to keep" do
+      expect(UniProgram.programs_by_faculty).to eq("Engineering" => %w[CS])
+      expect(UniProgram.programs_by_faculty(keep: "Old Program")).to eq("Engineering" => ["CS", "Old Program"])
+    end
+
+    it "still resolve to a department for users who have them" do
+      create(:uni_program, faculty: "Engineering", program: "Old Program 2", department: "EECS", active: false)
+      user = build(:user, program: "Old Program 2")
+
+      expect(user.department).to eq("EECS")
+    end
+
+    it "resolve to the active program's department when both share a name" do
+      create(:uni_program, faculty: "Engineering", program: "Shared Name", department: "Retired Dept", active: false)
+      create(:uni_program, faculty: "Engineering", program: "Shared Name", level: "Doctorate", department: "Active Dept")
+
+      expect(build(:user, program: "Shared Name").department).to eq("Active Dept")
+    end
+
+    it "resolve to the same department every time when all matches are inactive" do
+      create(:uni_program, faculty: "Engineering", program: "Gone", department: "Zeta", active: false)
+      create(:uni_program, faculty: "Engineering", program: "Gone", level: "Doctorate", department: "Alpha", active: false)
+
+      expect(build(:user, program: "Gone").department).to eq("Alpha")
+    end
+  end
+
+  describe "uniqueness of active programs" do
+    it "refuses a second active row for the same program, level and faculty" do
+      create(:uni_program, program: "CS", level: "Master's", faculty: "Engineering")
+
+      expect { create(:uni_program, program: "CS", level: "Master's", faculty: "Engineering", department: "Other") }
+        .to raise_error(ActiveRecord::RecordNotUnique)
+    end
+
+    it "allows an inactive copy" do
+      create(:uni_program, program: "CS", level: "Master's", faculty: "Engineering")
+
+      expect { create(:uni_program, program: "CS", level: "Master's", faculty: "Engineering", active: false) }
+        .not_to raise_error
     end
   end
 end

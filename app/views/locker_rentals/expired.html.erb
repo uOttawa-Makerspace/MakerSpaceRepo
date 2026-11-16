@@ -1,4 +1,4 @@
-<h1 class="text-center">Expired locker rentals</h1>
+<h1 class="text-center"><%= t('lockers.expired_page.heading') %></h1>
 <% if @expired_locker_rentals.none? %>
     <p class="text-center"><%= t('lockers.no_expired_rentals') %></p>
 <% else %>
@@ -6,10 +6,10 @@
     <table data-datatable class="table table-striped">
         <thead class="table-primary">
             <tr>
-                <th>Locker ID</th>
-                <th>Rented by</th>
-                <th>Expired on</th>
-                <th>Action</th>
+                <th><%= t('lockers.locker_id') %></th>
+                <th><%= t('lockers.rented_by') %></th>
+                <th><%= t('lockers.expired_page.expired_on') %></th>
+                <th><%= t('lockers.expired_page.action') %></th>
             </tr>
         </thead>
         <tbody>
@@ -18,10 +18,9 @@
                     <td><%= expired.locker&.specifier %></td>
                     <td><%= expired.rented_by.username %></td>
                     <td>
-                        Expired on <%= expired.owned_until.to_date.to_fs :long %>,
-                        <%= time_ago_in_words expired.owned_until %> ago
+                        <%= t('lockers.expired_page.expired_on_ago', date: l(expired.owned_until.to_date, format: :rental_date), time: time_ago_in_words(expired.owned_until)) %>
                     </td>
-                    <td><%= link_to 'View rental', locker_rental_path(expired), class: 'btn btn-primary' %></td>
+                    <td><%= link_to t('lockers.expired_page.view_rental'), locker_rental_path(expired), class: 'btn btn-primary' %></td>
                 </tr>
             <% end %>
         </tbody>

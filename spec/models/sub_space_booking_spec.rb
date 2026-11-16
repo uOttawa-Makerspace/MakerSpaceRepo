@@ -16,8 +16,8 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
   end
 
   describe "#destroy_with_status!" do
-    it "destroys the booking and its status row" do
-      booking = create(:sub_space_booking)
+    it "destroys the booking and its old status row" do
+      booking = create(:sub_space_booking, :with_old_status_row)
       status_id = booking.sub_space_booking_status_id
 
       booking.destroy_with_status!
@@ -26,17 +26,16 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
       expect(SubSpaceBookingStatus.exists?(status_id)).to be(false)
     end
 
-    it "destroys a booking that has no status" do
+    it "destroys a booking that has no old status row" do
       booking = create(:sub_space_booking)
-      booking.update_column(:sub_space_booking_status_id, nil)
-      SubSpaceBookingStatus.where(sub_space_booking_id: booking.id).delete_all
+      expect(booking.reload.sub_space_booking_status_id).to be_nil
 
       expect { described_class.find(booking.id).destroy_with_status! }
         .to change(described_class, :count).by(-1)
     end
 
     it "leaves the booking and its status linked when the destroy fails" do
-      booking = create(:sub_space_booking)
+      booking = create(:sub_space_booking, :with_old_status_row)
       status_id = booking.sub_space_booking_status_id
       allow_any_instance_of(described_class).to receive(:destroy!).and_raise(ActiveRecord::RecordNotDestroyed)
 
@@ -90,14 +89,14 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
     end
 
     describe "#save_with_status!" do
-      it "saves the booking with the status and a matching old status row, linked" do
+      it "saves the booking with the status and writes no old status row" do
         new_booking = build(:sub_space_booking, booking_status: nil)
 
         new_booking.save_with_status!(@approved_status)
 
         expect(new_booking.reload.booking_status).to eq(@approved_status)
-        expect(legacy_status(new_booking)).to eq(@approved_status)
-        expect(new_booking.sub_space_booking_status_id).to eq(SubSpaceBookingStatus.find_by(sub_space_booking_id: new_booking.id).id)
+        expect(new_booking.sub_space_booking_status_id).to be_nil
+        expect(SubSpaceBookingStatus.where(sub_space_booking_id: new_booking.id)).to be_empty
       end
 
       it "saves nothing when the booking is invalid" do
@@ -111,22 +110,20 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
     end
 
     describe "#change_status!" do
-      it "sets the status and keeps the old status row in step" do
+      it "sets the status and writes no old status row" do
         booking.change_status!(@approved_status)
 
         expect(booking.reload.booking_status).to eq(@approved_status)
-        expect(legacy_status(booking)).to eq(@approved_status)
-        expect(SubSpaceBookingStatus.where(sub_space_booking_id: booking.id).count).to eq(1)
+        expect(SubSpaceBookingStatus.where(sub_space_booking_id: booking.id)).to be_empty
       end
 
-      it "creates the old status row when the booking has none" do
-        booking.update_column(:sub_space_booking_status_id, nil)
-        SubSpaceBookingStatus.where(sub_space_booking_id: booking.id).delete_all
+      it "leaves an existing old status row as it was" do
+        old = create(:sub_space_booking, :with_old_status_row)
 
-        described_class.find(booking.id).change_status!(@declined_status)
+        described_class.find(old.id).change_status!(@declined_status)
 
-        expect(legacy_status(booking)).to eq(@declined_status)
-        expect(booking.reload.sub_space_booking_status_id).to be_present
+        expect(old.reload.booking_status).to eq(@declined_status)
+        expect(legacy_status(old)).to eq(@pending_status)
       end
 
       it "works on a booking that no longer passes validation" do
@@ -139,33 +136,57 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
     end
 
     describe ".change_status_of!" do
-      it "changes the listed bookings and their old status rows, and no others" do
+      it "changes the listed bookings and no others, and writes no old status rows" do
         listed = create_list(:sub_space_booking, 2)
         other = create(:sub_space_booking)
 
         described_class.change_status_of!(listed, @declined_status)
 
         expect(listed.map { |b| b.reload.booking_status }).to all(eq(@declined_status))
-        expect(listed.map { |b| legacy_status(b) }).to all(eq(@declined_status))
         expect(other.reload.booking_status).to eq(@pending_status)
-        expect(legacy_status(other)).to eq(@pending_status)
+        expect(SubSpaceBookingStatus.count).to eq(0)
+      end
+    end
+
+    describe "#approve_if_pending! and #decline_if_pending!" do
+      it "approve returns false the second time and changes nothing" do
+        booking = create(:sub_space_booking)
+        expect(booking.approve_if_pending!(by: booking.user)).to be(true)
+        before = described_class.find(booking.id).attributes
+
+        expect(described_class.find(booking.id).approve_if_pending!(by: create(:user, :admin))).to be(false)
+
+        expect(described_class.find(booking.id).attributes).to eq(before)
       end
 
-      it "creates a missing old status row and repairs a mislinked one" do
-        missing, mislinked = create_list(:sub_space_booking, 2)
-        other = create(:sub_space_booking)
-        [missing, mislinked].each { |b| b.update_column(:sub_space_booking_status_id, nil) }
-        SubSpaceBookingStatus.where(sub_space_booking_id: missing.id).delete_all
-        mislinked.update_column(:sub_space_booking_status_id, other.sub_space_booking_status_id)
-        SubSpaceBookingStatus.where(sub_space_booking_id: mislinked.id).delete_all
+      it "approve stamps who approved it and when" do
+        booking = create(:sub_space_booking)
+        admin = create(:user, :admin)
 
-        described_class.change_status_of!([missing, mislinked].map { |b| described_class.find(b.id) }, @approved_status)
+        booking.approve_if_pending!(by: admin)
 
-        [missing, mislinked].each do |b|
-          expect(legacy_status(b)).to eq(@approved_status)
-          expect(b.reload.sub_space_booking_status_id).to eq(SubSpaceBookingStatus.find_by(sub_space_booking_id: b.id).id)
-        end
-        expect(legacy_status(other)).to eq(@pending_status)
+        expect(booking.reload).to have_attributes(approved_by_id: admin.id, approved_at: BookingClock::NOW)
+      end
+
+      it "decline returns false the second time and changes nothing" do
+        booking = create(:sub_space_booking)
+        expect(booking.decline_if_pending!).to be(true)
+        before = described_class.find(booking.id).attributes
+
+        expect(described_class.find(booking.id).decline_if_pending!).to be(false)
+
+        expect(described_class.find(booking.id).attributes).to eq(before)
+      end
+
+      it "change the status and write no old status row" do
+        approved, declined = create_list(:sub_space_booking, 2)
+
+        expect(approved.approve_if_pending!(by: approved.user)).to be(true)
+        expect(declined.decline_if_pending!).to be(true)
+
+        expect(approved.reload).to be_approved
+        expect(declined.reload).to be_declined
+        expect(SubSpaceBookingStatus.count).to eq(0)
       end
     end
   end
@@ -391,7 +412,7 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
     # The status row refuses its own destroy while the booking points at it, so a plain destroy is
     # refused and nothing is deleted; destroy_with_status! is the way to remove a booking.
     it "destroy is refused and both rows survive" do
-      booking = create(:sub_space_booking, name: "N", description: "D",
+      booking = create(:sub_space_booking, :with_old_status_row, name: "N", description: "D",
                        start_time: DateTime.parse("2027-03-03 10:00"),
                        end_time: DateTime.parse("2027-03-03 11:00"))
       status_row = described_class
@@ -412,6 +433,181 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
       expect(b.user).to be_nil
       expect(b.recurring_booking).to be_nil
       expect(b.valid_without_status?).to be(true)
+    end
+  end
+
+  describe "room checks" do
+    let(:room) { create(:sub_space) }
+    let(:owner) { create(:user, :regular_user) }
+
+    def booking_at(day, from, to, **attrs)
+      described_class.new({ sub_space: room, user: owner, name: "B", description: "D",
+                            start_time: Time.zone.parse("#{day} #{from}"),
+                            end_time: Time.zone.parse("#{day} #{to}") }.merge(attrs))
+    end
+
+    def saved_at(day, from, to, **attrs)
+      create(:sub_space_booking, { sub_space: room, user: owner,
+                                   start_time: Time.zone.parse("#{day} #{from}"),
+                                   end_time: Time.zone.parse("#{day} #{to}") }.merge(attrs))
+    end
+
+    describe "#overlaps_block?" do
+      it "is true only for a block of the same room that overlaps the times, not counting the booking itself" do
+        saved_at("2027-04-03", "12:00", "14:00", blocking: true)
+        saved_at("2027-04-03", "08:00", "09:00", blocking: false)
+        create(:sub_space_booking, sub_space: create(:sub_space), blocking: true,
+                                   start_time: Time.zone.parse("2027-04-03 08:00"),
+                                   end_time: Time.zone.parse("2027-04-03 09:00"))
+
+        expect(booking_at("2027-04-03", "13:00", "15:00").overlaps_block?).to be(true)
+        expect(booking_at("2027-04-03", "14:00", "15:00").overlaps_block?).to be(false)
+        expect(booking_at("2027-04-03", "08:30", "09:30").overlaps_block?).to be(false)
+        block = described_class.find_by!(blocking: true, sub_space: room)
+        expect(block.overlaps_block?).to be(false)
+      end
+
+      it "is false while a time is missing" do
+        saved_at("2027-04-03", "12:00", "14:00", blocking: true)
+        expect(booking_at("2027-04-03", "13:00", "15:00", end_time: nil).overlaps_block?).to be(false)
+        expect(booking_at("2027-04-03", "13:00", "15:00", start_time: nil).overlaps_block?).to be(false)
+      end
+    end
+
+    describe "#moving?" do
+      it "is true when the times or the room change, and false for a rename" do
+        booking = saved_at("2027-04-03", "10:00", "11:00")
+        booking.name = "Renamed"
+        expect(booking.moving?).to be(false)
+        booking.sub_space = create(:sub_space)
+        expect(booking.moving?).to be(true)
+        booking.reload.end_time += 1.hour
+        expect(booking.moving?).to be(true)
+      end
+    end
+
+    describe "#owner_hours_that_week" do
+      it "sums the owner's other hours in the room in the booking's week" do
+        saved_at("2027-04-05", "10:00", "12:00") # Monday, same week
+        saved_at("2027-04-11", "10:00", "11:00") # Sunday, same week
+        saved_at("2027-04-12", "10:00", "13:00") # next Monday
+        create(:sub_space_booking, sub_space: room, start_time: Time.zone.parse("2027-04-06 10:00"),
+                                   end_time: Time.zone.parse("2027-04-06 15:00")) # someone else
+        own = saved_at("2027-04-07", "10:00", "14:00")
+
+        expect(own.owner_hours_that_week).to eq(3)
+        expect(booking_at("2027-04-07", "10:00", "11:00").owner_hours_that_week).to eq(7)
+      end
+    end
+
+    describe "#duration_hours" do
+      it "is the length in hours, and nil while a time is missing" do
+        expect(booking_at("2027-04-07", "10:00", "11:30").duration_hours).to eq(1.5)
+        expect(booking_at("2027-04-07", "10:00", "11:30", end_time: nil).duration_hours).to be_nil
+        expect(booking_at("2027-04-07", "10:00", "11:30", start_time: nil).duration_hours).to be_nil
+      end
+    end
+
+    describe "#exceeds_maximum_duration?" do
+      it "is false for a room without a maximum duration" do
+        expect(booking_at("2027-04-07", "10:00", "20:00").exceeds_maximum_duration?).to be(false)
+      end
+
+      it "is true only beyond the room's maximum duration" do
+        room.update!(maximum_booking_duration: 2)
+        expect(booking_at("2027-04-07", "10:00", "12:01").exceeds_maximum_duration?).to be(true)
+        expect(booking_at("2027-04-07", "10:00", "12:00").exceeds_maximum_duration?).to be(false)
+      end
+
+      it "is false while a time is missing" do
+        room.update!(maximum_booking_duration: 2)
+        expect(booking_at("2027-04-07", "10:00", "13:00", end_time: nil).exceeds_maximum_duration?).to be(false)
+        expect(booking_at("2027-04-07", "10:00", "13:00", start_time: nil).exceeds_maximum_duration?).to be(false)
+      end
+    end
+
+    describe "#exceeds_weekly_hours?" do
+      it "is false for a room without a weekly maximum" do
+        saved_at("2027-04-06", "10:00", "20:00")
+        expect(booking_at("2027-04-07", "10:00", "20:00").exceeds_weekly_hours?).to be(false)
+      end
+
+      it "is true only when the owner's other hours that week plus this booking pass the room's weekly maximum" do
+        room.update!(maximum_booking_hours_per_week: 3)
+        saved_at("2027-04-06", "10:00", "12:00")
+
+        expect(booking_at("2027-04-07", "10:00", "11:01").exceeds_weekly_hours?).to be(true)
+        expect(booking_at("2027-04-07", "10:00", "11:00").exceeds_weekly_hours?).to be(false)
+        expect(booking_at("2027-04-14", "10:00", "13:00").exceeds_weekly_hours?).to be(false) # next week
+      end
+
+      it "is false while a time is missing" do
+        room.update!(maximum_booking_hours_per_week: 1)
+        expect(booking_at("2027-04-07", "10:00", "13:00", start_time: nil).exceeds_weekly_hours?).to be(false)
+        expect(booking_at("2027-04-07", "10:00", "13:00", end_time: nil).exceeds_weekly_hours?).to be(false)
+      end
+    end
+
+    describe "#apply_initial_state" do
+      let(:admin) { create(:user, :admin) }
+
+      it "approves an admin's booking, stamps the approval and takes the room's default visibility" do
+        room.update!(approval_required: true, default_public: true)
+        booking = booking_at("2027-04-07", "10:00", "13:00")
+
+        booking.apply_initial_state(by: admin)
+
+        expect(booking.booking_status_id).to eq(@approved_status.id)
+        expect(booking.public).to be(true)
+        expect(booking.approved_by_id).to eq(admin.id)
+        expect(booking.approved_at).to eq(Time.current)
+        expect(booking).to be_new_record
+      end
+
+      it "gives a user's booking the room's initial status and visibility, with no approval stamp" do
+        room.update!(approval_required: true, default_public: false)
+        booking = booking_at("2027-04-07", "10:00", "13:00")
+
+        booking.apply_initial_state(by: owner)
+
+        expect(booking.booking_status_id).to eq(@pending_status.id)
+        expect(booking.public).to be(false)
+        expect(booking.approved_by_id).to be_nil
+        expect(booking.approved_at).to be_nil
+      end
+
+      it "leaves a user's automatically approved booking without an approval stamp" do
+        booking = booking_at("2027-04-07", "10:00", "11:00")
+
+        booking.apply_initial_state(by: owner)
+
+        expect(booking.booking_status_id).to eq(@approved_status.id)
+        expect(booking.approved_by_id).to be_nil
+        expect(booking.approved_at).to be_nil
+      end
+    end
+
+    describe "#initial_status" do
+      it "is approved for an admin and in a room that needs no approval" do
+        room.update!(approval_required: true)
+        expect(booking_at("2027-04-07", "10:00", "11:00").initial_status(booked_by_admin: true)).to eq(@approved_status)
+        room.update!(approval_required: false)
+        expect(booking_at("2027-04-07", "10:00", "11:00").initial_status(booked_by_admin: false)).to eq(@approved_status)
+      end
+
+      it "is approved up to the room's automatic-approval hours and pending beyond them or without them" do
+        room.update!(approval_required: true, max_automatic_approval_hour: 2)
+        expect(booking_at("2027-04-07", "10:00", "12:00").initial_status(booked_by_admin: false)).to eq(@approved_status)
+        expect(booking_at("2027-04-07", "10:00", "12:01").initial_status(booked_by_admin: false)).to eq(@pending_status)
+        room.update!(max_automatic_approval_hour: nil)
+        expect(booking_at("2027-04-07", "10:00", "10:30").initial_status(booked_by_admin: false)).to eq(@pending_status)
+      end
+
+      it "is pending while a time is missing, even in a room with automatic-approval hours" do
+        room.update!(approval_required: true, max_automatic_approval_hour: 2)
+        expect(booking_at("2027-04-07", "10:00", "11:00", end_time: nil).initial_status(booked_by_admin: false)).to eq(@pending_status)
+        expect(booking_at("2027-04-07", "10:00", "11:00", start_time: nil).initial_status(booked_by_admin: false)).to eq(@pending_status)
+      end
     end
   end
 
@@ -476,6 +672,43 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
         expect(booking.reload.google_booking_id).to eq("g1")
 
         expect(service).to receive(:delete_event).with(shared_calendar, "g1")
+        described_class.delete_booking(booking)
+      end
+    end
+
+    describe "when Google fails" do
+      let(:booking) { create(:sub_space_booking) }
+
+      def reported(klass, source)
+        expect(Rails.error).to receive(:report)
+          .with(instance_of(klass), hash_including(handled: true, context: hash_including(source: source, sub_space_booking_id: booking.id)))
+      end
+
+      it "reports a failed create and leaves the booking without a Google id" do
+        allow(service).to receive(:insert_event).and_raise(Faraday::ConnectionFailed, "down")
+        reported(Faraday::ConnectionFailed, "sub_space_booking.upsert_booking")
+        described_class.upsert_booking(booking)
+        expect(booking.reload.google_booking_id).to be_nil
+      end
+
+      it "reports a failed update" do
+        booking.update!(google_booking_id: "g1")
+        allow(service).to receive(:update_event).and_raise(Google::Apis::ClientError.new("bad"))
+        reported(Google::Apis::ClientError, "sub_space_booking.upsert_booking")
+        described_class.upsert_booking(booking)
+      end
+
+      it "reports a failed delete" do
+        booking.update!(google_booking_id: "g1")
+        allow(service).to receive(:delete_event).and_raise(Google::Apis::ClientError.new("forbidden", status_code: 403))
+        reported(Google::Apis::ClientError, "sub_space_booking.delete_booking")
+        described_class.delete_booking(booking)
+      end
+
+      it "does not report a delete of an event Google no longer has" do
+        booking.update!(google_booking_id: "g1")
+        allow(service).to receive(:delete_event).and_raise(Google::Apis::ClientError.new("gone", status_code: 404))
+        expect(Rails.error).not_to receive(:report)
         described_class.delete_booking(booking)
       end
     end

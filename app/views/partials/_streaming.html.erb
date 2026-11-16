@@ -1,6 +1,7 @@
 <% youtube_id = YoutubeID.from(url).to_s %>
 <% if youtube_id.match?(/\A[a-zA-Z0-9_-]{11}\z/) %>
   <iframe width="650" height="365"
+          title="<%= t('common.names.video_frame', title: title) %>"
           class="youtube-embed"
           id="yt-player-<%= youtube_id %>"
           src="https://www.youtube.com/embed/<%= youtube_id %>?enablejsapi=1"

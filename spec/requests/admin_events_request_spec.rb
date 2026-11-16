@@ -69,6 +69,53 @@ RSpec.describe "Admin events contract", type: :request do
     expect(entry["allDay"]).to be(false)
   end
 
+  describe "json for the range the calendar shows (?start&end)" do
+    let(:zone) { RecurrenceRule::ZONE }
+
+    def event!(title, starts, ends, rule = nil)
+      create(:event, space: space, title: title, created_by: admin, start_time: starts, end_time: ends, recurrence_rule: rule)
+    end
+
+    def titles
+      response.parsed_body.flat_map { |group| group["events"] }.map { |row| row["title"] }
+    end
+
+    before do
+      event!("Inside", zone.local(2027, 3, 16, 9), zone.local(2027, 3, 16, 10))
+      event!("Overnight", zone.local(2027, 3, 13, 22), zone.local(2027, 3, 14, 2))
+      event!("Last week", zone.local(2027, 3, 9, 9), zone.local(2027, 3, 9, 10))
+      event!("Next week", zone.local(2027, 3, 21, 9), zone.local(2027, 3, 21, 10))
+      event!("Weekly", zone.local(2027, 1, 4, 9), zone.local(2027, 1, 4, 10), "RRULE:FREQ=WEEKLY;BYDAY=MO")
+      event!("Later weekly", zone.local(2027, 4, 5, 9), zone.local(2027, 4, 5, 10), "RRULE:FREQ=WEEKLY;BYDAY=MO")
+      log_in!(admin)
+    end
+
+    it "sends the one-off events that overlap the range and the series that start before its end, rule included" do
+      get json_admin_events_path(id: space.id), params: { start: "2027-03-14T00:00:00", end: "2027-03-21T00:00:00" }
+
+      expect(response.status).to eq(200)
+      expect(titles).to contain_exactly("Inside", "Overnight", "Weekly")
+      weekly = response.parsed_body.flat_map { |group| group["events"] }.find { |row| row["title"] == "Weekly" }
+      expect(weekly["rrule"]).to include("RRULE:FREQ=WEEKLY;BYDAY=MO")
+    end
+
+    it "sends every event without a range" do
+      get json_admin_events_path(id: space.id)
+
+      expect(titles).to contain_exactly("Inside", "Overnight", "Last week", "Next week", "Weekly", "Later weekly")
+    end
+
+    it "answers 400 with the reason for a range it cannot read or one over 100 days" do
+      get json_admin_events_path(id: space.id), params: { start: "2027-03-14T00:00:00", end: "soon" }
+      expect(response.status).to eq(400)
+      expect(response.parsed_body).to eq("error" => I18n.t("errors.calendar.window_invalid"))
+
+      get json_admin_events_path(id: space.id), params: { start: "2027-01-01", end: "2027-06-01" }
+      expect(response.status).to eq(400)
+      expect(response.parsed_body).to eq("error" => "The calendar can show at most 100 days at a time.")
+    end
+  end
+
   it "single publish PATCH marks draft published" do
     event = create(:event, :draft, space: space)
     log_in!(admin)
@@ -86,6 +133,16 @@ RSpec.describe "Admin events contract", type: :request do
     expect(flash[:notice]).to be_nil
     expect(flash[:alert]).to start_with("Failed to publish event:")
     expect(flash[:alert]).to include("repeating more often than daily")
+    expect(event.reload.draft).to be(true)
+  end
+
+  it "saves an unrelated edit of a legacy draft with an invalid rule" do
+    event = create(:event, :draft, space: space)
+    event.update_column(:recurrence_rule, "DTSTART:20270301T150000Z\nRRULE:FREQ=MINUTELY")
+    event.reload
+    expect(event.update(title: "Renamed")).to be(true)
+    expect(event.reload.title).to eq("Renamed")
+    expect(event.update(draft: false)).to be(false)
     expect(event.reload.draft).to be(true)
   end
 
@@ -130,6 +187,35 @@ RSpec.describe "Admin events contract", type: :request do
       expect(flash[:notice]).to eq("2 event(s) published.")
       expect(drafts.map { |e| e.reload.draft }).to all(be(false))
     end
+  end
+
+  it "reads a view range without an offset as Eastern time" do
+    eastern = ActiveSupport::TimeZone["America/Toronto"]
+    before_start = create(:event, :draft, space: space, start_time: eastern.local(2027, 3, 13, 22), end_time: eastern.local(2027, 3, 13, 23))
+    at_start = create(:event, :draft, space: space, start_time: eastern.local(2027, 3, 14, 1), end_time: eastern.local(2027, 3, 14, 2))
+    at_end = create(:event, :draft, space: space, start_time: eastern.local(2027, 3, 20, 22), end_time: eastern.local(2027, 3, 20, 23))
+    after_end = create(:event, :draft, space: space, start_time: eastern.local(2027, 3, 21, 1), end_time: eastern.local(2027, 3, 21, 2))
+
+    log_in!(admin)
+    delete delete_drafts_admin_events_path, params: {
+      space_id: space.id, view_start_date: "2027-03-14T00:00:00", view_end_date: "2027-03-21T00:00:00"
+    }
+
+    expect(Event.where(id: [before_start, at_start, at_end, after_end]).order(:start_time)).to eq([before_start, after_end])
+  end
+
+  it "reads a view range with an offset as that instant" do
+    eastern = ActiveSupport::TimeZone["America/Toronto"]
+    inside = create(:event, :draft, space: space, start_time: eastern.local(2027, 3, 14, 1), end_time: eastern.local(2027, 3, 14, 2))
+    outside = create(:event, :draft, space: space, start_time: eastern.local(2027, 3, 13, 22), end_time: eastern.local(2027, 3, 13, 23))
+
+    log_in!(admin)
+    delete delete_drafts_admin_events_path, params: {
+      space_id: space.id, view_start_date: "2027-03-14T00:00:00-05:00", view_end_date: "2027-03-21T00:00:00-04:00"
+    }
+
+    expect(Event.exists?(inside.id)).to be(false)
+    expect(Event.exists?(outside.id)).to be(true)
   end
 
   # M61: the batch publish is scoped to the admin's space.
@@ -195,8 +281,8 @@ RSpec.describe "Admin events contract", type: :request do
   end
 
   it "update PATCH (non-recurring) with a title" do
-    event = create(:event, space: space, title: "Update-me",
-                           created_by: admin)
+    creator = create(:user, :staff)
+    event = create(:event, space: space, title: "Update-me", created_by: creator)
     log_in!(admin)
     # space_id must ride along: leaving it blank fails validation and the
     # notice flash is never set
@@ -213,8 +299,26 @@ RSpec.describe "Admin events contract", type: :request do
     expect(event.description).to eq("New description")
     expect(event.start_time).to eq(Time.utc(2027, 4, 1, 10, 0))
     expect(event.end_time).to eq(Time.utc(2027, 4, 1, 11, 0))
-    # a non-recurring update overwrites created_by_id with the editor
-    expect(event.created_by_id).to eq(admin.id)
+    # the creator stays; the editor is recorded separately
+    expect(event.created_by_id).to eq(creator.id)
+    expect(event.updated_by_id).to eq(admin.id)
+  end
+
+  it "single publish records the admin as the last editor and keeps the creator" do
+    creator = create(:user, :staff)
+    event = create(:event, :draft, space: space, created_by: creator)
+    log_in!(admin)
+    patch publish_admin_event_path(event)
+    expect(event.reload).to have_attributes(created_by_id: creator.id, updated_by_id: admin.id)
+  end
+
+  it "create POST leaves the last editor empty" do
+    log_in!(admin)
+    post admin_events_path, params: {
+      event: { event_type: "meeting", space_id: space.id,
+               utc_start_time: "2027-04-01 10:00", utc_end_time: "2027-04-01 11:00" }
+    }
+    expect(Event.order(:id).last).to have_attributes(created_by_id: admin.id, updated_by_id: nil)
   end
 
   it "delete_with_scope: non-recurring event simply destroyed" do

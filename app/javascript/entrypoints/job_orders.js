@@ -1,13 +1,47 @@
 import DataTable from "datatables.net-bs5";
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
+import { onEveryPageLoad } from "../src/on_page.js";
+import { pageTable } from "../src/page_table.js";
 
-document.addEventListener("turbo:load", () => {
-  const dt = new DataTable(".table:not(.notDataTable)", {
-    order: [[3, "desc"]], // sorts by id on /admin and submitted date on client view
-    pageLength: 25,
-  });
+// Hides rows submitted more than the computed number of days ago. Registered
+// once per admin page visit; it reads the current value on every redraw.
+function submittedWithinComputedDays(settings, _data, dataIndex) {
+  const daysField = document.getElementById("computed_days");
+  if (!daysField) return true;
+
+  // The submitted cell is localised text; its data-sort attribute holds the
+  // machine-readable timestamp. Keep rows whose timestamp cannot be read.
+  const cell = new DataTable.Api(settings).cell(dataIndex, 4).node();
+  const date = new Date(cell?.dataset.sort);
+  if (Number.isNaN(date.getTime())) return true;
+
+  const diffDays = Math.floor((new Date() - date) / (1000 * 60 * 60 * 24));
+  return diffDays <= parseInt(daysField.value);
+}
+
+function removeDateFilter() {
+  const index = DataTable.ext.search.indexOf(submittedWithinComputedDays);
+  if (index !== -1) DataTable.ext.search.splice(index, 1);
+}
+
+// Builds each job order table of the page and, on the admin page, the filters
+// of its one table. Tables already built are left as they are, with the
+// filters they were given.
+onEveryPageLoad(() => {
+  const [dt] = [...document.querySelectorAll(".table:not(.notDataTable)")]
+    .map((table) =>
+      pageTable(table, {
+        order: [[3, "desc"]], // sorts by id on /admin and submitted date on client view
+        pageLength: 25,
+      }),
+    )
+    .filter(Boolean);
+  if (!dt) return;
+  removeDateFilter();
 
   if (window.location.pathname !== "/job_orders/admin") return; // only filter on admin page
+
+  DataTable.ext.search.push(submittedWithinComputedDays);
 
   const dateRangeSelect = document.getElementById("date_range");
   const jobTypeCheckboxes = document.querySelectorAll(
@@ -67,18 +101,6 @@ document.addEventListener("turbo:load", () => {
     const statusRegex = buildRegexSearch(selectedStatuses);
     const assignedToRegex = buildRegexSearch(selectedAssignedTo);
 
-    DataTable.ext.search.push((_settings, data, _dataIndex) => {
-      const dateStr = data[4];
-      const date = new Date(dateStr);
-      const now = new Date();
-      const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-
-      const lastXDays = parseInt(
-        document.getElementById("computed_days").value,
-      );
-
-      return diffDays <= lastXDays;
-    }); // date range
     dt.column(5).search(typeRegex, true, false); // job_type
     // no clue why the regex isn't matching the full string... it's working for everything else but here is a hack to make it work for now (and forever)
     dt.column(6).search(

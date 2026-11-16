@@ -17,13 +17,13 @@
         <div class="card-body d-flex flex-column gap-2">
             <p class="small text-muted mb-0"><%= learning_module.training&.localized_name %></p>
             <h6 class="fw-bold mb-0"><%= learning_module.title %></h6>
-            <%= status_button(learning_module.tracks_for_user(current_user)) %>
+            <%= status_button(@tracks_by_module[learning_module.id]) %>
         </div>
 
         <% if current_user.admin? %>
             <div class="card-footer bg-transparent d-flex justify-content-between gap-2">
                 <%= link_to edit_learning_area_path(learning_module.id), class: 'btn btn-sm btn-outline-primary w-50' do %>
-                    <i class="fa fa-pencil"></i> Edit
+                    <i class="fa fa-pencil"></i> <%= t('learning_area.edit') %>
                 <% end %>
                 <div class="sort-handle" hidden>
                     <i class="fa-solid fa-arrows-up-down-left-right"></i>

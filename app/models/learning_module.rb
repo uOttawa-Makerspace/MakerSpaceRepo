@@ -8,15 +8,18 @@ class LearningModule < ApplicationRecord
   has_many_attached :project_files # was: has_many :repo_files
   has_many_attached :videos # was: has_many :videos
 
-  # Normalization runs before validation, but we still want to catch if something breaks
+  # Normalization runs before validation, but we still want to catch if something breaks.
+  # A blank shortcut is stored as nil, so any number of modules can go without one.
   normalizes :shortcut_name,
              with: ->(shortcut_name) do
                shortcut_name.strip.downcase.underscore.parameterize(
                  separator: '_'
-               )
+               ).presence
              end
-  validates :shortcut_name, format: { with: /\A[a-zA-Z0-9_]+\z/ }, allow_blank: true
-  validates :shortcut_name, uniqueness: { case_sensitive: false }
+  validates :shortcut_name,
+            format: { with: /\A[a-zA-Z0-9_]+\z/ },
+            uniqueness: { case_sensitive: false },
+            allow_blank: true
 
   enum :level,
        {
@@ -27,6 +30,11 @@ class LearningModule < ApplicationRecord
          advanced: 'Advanced'
        },
        validate: true
+
+  # The stored level text ("Beginner"), as the training levels are written; `level` itself reads the key.
+  def level_name
+    self.class.levels[level]
+  end
 
   # SCORM packages are a zip file
   has_one_attached :scorm_package
@@ -49,21 +57,18 @@ class LearningModule < ApplicationRecord
     end
   end
 
-  # If scorm package changes, update extraction or purge File is available only
-  # after commit, but change key is cleared after save. This would queue the
-  # job, and the job is configured to run after commit succeeds
-  # https://guides.rubyonrails.org/active_storage_overview.html#downloading-files
-  # https://codewithrails.com/blog/rails-enqueue-after-transaction-commit/
-  after_commit :process_scorm_package,
-               on: %i[create update],
-               if: -> { @scorm_package_changed || @scorm_package_cleared }
   # The unzipped files are attached to this model here. Need to clear if the
   # scorm package changes
   has_many_attached :scorm_package_files
 
-  # Value to receive from the edit form
-  attribute :scorm_enabled, :boolean, default: false
-  after_initialize -> { self.scorm_enabled = scorm_package.attached? }
+  # The form's SCORM switch. It shows the submitted value after a failed save, and otherwise whether a
+  # package is attached, looked up only when the switch is read.
+  attribute :scorm_enabled, :boolean
+
+  def scorm_enabled
+    value = super
+    value.nil? ? scorm_package.attached? : value
+  end
 
   enum :scorm_status,
        { pending: 0, processing: 1, ready: 2, failed: 3 },
@@ -116,9 +121,9 @@ class LearningModule < ApplicationRecord
     return unless scorm_package.attached?
 
     if scorm_failed?
-      scorm_error.presence || 'The package could not be processed.'
+      scorm_error.presence || I18n.t('learning_area.scorm_problem.not_processed')
     elsif scorm_stalled?
-      'Extraction did not finish. The background worker may not be running.'
+      I18n.t('learning_area.scorm_problem.not_finished')
     end
   end
 
@@ -146,12 +151,42 @@ class LearningModule < ApplicationRecord
     true
   end
 
-  def tracks_for_user(user)
-    learning_module_tracks.find_by(user:)
+  # Called by the controller after a save that may have changed the package: queues the extraction for a new
+  # package, or purges the extracted files when the package was removed. The files can only be read once the
+  # save has committed, so it must not run inside the transaction. It acts once per save and does nothing for a
+  # save that left the package alone.
+  def process_scorm_package
+    changed = @scorm_package_changed
+    cleared = @scorm_package_cleared
+    @scorm_package_changed = @scorm_package_cleared = false
+    return unless changed || cleared
+
+    if scorm_package.attached?
+      Rails.logger.info "Queued SCORM extract for learning module #{id}"
+      # ExtractScorm purges files eventually.
+      ExtractScormJob.perform_later(id)
+    else
+      scorm_package_files.purge_later
+    end
+  end
+
+  # Loads, in one query per attachment kind, the photos, videos and project files that every given module without a
+  # SCORM package shows on its page. A module with a package shows the package instead, so its files are not loaded.
+  def self.preload_content_attachments(modules)
+    ActiveRecord::Associations::Preloader.new(
+      records: modules.reject { |learning_module| learning_module.scorm_package.attached? },
+      associations: { photos_attachments: :blob, videos_attachments: :blob, project_files_attachments: :blob }
+    ).call
   end
 
   def capitalize_title
     self.title = title.upcase_first
+  end
+
+  # The module whose shortcut link this is. The value is normalised like the stored shortcut, and a value
+  # that is blank once normalised matches no module, not one that has no shortcut.
+  def self.find_by_shortcut!(shortcut)
+    where.not(shortcut_name: nil).find_by!(shortcut_name: shortcut)
   end
 
   def self.filter_by_attribute(attribute, value)
@@ -189,18 +224,6 @@ class LearningModule < ApplicationRecord
   end
 
   private
-
-  # Called when scorm package changes
-  def process_scorm_package
-    if scorm_package.attached?
-      Rails.logger.info "Queued SCORM extract for learning module #{id}"
-      # ExtractScorm purges files eventually.
-      ExtractScormJob.perform_later(id)
-    else
-      # Package removed, delete files
-      scorm_package_files.purge_later
-    end
-  end
 
   def uniqueness
     if LearningModule

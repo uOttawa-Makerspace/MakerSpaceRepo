@@ -1,5 +1,8 @@
 class GithubIssuesService
   TOKEN_EXPIRY_BUFFER = 300
+  # Seconds to open a connection to GitHub and to wait for each answer, for the token and the issue calls.
+  # Octokit's own headers are kept.
+  CONNECTION_OPTIONS = Octokit::Default.connection_options.merge(request: { open_timeout: 5, timeout: 20 }).freeze
 
   # Send an issue and return the issue number
   def create_issue(reporter:, title:, body:)
@@ -50,7 +53,7 @@ class GithubIssuesService
       # Sign JWT
       jwt = JWT.encode(jwt_payload, private_key, 'RS256')
       # Authenticate application with JWT
-      app_client = Octokit::Client.new(bearer_token: jwt)
+      app_client = Octokit::Client.new(bearer_token: jwt, connection_options: CONNECTION_OPTIONS)
       # Get access token for organization
       access_token =
         app_client.create_app_installation_access_token(
@@ -58,7 +61,7 @@ class GithubIssuesService
         ).token
       @token_expires = now + 3600
       # Authenticate as organization
-      @client = Octokit::Client.new(access_token: access_token)
+      @client = Octokit::Client.new(access_token: access_token, connection_options: CONNECTION_OPTIONS)
     end
     @client
     

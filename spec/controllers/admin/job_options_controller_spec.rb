@@ -34,7 +34,7 @@ RSpec.describe Admin::JobOptionsController, type: :controller do
         end.not_to change(JobOption, :count)
 
         expect(response).to redirect_to(settings_job_orders_path)
-        expect(flash[:alert]).to eq("There was an error while creating the option.")
+        expect(flash[:alert]).to eq("The option was not created. Name This field is required. and Fee This field is required.")
       end
     end
   end
@@ -53,6 +53,7 @@ RSpec.describe Admin::JobOptionsController, type: :controller do
       end.to change(JobOption, :count).by(1)
 
       expect(JobOption.last.name).to include("Updated Name")
+      expect(flash[:notice]).to eq("The option has been updated")
     end
   end
 
@@ -78,7 +79,7 @@ RSpec.describe Admin::JobOptionsController, type: :controller do
       delete :destroy, params: { id: job_option.id }
 
       expect(response).to redirect_to(settings_job_orders_path)
-      expect(flash[:alert]).to eq("An error occurred while deleting the option.")
+      expect(flash[:alert]).to eq("The option was not deleted.")
     end
   end
 end

@@ -116,12 +116,130 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
-    it "rejects a duplicate email regardless of case" do
-      existing = create(:user, :regular_user)
-      expect {
-        post users_path, params: { user: registration_params(email: existing.email.upcase) }
-      }.not_to change(User, :count)
-      expect(response).to have_http_status(:unprocessable_content)
+    describe "when the email already belongs to an account" do
+      let!(:existing) { create(:user, :regular_user) }
+      let(:created_notice) { "Account has been created, please look in your emails to confirm your email address." }
+
+      def sign_up_with(email, **overrides)
+        perform_enqueued_jobs { post users_path, params: { user: registration_params(email: email, **overrides) } }
+      end
+
+      it "answers like a successful sign-up, creates nothing, and mails the existing address" do
+        expect { sign_up_with(existing.email) }.not_to change(User, :count)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:notice]).to eq(created_notice)
+        expect(deliveries.size).to eq(1)
+        expect(deliveries.first.to).to eq([existing.email])
+        expect(deliveries.first.subject).to include("Someone tried to sign up with your email")
+        expect(deliveries.first.body.to_s).to include("/forgot_password")
+      end
+
+      it "matches the address regardless of case" do
+        expect { sign_up_with(existing.email.upcase) }.not_to change(User, :count)
+        expect(response).to redirect_to(root_path)
+        expect(deliveries.map(&:to)).to eq([[existing.email]])
+      end
+
+      it "gives the same redirect and message as a new address" do
+        sign_up_with(existing.email)
+        taken = [response.status, response.location, flash[:notice]]
+        sign_up_with(Faker::Internet.unique.email)
+        expect([response.status, response.location, flash[:notice]]).to eq(taken)
+      end
+
+      it "json: answers 201 with the same message" do
+        expect { post users_path, params: { user: registration_params(email: existing.email) }, as: :json }
+          .not_to change(User, :count)
+        expect(response).to have_http_status(:created)
+        expect(JSON.parse(response.body)).to eq("message" => created_notice)
+      end
+
+      it "sends at most three notices an hour to one address, answering the same each time" do
+        5.times do
+          sign_up_with(existing.email)
+          expect(response).to redirect_to(root_path)
+          expect(flash[:notice]).to eq(created_notice)
+        end
+        expect(deliveries.size).to eq(3)
+      end
+
+      it "hashes the password once whether the address is free or taken" do
+        allow(BCrypt::Password).to receive(:create).and_call_original
+        sign_up_with(Faker::Internet.unique.email)
+        expect(BCrypt::Password).to have_received(:create).once
+
+        RSpec::Mocks.space.proxy_for(BCrypt::Password).reset
+        allow(BCrypt::Password).to receive(:create).and_call_original
+        sign_up_with(existing.email)
+        expect(BCrypt::Password).to have_received(:create).once
+      end
+
+      it "answers an address held by a deleted account the same way, without mailing it or failing" do
+        deleted = create(:user, :regular_user)
+        deleted.update_columns(deleted: true)
+        expect { sign_up_with(deleted.email) }.not_to change { User.unscoped.count }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:notice]).to eq(created_notice)
+        expect(deliveries).to be_empty
+      end
+
+      it "answers the loser of two simultaneous sign-ups like a normal sign-up" do
+        email = Faker::Internet.unique.email
+        raced = false
+        allow_any_instance_of(User).to receive(:save).and_wrap_original do |original, *args|
+          unless raced
+            raced = true
+            create(:user, :regular_user, email: email)
+          end
+          original.call(*args, **{ validate: false })
+        end
+        sign_up_with(email)
+        expect(User.where(email: email).count).to eq(1)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:notice]).to eq(created_notice)
+      end
+
+      it "answers an address taken after the first check like a normal sign-up" do
+        email = Faker::Internet.unique.email
+        raced = false
+        allow_any_instance_of(User).to receive(:save).and_wrap_original do |original, *args|
+          unless raced
+            raced = true
+            create(:user, :regular_user, email: email)
+          end
+          original.call(*args)
+        end
+        sign_up_with(email)
+        expect(User.where(email: email).count).to eq(1)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:notice]).to eq(created_notice)
+      end
+
+      it "gives a real sign-up and a taken-email attempt the same HTML and JSON responses" do
+        real = Faker::Internet.unique.email
+        sign_up_with(real)
+        html_real = [response.status, response.location, flash[:notice], flash[:alert]]
+        sign_up_with(existing.email)
+        expect([response.status, response.location, flash[:notice], flash[:alert]]).to eq(html_real)
+
+        post users_path, params: { user: registration_params(email: Faker::Internet.unique.email) }, as: :json
+        json_real = [response.status, response.body]
+        post users_path, params: { user: registration_params(email: existing.email) }, as: :json
+        expect([response.status, response.body]).to eq(json_real)
+      end
+
+      it "shows other errors but never that the email is taken" do
+        expect { sign_up_with(existing.email, username: "bad name!") }.not_to change(User, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).not_to include("already been taken")
+        expect(deliveries).to be_empty
+      end
+
+      it "json: other errors do not list the email" do
+        post users_path, params: { user: registration_params(email: existing.email, username: "bad name!") }, as: :json
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(JSON.parse(response.body)).not_to have_key("email")
+      end
     end
 
     it "requires the waiver" do
@@ -545,6 +663,29 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(user.reload.authenticate_password("NewPassw0rd!x#9")).to be(true)
     end
 
+    it "allows 30 attempts an hour from one IP" do
+      29.times { patch reset_password_confirmation_users_path, params: { token: "garbage" } }
+      patch reset_password_confirmation_users_path, params: reset_params(user)
+      expect(flash[:notice]).to start_with("Your password has been updated")
+      expect(user.reload.authenticate_password("NewPassw0rd!x#9")).to be(true)
+    end
+
+    it "answers further attempts from that IP like a throttled reset request, and changes nothing" do
+      30.times { patch reset_password_path, params: { email: "nobody@example.com" } }
+      patch reset_password_path, params: { email: user.email }
+      throttled_reset = { status: response.status, notice: flash[:notice] }
+      expect(throttled_reset).to eq(status: 200, notice: "A reset link email has been sent to the email if the account exists.")
+
+      30.times { patch reset_password_confirmation_users_path, params: { token: "garbage" } }
+      perform_enqueued_jobs { patch reset_password_confirmation_users_path, params: reset_params(user) }
+
+      expect(status: response.status, notice: flash[:notice]).to eq(throttled_reset)
+      expect(response.body).to include(I18n.t("static_pages.forgot_password.title"))
+        .and include(%(action="#{reset_password_path}"))
+      expect(user.reload.authenticate_password(password)).to be(true)
+      expect(deliveries).to be_empty
+    end
+
     it "a mismatched confirmation does not consume the link" do
       p = reset_params(user)
       patch reset_password_confirmation_users_path, params: p.merge(password_confirmation: "different")
@@ -599,9 +740,9 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
 
     it "a database error while storing the password is reported, shown as a failed change, and sends no mail" do
       allow_any_instance_of(User).to receive(:bump_token_version!).and_raise(ActiveRecord::StatementInvalid, "boom")
-      expect(Rails.error).to receive(:report).with(an_instance_of(ActiveRecord::StatementInvalid), handled: true)
+      expect(Rails.error).to receive(:report).with(an_instance_of(ActiveRecord::StatementInvalid), hash_including(handled: true))
       patch reset_password_confirmation_users_path, params: reset_params(user)
-      expect(flash[:alert]).to start_with("An error occured while trying to change your password")
+      expect(flash[:alert]).to start_with("Your new password could not be saved because of a problem on our side.")
       expect(deliveries).to be_empty
     end
 
@@ -695,6 +836,79 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to start_with("Your password has been updated")
       expect(u.reload.password).to eq(forced)
+    end
+
+    it "checks the link first, then the confirmation, then the strength" do
+      p = reset_params(user, pw: "abc", confirm: "abd")
+      patch reset_password_confirmation_users_path, params: p.merge(token: "garbage")
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq(expired_alert)
+      patch reset_password_confirmation_users_path, params: p
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("Your password and password confirmation do not match.")
+      expect(user.reload.authenticate_password(password)).to be(true)
+    end
+
+    it "names every strength problem in the alert and sends no mail" do
+      problems = User.find(user.id).plaintext_password_problems("abc")
+      p = reset_params(user, pw: "abc")
+      perform_enqueued_jobs { patch reset_password_confirmation_users_path, params: p }
+      expect(response).to have_http_status(:found)
+      expect(response).to redirect_to(reset_password_form_users_path(token: p[:token]))
+      expect(flash[:alert]).to eq("Your password was not changed: #{problems.to_sentence}.")
+      expect(deliveries).to be_empty
+      expect(user.reload.token_version).to eq(0)
+    end
+
+    it "a blank new password is refused as a strength problem and leaves the link usable" do
+      p = reset_params(user, pw: "")
+      patch reset_password_confirmation_users_path, params: p
+      expect(response).to redirect_to(reset_password_form_users_path(token: p[:token]))
+      expect(flash[:alert]).to eq("Your password was not changed: Password This field is required.")
+      expect(user.reload.authenticate_password(password)).to be(true)
+    end
+
+    it "gives the blank-password alert in French, ending with one full stop" do
+      p = reset_params(user, pw: "")
+      patch reset_password_confirmation_users_path(locale: "fr"), params: p
+      expect(flash[:alert]).to eq("Votre mot de passe n'a pas été modifié : Mot de passe Ce champ est requis.")
+    end
+
+    it "an expired or used link sends no mail and keeps the password" do
+      p = reset_params(user)
+      travel 121.minutes do
+        perform_enqueued_jobs { patch reset_password_confirmation_users_path, params: p }
+      end
+      expect(response).to redirect_to(root_path)
+      expect(deliveries).to be_empty
+      expect(user.reload.authenticate_password(password)).to be(true)
+    end
+
+    it "a success mails the owner once and bumps the token version" do
+      perform_enqueued_jobs { patch reset_password_confirmation_users_path, params: reset_params(user) }
+      expect(response).to have_http_status(:found)
+      expect(response).to redirect_to(root_path)
+      expect(deliveries.map(&:to)).to eq([[user.email]])
+      expect(user.reload.token_version).to eq(1)
+    end
+
+    it "a member signed in as another account who resets this one stays signed in, their session version untouched" do
+      other = create(:user, :regular_user)
+      login!(other)
+      before_version = session[:token_version]
+      patch reset_password_confirmation_users_path, params: reset_params(user)
+      expect(flash[:notice]).to start_with("Your password has been updated")
+      expect(session[:user_id]).to eq(other.id)
+      expect(session[:token_version]).to eq(before_version)
+      expect(user.reload.authenticate_password("NewPassw0rd!x#9")).to be(true)
+      expect(signed_in?).to be(true)
+    end
+
+    it "a signed-in owner who resets their own password keeps the new token version in the session" do
+      login!(user)
+      patch reset_password_confirmation_users_path, params: reset_params(user)
+      expect(session[:user_id]).to eq(user.id)
+      expect(session[:token_version]).to eq(1)
     end
 
     it "soft-deleted user: the link is treated as expired" do

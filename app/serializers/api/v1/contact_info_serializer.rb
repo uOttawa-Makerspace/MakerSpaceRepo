@@ -4,7 +4,7 @@ module Api
   module V1
     # A contact with its opening-hour periods. Explicit allowlist (no url, space_id, ids).
     module ContactInfoSerializer
-      DAYS = %w[sunday monday tuesday wednesday thursday friday saturday].freeze
+      DAYS = OpeningHour::DAYS
 
       module_function
 
@@ -14,7 +14,7 @@ module Api
           email: contact.email,
           address: contact.address,
           phone_number: contact.phone_number,
-          opening_hours: contact.opening_hours.reject(&:hidden_closed_all_week?).map { |h| opening_hour(h) }
+          opening_hours: contact.public_opening_hours.map { |h| opening_hour(h) }
         }
       end
 

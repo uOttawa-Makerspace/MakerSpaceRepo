@@ -2,40 +2,51 @@
 <section class="container-fluid mt-4">
   <!-- Toast Container -->
   <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1060">
-    <div id="booking_toast" role="alert" aria-live="assertive" aria-atomic="true" class="toast text-bg-danger border-0 shadow" data-bs-autohide="true" data-bs-delay="5000">
+    <div id="booking_toast" data-controller="booking-toast" role="alert" aria-live="assertive" aria-atomic="true" class="toast text-bg-danger border-0 shadow" data-bs-autohide="true" data-bs-delay="5000"
+         data-failed-title="<%= t('errors.bookings.js.failed_title') %>"
+         data-updated-title="<%= t('errors.bookings.js.updated_title') %>"
+         data-partly-done-title="<%= t('errors.bookings.js.partly_done_title') %>"
+         data-updated="<%= t('errors.bookings.js.updated') %>"
+         data-feed="<%= t('errors.bookings.js.feed') %>"
+         data-unavailable-title="<%= t('errors.bookings.js.unavailable_title') %>"
+         data-unavailable="<%= t('errors.bookings.js.unavailable') %>">
       <div class="toast-header text-bg-danger border-bottom border-danger-subtle">
-        <strong id="toast_title" class="me-auto fw-bold"><i class="fa fa-exclamation-triangle"></i> Error</strong>
+        <strong id="toast_title" data-booking-toast-target="title" class="me-auto fw-bold"><i class="fa fa-exclamation-triangle"></i> Error</strong>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="<%= t('common.close') %>"></button>
       </div>
-      <div id="toast_text" class="toast-body fs-6"></div>
+      <div id="toast_text" data-booking-toast-target="text" class="toast-body fs-6"></div>
     </div>
   </div>
 
   <% if current_user.booking_approval || current_user.admin? %>
-    <div class="col-xl-11 mx-auto">
+    <div class="col-xl-11 mx-auto" data-controller="booking-tabs">
+      <% if (approved_request = current_user.approved_booking_request) %>
+        <%= render 'access_status', approval: approved_request %>
+      <% end %>
       <ul class="nav nav-tabs nav-fill mb-4 border-bottom-0 shadow-sm rounded bg-body" id="booking-tab-list" role="tablist">
         <li class="nav-item" role="presentation">
-          <button class="nav-link fw-bold text-uppercase tab-link active" id="booking-calendar-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-calendar-tab" type="button" role="tab"><i class="fa fa-calendar me-2"></i> Book Room</button>
+          <button class="nav-link fw-bold text-uppercase active" id="booking-calendar-tab-btn" data-booking-tabs-target="tab" data-bs-toggle="tab" data-bs-target="#booking-calendar-tab" type="button" role="tab"><i class="fa fa-calendar me-2"></i> Book Room</button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link fw-bold text-uppercase tab-link" id="booking-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-tab" type="button" role="tab"><i class="fa fa-list me-2"></i> My Bookings</button>
+          <button class="nav-link fw-bold text-uppercase" id="booking-tab-btn" data-booking-tabs-target="tab" data-bs-toggle="tab" data-bs-target="#booking-tab" type="button" role="tab"><i class="fa fa-list me-2"></i> My Bookings</button>
         </li>
         <% if current_user.admin? %>
           <li class="nav-item" role="presentation">
-            <button class="nav-link fw-bold text-uppercase tab-link" id="booking-admin-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-admin-tab" type="button" role="tab"><i class="fa fa-cog me-2"></i> Admin Panel</button>
+            <button class="nav-link fw-bold text-uppercase" id="booking-admin-tab-btn" data-booking-tabs-target="tab" data-bs-toggle="tab" data-bs-target="#booking-admin-tab" type="button" role="tab"><i class="fa fa-cog me-2"></i> Admin Panel</button>
           </li>
         <% end %>
       </ul>
 
       <div class="tab-content bg-body p-4 shadow-sm rounded" id="tabContent">
-        <div class="tab-pane active show" id="booking-calendar-tab" role="tabpanel">
+        <div class="tab-pane fade active show" id="booking-calendar-tab" role="tabpanel">
            <% if params[:room].present? %>
               <h3 class="text-center mb-4 fw-bold text-body-emphasis"><%= @subspace.name %> Calendar</h3>
               <div>
-                <% unless @rules.empty? %>
+                <% rules = booking_rules(@subspace) %>
+                <% unless rules.empty? %>
                   <p class="text-center alert alert-info shadow-sm">
                     <strong><%= @subspace.name %></strong>
-                    <%= @rules.to_sentence %>
+                    <%= rules.to_sentence %>
                   </p>
                 <% end %>
               </div>
@@ -50,7 +61,7 @@
                   <% end %>
                 </div>
                 <div class="col-md-10">
-                  <div id="booked-calendar" class="bg-body p-2 rounded"></div>
+                  <div id="booked-calendar" class="bg-body p-2 rounded" <%= tag.attributes(data: calendar_texts_data.merge(controller: "booking-calendar", booking_calendar_booking_modal_outlet: "#bookModal", booking_calendar_booking_toast_outlet: "#booking_toast")) %>></div>
                 </div>
               </div>
               <%= render partial: 'book_modal' %>
@@ -91,6 +102,8 @@
                       <td class="text-center">
                         <% if booking.approved? %>
                           <span class="badge text-bg-success">Approved</span>
+                        <% elsif booking.declined? %>
+                          <span class="badge text-bg-danger">Declined</span>
                         <% else %>
                           <span class="badge text-bg-warning">Pending</span>
                         <% end %>
@@ -100,7 +113,7 @@
                           <% if @user.admin? || !booking.approved? %>
                             <%= button_to sub_space_booking_edit_path(sub_space_booking_id: booking.id), method: :get, class: 'btn btn-outline-primary' do %><i class="fa-solid fa-pencil"></i><% end %>
                           <% end %>
-                          <%= button_to sub_space_booking_delete_path(sub_space_booking_id: booking.id), method: :delete, data: { confirm: 'Are you sure you want to delete this booking?' }, class: 'btn btn-outline-danger' do %><i class="fa-solid fa-trash"></i><% end %>
+                          <%= button_to sub_space_booking_delete_path(sub_space_booking_id: booking.id), method: :delete, **confirmation_options(t('confirmations.bookings.delete')), class: 'btn btn-outline-danger' do %><i class="fa-solid fa-trash"></i><% end %>
                         </div>
                       </td>
                     </tr>
@@ -123,7 +136,8 @@
     <!-- Access Request Form UX Improvement -->
     <div class="row justify-content-center mt-5">
       <div class="col-md-6 col-lg-5">
-        <% if UserBookingApproval.where(user:current_user).exists? && !UserBookingApproval.where(user:current_user).first.approved %>
+        <%= render 'access_status', approval: current_user.booking_access_request %>
+        <% if current_user.booking_access_pending? %>
           <div class="alert alert-warning text-center shadow-sm p-4 rounded-3">
             <i class="fa fa-hourglass-half fa-3x mb-3 text-warning"></i>
             <h4 class="text-body-emphasis">Access Pending</h4>
@@ -137,28 +151,28 @@
             <div class="card-body p-4 bg-body">
               <p class="text-body-secondary text-center mb-4">You do not have permission to book rooms yet. Please request access below.</p>
               
-              <%= form_with url: request_access_sub_space_booking_index_path, method: :put do |f| %>
+              <%= form_with url: request_access_sub_space_booking_index_path, method: :put, data: { controller: 'supervisor-field' } do |f| %>
                 <div class="mb-4">
                   <%= f.label :identity, 'Please select which best describes you:', class: 'form-label fw-bold' %>
                   <div class="form-check">
-                    <%= f.radio_button :identity, 'JMTS', class: 'form-check-input identity-button', required: true %>
+                    <%= f.radio_button :identity, 'JMTS', class: 'form-check-input identity-button', required: true, data: { action: 'click->supervisor-field#toggle' } %>
                     <%= f.label :identity_jmts, 'JMTS team member', class: 'form-check-label' %>
                   </div>
                   <div class="form-check">
-                    <%= f.radio_button :identity, 'Staff', class: 'form-check-input identity-button', required: true %>
+                    <%= f.radio_button :identity, 'Staff', class: 'form-check-input identity-button', required: true, data: { action: 'click->supervisor-field#toggle' } %>
                     <%= f.label :identity_staff, 'Staff member', class: 'form-check-label' %>
                   </div>
                   <div class="form-check">
-                    <%= f.radio_button :identity, 'GNG', class: 'form-check-input identity-button', required: true %>
+                    <%= f.radio_button :identity, 'GNG', class: 'form-check-input identity-button', required: true, data: { action: 'click->supervisor-field#toggle' } %>
                     <%= f.label :identity_gng, 'Student involved with GNG courses', class: 'form-check-label' %>
                   </div>
                   <div class="form-check">
-                    <%= f.radio_button :identity, 'Other', class: 'form-check-input identity-button', required: true %>
+                    <%= f.radio_button :identity, 'Other', class: 'form-check-input identity-button', required: true, data: { action: 'click->supervisor-field#toggle' } %>
                     <%= f.label :identity_other, 'Other', class: 'form-check-label' %>
                   </div>
                 </div>
 
-                <div class="mb-4" id="supervisor-select" style="display: none;">
+                <div class="mb-4" id="supervisor-select" style="display: none;" data-supervisor-field-target="supervisor">
                   <%= label_tag :supervisor, 'Supervisor', class: 'form-label fw-bold' %>
                   <%= select_tag :supervisor, options_for_select(@supervisors), class: 'form-select form-control' %>
                 </div>

@@ -4,7 +4,7 @@ require "rails_helper"
 
 # End-to-end locker journey through the real UI (JS on), two actors
 # (user + staff) in separate browser sessions. Pins the current behavior.
-RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
+RSpec.describe "Journey: locker rental", type: :system do
   include ApplicationHelper
 
   let!(:user) { create(:user, :regular_user) }
@@ -53,10 +53,10 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
       expect(page).to have_text("Please near the lab")
       expect(page).to have_text("Staff Actions")
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Send to Checkout')]]") do
-        select "JA-1", from: "locker_rental_locker_id"
-        accept_confirm { click_button "Send to Checkout" }
+        select "JA-1", from: "locker_rental_locker_id_checkout"
+        accept_confirm_click "Send to Checkout"
       end
-      expect(page).to have_text("Locker rental updated")
+      expect_flash("Locker rental updated")
       expect(page).to have_text("Awaiting Payment").or have_text("Await payment").or have_text(I18n.t("lockers.state.await_payment"))
     end
 
@@ -104,10 +104,10 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     as_actor(:staff) do
       visit locker_rental_path(rental)
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Move Locker')]]") do
-        select "JB-2", from: "locker_rental_locker_id"
-        accept_confirm { click_button "Move Locker" }
+        select "JB-2", from: "locker_rental_locker_id_assign"
+        accept_confirm_click "Move Locker"
       end
-      expect(page).to have_text("Locker rental updated")
+      expect_flash("Locker rental updated")
     end
     expect(rental.reload.locker).to eq(locker_b)
     expect(rental.state).to eq("active")
@@ -128,14 +128,12 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
       log_in_as(staff)
       staff_opens_request(rental)
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Assign Now')]]") do
-        select "JA-1", from: "locker_rental_locker_id"
-        # the "Indefinite" box starts checked for a request with
-        # no end date, so a plain "Assign Now" makes an indefinite rental.
-        expect(page).to have_checked_field("Indefinite")
-        uncheck_and_confirm "Indefinite"
-        accept_confirm { click_button "Assign Now" }
+        select "JA-1", from: "locker_rental_locker_id_assign"
+        # the "Indefinite" box starts unticked and the end date is proposed
+        expect(page).to have_unchecked_field("Indefinite")
+        accept_confirm_click "Assign Now"
       end
-      expect(page).to have_text("Locker rental updated")
+      expect_flash("Locker rental updated")
       expect(page).to have_text("Move Locker")
     end
     rental.reload
@@ -155,10 +153,10 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     ActionMailer::Base.deliveries.clear
     as_actor(:staff) do
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Move Locker')]]") do
-        select "JB-2", from: "locker_rental_locker_id"
-        accept_confirm { click_button "Move Locker" }
+        select "JB-2", from: "locker_rental_locker_id_assign"
+        accept_confirm_click "Move Locker"
       end
-      expect(page).to have_text("Locker rental updated")
+      expect_flash("Locker rental updated")
     end
     expect(rental.reload.locker).to eq(locker_b)
     expect(mails_to(user.email).map(&:subject)).to eq(["Your locker rental for Locker JB-2 has been modified"])
@@ -175,7 +173,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
       select "#{user.name} (#{user.username})", from: "locker_rental_rented_by_id"
       select "#JB-2", from: "locker_rental_locker_id", match: :prefer_exact
       click_button "Assign Locker"
-      expect(page).to have_text("Locker assigned")
+      expect_flash("Locker assigned")
     end
     rental = LockerRental.order(:id).last
     expect(rental.rented_by).to eq(user)
@@ -188,16 +186,17 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     end
   end
 
-  it "pinned: plain Assign Now makes an indefinite rental and the user's locker index lists it as indefinite" do
+  it "staff ticks Indefinite when assigning, and the user's locker index lists the rental as indefinite" do
     rental = request_locker_as_user("Indefinite by default")
     as_actor(:staff) do
       log_in_as(staff)
       staff_opens_request(rental)
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Assign Now')]]") do
-        select "JA-1", from: "locker_rental_locker_id"
-        accept_confirm { click_button "Assign Now" }
+        select "JA-1", from: "locker_rental_locker_id_assign"
+        check "Indefinite"
+        accept_confirm_click "Assign Now"
       end
-      expect(page).to have_text("Locker rental updated")
+      expect_flash("Locker rental updated")
     end
     rental.reload
     expect(rental.state).to eq("active")

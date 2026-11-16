@@ -12,11 +12,10 @@ RSpec.describe Training, type: :model do
       it { should have_many(:certifications) }
       it { should have_many(:require_trainings) }
       it { should have_many(:proficient_projects) }
-      it "dependent destroy: should destroy training sessions if destroyed" do
+      it "refuses to be deleted while it has training sessions" do
         training = create(:training_with_training_sessions)
-        expect { training.destroy }.to change { TrainingSession.count }.by(
-          -training.training_sessions.count
-        )
+        expect { training.destroy }.not_to change { [Training.count, TrainingSession.count] }
+        expect(training.errors.full_messages.to_sentence).to include("This training has sessions or projects and cannot be deleted.")
       end
       it "dependent destroy: should destroy require trainings if destroyed" do
         training = create(:training_with_require_trainings)
@@ -24,11 +23,10 @@ RSpec.describe Training, type: :model do
           -training.require_trainings.count
         )
       end
-      it "dependent destroy: should destroy proficient projects if destroyed" do
+      it "refuses to be deleted while it has proficient projects" do
         training = create(:training_with_proficient_projects)
-        expect { training.destroy }.to change { ProficientProject.count }.by(
-          -training.proficient_projects.count
-        )
+        expect { training.destroy }.not_to change { [Training.count, ProficientProject.count] }
+        expect(training.errors.full_messages.to_sentence).to include("This training has sessions or projects and cannot be deleted.")
       end
     end
   end
@@ -78,9 +76,9 @@ RSpec.describe Training, type: :model do
       expect(t.localized_name).to eq("Laseur")
       I18n.with_locale(:fr) do
         expect(t.description).to eq("Cuts")
-        expect(t.list_of_skills).to eq("a,b")
+        expect(t.list_of_skills).to eq("a, b")
       end
-      expect([t.description, t.list_of_skills]).to eq(["Cuts", "a,b"])
+      expect([t.description, t.list_of_skills]).to eq(["Cuts", "a, b"])
     end
 
     it "skill_list is the current language's list_of_skills as trimmed, non-empty names" do
@@ -96,7 +94,26 @@ RSpec.describe Training, type: :model do
       create(:training, list_of_skills_en: "a,b")
       create(:training, list_of_skills_en: "b,c")
       create(:training, list_of_skills_en: nil)
-      expect(Training.all_skills_en).to match_array(["a", "b", "c", nil])
+      create(:training, list_of_skills_en: " d ,, a")
+      expect(Training.all_skills_en).to match_array(%w[a b c d])
+      create(:training, list_of_skills_fr: "x,  y")
+      expect(Training.all_skills_fr).to match_array(%w[x y])
+    end
+
+    describe "stored skill lists" do
+      it "keep stripped names joined by one separator, with no blank items, in both languages" do
+        t = create(:training, list_of_skills_en: ",Design,  Safety ,, ", list_of_skills_fr: ", Conception,   Sécurité")
+        t.reload
+        expect(t.list_of_skills_en).to eq("Design, Safety")
+        expect(t.list_of_skills_fr).to eq("Conception, Sécurité")
+        t.update!(list_of_skills_en: "  ", list_of_skills_fr: nil)
+        expect(t.reload).to have_attributes(list_of_skills_en: "", list_of_skills_fr: nil)
+      end
+
+      it "split_skills strips names and drops blank items" do
+        expect(Training.split_skills(" a, b,,  c ,")).to eq(%w[a b c])
+        expect(Training.split_skills(nil)).to eq([])
+      end
     end
 
     it "learning_modules_completed returns only the user's Completed modules, optionally by level" do
@@ -110,6 +127,36 @@ RSpec.describe Training, type: :model do
       expect(t.learning_modules_completed(user)).to eq([done])
       expect(t.learning_modules_completed(user, "advanced")).to eq([done])
       expect(t.learning_modules_completed(user, "beginner")).to be_empty
+    end
+
+    it "reads the user's awarded projects, completed modules and the recommended hours from its own records" do
+      t = create(:training)
+      user = create(:user)
+      awarded = create(:proficient_project, training: t, level: "Beginner")
+      create(:proficient_project, training: t, level: "Advanced")
+      create(:order_item, :awarded, proficient_project: awarded, order: create(:order, :completed, user: user))
+      done = create(:learning_module, training: t, level: "Beginner")
+      create(:learning_module, training: t, level: "Intermediate")
+      create(:learning_module_track, :completed, user: user, learning_module: done)
+      training = Training.includes(:proficient_projects, :learning_modules).find(t.id)
+
+      expect(training.awarded_proficient_projects(user)).to eq([awarded])
+      expect(training.learning_modules_completed(user)).to eq([done])
+      expect(training.learning_modules_completed(user, "beginner")).to eq([done])
+      expect(training.learning_modules_completed(user, "Beginner")).to eq([done])
+      expect(training.learning_modules_completed(user, "intermediate")).to be_empty
+      expect(training.recommended_hours(%w[Beginner Intermediate])).to eq(3)
+      expect(training.recommended_hours(nil)).to eq(0)
+    end
+
+    it "lists proficient projects by level text, projects without a level last, Advanced ones moved to the end" do
+      t = create(:training)
+      beginner = create(:proficient_project, training: t, level: "Beginner")
+      advanced = create(:proficient_project, training: t, level: "Advanced")
+      intermediate = create(:proficient_project, training: t, level: "Intermediate")
+      unleveled = create(:proficient_project, training: t, level: nil)
+      expect(Training.includes(:proficient_projects).find(t.id).proficient_projects_by_level)
+        .to eq([beginner, intermediate, unleveled, advanced])
     end
 
     it "destroy cascades to learning modules and shifts are nullified" do

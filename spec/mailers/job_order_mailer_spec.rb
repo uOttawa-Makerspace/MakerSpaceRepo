@@ -101,6 +101,21 @@ RSpec.describe JobOrderMailer, type: :mailer do
       expect(delivered.last.body.encoded).to include("This is a reminder that admins have approved a Job Order.")
     end
 
+    it "shows the staff note in the French and the English half, as escaped paragraphs" do
+      described_class.send_job_quote(order.id, false, "Line one <i>x</i>\n\nLine two").deliver_now
+
+      body = delivered.last.body.decoded
+      expect(body.scan("Line one &lt;i&gt;x&lt;/i&gt;").size).to eq(2)
+      expect(body).to include("Note du personnel :", "Note from the staff:", "<p>Line two</p>")
+    end
+
+    it "omits the note block when the note is blank or absent" do
+      [nil, "  "].each do |blank|
+        described_class.send_job_quote(order.id, false, blank).deliver_now
+        expect(delivered.last.body.decoded).not_to include("Note from the staff:")
+      end
+    end
+
     it "switches to the re-approved wording once the order has more than one USER_APPROVAL row" do
       order.job_order_statuses.create!(job_status: JobStatus.user_approval, user: staff)
       described_class.send_job_quote(order.id).deliver_now
@@ -138,13 +153,13 @@ RSpec.describe JobOrderMailer, type: :mailer do
         expect(english).to include("Grand Total: CAD $58.50")
       end
 
-      it "shows the French per-task prices, option, line items and Total général" do
-        expect(french).to include("- Print A : CAD 32,00 $ (frais de base de 20,00 $ plus 4.0 unité × 3,00 $ )")
-        expect(french).to include("• Polish : CAD 7,25 $")
-        expect(french).to include("- Print B : CAD 15,50 $ (frais de base de 15,50 $ plus 0.0 unité × 0,00 $ )")
+      it "shows the French per-task prices, quantities with a decimal comma, option, line items and Total général" do
+        expect(french).to include("- Print A : 32,00 $ CA (frais de base de 20,00 $ plus 4,0 unité × 3,00 $ )")
+        expect(french).to include("• Polish : 7,25 $ CA")
+        expect(french).to include("- Print B : 15,50 $ CA (frais de base de 15,50 $ plus 0,0 unité × 0,00 $ )")
         expect(french).to include("- Task #1 : Prix en attente")
-        expect(french).to include("Articles détaillés : - Rush: CAD 2,50 $ - Setup: CAD 1,25 $")
-        expect(french).to include("Total général : CAD 58,50 $")
+        expect(french).to include("Articles détaillés : - Rush: 2,50 $ CA - Setup: 1,25 $ CA")
+        expect(french).to include("Total général : 58,50 $ CA")
       end
     end
 
@@ -233,6 +248,22 @@ RSpec.describe JobOrderMailer, type: :mailer do
       expect(delivered.last.bcc).to eq(["uottawa.makerepo@gmail.com"])
     end
 
+    it "payment_succeeded includes a sanitized staff message when one is given" do
+      described_class.payment_succeeded(order.id, "<p>Pick up at desk</p><script>alert(1)</script>").deliver_now
+      body = delivered.last.body.decoded
+      expect(body).to include("Pick up at desk")
+      expect(body).not_to include("<script>")
+    end
+
+    it "payment_succeeded adds no message paragraph when none or a blank one is given" do
+      described_class.payment_succeeded(order.id).deliver_now
+      plain = delivered.last.body.decoded.scan("<p ").size
+      described_class.payment_succeeded(order.id, "").deliver_now
+      expect(delivered.last.body.decoded.scan("<p ").size).to eq(plain)
+      described_class.payment_succeeded(order.id, "Note").deliver_now
+      expect(delivered.last.body.decoded.scan("<p ").size).to eq(plain + 1)
+    end
+
     # the "View Order" button of the pickup mail links to the pay page,
     # which renders a 500 for orders that are already PAID.
     it "payment_succeeded links the order's pay page (a link that 500s once the order is PAID)" do
@@ -255,9 +286,55 @@ RSpec.describe JobOrderMailer, type: :mailer do
       expect(delivered.last.header["Importance"].to_s).to eq("high")
     end
 
+    it "writes nothing about the staff member to the log" do
+      log = StringIO.new
+      previous = described_class.logger
+      described_class.logger = ActiveSupport::Logger.new(log, level: :info)
+      begin
+        described_class.staff_assigned(order.id, staff.id).deliver_now
+      ensure
+        described_class.logger = previous
+      end
+
+      expect(delivered.last.to).to eq([staff.email])
+      expect(log.string).not_to include(staff.email)
+      expect(log.string).not_to include(staff.name)
+      expect(log.string).not_to include(staff.username)
+    end
+
     it "sends nothing for an unknown order" do
       described_class.staff_assigned(99_999_999, staff.id).deliver_now
       expect(delivered).to be_empty
+    end
+  end
+
+  describe "an order with files" do
+    before do
+      task = order.job_tasks.first
+      task.user_files.attach(FilesTestHelper.stl)
+      task.staff_files.attach(FilesTestHelper.stl)
+    end
+
+    # The mails link to the order pages only; the files are downloaded from those pages through the order's file
+    # route, which checks who is signed in.
+    it "sends every job order mail without a file link or attachment" do
+      described_class.send_job_submitted(order.id).deliver_now
+      described_class.send_job_requote_needed(order.id, "owner_change").deliver_now
+      described_class.send_job_quote(order.id).deliver_now
+      described_class.send_job_declined(order.id).deliver_now
+      described_class.send_job_user_approval(order.id).deliver_now
+      described_class.send_job_user_declined(order.id).deliver_now
+      described_class.send_job_decision_confirmation(order.id, true).deliver_now
+      described_class.send_job_completed(order.id, "Done").deliver_now
+      described_class.payment_succeeded(order.id).deliver_now
+      described_class.staff_assigned(order.id, staff.id).deliver_now
+
+      expect(delivered.size).to eq(10)
+      delivered.each do |mail|
+        expect(mail.body.encoded).not_to include("active_storage"), mail.subject
+        expect(mail.body.encoded).not_to include(FilesTestHelper.stl_name), mail.subject
+        expect(mail.attachments).to be_empty, mail.subject
+      end
     end
   end
 end

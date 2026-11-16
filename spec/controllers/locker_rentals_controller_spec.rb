@@ -174,6 +174,7 @@ RSpec.describe LockerRentalsController, type: :controller do
           locker_rental: {
             locker_id: @locker.id,
             rented_by_id: target_user.id,
+            requested_as: 'staff',
             state: :active,
             indefinite: '1'
           }
@@ -440,6 +441,8 @@ RSpec.describe LockerRentalsController, type: :controller do
       end
 
       it 'should require GNG project information' do
+        @current_user = create(:user, :student)
+        session[:user_id] = @current_user.id
         expect do
           post :create,
                params: {

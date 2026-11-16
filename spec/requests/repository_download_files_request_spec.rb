@@ -6,8 +6,8 @@ require "rails_helper"
 #
 # Gates: signed in, then check_auth (the password for private repos). Zips are cached at
 # tmp/repository_zips/makerepo_<id>.zip and re-used while newer than
-# repository.updated_at; Repository#clear_zip_cache deletes it after_commit on
-# update/destroy.
+# repository.updated_at; the controller actions that update or destroy a repository call
+# Repository#clear_zip_cache.
 RSpec.describe "Repository zip download", type: :request do
   include ContentSpecHelpers
 
@@ -57,6 +57,15 @@ RSpec.describe "Repository zip download", type: :request do
     expect(zip_entries).to eq("a.txt" => "AAA", "b.txt" => "BBB")
   end
 
+  it "serves a zip of several files without a query per file" do
+    3.times { |i| add_file("f#{i}.txt", content: "C#{i}") }
+    delete perform_logout_path
+    content_sign_in_as(:regular)
+    download
+    expect(response).to have_http_status(:ok)
+    expect(zip_entries).to eq("f0.txt" => "C0", "f1.txt" => "C1", "f2.txt" => "C2")
+  end
+
   # N+1 pinned
   it "prefixes the index to a duplicate file name", skip_bullet: true do
     add_file("same.txt", content: "one")
@@ -98,19 +107,20 @@ RSpec.describe "Repository zip download", type: :request do
     FileUtils.touch(repo.zip_path, mtime: Time.now + 60)
     download
     expect(zip_entries.keys).to include("planted.txt")
-    # an update fires after_commit -> clear_zip_cache
+    # an update moves updated_at past the zip, so the next download builds a new one
+    FileUtils.touch(repo.zip_path, mtime: Time.now - 60)
     repo.update!(description: "changed")
-    expect(File.exist?(repo.zip_path)).to be(false)
     download
     expect(zip_entries.keys).to eq(["a.txt"])
   end
 
-  it "adding a RepoFile touches the repository, which invalidates the cache" do
+  it "adding a RepoFile touches the repository, so the next download includes it" do
     add_file("a.txt")
     download
-    expect(File.exist?(repo.zip_path)).to be(true)
+    FileUtils.touch(repo.zip_path, mtime: Time.now - 60)
     add_file("b.txt")
-    expect(File.exist?(repo.zip_path)).to be(false)
+    download
+    expect(zip_entries.keys).to match_array(%w[a.txt b.txt])
   end
 
   it "alerts and sends no zip when every blob is missing from storage" do

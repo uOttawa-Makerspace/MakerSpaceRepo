@@ -44,9 +44,88 @@ Here are some things to keep in mind:
 - Ensure you have the appropriate backups (DB, system images)
 - In the case of a migration, have both servers running simultaneously only after DNS points to the new server and functionality has been verified should you shutdown the old server.
 
+## Rails environment of the Docker image
+
+The image is built with `RAILS_ENV=staging` as its default (`Dockerfile`), and Puma also falls back to staging (`config/puma.rb`). Production runs as production only because `docker-compose.production.yml` sets `RAILS_ENV: production` on the `web` and `worker` services; `docker-compose.staging.yml` sets `RAILS_ENV: staging`. The assets are precompiled under the default, which is fine: the Vite build does not depend on the environment.
+
+Run one-off production commands through the compose file, so they get its environment (`docker compose -f docker-compose.production.yml exec web bin/rails ...` in the running container, or `docker compose -f docker-compose.production.yml run --rm web bin/rails ...` for a new one). A container started any other way, for example with a bare `docker run` of the image, runs as staging (staging mail hosts and settings, debug logging) unless it is given the environment explicitly: `docker run -e RAILS_ENV=production ...`, along with the database and secret settings the compose file provides.
+
+## Releasing to production
+
+A push to `master` builds the image, and the deploy workflow then runs `docker compose -f docker-compose.production.yml pull` and `up -d --remove-orphans` on the server. That recreates `web` and `worker` at the same time; the worker does not need to be stopped first. The new `web` runs `bin/rails db:prepare` before Puma starts (`bin/docker-entrypoint`, under `set -e`). If a migration raises, the new `web` exits and restarts in a loop, and since the old `web` has already been stopped the site stays down until the data is fixed and the deploy runs again, or the old image is put back. Every migration below that "stops with a message" therefore stops the whole site on production, so check its data first.
+
+### Before merging to master
+
+- [ ] Take a fresh database backup right before the deploy (the script in the deploy user's home folder), and keep it until the release has run for a few days. Some changes cannot be undone by redeploying the old image (see "Rollback limits" below), so this backup is the way back.
+- [ ] Close any Rails console left open on the server. An open transaction makes the concurrent index builds wait.
+- [ ] Run these read-only queries in a database console on production. Each must return 0 rows (or a count of 0), except where a comment says otherwise. A non-zero answer means the matching migration will stop on boot: settle those rows first, as its section below says.
+
+```sql
+SELECT count(*) FROM locker_rentals WHERE preferred_locker <> '';
+SELECT user_id, announcement_id FROM announcement_dismisses GROUP BY 1,2 HAVING count(*)>1;
+SELECT user_id, program_type FROM programs GROUP BY 1,2 HAVING count(*)>1;
+SELECT user_id, volunteer_task_id, date_of_task, total_time FROM volunteer_hours WHERE approval IS NULL GROUP BY 1,2,3,4 HAVING count(*)>1;
+SELECT user_id, title FROM repositories GROUP BY 1,2 HAVING count(*)>1;
+SELECT program, level, faculty FROM (SELECT DISTINCT program, level, faculty, department FROM uni_programs) d GROUP BY 1,2,3 HAVING count(*)>1;
+SELECT volunteer_task_id, user_id, array_agg(id) FROM volunteer_task_joins WHERE active GROUP BY 1,2 HAVING count(*)>1;  -- only the known pair 301, 302
+SELECT user_id, space_id FROM staff_spaces GROUP BY 1,2 HAVING count(*)>1;
+SELECT count(*) FROM design_days;                -- at most 1
+SELECT count(*) FROM printer_sessions WHERE printer_id IS NULL;
+SELECT lower(name), array_agg(id) FROM spaces GROUP BY 1 HAVING count(*)>1;
+SELECT count(*) FROM space_manager_joins WHERE user_id IS NULL OR space_id IS NULL;
+SELECT job_task_quote_id, job_option_id FROM job_task_quote_options GROUP BY 1,2 HAVING count(*)>1;
+SELECT b.id FROM sub_space_bookings b WHERE (SELECT count(*) FROM sub_space_booking_statuses s WHERE s.sub_space_booking_id = b.id) <> 1 OR NOT EXISTS (SELECT 1 FROM sub_space_booking_statuses s WHERE s.id = b.sub_space_booking_status_id AND s.sub_space_booking_id = b.id AND s.booking_status_id IS NOT NULL);  -- bookings without exactly one status row linked both ways
+SELECT max(version) FROM schema_migrations;      -- expected to be 20261106200000; confirm before the merge
+```
+
+- [ ] Run the read-only lists and read them: `bin/rails memberships:pending_duplicates`, `bundle exec rake volunteer_awards:duplicates` and `Membership.stale_pending.count` in a console (see "Pending membership duplicates" and the `membership_expiry` note under "Scheduled tasks"; the count is for the record only while the job is held).
+- [ ] Check that every staff account (and every shared kiosk account) is assigned to the spaces it works in (Admin > Users > staff spaces). From this release staff can only switch to and work in their assigned spaces, and a saved space they are not assigned to is no longer used.
+- [ ] Release the staff app version that sends an `Idempotency-Key` header on the same day (see "Deploy step: API idempotency keys").
+
+### During and right after the deploy
+
+- [ ] Check that `web` came up (`docker compose -f docker-compose.production.yml ps`, and `logs web` for the migration output). The migrations of this release take under a minute on a copy of a recent backup.
+- [ ] Run `bookings:reconcile_statuses` exactly once, with `DEPLOYED_AT` set to the new `web` container's `Created` time, and read the list it prints (see "Deploy step: booking status column", step 2).
+- [ ] Reload the staff dashboards that were open before the deploy (also on kiosks and shared screens). Their live table updates use a stream name that now includes the language, so an open page stops getting updates until it is reloaded.
+- [ ] In the first hour, check the worker logs (`docker compose -f docker-compose.production.yml logs worker`) and the `job_alerts` inbox. The worker is recreated alongside `web`, so a scheduled job can run once before the migrations have finished and fail. Check that such a failure does not repeat after `web` is up.
+- [ ] Check that `membership_expiry` is not loaded after the deploy: `SolidQueue::RecurringTask.where(key: "membership_expiry").exists?` in a console is false. The job is held in this release (see the `membership_expiry` note under "Scheduled tasks"), so no pending membership checkout is closed by it.
+- [ ] Create a training session and change space from the staff app.
+- [ ] Check that the cache database was created and is used (see "Deploy step: own cache database").
+- [ ] Send a help request and check that the team mail arrives and the GitHub issue opens; `Help.unfinished.count` is 0 a few minutes later (see "Help requests").
+
+### Rollback limits
+
+Redeploying the previous image does not undo the migrations, and once some new data has been written the old code cannot read it. Do not roll the code back past this release after any of these has happened; fix forward instead, or restore the backup taken before the deploy:
+
+- a key request has been denied (status 3, which older code does not know; see "Deploy step: key request denial reason");
+- the repeat-rule migration has run: older code cannot read the Toronto form of a rule (see "Repeat rules stored in Toronto time");
+- a volunteer has left a task, or staff removed someone, with the new code: the join state and its actor exist nowhere else, and older code does not keep the state up to date (see "Deploy step: volunteer task join state");
+- a booking access request has been declined or revoked: older code reads only `approved`, so it shows those requests as pending again (see "Deploy step: booking access request status").
+
+Rolling a migration back by hand (`db:migrate:down`) is possible for most of them, but several refuse once the new data exists, as their sections say, and a `change` migration that adds columns or tables drops their data on the way down. Export the data first.
+
+## Continuous integration
+
+The workflow `.github/workflows/main.yml` runs the RSpec suite as three shards on three runners, so each shard stays well inside its 15-minute limit:
+
+- `test-plan` picks the per-file runtime log saved by an earlier run (or an empty one) and hands the same copy to every shard.
+- `test (shard N/3)` runs `CI=1 COVERAGE=1 SPEC_SHARD=N/3 bin/parallel_rspec`. `.github/scripts/spec-shard.rb` splits the spec files by recorded runtime, or by file size when the log is missing or too small, and stops with an error unless every spec file is in exactly one shard. Inside a shard, the files run one process per core as before. A failing shard does not stop the other two.
+- `coverage` merges the three shards' SimpleCov results with `bin/coverage_collate` into the `coverage` artifact and writes the totals to the run summary. It also merges the three runtime logs (`.github/scripts/runtime-log-merge.rb`) and saves them for the next run. It fails when a shard's results are missing.
+- The image builds, and so the deploys, run only when all three shards and the coverage job passed.
+
+The accessibility reports and failure screenshots are uploaded per shard (`axe-report-shard-N`, `capybara-failures-shard-N`). To run one shard locally, use `SPEC_SHARD=2/3 bin/parallel_rspec`; without `SPEC_SHARD` the script runs the whole suite as before. The status checks are named `test (shard 1/3)`, `test (shard 2/3)`, `test (shard 3/3)` and `coverage`; a branch rule that requires a check named `test` has to list these instead.
+
 ## Scheduled tasks
 
-Scheduled tasks run in the `worker` container (`bundle exec rake solid_queue:start`), from `config/recurring.yml`, in the application time zone (Eastern). Apart from the year-of-study bump (see below), nothing is scheduled with cron any more. The file has a block shared by production and staging, plus a block for each: the monthly CDEL report is production only, and the Google Calendar catch-up sync is staging only. If the `worker` container is not running, nothing is scheduled. Starting it again resumes the schedule; runs missed while it was down are not made up. Solid Queue records each tick once, so restarting the worker during a deploy does not run a task twice.
+Scheduled tasks run in the `worker` container (`bundle exec rake solid_queue:start`), from `config/recurring.yml`, in the application time zone (Eastern). Apart from the year-of-study bump (see below), nothing is scheduled with cron any more. The file has a block shared by production and staging, plus a block for each: the monthly CDEL report is production only, and the Google Calendar catch-up sync is staging only. The shared block also queues again, every 15 minutes, the Google Calendar pushes and removals of events that were never confirmed (rows of `google_calendar_pending_changes`; `GoogleCalendar::PendingChange.all` lists what is waiting, and rows that were resent five times stay there after a report, for staff to look at). The migration that creates that table only adds a table. A volunteer shadowing shift's Google event is created the same way (row action `shadow_push`, naming the shadowing hour): the shift is saved with its row, `GoogleCalendar::ShadowingPushJob` creates the event under the shift's stored id (an id Google already has counts as created), and an event that is not created is queued again by the same resend, up to five times, then reported. The migration that adds the shadowing hour to that table (nullable columns, a wider check, an index that also covers the new column) changes no existing row; rolling it back refuses to run while `shadow_push` rows are waiting, and deletes none. The shared block also queues again, every 15 minutes, the help requests that are not filed or mailed yet (`help_filing_sweep`; see "Help requests"). If the `worker` container is not running, nothing is scheduled. Starting it again resumes the schedule; runs missed while it was down are not made up. Solid Queue records each tick once, so restarting the worker during a deploy does not run a task twice.
+
+Development does not run this schedule: it uses the `:async` job adapter, which runs jobs on a thread in the process that queued them, and `config/recurring.yml` has no `development` block. The README ("Background jobs in development") says how to run Solid Queue locally.
+
+Locker checkout drafts that no rental points at (an abandoned checkout, or a crash between creating the draft on Shopify and storing its id) are closed by the same hourly job as the job-order drafts, `job_order_draft_sweep` (`JobOrderDraftSweepJob` runs `JobOrder::DraftSweep` and then `LockerRental::DraftSweep`; each reports its own problems and one never stops the other). A locker draft now carries the tags `makerepo_locker` (with the environment prefix) and `locker_rental:<id>`. The sweep lists the open drafts with that environment's locker tag that are older than an hour and have exactly one marker, and under the rental's row lock keeps the draft a rental waiting for payment stores, and otherwise deletes it on Shopify (never one Shopify reports paid) and forgets the stored id if it was that draft. No rental row is deleted or changed otherwise. A draft with no marker (every locker draft made before this change) is never touched, so those older drafts stay open until staff close them in Shopify; there is no way to count them without asking Shopify. If more than 200 drafts would be deleted in one run, nothing is deleted and the run is reported (the same kill switch as job orders; `LockerRental::DraftSweep.run(max_deletes: n)` in a console lifts it once the database has been checked). The run is safe to repeat.
+
+Old locker drafts made before the marker existed (open, with the environment's locker tag, no `locker_rental:` tag, that no rental stores and that are older than 24 hours) are listed by `bin/rails lockers:untagged_drafts`, run in the `web` container (`docker compose -f docker-compose.production.yml exec web bin/rails lockers:untagged_drafts`). With no argument it only lists (`would close: <draft id>` per draft) and changes nothing, calls nothing but a read of Shopify's open drafts, and has no cap. After the maintainers approve the list, `bin/rails "lockers:untagged_drafts[apply]"` closes exactly those drafts on Shopify (printing `closed: <draft id>` for each, as the audit trail; the check that no rental stores a draft is made again inside the transaction that deletes it): a draft any rental stores, a paid draft, a draft with a marker, and another environment's draft are never touched, no rental row changes, more than 200 deletions in one run delete nothing (`CONFIRM_MAX_DELETES=n` lifts it after the database has been checked), and a second run changes nothing (a draft Shopify no longer has counts as cleared). Each unresolved draft or run problem (the cap included) is printed to standard error as `not resolved: <line>`, also when Ruby warnings are turned off (`RUBYOPT=-W0`). Exit codes: 0 resolved, 1 something unresolved, 2 another sweep is running.
+
+`membership_expiry` (`MembershipExpiryJob`) is held: it is not in `config/recurring.yml`, so it does not run, and unpaid membership checkouts stay pending with their Shopify drafts open and payable. Its first run would close every pending checkout already stale in one go, with no cap, including the duplicate pending rows listed by `bin/rails memberships:pending_duplicates`, so it stays off until those duplicates have been closed (see "Pending membership duplicates"). What the job does when it runs: a pending membership with no checkout activity for `Membership::Expiry::STALE_AFTER` (7 days; the row's `updated_at`, which buying again also moves) has its Shopify draft order deleted and is marked `expired`; the row is kept. A membership whose draft is paid is never touched, and a Shopify error leaves the row pending for the next run (it is reported). The run is safe to repeat. To see what it would close: `Membership.stale_pending.count`. To turn it on, add the entry shown in the comment in `config/recurring.yml` (`class: MembershipExpiryJob`, `schedule: every day at 4am`) to the shared block and change the matching example in `spec/config/recurring_schedule_spec.rb`; the first run after that deploy closes everything stale at once. It can also be run once by hand in the `web` container: `bin/rails runner 'MembershipExpiryJob.perform_now'`.
 
 Check that tasks ran, in a Rails console (`docker compose -f docker-compose.production.yml exec web bin/rails console`):
 
@@ -62,22 +141,205 @@ The same data is in the `solid_queue_recurring_executions` and `solid_queue_fail
 
 The host crontab still has `docker compose exec -T web` lines for these tasks (the containers have no cron of their own). They have not taken effect since 2026-08-31; `/var/www/makerrepo/log/cron_log.log` shows why. In the same deploy, remove the lines for the moved tasks (`crontab -e`) rather than fixing them: after this ships they run in the `worker` container, and a crontab line that starts working would run the task a second time (the CDEL report mailed twice, the popular hours counted twice).
 
-Tasks that moved: popular hours, active volunteers, clear printers, the CDEL report, the Google Calendar webhook registration, and the locker expiry notices if a line for them exists. The print order reminder is removed (task and mailer method), so delete its line too. Keep only the `increment_year:increment_one_year` line; it is not scheduled in `recurring.yml`. The task claims the month (setting `increment_year_last_run`), so a second run in the same month changes nothing; `FORCE=1` repeats it. The manual repair `increment_year:fix` is guarded the same way (setting `increment_year_fix_run`, `FORCE=1` to repeat). Check in the cron log that it runs, since it goes through the same `docker compose exec` as the lines that stopped.
+Tasks that moved: popular hours, active volunteers, clear printers, the CDEL report, the Google Calendar webhook registration, and the locker expiry notices if a line for them exists. The print order reminder is removed (task and mailer method), so delete its line too. The year-of-study tasks (`increment_year:increment_one_year` and `increment_year:fix`) are removed as well (see the next section), so delete the `increment_year` line too.
+
+### Deploy step: year of study counted from a reference point
+
+The release that adds `users.year_of_study_entered`, `year_of_study_set_on` and `year_of_study_set_by` (migration `20261114100000`) stops moving the year of study up in place. The app counts the current year from the year as entered and the day it was set: a student moves up one year on the first day of the month their account was created in (local time), every year after the year it was created, up to year 8, then becomes Alumni. `users.year_of_study` is kept as it is and is no longer moved up; a form save still writes it. Reports outside the app should read the current year from the read-only view `reporting_user_years` (`user_id`, `year_of_study`, `year_of_study_entered`, `year_of_study_set_on`, `year_of_study_set_by`).
+
+- The migration copies `year_of_study` into `year_of_study_entered` and dates it from the last run of the old task that changed the account: 2026-08-01 for accounts with `active` true (the crontab lines stopped working after 2026-08-31, and the runs of September to November 2026 changed nothing), and the last run before the account was marked inactive (2023-02-20 to 2023-03-05) for the others. `year_of_study_set_by` records which rule set each row (`backfill_last_run`, `backfill_marked_inactive`; `entered` once a person sets the year). So the September to November 2026 moves the task missed are counted, and the accounts it stopped moving in 2023 move up again.
+- Before the deploy, confirm in `/var/www/makerrepo/log/cron_log.log` that the task has not run since 2026-08-01. The migration stops, changing nothing, if the data shows a scheduled run after that day; then set `LAST_TASK_RUN` in the migration to the last run and rehearse again.
+- In the same deploy, remove the `increment_year` line from the host crontab (`crontab -e`). Read it first with `crontab -l`. The task no longer exists, so a line left behind only fails.
+- `down` drops the view and the three columns, which restores the table exactly.
+- The view's SQL is `db/views/reporting_user_years_v01.sql`, managed by the `scenic` gem (`create_view` in the migration and in `db/schema.rb`, so `db:schema:load` builds it too). A change to the view is a new version file (`_v02.sql`) and an `update_view` migration; dropping or changing the type of a column the view reads needs the view dropped and recreated in the same migration.
 
 The locker notices migration must run before the first 8:30am run of the locker expiry notices (`locker_expiry_notices`). It marks the rentals that expired long ago as already notified, so renters are not mailed about old expiries. Running the migrations as part of the deploy covers this.
 
 Post-deploy step for this release (Google Calendar webhook): run `bin/rails runner 'GoogleCalendar::WebhookRegistrar.register!'` once, right after the deploy. Channels registered before this release have no token, and the webhook refuses their pushes (401) until they are re-registered; there is no grace period for them. The same applies whenever `secret_key_base` is rotated: every channel's token is derived from it, so every channel is refused until it is re-registered with the same command.
 
+### Deploy step: key request denial reason
+
+The release that adds `key_requests.denial_reason` (migration `20261110120000`) adds one nullable text column and changes no row. Key requests gain a fourth status, `denied`, stored as the integer 3; the existing statuses keep 0, 1 and 2. Code from before the release cannot read a denied request (it fails on the unknown status), so deploy `web` and `worker` together, as usual, and do not roll back to the old code once a request has been denied. Rolling the migration back refuses while any request is denied or has a stored reason, naming the counts; export those rows and clear them first.
+
+### Deploy step: one price per quote option
+
+The release that adds `index_job_task_quote_options_on_quote_and_option` (unique over job task quote and job option) needs no manual step; `web` runs the migration on boot. It first looks for a quote with more than one row for the same option; if any exist it changes nothing and stops with a message listing the key and the row ids. Settle those rows by hand (decide with the maintainers which price stands), then deploy again. The latest audited backup held 75 rows and no duplicates. The index is built concurrently, and `down` only drops the index and keeps every row. The quote form already looks the row up before saving, and the model refuses a second row with a validation error.
+
+### Deploy step: user language column
+
+The release that adds `users.locale` needs no special order or backfill. The migration adds a nullable column with no default (existing users stay NULL, meaning no language chosen, and receive mail in English) and a check constraint allowing only `en`, `fr` or NULL. `down` drops the constraint and the column and touches no other data. A user's value is saved when they pick a language while signed in.
+
 ### Deploy step: booking status column
 
-The release that adds `sub_space_bookings.booking_status_id` copies each booking's status into it when the migration runs, and from then on the app reads only that column. Old code writes a status only to the old status table (the `worker` container, which is separate from `web`, may still run the old code; so may the old `web` container until compose has replaced it), which would leave the column empty or stale. So deploy in this order:
+The release that adds `sub_space_bookings.booking_status_id` copies each booking's status into it when the migration runs, and from then on the app reads only that column, and the release that follows stops writing the old status rows (they stay as history, and deleting a booking still removes its own). Old code writes a status only to the old status table (the old `web` and `worker` containers run it until compose has replaced them), which would leave the column empty or stale. The deploy recreates `web` and `worker` together, and the worker does not need to be stopped first; the reconcile below copies over any status the old code wrote. So deploy in this order:
 
-1. Stop the worker: `docker compose -f docker-compose.production.yml stop worker`.
-2. Deploy as usual (`web` runs the migrations on boot). The migration stops, changing nothing and listing booking ids, if a booking does not have exactly one status row linked both ways; fix those rows first.
-3. Check that compose has replaced `web` and the old `web` container is stopped (`docker compose -f docker-compose.production.yml ps`), then run `docker compose -f docker-compose.production.yml exec web bin/rails bookings:reconcile_statuses`. It copies the old status row into the column wherever they differ, and records each change (booking, old value, new value) in `booking_status_reconciliations` in the same statement, and prints it. It never changes the old table. The status row wins, because after this release every writer updates both together, so a difference can only come from old code. It is safe to run again (a second run changes and records nothing) and normally reports 0 changes. It lists bookings that still have no status: those whose column is set but whose old status row is missing or linked to another booking are skipped, and the next status change of the booking creates or repairs the row.
-4. Start the worker with the new code: `docker compose -f docker-compose.production.yml up -d worker`.
+1. Deploy as usual (`web` runs the migrations on boot). The migration stops, changing nothing and listing booking ids, if a booking does not have exactly one status row linked both ways; fix those rows first (the booking status query under "Before merging to master" lists them).
+2. Check that compose has replaced `web` and the old `web` container is stopped (`docker compose -f docker-compose.production.yml ps`). Read the time the new release was created with `docker inspect -f '{{.Created}}' $(docker compose -f docker-compose.production.yml ps -q web)`; `ps -q web` must print exactly one container id. Use `Created`, not `State.StartedAt`: a later restart of `web` moves the start time, and a too-late `DEPLOYED_AT` would let the task overwrite statuses the new release already changed. The time the deploy began also works, since an earlier time only protects more bookings. `DEPLOYED_AT` must end in `Z` or a zone offset; the task refuses a time without one. Then run, exactly once and right after the deploy, `docker compose -f docker-compose.production.yml exec -e DEPLOYED_AT=<that time, e.g. 2026-11-15T14:30:00Z> web bin/rails bookings:reconcile_statuses`. It refuses to run without `DEPLOYED_AT`. Where a booking's status differs from its old status row, it copies the old row's status into `booking_status_id`, records each change (booking, old value, new value) in `booking_status_reconciliations` in the same statement, and prints it. It never changes the old table. Old code wrote only the old rows, and the new release writes only the column and sets the booking's `updated_at` on every status change, so a booking that has a status and whose `updated_at` is after `DEPLOYED_AT` was changed by the new release: it is skipped and listed as changed by the new release after the deploy, and a late run therefore never undoes a newer status. Read that printed list after the run: a booking whose old row held a status written just before the switch, and that the new release then edited, is skipped too, so check each listed booking by hand against its old status row. A booking with no status is always copied. It also lists bookings that still have no status. A booking made or changed by this release has no old row, or an older one, and that is expected. Do not run it again: it is removed after this release.
 
-To undo a reconcile, run `bin/rails bookings:restore_reconciled_statuses`, and only soon after the deploy. It puts each changed booking's column back to the recorded old value, newest change first, marks each record restored (`restored_at`, set by the same statement as the update) and prints each booking with the old and new value. A second run restores nothing more. When a booking has several records and a newer one is left alone, all its older records are left alone too (and listed), so a later change is never undone. It leaves a booking alone and lists it if its column no longer holds the value the reconcile wrote ("changed since" is detected by value, so a later legitimate change back to that same value cannot be told apart and would be reverted) or if the booking has been deleted. The record is a history with no foreign key, so it outlives a deleted booking and is never deleted by the app. Rolling the migration back refuses while the record table has rows (export the table, for example with `COPY ... TO`, and clear it first); with no rows it drops the new column and the record table. The old status table is untouched.
+To undo the reconcile, run `docker compose -f docker-compose.production.yml exec web bin/rails bookings:restore_reconciled_statuses` once, and only soon after the deploy. For each recorded change not yet restored, newest first, it sets the booking's `booking_status_id` back to the recorded old value, marks the record restored (`restored_at`, in the same statement) and prints the booking with the old and new value. A booking is left alone and listed if its column no longer holds the value the reconcile wrote (so a status changed since is kept; a later change back to the same value cannot be told apart and would be reverted) or if the booking was deleted; its older records are then left alone too. Running it again restores nothing more. The record table has no foreign key, so it outlives a deleted booking and the app never deletes it. Rolling the migration back refuses while the record table has rows (export the table, for example with `COPY ... TO`, and clear it first); with no rows it drops the new column and the record table. The old status table is untouched.
+
+### Repeat rules stored in Toronto time
+
+From this release the calendars write the start of a repeat rule (`events.recurrence_rule`, `staff_unavailabilities.recurrence_rule`) as Toronto wall-clock time (`DTSTART;TZID=America/Toronto:20270310T100000`) instead of a UTC stamp (`DTSTART:20270310T150000Z`). The app reads both forms the same way. Older releases cannot read the Toronto form, so rolling the code back past this release after rules have been saved needs those rules turned back into the UTC form first.
+
+The migration `StoreRepeatRulesInTorontoTime` (20261109130000) rewrites the stored rules to the Toronto form. Its production run is approved, and like every migration it runs when the new `web` boots, so it runs with this release. What it does:
+
+- It changes only the `DTSTART` line, and only when the Toronto wall time names the same instant (no reader takes the series start from this line, so the calendar feeds and Google see the same rule); a rule with two start lines, no `RRULE` line, a start that is not a date, or a start in the second 1:30 of the night the clocks go back is left as it is and named in the migration output (`<table> <id> left as it is: <reason>`). `updated_at` is not touched, and Google needs no new push (it only receives the `RRULE` and `EXDATE` lines, which do not change).
+- Every rewrite is recorded in `recurrence_rule_rewrites` (table, row id, old text, new text, migration version). The output ends with `<table>: <n> of <m> rules with a start rewritten`.
+- Rolling it back (`bin/rails db:migrate:down VERSION=20261109130000`) puts the recorded old text back, skips rows deleted since, and drops the record table. It refuses, changing nothing, while any rewritten rule has been edited since; the message gives the count. Those rules can be listed with `SELECT r.table_name, r.record_id FROM recurrence_rule_rewrites r JOIN events e ON r.table_name = 'events' AND e.id = r.record_id WHERE e.recurrence_rule IS DISTINCT FROM r.new_rule` (and the same with `staff_unavailabilities`).
+
+Rehearsed on a copy of a recent backup: 344 rules (18 events, 326 unavailabilities), all rewritten, none left as they were; every rewritten rule gave the same start, feed text, Google lines and server occurrences; down restored the rules exactly (checksums of the rule and of every other column equal to before); a second up gave the same text; a down after one rule was edited refused and changed nothing.
+
+### Deploy step: one dismissal per user and announcement
+
+The release that adds the unique index on `announcement_dismisses (user_id, announcement_id)` needs no manual step; `web` runs the migration on boot. If any user has more than one dismissal row for the same announcement, the migration stops, changing nothing, and says how many pairs. Remove the extra rows by hand (they are exact repeats), then deploy again. Rolling back only drops the index.
+
+### Deploy step: one pending volunteer hour per submission
+
+The release that adds the partial unique index on `volunteer_hours (user_id, volunteer_task_id, date_of_task, total_time)` for rows with `approval IS NULL` needs no manual step; `web` runs the migration on boot. If a person already has two identical pending hours the migration stops, lists the ids and changes nothing; settle those rows by hand (staff can approve or reject one), then deploy again.
+
+`bundle exec rake volunteer_awards:duplicates` lists, read only, the users who hold more than one task award (`cc_moneys` row) for the same task. It prints ids and changes nothing.
+
+### Deploy step: one task award per user and task
+
+The release that adds `index_cc_moneys_on_user_and_task_award` makes the database refuse a second `cc_moneys` row for the same user and volunteer task. `web` runs the migration on boot; it needs no manual step. The 2026-11-01 backup holds 8 user/task groups with 31 extra award rows (2 to 11 rows per group). Those old awards are kept: people may have spent them, and nothing is deleted, reversed or changed in amount. The migration adds `cc_moneys.legacy_duplicate` (default false), sets it true on every row after the first of each existing pair, and builds a partial unique index on `(user_id, volunteer_task_id)` for rows with a task that are not flagged. It prints each pair with the row it kept and the rows it flagged. If one of the extra rows was created after the migration started it stops, flags nothing and lists the ids. Balances are unchanged (`get_total_cc` still sums every row). Paying an award the index refuses counts as already paid: nothing is written and no hour is added. A deliberate admin re-award of the same task to the same user now needs a manual credit without a `volunteer_task_id`. `down` drops the index and the column, which restores the table exactly; re-running `up` flags the same rows. `rake volunteer_awards:duplicates` still lists the old pairs, flagged or not.
+
+### Deploy step: claiming unclaimed CC Money
+
+The release that adds `purchaser_email` and `claim_token_generation` to `cc_moneys` needs no manual step; `web` runs the migration on boot. It only adds the two columns (the generation starts at 0, the email empty) and changes no row; rolling back drops them.
+
+From then on an unclaimed CC purchase can be claimed only by the signed-in account whose email equals the purchase email, and a mailed link expires after 30 days. Unclaimed rows bought before the release have no recorded purchase email, so their old links are refused. Nothing is lost: on `/admin/cc_moneys` an admin enters the buyer's address and presses Resend, which records the address, replaces earlier links and mails a new one. Resending a row always revokes the links sent before. Each resend that is sent is kept in `cc_money_claim_email_resends` (row, admin, address, time); those rows are only ever added. The release that adds that table needs no manual step (`web` runs the migration; rolling back drops the table, so export it first once resends exist).
+
+The same page lets an admin correct the purchase email of an unclaimed row (a mistyped address): the new address replaces the stored one, every earlier link stops working and a new link is mailed to the new address. Each correction is kept in `cc_money_email_corrections` (row, admin, old address, new address, time); those rows are only ever added. The release that adds that table needs no manual step (`web` runs the migration; rolling back drops the table, so export it first once corrections exist).
+
+### Deploy step: training skill lists clean-up
+
+The release that adds `training_skill_list_changes` (migration `20261107100000`) and cleans the training skill lists (`20261107100100`) needs no manual step; `web` runs both on boot. The clean-up rewrites `trainings.list_of_skills_en` and `list_of_skills_fr` to one shape (names stripped, no blank items, joined with `, `). Only a value that differs from that shape is changed, and each change is recorded in `training_skill_list_changes` (training, column, old value, new value) in the same transaction; the output ends with `<n> lists rewritten` per column. On a copy of a recent backup it rewrote about 54 values (the table holds 36 trainings). Running it again changes nothing. The data cannot make it stop.
+
+Verify afterwards (read only): `SELECT column_name, count(*) FROM training_skill_list_changes GROUP BY 1;` matches the counts in the migration output, and the training pages list the same skills as before.
+
+Reversible: `down` of the clean-up puts every recorded old value back and marks the record restored, but only while each column still holds the value the migration wrote. If any was edited since, or its training is gone, it stops, changes nothing and names the training ids; settle those by hand first. The record table is never dropped, not even by `down` of `20261107100000`.
+
+### Deploy step: legacy preferred locker text
+
+The release that drops `locker_rentals.preferred_locker` (migration `20261107200000`) removes an old free-text column that was empty in every row and unused; the link to the preferred locker is `preferred_locker_id`, which stays. If any row holds text the migration stops, changes nothing and names the count, which stops the deploy. The first query under "Before merging to master" counts those rows. If it is not 0, copy that text somewhere safe (for example with `COPY (SELECT id, preferred_locker FROM locker_rentals WHERE preferred_locker <> '') TO ...`), decide with the maintainers what it means, clear it, then deploy again.
+
+Verify afterwards (read only): `SELECT column_name FROM information_schema.columns WHERE table_name = 'locker_rentals' AND column_name = 'preferred_locker';` returns no row, and the locker rental pages show the preferred locker as before.
+
+Reversible in shape only: `down` adds the column back as a nullable string with no default. There is nothing to restore, since the migration refuses to drop text.
+
+### Deploy step: volunteer task join state
+
+The release that adds `volunteer_task_joins.state`, `state_changed_at` and `state_changed_by_id` (migration `20261107210000`) and re-derives closed joins (`20261107220000`) needs no manual step; `web` runs both on boot. The first adds the columns (state `joined`, `completed`, `left` or `removed`, with a check constraint, a foreign key that is nullified when the user is deleted, and indexes) and fills the state from the old `active` flag: active is `joined`; otherwise `completed` when the user has an approved request for the task, and `removed` for the rest. Closed rows take their `updated_at` as the time of the change, and the actor stays empty. `active` is not touched. The second gives any row still marked `joined` with `active` false the state the same rules give, recording each change (join, old state and time, new state) in `volunteer_task_join_state_changes`. Neither can stop on the data.
+
+Verify afterwards (read only): `SELECT state, active, count(*) FROM volunteer_task_joins GROUP BY 1,2 ORDER BY 1,2;` shows `joined` only with `active` true, and no other state with `active` true.
+
+Reversible until the new code writes a state the old data cannot give back. `down` of `20261107220000` puts the recorded rows back and keeps its record table. `down` of `20261107210000` refuses, changing nothing, once any join has the state `left` or a recorded actor, because neither exists anywhere else. From then on, do not roll the code back past this release (see "Rollback limits").
+
+### Deploy step: restored categories and equipment
+
+The release that restores the lost categories (migration `20261108000001`) needs no manual step; `web` runs it on boot. It puts back the categories of 35 project proposals and the category and equipment of one repository, which were lost between two earlier production backups. The rows are embedded in the migration (course codes and equipment names only). A proposal or repository that still exists and still has no categories (or no equipment) gets its rows; one that has rows since, or no longer exists, is left alone, and no existing row is updated or deleted. Every inserted row is recorded in `restored_rows` by the statement that inserts it. The output ends with `restored <n> rows; skipped ...`. Running it again inserts nothing. It cannot stop on the data.
+
+Verify afterwards (read only): `SELECT table_name, count(*) FROM restored_rows GROUP BY 1;` (37 rows, 36 categories and 1 equipment, when every parent was still empty; fewer means some parents had rows by then, which the output lists as skipped), and the restored proposals show their course again.
+
+Reversible while the rows are untouched: `down` deletes exactly the recorded rows, and only if every one still has the parent, name and `updated_at` it was inserted with; otherwise it stops, changes nothing and keeps `restored_rows`. It drops `restored_rows` only when no record is left in it.
+
+### Deploy step: booking access request status
+
+The release that adds `user_booking_approvals.status`, `decided_by_id`, `decided_at` and `reason` (migration `20261109120000`) needs no manual step; `web` runs it on boot. Declined and revoked requests are kept with a status instead of being deleted. The migration sets each existing row's status from `approved` (true is `approved`, anything else `pending`), adds a check constraint on the four statuses and an index, and leaves `approved` and `staff_id` as they are; the model keeps `approved` equal to "status is approved". Existing rows get no decider, time or reason. It cannot stop on the data.
+
+Verify afterwards (read only): `SELECT status, approved, count(*) FROM user_booking_approvals GROUP BY 1,2;` shows `approved` only with `approved` true and `pending` only with false or NULL, and the admin booking page lists the same pending and approved requests as before.
+
+Reversible until a decision is recorded: `down` refuses, naming the counts and changing nothing, once any request is declined or revoked, has a decider, time or reason, or has a status that differs from `approved`. Older code shows declined and revoked requests as pending, so do not roll the code back once staff have declined or revoked one.
+
+### Deploy step: rooms with bookings cannot be deleted
+
+The release that changes the foreign key from `sub_space_bookings.sub_space_id` to `sub_spaces` from cascade to restrict (migration `20261110090000`) needs no manual step; `web` runs it on boot. Until now deleting a room also deleted its bookings. From this release the admin page refuses to delete a room that has bookings and says why, and the database refuses a direct delete as well. The migration changes only the constraint (it validates the existing rows, which already satisfy it), so it cannot stop on the data.
+
+Verify afterwards (read only): `SELECT confdeltype FROM pg_constraint WHERE conrelid = 'sub_space_bookings'::regclass AND confrelid = 'sub_spaces'::regclass;` returns `r` (restrict; `c` was cascade).
+
+Reversible: `down` restores the cascade exactly. A room that has to go now needs its bookings settled first; nothing deletes them for it.
+
+### Deploy step: one repository title per owner
+
+The release that adds `index_repositories_on_user_id_and_title` (unique over owner and title, migration `20261112150000`) needs no manual step; `web` runs it on boot. It makes the database refuse a second repository with the same title for the same owner, hidden repositories included and case-sensitive, the rule the model validation already applies. If an owner already holds a title twice, the migration stops, changes nothing and lists the titles and row ids, which stops the deploy; the query under "Before merging to master" finds them first. Settle those rows by hand with the maintainers (for example by renaming one), then deploy again. A copy of a recent backup had no duplicates, deleted rows included. The index is built concurrently, so it waits for open transactions.
+
+Verify afterwards (read only): `SELECT indexdef FROM pg_indexes WHERE indexname = 'index_repositories_on_user_id_and_title';` returns one row. An interrupted build leaves an invalid index of that name; the next run of the migration drops and rebuilds it.
+
+Reversible: `down` only drops the index and keeps every row.
+
+### Deploy step: membership status default
+
+The release that changes the column default of `memberships.status` from `paid` to `pending` (migration `20261113110000`) needs no manual step; `web` runs it on boot. The model has always created memberships as pending; only a row inserted without a status (raw SQL, `insert_all`) used the column default, and would have counted as paid. No existing row is read or written, and it cannot stop on the data.
+
+Verify afterwards (read only): `SELECT column_default FROM information_schema.columns WHERE table_name = 'memberships' AND column_name = 'status';` names `pending`.
+
+Reversible: rolling it back sets the default to `paid` again and changes no row.
+
+### Deploy step: API idempotency keys
+
+The release that creates `api_idempotency_keys` (migration `20261113120000`) needs no manual step; `web` runs it on boot. From this release `POST /api/v1/training_sessions` needs an `Idempotency-Key` header: a repeat of the same request with the same key gets the first answer instead of creating a second session, and the same key with a different request is refused (see `doc/api/v1/`). Each key is stored with its user, a digest of the request and the answer given. Release the staff app version that sends the header on the same day; until then, creating a training session from the app is refused with `idempotency_key_required`. Rows are never pruned: they are small, and an old row only answers a repeat of its own submission. A user's rows are deleted with the user. The migration only creates the table.
+
+Verify afterwards (read only): after a session is created from the staff app, `SELECT count(*) FROM api_idempotency_keys;` is at least 1.
+
+Reversible: rolling it back drops the table and its rows, after which a repeated request can create twice. Export the table first if it is needed.
+
+### Deploy step: uOEng profiles
+
+The release that creates `uoeng_profiles` (migration `20261113150000`) needs no manual step; `web` runs it on boot. Each uOEng profile record holds the latest answer the uOEng student-information service gave about a user, one record per user (a unique index on `user_id`, so a card tap and a staff check at the same time write one record). The user's own fields are never changed by it. Faculty reports and the new users report show the faculty from the uOEng profile record where there is one, and the user's own faculty otherwise. A uOEng profile record is deleted with its user. The migration only creates the table.
+
+Verify afterwards (read only): `SELECT source, count(*) FROM uoeng_profiles GROUP BY 1;` grows as members tap in or staff run the faculty membership check.
+
+Reversible: rolling it back drops the table and every uOEng profile record; reports then show the users' own faculty, and the next check after a redeploy fetches the answers again.
+
+### Deploy step: proof for uOttawa identities
+
+From this release, a uOttawa student, faculty or staff identity (the identities that get internal prices) can be chosen at sign-up or on the profile only with a confirmed `@uottawa.ca` email (the exact domain, in any case; a new account with one may choose before confirming, as it cannot sign in until then). Switching from one such identity to another needs the same proof. Existing accounts keep their identity; nothing is rewritten, and no manual step is needed.
+
+To list the existing accounts with an internal identity and no confirmed uOttawa email, by id only (read only, changes nothing): `docker compose -f docker-compose.production.yml exec web bin/rails users:internal_without_proof`. The last line gives the count.
+
+### Deploy step: payments checkout records and ledger
+
+The release that adds `payment_checkouts`, `payment_ledger_entries` and two columns on `locker_payments` (migrations `20261115140000` to `20261115140400`) needs no manual step; `web` runs them on boot. Locker payments still run on `locker_rentals.shopify_draft_order_id` and `locker_payments`; the app writes the new tables beside them (a stored, replaced or removed draft, a recorded payment, a refund) and reads them for no decision.
+
+- `payment_ledger_entries` is append-only: a trigger refuses every UPDATE, DELETE and TRUNCATE on it. A reversal entry must point at a payment entry with the same provider and provider reference (a composite foreign key). `db/schema.rb` carries the trigger and its function as SQL, so a database built from the schema has them too.
+- The migrations copy, never move. A rental awaiting payment with a draft id becomes an `open` checkout; an active rental with a draft id and a payment time becomes a `paid` one; an active rental with a draft id but no payment time is skipped (its draft is checked at Shopify later). Every locker payment gets a `payment` ledger entry and points at it (`ledger_entry_id`); a refunded one also gets a `reversal` entry. The rows written are listed in `payment_checkout_backfills` and `payment_ledger_backfills`. On the 2026-11-14 backup this wrote 1 open and 4 paid checkouts, skipped 4 rentals, and wrote no ledger entries (no locker payments yet).
+
+Verify afterwards (read only): `SELECT status, count(*) FROM payment_checkouts GROUP BY 1;` matches the migration log line; `SELECT count(*) FROM payment_ledger_entries;` equals the number of locker payments plus the refunded ones; `SELECT tgname FROM pg_trigger WHERE tgrelid = 'payment_ledger_entries'::regclass AND NOT tgisinternal;` lists `payment_ledger_entries_no_change` and `payment_ledger_entries_no_truncate`.
+
+Checking the records: the recurring task `locker_payment_records_check` (`LockerPaymentRecordsCheckJob`, daily at 4:30am) compares the old columns with the new tables and reports each kind of difference to the error tracker as `locker payment records differ: <check>`, with the row ids. It changes nothing, except that it asks Shopify about each stored draft whose state the rental does not settle (the rentals the copy skipped, among others) and records that checkout when Shopify's answer is clear (paid, open, or gone: void); any other answer is reported as `checkout_status_unclear`. Refunded payments copied at migration have no `reversed_at` and are reported as `reversal_differs` until that is filled. To run it once by hand in the `web` container: `bin/rails runner 'LockerPaymentRecordsCheckJob.perform_now'`.
+
+Reversible: rolling back removes exactly the recorded checkouts and ledger entries and clears the links, then drops the new columns, the tables, the trigger and its function. It refuses, changing nothing, if a recorded row changed since, and the table and column migrations refuse while anything not written by the copy is left in them (export and settle those rows first). Once the app has written its own rows there, the rollback refuses until they are exported and settled.
+
+The release with migration `20261115160000` (`AllowClaimedPaymentCheckouts`) serves the locker pay link from the rental's open checkout record. A checkout is now claimed before Shopify is asked for a draft, so `payment_checkouts.provider_id` may be null while a claim has no draft yet; a `paid` checkout must have one (check constraint `payment_checkouts_paid_has_provider_id_check`). The migration changes no row and needs no manual step. A rental awaiting payment whose stored draft has no checkout record yet opens one on its next page view. Rolling it back refuses, changing nothing, while any checkout has no provider id. To see them (read only): `SELECT id, reference_id, status, created_at FROM payment_checkouts WHERE provider_id IS NULL;`. An open one is a checkout whose draft was not made or not taken yet, and the renter's next view reuses it; a void one is a claim whose rental moved on.
+
+### Deploy step: Shopify cancelled-order webhook
+
+The release that adds `POST /custom_webhooks/orders_cancelled` needs one manual step after the deploy: in the Shopify admin (Settings, Notifications, Webhooks), create a webhook for the event **Order cancellation** (topic `orders/cancelled`), format JSON, with the URL `https://makerepo.com/custom_webhooks/orders_cancelled` on the production store and `https://staging.makerepo.com/custom_webhooks/orders_cancelled` on the staging one, next to the existing `orders/paid` and `orders/fulfilled` webhooks. It is signed with the same webhook secret, so no credential changes. Until it is registered the endpoint simply receives nothing.
+
+Shopify has no separate void topic: cancelling an order whose payment is pending voids that payment, and it arrives as `orders/cancelled` with `financial_status` `voided`.
+
+What it does for now: a cancelled order for any product the app tracks (locker, membership, CC Money, job order) is stored in `processed_orders` as its own row (`provider_ref` `<order id>/cancelled`, topic `orders/cancelled`) and recorded only. No rental, membership, locker payment, checkout or ledger entry changes and no mail is sent; a cancelled order that names none of them is answered and not stored. A redelivery stores nothing more.
+
+The row's status reads `applied` once the apply job has run it, although nothing has acted on it: `processed_orders.status` is limited to `received`, `applied` and `failed` by a check constraint, and a separate status would need a migration. So `applied` on a row with topic `orders/cancelled` means "recorded", not "acted on". The dispatcher and `shop_orders:reapply` treat it like any applied row (never handed out again). The payload purge skips these rows, so their payloads stay until the change that acts on cancellations; that change finds them by topic, not by status, and must be safe to run twice over the same rows.
+
+Verify afterwards (read only): `SELECT status, count(*) FROM processed_orders WHERE topic = 'orders/cancelled' GROUP BY 1;` grows when a tracked order is cancelled in Shopify, and its rows reach `applied` (recorded).
+
+Reversible: deleting the webhook in the Shopify admin stops the deliveries; the stored rows stay.
+
+### Deploy step: Shopify Admin API version
+
+The app sends every Shopify Admin GraphQL request to `/admin/api/<version>/graphql.json`, and the version comes only from the credential `production.shopify.api_version` (`staging.`, `development.` and `test.` for the other environments) in `config/credentials.yml.enc`. Specs use their own fake value, `2026-10`. `web` and `worker` log the value at boot as `[shopify_context] Shopify Admin API version <version>`.
+
+Shopify supports each version for a year. A request for a version it no longer supports is answered with the oldest version it still supports, and the `X-Shopify-API-Version` response header shows which one answered. The release that moves to 2026-10 changes no query and no mutation text: every field the app reads and writes exists, not deprecated, in 2026-10, and none was removed in 2026-04, 2026-07 or 2026-10. The membership line item now sends its price as `originalUnitPriceWithCurrency` (amount and `CAD`, as the locker and job order line items already do), in place of the deprecated `originalUnitPrice`. The amount charged does not change, because the store's currency is CAD.
+
+Order:
+
+1. Deploy the release with the current credential. It works on the current version and on 2026-10.
+2. Then change the credential: `bin/rails credentials:edit`, set `api_version: "2026-10"` under `production.shopify` (and under `staging.shopify` and `development.shopify`), save, and deploy again so `web` and `worker` restart with it. The value must be one the `shopify_api` gem lists in `ShopifyAPI::AdminVersions::SUPPORTED_ADMIN_VERSIONS`; any other value makes the Shopify setup fail at boot, and every Shopify call then fails with `ShopifyContext::NotConfigured`.
+3. Check the boot log line in both containers (`docker compose -f docker-compose.production.yml logs web worker | grep "Shopify Admin API version"`) and pay one test draft order.
+
+To go back, set the old value again and restart.
 
 ### Failed and overdue job alerts
 
@@ -105,15 +367,18 @@ Each item is marked as reported by a `settings` row, `job_alert:failed:<failed e
 
 ### Backfilling the CDEL report
 
-The report mailed on the 1st covers the month just ended. To mail a month again, or one that was missed, give the month as `YYYY-MM` (not later than the current month). Each run sends one mail:
+The report mailed on the 1st covers the month just ended. A month is mailed once: a run first claims `cdel_report_sent:YYYY-MM` in the `settings` table (value `claimed:<time>`), sends the mail, and then sets the value to `sent`, so a second run of the same month (the scheduled task run again, or the commands below) mails nothing. A run whose delivery fails hands its claim back and can be repeated. A run killed in the middle (worker stopped, crash) leaves its `claimed:` value; runs started within 30 minutes skip the month, and after that the next run takes the claim over and sends it (if the crash came right after the mail was sent, the month is mailed twice). To clear a stuck claim at once, run `Setting.where(key: "cdel_report_sent:2026-10").update_all(value: nil)` in a console, then repeat the run. To mail a month that was missed, give the month as `YYYY-MM` (not later than the current month); to mail a month again that was already sent, add `FORCE=1`. Each run sends one mail:
 
 ```
 docker compose -f docker-compose.production.yml exec web bin/rails "reports:send_cdel_report_to_sharepoint[2026-08]"
 docker compose -f docker-compose.production.yml exec web bin/rails "reports:send_cdel_report_to_sharepoint[2026-09]"
 docker compose -f docker-compose.production.yml exec web bin/rails "reports:send_cdel_report_to_sharepoint[2026-10]"
+docker compose -f docker-compose.production.yml exec -e FORCE=1 web bin/rails "reports:send_cdel_report_to_sharepoint[2026-10]"
 ```
 
-From a console, `CdelReportJob.perform_later(month: "2026-08")` does the same.
+The last line mails October again even though it was sent.
+
+From a console, `CdelReportJob.perform_later(month: "2026-08")` does the same, and `force: true` mails the month again.
 
 ### Backfilling the popular hours
 
@@ -141,6 +406,39 @@ docker compose -f docker-compose.production.yml exec web bin/rails "popular_hour
 
 Restoring returns the rows to how they were at the snapshot, so it also drops any samples the hourly task folded in since.
 
+### Pending membership duplicates
+
+Older data can hold more than one pending membership (an open checkout) for the same member and tier. `bin/rails memberships:pending_duplicates` deals with them in two modes, `bin/rails memberships:restore_duplicate_closures` puts closed rows back, and the unique index that keeps duplicates from coming back (`index_memberships_on_pending_user_and_tier`, migration `20261115150100`) can only be built once they are gone.
+
+What `memberships:pending_duplicates` does:
+
+- **Without an argument (dry run)** it lists each member and tier pair with more than one pending row: the number of rows and their ids, then one line per row with its created and last updated time, the Shopify draft id stored on it (or none) and whether it is the row kept or a row to close. The kept row is the one checkout serves: the oldest pending row (lowest id), whose draft is the payment link the member holds. Every other row is closed. A listed row that no longer exists is reported and skipped. It changes no row and calls no outside service.
+- **With `[apply]`** it closes each extra row in turn: it checks the row's Shopify draft, deletes it (a draft already gone counts as closed), then marks the row `failed` and writes a row to `membership_duplicate_closures` (the membership, the kept membership, the draft id, the status and `updated_at` the row had before, and its `updated_at` right after). No row is deleted. A draft that is paid is never deleted and its row is never marked: the run stops there, naming the membership, and the payment is applied as usual. An extra row whose draft any other membership row also holds (the kept row or another member's) is left alone and reported as `changed`. So is a row the member uses again while it is being closed, and Shopify keeping a draft payable is reported as `open`; any of these makes the task exit non-zero. Apply refuses, changing nothing, unless `CONFIRM_MAX_DELETES` is at least the number of rows to close (the dry run prints that number). It is safe to run again: rows already closed are no longer pending and are skipped.
+
+Order of operations on production (the index release fails to boot while any duplicate remains, see "Deploy"):
+
+1. Deploy the release that adds the tasks and `membership_duplicate_closures` (migration `20261115150000`, a new table only). The unique index migration must not be in this release.
+2. Dry run: `docker compose -f docker-compose.production.yml exec web bin/rails memberships:pending_duplicates`. Note the number of rows to close.
+3. Maintainers review the list. Check each draft to close in Shopify: one that is paid is settled by hand first.
+4. Apply: `docker compose -f docker-compose.production.yml exec -e CONFIRM_MAX_DELETES=<rows to close> web bin/rails "memberships:pending_duplicates[apply]"`. It ends with `outcomes: closed <n>`. If it stops or reports a row, settle that row and run it again.
+5. Run the dry run once more. It must say that no member and tier pair has more than one pending membership. This read-only query must return 0 rows: `SELECT user_id, membership_tier_id FROM memberships WHERE status = 'pending' GROUP BY 1, 2 HAVING count(*) > 1;`
+6. Only then deploy the release with the unique index migration. If a duplicate remains, the migration stops with a message naming the task and changes nothing. Its `down` only drops the index. From that release the model also refuses a second pending membership for a member and tier with a validation error.
+
+Merging duplicate accounts (`rake users:merge_duplicates`) meets the same case across two accounts: when both hold a pending membership for the same tier, the kept account's row (the one checkout serves) stays and the other account's row is closed the same way, before the merge (draft deleted through the Shopify adapter, row marked `failed`, a `membership_duplicate_closures` record written), then moved to the kept account unchanged. It can be put back with the restore task below. Only a row of one of the two accounts being merged can be closed this way. If that row's draft is paid, it cannot be closed, or Shopify fails, the merge of that pair is refused with a message naming the membership and the other pairs go on; if the kept account's row vanished meanwhile, the row is reported and left pending. The summary lists, per pair, the pending memberships closed, also when the pair was then refused for another reason. Nothing is deleted.
+
+To put closed rows back: `bin/rails memberships:restore_duplicate_closures` lists every closure not restored yet and what a restore would do; `docker compose -f docker-compose.production.yml exec -e CONFIRM_MAX_RESTORES=<rows listed> web bin/rails "memberships:restore_duplicate_closures[apply]"` sets each row's `status` and `updated_at` back to the recorded values (the draft id was never changed) and stamps the record's `restored_at`. Apply refuses, changing nothing, unless `CONFIRM_MAX_RESTORES` is at least the number of rows listed. **Restored rows are exactly as before, `updated_at` included, so the stale checkout expiry (`membership_expiry`, once it is turned on) treats them as it would have without the closure: a restored row older than a week is expired by its next run. The Shopify draft stays deleted: the next checkout for that row makes a new one.** Each restore holds the member's row lock, the lock checkout takes, so a purchase at the same moment waits rather than racing it. A row that changed since its closure is refused (`changed`); so is one whose member and tier already hold a pending row once the unique index exists (`blocked`: drop the index first, or close the kept row), and one whose membership no longer exists (`gone`). Any of these makes it exit non-zero and changes nothing for that row. It is safe to run again, and a restored row can be closed again later (a new record is written). The record table has no foreign keys, so a record is kept when a membership is deleted with its user (accounts are only hidden when deleted; merging duplicate users moves memberships to the kept user before removing the other). Rolling back migration `20261115150000` refuses while the table holds any row.
+
+### Like and vote counters
+
+`repositories.like` and `comments.upvote` are stored numbers that `Like.give`, `Like.take_back`, `Upvote.cast`, `Upvote.switch` and `Upvote.retract` change together with the row; they should equal the number of likes of the repository and the upvotes minus the downvotes of the comment. Older rows can differ (a like or vote removed or moved by a console command or a user merge did not always move the counter). To see the differences, which changes nothing, then to correct them (owner step, run when the site is quiet and check the list first):
+
+```
+docker compose -f docker-compose.production.yml exec web bin/rails counters:recount
+docker compose -f docker-compose.production.yml exec web bin/rails "counters:recount[apply]"
+```
+
+Applying locks each row that differs, counts its likes or votes again inside that transaction, sets the counter to that number and adds a row to the `counter_recount_corrections` table (table, row id, column, old value, new value, run time). That table is the permanent record of the old values and is only ever added to. A CSV of the same changes is also written to `tmp/counter_recount_<time>_<random>.csv` in the `web` container as a convenience (never overwritten, replaced on the next deploy; copy it out with `docker compose -f docker-compose.production.yml cp web:/rails/tmp/<file> .` if wanted). Running the list again afterwards shows nothing. To undo, set each counter back to `old_value` from `counter_recount_corrections` for the run. No like, vote, repository or comment is changed or removed. The migration that creates the table only adds it; `down` drops that table.
+
 ## Job order chat: extra notification recipients
 
 Every chat message on a job order is emailed, one email per person, to the order's owner, its assigned staff and everyone who has posted in that chat (never to its author). Besides those, the setting `chat_message_extra_recipients` lists extra people who are mailed about every message: user ids and plain email addresses, separated by commas, spaces or new lines. Until the setting is saved it holds the users who were always mailed (`25,1607`). In a Rails console:
@@ -153,8 +451,106 @@ Setting.set("chat_message_extra_recipients", "")                    # nobody ext
 
 The change applies to the next message. A user id that no longer exists is skipped.
 
+## Google Calendar: owner of imported events
+
+The Google Calendar sync turns room events into bookings owned by the user whose email is the event creator's. When the creator has no account (or the event has no creator), the owner is the user whose email is in the setting `google_calendar_fallback_email`, else in the `GOOGLE_CALENDAR_FALLBACK_EMAIL` environment variable of the `web` and `worker` containers. The setting is optional, and there is no built-in address. Without it (or when the address names no user), a new event from an unknown creator is imported with no owner: the booking still blocks the room and appears in the booking admin panel with an empty owner cell, but the room calendar does not show it. A booking that already has an owner keeps it when its event syncs again and resolves to nobody; the owner changes only when the sync resolves an account (the creator's, or the fallback). In a Rails console:
+
+```ruby
+Setting.get("google_calendar_fallback_email")                      # nil or "" means the environment variable, then nobody
+Setting.set("google_calendar_fallback_email", "bookings@example.com")
+```
+
+A change applies to events created or changed after it: each sync of an event from an unknown creator then gives its booking the configured account. Nothing needs to be run on deploy.
+
+## Deleted repositories and their files
+
+Deleting a repository hides it (`repositories.deleted`); nothing is removed, and an admin can restore it from the admin page "Deleted Repositories". The photos and files of a hidden repository stop being served by the site (Active Storage links answer 404, except to a signed-in admin), but hiding is not a purge. Copies already cached by a browser or a CDN (proxy responses are public with a very long lifetime) and storage-service links already issued (valid for about five minutes) stay usable until they expire. The stored files stay in the storage service until someone removes them on purpose; the application never does so for a hidden repository. `repositories.hidden_reason` records why a repository is hidden (0 deleted by the owner or a member, 1 by an admin, 2 because its owner's account was deleted); restoring an account brings back only reason 2. Rows hidden before the column existed have a NULL reason and are treated as deleted on purpose, so only an admin restores them from "Deleted Repositories". If a file has to disappear for good, that is a separate manual step on the storage service and a CDN purge.
+
 ## Repository zip cache
 
 Repository downloads are cached as zips in `tmp/repository_zips`. The cache is limited by `REPOSITORY_ZIP_CACHE_MAX_BYTES` (default 5 GB), the filesystem keeps `REPOSITORY_ZIP_MIN_FREE_BYTES` free (default 5 GB), and a zip larger than `REPOSITORY_ZIP_MAX_CACHED_ZIP_BYTES` (default 1 GB) is streamed instead of kept. An hourly job trims the cache (least recently used first) and removes partial zips older than an hour. Everything in `tmp/repository_zips` can be deleted at any time; zips are rebuilt on demand.
 
 The cache lives in the `repository_zips` Docker volume (`staging_repository_zips` on staging), mounted at `/rails/tmp/repository_zips` in both the `web` and `worker` services, so it survives deploys and the hourly job manages the same files the web service writes. Emptying it is safe: `docker compose -f docker-compose.production.yml exec web sh -c 'rm -f /rails/tmp/repository_zips/*'` (or remove the volume). `df` inside the container measures the host filesystem behind the volume. If the free space cannot be read (unexpected `df` output) a request applies only the size cap, the problem is reported, and the hourly job evicts nothing that run.
+
+## Help requests
+
+A help request (the web help form, `PUT /send_email`, `POST /api/v1/support_requests`) is saved as a `helps` row and the request answers at once. `HelpFilingJob` then queues the mails and opens the public GitHub issue. Each step is done once: the run first claims it on the row (`mailing_claimed_at`, `filing_claimed_at`) in one update, does it with no transaction or lock open, and only then records it (`mailed_at`, and `filed_at` with `gh_issue_number`). A step that fails gives its claim back; a claim left by a run that died is taken again after 5 minutes (`Help::CLAIM_TIMEOUT`). A run records or gives back only the claim it took, so a run that outlived the timeout leaves the newer run's claim alone (a step it did anyway is reported as "done after its claim was taken over": look for a second issue or set of mails); when a claim cannot be taken, the run reads the step from the row, so a step another run finished counts as done. The GitHub calls wait at most 5 seconds to connect and 20 seconds for each answer (`GithubIssuesService::CONNECTION_OPTIONS`). Octokit's retry middleware retries only GET, HEAD, PUT, DELETE and OPTIONS, so the two POST calls of a step (the installation token and the issue) are not retried: a step takes at most about 50 seconds.
+
+Retry budget: a job runs at most 3 times (`HelpFilingJob::ATTEMPTS`, a growing wait between runs, the last failure reported). The recurring task `help_filing_sweep` (`HelpFilingSweepJob`, every 15 minutes) queues the job again for every row that is not filed or not mailed and has not changed for 15 minutes: a row whose job could not be queued when it was saved (that failure is reported and the sender still sees success), and a row whose job gave up. Each row is queued again at most 6 times (`Help::MAX_RESENDS`, about an hour and a half), so a request makes at most 21 GitHub calls. The sweep after the sixth resend reports a row that is still unfinished, once, and leaves it for staff; a row that one of the resends finished is never reported. Running the sweep twice queues nothing twice. A run that stops between GitHub's answer (or the mail insert) and the row update repeats that step after the claim times out: a second issue or a second set of mails is possible in that case only.
+
+In a console:
+
+```ruby
+Help.unfinished                                 # not filed or not mailed yet
+Help.unfinished.where("resends > ?", Help::MAX_RESENDS) # given up and reported
+HelpFilingJob.perform_now(help_id)             # file and mail one now (does only what is missing)
+```
+
+Rows saved before this change were handled by the request that saved them: the migration sets their `filed_at` and `mailed_at` to their `created_at`, and they have no `source`, which the sweep also skips, so it never files or mails them. Rolling the code back leaves the new columns in place; a request saved by the new code and not yet filed then stays unfiled (old code has no job for it): check `Help.unfinished.count` is 0 before rolling back. Rows from that time with an empty `gh_issue_number` are requests whose GitHub issue failed; the sender was told so. Nothing deletes help rows.
+
+## Interface components
+
+Repeated interface pieces are ViewComponents (`view_component` gem) in `app/components/`, named `<Thing>Component`. The directory is autoloaded like the other `app/` directories.
+
+- A component's Stimulus controller lives in `app/javascript/controllers/`, named after the component (for example `key_request_deny_form_controller.js`), because the controller index only loads files under that directory. Its scoped CSS goes in a partial under `app/javascript/stylesheets/` imported by `application.scss`.
+- Component specs live in `spec/components/` and get `type: :component`, the ViewComponent test helpers and Capybara matchers from `spec/support/view_component.rb`.
+
+## Programs unique index
+
+The release that adds `index_programs_on_user_id_and_program_type` makes the database refuse a second row for the same user and program (Development, Volunteer, Teams). The migration first checks for existing duplicates; if any exist it changes nothing and stops with a message listing the user and the ids of the duplicate rows, to be settled by hand before running it again. The 2026-11-04 backup had none. It builds the index concurrently, and `down` only drops the index and keeps every row. Joining a program (`Program.join`) is an insert that does nothing when the row exists and does not name the index, so code that runs before the migration (for example the `worker` container) still works.
+
+## University programs import
+
+Admins update the programs offered on the sign-up and profile forms by uploading a csv (columns `program,level,faculty,department`; the shipped file is `lib/assets/programs.csv`) on the admin University Programs page. The import never deletes rows. A program is identified by program, level and faculty: new ones are added, a changed department is updated in place, a retired program the file lists again is brought back, and active programs missing from the file are marked inactive (`uni_programs.active`) so the forms stop offering them while users' stored programs and `User#department` keep working. The whole file is applied in one transaction under a table lock; uploading the same file again changes nothing. The page reports how many programs were added, updated, restored and retired.
+
+The release that adds `uni_programs.active` and `index_uni_programs_on_program_level_faculty_active` (unique over program, level and faculty, for active rows) marks the second copy of a row that is identical in every column inactive (the 2026-11-01 backup holds one such pair, "Microprogram Anthropocene"); it never removes or edits a row otherwise. If two rows share program, level and faculty but differ in department, the migration stops with a message listing them and changes nothing else; settle those by hand and run it again. `down` drops the index and the column and keeps every row; programs retired by imports after the release then look active again to the old code, because the flag is gone (the rows are kept). The admin University Programs page lists retired programs in a read-only "Retired programs" section.
+
+## Volunteer task joins: one joined row per user and task
+
+The release that adds `index_volunteer_task_joins_on_task_and_user_when_joined` (unique over task and user, for rows whose state is `joined`) makes the database refuse a second joined row for the same user and task, which the model validation could not guarantee for two simultaneous joins. Ended rows (completed, left, removed) are history and may repeat. A join that loses such a race gets the same message as the validation ("User is already on this task"). The migration needs no manual step; `web` runs it on boot. It first looks for (task, user) pairs with more than one joined row. If exactly one pair has exactly two, it ends the newer of the two (by created_at, then id): the row is kept with the state `removed`, `active` false, `state_changed_at` set and no actor, and its state before is written to `volunteer_task_join_duplicate_endings` (one row per change: join id, kept join id, old state, old `active`, old change time and actor, old `updated_at`, `restored_at`). The 2026-11-01 backup holds exactly that one pair (joins 301 and 302; 302 is ended). If any other joined duplicates exist (more than one pair, or a pair of three), the migration stops, lists the ids and changes nothing; settle them by hand and run it again. Running it again changes nothing. `down` drops the index first, then puts every recorded row back exactly as it was (only if it is still in the state the migration gave it) and marks the record restored. The record table is kept on `down`.
+
+The release that adds `index_design_days_single_row` makes the database hold at most one `design_days` row, so two simultaneous first visits to the Design Day settings can no longer create two (the second visit now reads the first one's row). `web` runs the migration on boot. If `design_days` already has more than one row the migration stops, changes nothing and lists the ids; decide which row to keep and resolve the rest by hand, then deploy again. `down` only drops the index and keeps every row.
+
+The release that makes `printer_sessions.printer_id` NOT NULL (migration `20261113100000`) needs no manual step; `web` runs the migration on boot. It first counts printer sessions with no printer; if any exist it changes nothing and stops with a message naming the count. Decide by hand what those rows stand for, then deploy again; the migration never deletes or changes a session. The 2026-11-01 backup had none. It adds a check NOT VALID, validates it without blocking writes, sets the column NOT NULL and drops the check; each step waits at most 3 seconds for its lock and is retried. `down` makes the column nullable again and changes no row.
+
+## Cache database
+
+`Rails.cache` in production and staging is Solid Cache, and its entries live in a database of their own: `makerspacerepo_cache` in production, `makerspacerepo_cache_staging` in staging (`config/database.yml`, the `cache` entry; `config/cache.yml` names it with `database: cache`). It sits on the same Postgres server, with the same user and password, as the primary database, beside the queue and cable databases. Its schema is `db/cache_schema.rb` (one table, `solid_cache_entries`); its migrations, if any are ever added, go in `db/cache_migrate`. Development and test use an in-memory or null store and have no cache database.
+
+Everything in it is throwaway: entries expire after at most seven days, the table is capped at 256 MB with the oldest entries going first, and emptying it (`Rails.cache.clear`) is safe at any time. It does not need a backup. The database backup (the script in the deploy user's home folder) dumps the primary database, so it needs no change, and it no longer carries cache rows.
+
+### Deploy step: own cache database
+
+No manual step. On the first boot of the new image, `web` runs `bin/rails db:prepare` (`bin/docker-entrypoint`), which creates `makerspacerepo_cache` and loads `db/cache_schema.rb`; later boots find it and leave it alone. The compose file connects as `postgres`, which may create databases. After the deploy:
+
+- [ ] `docker compose -f docker-compose.production.yml logs web` shows `Created database 'makerspacerepo_cache'` once.
+- [ ] Only `web` runs `db:prepare`; the `worker` does not. If the worker started before `web` created the cache database, its first jobs ran without a cache (Solid Cache reports the error and carries on; a locker draft-status alert may have been skipped once). Restart the worker after `web` is up: `docker compose -f docker-compose.production.yml restart worker`.
+- [ ] The worker depends only on `db`, so the old worker can still write cache entries to the primary table while the new `web`'s `db:prepare` drops it. Solid Cache reports and swallows those errors: a few cache operations fail, and no data is lost.
+- [ ] In a console, `SolidCache::Entry.connection_db_config.database` is `"makerspacerepo_cache"`, and `Rails.cache.write("deploy-check", 1)` then `Rails.cache.read("deploy-check")` returns 1 (`Rails.cache.delete("deploy-check")` afterwards).
+
+The cache starts empty, so the first page loads after the deploy rebuild their fragments and fetch imported calendars again. Rehearsed on a copy of the 2026-11-14 backup: the cache database was created and loaded, the primary schema dump and the row count of every primary table were the same before and after, and a cache write and read went to the new database.
+
+The old `solid_cache_entries` table in the primary database (created by `20261031000002`) is dropped by migration `20261115100000` in the same release (owner approval 2026-11-15). Its rows were cache only and are not kept. Rolling that migration back recreates the table empty, with the same columns and indexes.
+
+Rollback: first roll back `20261115100000` (`bin/rails db:migrate:down:primary VERSION=20261115100000`) so the primary table exists again (empty), then remove the `database: cache` lines from `config/cache.yml` (production and staging) and deploy. `Rails.cache` then uses the primary table again, starting empty. The `cache` entry in `config/database.yml` and the cache database can stay; drop the database by hand only if it is not wanted. An older image cannot do this by itself: its `config/cache.yml` points at the primary table, and it lacks `20261115100000`, so it cannot roll that migration back. To roll back by redeploying an older image, first run `bin/rails db:migrate:down:primary VERSION=20261115100000` on the current image, then deploy the older one.
+
+## Imported calendar (ICS) cache
+
+The body of each imported calendar link (staff external unavailabilities, a space's open-hours and needed-staff calendars) is kept in Solid Cache (`Rails.cache`, the `solid_cache_entries` table of the cache database, see "Cache database") for ten minutes, so a page load that reads the same link again does not fetch it again. Only a successful body is kept; a failed or empty fetch is read again on the next load. The body is encrypted with a key derived from the application secret (`secret_key_base`), and the cache key is a digest of the link, never the link (a private calendar link holds a secret). Emptying the cache is safe at any time (`Rails.cache.clear`, or delete one entry with `Rails.cache.delete(["ics-body", Digest::SHA256.hexdigest(url)])`): the next load fetches the link again. After the application secret is changed, copies made under the old secret cannot be read; a load that meets one reports the calendar as failed until the entry expires (at most ten minutes) or is cleared. Nothing needs to be run on deploy.
+
+## Staff space unique index
+
+The release that adds `index_staff_spaces_on_user_id_and_space_id` (unique over user and space) needs no manual step; `web` runs the migration on boot. It makes the database refuse a second assignment of one staff member to one space. The migration first looks for duplicates; if any exist it changes nothing and stops with a message listing the key and the row ids. Settle those rows by hand (keep one, decide with the maintainers what happens to the others), then deploy again. The 2026-11-01 backup had no duplicates. The index is built concurrently, and `down` only drops the index and keeps every row. A repeated insert that hits the index raises `ActiveRecord::RecordNotUnique`; the staff assignment form looks the row up first, so a repeat is the normal outcome.
+
+## Space names and space managers
+
+The release with migrations `20261115130000` and `20261115130100` needs no manual step; `web` runs them on boot.
+
+- `20261115130000` adds the unique index `index_spaces_on_lower_name` on `lower(name)`, so the database refuses two spaces whose names differ only in case (the model check is case-insensitive too). It first looks for names used more than once, ignoring case; if any exist it changes nothing and stops with a message listing each name and its space ids. Rename those spaces by hand, then deploy again. The table is small, so the index is built inside the migration's transaction. `down` drops the index and keeps every row.
+- `20261115130100` makes `space_manager_joins.user_id` and `space_id` NOT NULL (the model requires both associations). It first counts rows missing either; if any exist it changes nothing and stops with a message naming the counts. Decide with the maintainers what those rows stand for, then deploy again; the migration never changes or removes a row. `down` makes both columns nullable again and changes no row.
+
+The 2026-11-14 backup had 12 spaces with 12 distinct names ignoring case, and 13 space manager rows, none missing a user or a space. Run the two queries in "Before merging to master" on production before the merge.
+
+## Kiosk sign-in log
+
+Every kiosk sign-in or sign-out that changes something writes one row to `kiosk_sign_events` (actor, visitor, space, `sign_in` or `sign_out`, `created_at`) in the same transaction as the lab session change. A sign-in for someone already inside, an unknown visitor or space, and a request with neither action write nothing. Rows are append-only (the model refuses updates and deletes). They are kept one year: `KioskSignEventCleanupJob` (recurring `kiosk_sign_event_cleanup`, daily at 3:15am) deletes rows older than a year in batches with a relation-level delete; running it again deletes nothing more. The table is not read by Power BI. There is no page for it; read it from the Rails console, for example `KioskSignEvent.newest_first.includes(:actor, :visitor, :space).limit(50)`. The migration only creates the table, so it needs no manual step.

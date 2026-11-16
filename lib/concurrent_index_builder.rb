@@ -40,22 +40,32 @@ module ConcurrentIndexBuilder
 
     columns = Array(columns).map(&:to_s)
     existing = indexes(table).find { |i| i.name == name }
-    raise_if_name_taken_by_other_relation(table, name) unless existing
-
-    if existing && !existing.valid?
-      remove_index table, name: name, algorithm: :concurrently
-    elsif existing && !plain_match?(existing, columns, unique)
-      raise IndexDefinitionMismatch,
-            "index #{name} on #{table} exists as #{describe(existing)}, " \
-            "not the requested #{'unique ' if unique}plain btree (#{columns.join(', ')})"
-    elsif existing && !own_collations?(table, name)
-      raise IndexDefinitionMismatch,
-            "index #{name} on #{table} exists with a non-default column collation; collation differs from the requested plain btree (#{columns.join(', ')})"
+    if existing
+      prepare_existing_index(table, existing, columns, unique)
+    else
+      raise_if_name_taken_by_other_relation(table, name)
     end
     add_index table, columns, name: name, unique: unique, algorithm: :concurrently, if_not_exists: true
   end
 
   private
+
+  # An INVALID leftover is dropped so it can be rebuilt; a valid index is kept
+  # only when it is exactly the requested plain one.
+  def prepare_existing_index(table, index, columns, unique)
+    name = index.name
+    return remove_index(table, name: name, algorithm: :concurrently) unless index.valid?
+
+    unless plain_match?(index, columns, unique)
+      raise IndexDefinitionMismatch,
+            "index #{name} on #{table} exists as #{describe(index)}, " \
+            "not the requested #{'unique ' if unique}plain btree (#{columns.join(', ')})"
+    end
+    return if own_collations?(table, name)
+
+    raise IndexDefinitionMismatch,
+          "index #{name} on #{table} exists with a non-default column collation; collation differs from the requested plain btree (#{columns.join(', ')})"
+  end
 
   def plain_match?(index, columns, unique)
     index.columns == columns && index.unique == unique && plain?(index)
@@ -89,14 +99,20 @@ module ConcurrentIndexBuilder
 
   def describe(index)
     columns = Array(index.columns).join(", ")
-    extras = []
-    extras << "where #{index.where}" if index.where
-    extras << "include (#{Array(index.include).join(', ')})" if index.include.present?
-    extras << "order #{index.orders}" if index.orders.present?
-    extras << "opclass #{index.opclasses}" if index.opclasses.present?
-    extras << "nulls not distinct" if index.nulls_not_distinct
-    extras << "expression" unless index.columns.is_a?(Array)
+    extras = describe_extras(index)
     "#{'unique ' if index.unique}#{index.using || :btree} (#{columns})#{" #{extras.join(' ')}" if extras.any?}"
+  end
+
+  # What makes the index other than plain, in a fixed order
+  def describe_extras(index)
+    [
+      ("where #{index.where}" if index.where),
+      ("include (#{Array(index.include).join(', ')})" if index.include.present?),
+      ("order #{index.orders}" if index.orders.present?),
+      ("opclass #{index.opclasses}" if index.opclasses.present?),
+      ("nulls not distinct" if index.nulls_not_distinct),
+      ("expression" unless index.columns.is_a?(Array))
+    ].compact
   end
 
   # Any relation of that name in the table's schema (the caller found no such

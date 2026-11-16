@@ -1,0 +1,99 @@
+# frozen_string_literal: true
+
+require "rails_helper"
+
+# The sort arrows in the admin announcements table headers (src/sorting.js
+# sortTable). Each column sorts ascending on its first click and flips on each
+# click after that. Real login, real page JS.
+RSpec.describe "Table sort arrows", type: :system do
+  let(:admin) { create(:user, :admin) }
+
+  before do
+    create(:announcement, :volunteer, description: "Bravo note", created_at: Time.zone.local(2026, 3, 5, 10))
+    create(:announcement, :volunteer, description: "charlie note", created_at: Time.zone.local(2025, 12, 1, 9))
+    create(:announcement, :volunteer, description: "Alpha note", created_at: Time.zone.local(2026, 1, 20, 14))
+    log_in_as(admin, to: admin_announcements_path)
+  end
+
+  def descriptions
+    all("table.sessions-table tbody tr td:nth-child(2)").map { |cell| cell.text.strip }
+  end
+
+  def sort_by(header)
+    find("table.sessions-table th", text: header).find("span").click
+  end
+
+  it "sorts a text column ascending, ignoring case, then descending on the next click" do
+    expect(descriptions).to eq(["charlie note", "Alpha note", "Bravo note"])
+
+    sort_by("Description")
+    expect(page).to have_css("table.sessions-table tbody tr:first-child td:nth-child(2)", text: "Alpha note")
+    expect(descriptions).to eq(["Alpha note", "Bravo note", "charlie note"])
+
+    sort_by("Description")
+    expect(page).to have_css("table.sessions-table tbody tr:first-child td:nth-child(2)", text: "charlie note")
+    expect(descriptions).to eq(["charlie note", "Bravo note", "Alpha note"])
+  end
+
+  it "sorts a row without a cell in the column as an empty cell" do
+    page.execute_script(<<~JS)
+      const row = document.createElement("tr");
+      row.innerHTML = "<td>short row</td>";
+      document.querySelector("table.sessions-table tbody").prepend(row);
+    JS
+    expect(page).to have_css("table.sessions-table tbody tr:first-child td", text: "short row")
+
+    sort_by("Description")
+    expect(page).to have_css("table.sessions-table tbody tr:nth-child(2) td:nth-child(2)", text: "Alpha note")
+    expect(descriptions).to eq(["Alpha note", "Bravo note", "charlie note"])
+
+    sort_by("Description")
+    expect(page).to have_css("table.sessions-table tbody tr:last-child td", text: "short row")
+    expect(descriptions).to eq(["charlie note", "Bravo note", "Alpha note"])
+  end
+
+  it "keeps a direction for each column, so a column sorts ascending on its first click" do
+    sort_by("Description")
+    expect(page).to have_css("table.sessions-table tbody tr:first-child td:nth-child(2)", text: "Alpha note")
+
+    sort_by("Date Submitted")
+    expect(page).to have_css("table.sessions-table tbody tr:first-child td:nth-child(2)", text: "charlie note")
+    expect(descriptions).to eq(["charlie note", "Alpha note", "Bravo note"])
+
+    sort_by("Date Submitted")
+    expect(page).to have_css("table.sessions-table tbody tr:first-child td:nth-child(2)", text: "Bravo note")
+    expect(descriptions).to eq(["Bravo note", "Alpha note", "charlie note"])
+
+    sort_by("Description")
+    expect(page).to have_css("table.sessions-table tbody tr:first-child td:nth-child(2)", text: "charlie note")
+    expect(descriptions).to eq(["charlie note", "Bravo note", "Alpha note"])
+  end
+end
+
+# A column whose cells all hold numbers (or a numeric sort key) sorts by value.
+RSpec.describe "Table sort arrows on a number column", type: :system do
+  let(:volunteer) { create(:user, :volunteer_with_volunteer_program) }
+
+  before do
+    [9, 10, 2.5].each_with_index do |hours, i|
+      create(:volunteer_hour, :approved1, user: volunteer, total_time: hours, created_at: Time.zone.local(2026, 1, 1 + i))
+    end
+    log_in_as(volunteer, to: volunteer_hours_path)
+  end
+
+  def hours
+    all("table.sessions-table tbody tr td:nth-child(4)").map { |cell| cell.text.strip }
+  end
+
+  it "sorts the hours column by value, then the other way on the next click" do
+    expect(hours).to eq(["2.5 Hours", "10.0 Hours", "9.0 Hours"])
+
+    find("table.sessions-table th", text: "Hours Worked").find("span").click
+    expect(page).to have_css("table.sessions-table tbody tr:first-child td:nth-child(4)", text: "2.5 Hours")
+    expect(hours).to eq(["2.5 Hours", "9.0 Hours", "10.0 Hours"])
+
+    find("table.sessions-table th", text: "Hours Worked").find("span").click
+    expect(page).to have_css("table.sessions-table tbody tr:first-child td:nth-child(4)", text: "10.0 Hours")
+    expect(hours).to eq(["10.0 Hours", "9.0 Hours", "2.5 Hours"])
+  end
+end

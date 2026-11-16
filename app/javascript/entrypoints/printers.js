@@ -1,16 +1,24 @@
-import TomSelect from "tom-select";
+import { oncePerElement, onEveryPageLoad } from "../src/on_page.js";
+import { tomSelectFor } from "../src/tom_select.js";
 
-if (document.querySelector("#remove_printer")) {
-  new TomSelect("#remove_printer", {});
+// The short form in brackets of the picked model's name; none when no model is
+// picked or its name has no short form.
+function pickedModelCode(modelSelect) {
+  const name = modelSelect.options[modelSelect.selectedIndex]?.text ?? "";
+  return name.match(/\((.*)\)/)?.[1] ?? "";
 }
 
-if (document.getElementById("model_id")) {
-  document.getElementById("model_id").addEventListener("change", (event) => {
-    document.getElementById("newPrinterCode").innerText = event.target.options[
-      event.target.selectedIndex
-    ].text
-      .match(/\((.*)\)/)
-      .pop();
+// The printer code shown beside the number follows the picked model.
+const bindModelSelect = oncePerElement((modelSelect) => {
+  modelSelect.addEventListener("change", () => {
+    document.getElementById("newPrinterCode").innerText =
+      pickedModelCode(modelSelect);
   });
-  document.getElementById("model_id").dispatchEvent(new Event("change"));
-}
+  modelSelect.dispatchEvent(new Event("change"));
+});
+
+onEveryPageLoad(() => {
+  const removePrinter = document.querySelector("#remove_printer");
+  if (removePrinter) tomSelectFor(removePrinter, {});
+  bindModelSelect(document.getElementById("model_id"));
+});

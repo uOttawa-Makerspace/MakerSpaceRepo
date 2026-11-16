@@ -25,6 +25,10 @@ test:
   # A git worktree can isolate its test DBs with a git-ignored config/test_db_suffix
   # file (or TEST_DB_SUFFIX); the main checkout has neither, so names are unchanged.
   database: makerspacerepo_test<%= ENV.fetch("TEST_DB_SUFFIX") { f = Rails.root.join("config/test_db_suffix"); (File.read(f).strip if File.exist?(f)) } %><%= ENV['TEST_ENV_NUMBER'] %>
+  # Every test connection starts with a bounded lock wait (the session default, so RESET and the
+  # pool's DISCARD ALL keep it): an example or thread stuck behind a row lock then fails instead of
+  # hanging the worker. spec/support/thread_pause.rb (LOCK_TIMEOUT) orders the spec timeouts below it.
+  options: "-c lock_timeout=20s"
 
 staging:
   primary:
@@ -38,6 +42,10 @@ staging:
     <<: *default
     database: makerspacerepo_cable_staging
     migrations_paths: db/cable_migrate
+  cache:
+    <<: *default
+    database: makerspacerepo_cache_staging
+    migrations_paths: db/cache_migrate
 
 production:
   primary:
@@ -51,3 +59,7 @@ production:
     <<: *default
     database: makerspacerepo_cable
     migrations_paths: db/cable_migrate
+  cache:
+    <<: *default
+    database: makerspacerepo_cache
+    migrations_paths: db/cache_migrate

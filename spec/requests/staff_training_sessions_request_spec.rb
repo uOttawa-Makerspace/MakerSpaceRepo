@@ -11,13 +11,25 @@ require "rails_helper"
 RSpec.describe "Staff training sessions", type: :request do
   let(:space) { create(:space) }
   let(:training) { create(:training, spaces: [space]) }
-  let!(:trainer) { create(:user, :staff) }
+  # The trainer is assigned to the space; admins are assigned nowhere and may work in any space.
+  let!(:trainer) { create(:user, :staff).tap { |u| StaffSpace.create!(user: u, space: space) } }
   let!(:record) { create(:training_session, user: trainer, training: training, space: space, level: "Beginner") }
   let(:student) { create(:user, :regular_user) }
 
   def create_params(overrides = {})
     { training_id: training.id, course: "no course", level: "Intermediate",
       training_session: { space_id: space.id }, training_session_users: [student.id] }.merge(overrides)
+  end
+
+  describe "new form with no space to work in" do
+    it "says the staff member has no assigned spaces, even with a stale saved space" do
+      loner = create(:user, :staff)
+      loner.update_columns(space_id: space.id)
+      log_in!(loner)
+      get new_staff_training_session_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(I18n.t("common.no_assigned_spaces"))
+    end
   end
 
   describe "role matrix" do
@@ -129,24 +141,65 @@ RSpec.describe "Staff training sessions", type: :request do
       it "redirects back with an alert (html) / created:false (json) when invalid" do
         expect { post staff_training_sessions_path, params: create_params(level: "") }.not_to change(TrainingSession, :count)
         expect(response).to redirect_to(root_path)
-        expect(flash[:alert]).to eq("Something went wrong. Please try again.")
+        expect(flash[:alert]).to eq("The training session was not created. Level A level is required")
         post staff_training_sessions_path(format: :json), params: create_params(level: "")
-        expect(JSON.parse(response.body)).to eq("created" => false)
+        expect(JSON.parse(response.body)).to match(
+          "created" => false, "error" => "The training session was not created. Level A level is required", "reference" => be_a(String)
+        )
       end
 
-      # a non-admin who sends user_id (the React app always does) creates the session as themselves
-      it "ignores user_id for staff: the session is created with the current staff member as instructor" do
+      it "lets staff send their own id as the instructor" do
+        expect { post staff_training_sessions_path(format: :json), params: create_params(user_id: trainer.id) }
+          .to change(TrainingSession, :count).by(1)
+        expect(TrainingSession.unscoped.order(:id).last.user_id).to eq(trainer.id)
+      end
+
+      it "refuses staff naming another instructor, with a message, creating nothing" do
         other = create(:user, :staff)
-        expect { post staff_training_sessions_path(format: :json), params: create_params(user_id: other.id) }
-          .to change(TrainingSession, :count).by(1)
-        expect(JSON.parse(response.body)).to eq("id" => TrainingSession.unscoped.order(:id).last.id, "created" => true)
-        expect(TrainingSession.unscoped.order(:id).last.user_id).to eq(trainer.id)
+        message = "Only an admin can choose another instructor."
+        expect { post staff_training_sessions_path, params: create_params(user_id: other.id) }
+          .not_to change(TrainingSession, :count)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq(message)
+        post staff_training_sessions_path(format: :json), params: create_params(user_id: other.id)
+        expect(JSON.parse(response.body)).to match("created" => false, "error" => message, "reference" => be_a(String))
       end
 
-      it "ignores a user_id that is not a user at all" do
+      it "refuses staff opening a session in a space they are not assigned to, with a message, creating nothing" do
+        elsewhere = create(:space)
+        training.spaces << elsewhere
+        message = "You are not assigned to this space."
+        expect { post staff_training_sessions_path, params: create_params(training_session: { space_id: elsewhere.id }) }
+          .not_to change(TrainingSession, :count)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq(message)
+        post staff_training_sessions_path(format: :json), params: create_params(training_session: { space_id: elsewhere.id })
+        expect(JSON.parse(response.body)).to match("created" => false, "error" => message, "reference" => be_a(String))
+      end
+
+      it "refuses staff naming an instructor that is not a user at all" do
         expect { post staff_training_sessions_path(format: :json), params: create_params(user_id: 0) }
-          .to change(TrainingSession, :count).by(1)
-        expect(TrainingSession.unscoped.order(:id).last.user_id).to eq(trainer.id)
+          .not_to change(TrainingSession, :count)
+        expect(JSON.parse(response.body)).to include("created" => false)
+      end
+
+      it "refuses a level that is not one of the levels" do
+        expect { post staff_training_sessions_path, params: create_params(level: "Wizard") }
+          .not_to change(TrainingSession, :count)
+        expect(flash[:alert]).to eq("The training session was not created. Level must be one of Beginner, Intermediate, Advanced")
+      end
+
+      it "refuses a training that is not offered in the space" do
+        elsewhere = create(:training)
+        expect { post staff_training_sessions_path, params: create_params(training_id: elsewhere.id) }
+          .not_to change(TrainingSession, :count)
+        expect(flash[:alert]).to eq("The training session was not created. Training is not offered in this space")
+      end
+
+      it "refuses a course longer than 255 characters" do
+        expect { post staff_training_sessions_path, params: create_params(course: "x" * 256) }
+          .not_to change(TrainingSession, :count)
+        expect(flash[:alert]).to include("Course must be a string of at most 255 characters")
       end
     end
 
@@ -245,12 +298,70 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(record.users).to eq([student])
       end
 
-      it "drops users by username and destroys their certification of this session" do
+      it "gives the validation reason when the update is refused" do
+        patch staff_training_session_path(record), params: { changed_params: { training_id: 0 } }
+        expect(flash[:alert]).to eq("The training session was not updated. Training A training subject is required")
+        expect(record.reload.training_id).to eq(training.id)
+      end
+
+      context "when the session already awarded certifications" do
+        let!(:awarded) do
+          create(:training_session_with_certifications, user: trainer, training: training, space: space, level: "Beginner")
+        end
+
+        it "refuses a new training, level or trainer with a message and changes nothing" do
+          other = create(:training, spaces: [space])
+          before = awarded.reload.attributes.slice("training_id", "level", "user_id")
+          [{ level: "Advanced" }, { training_id: other.id }, { user_id: create(:user, :staff).id }].each do |changes|
+            patch staff_training_session_path(awarded), params: { changed_params: changes, added_users: [student.username] }
+            expect(flash[:alert]).to eq("The training, level and trainer of a completed training session cannot be changed.")
+          end
+          expect(awarded.reload.attributes.slice("training_id", "level", "user_id")).to eq(before)
+          expect(awarded.users).not_to include(student)
+          expect(awarded.certifications.map(&:level).uniq).to eq(["Beginner"])
+        end
+
+        it "still accepts a course change" do
+          create(:course_name, name: "Intro")
+          patch staff_training_session_path(awarded), params: { changed_params: { course: "Intro" } }
+          expect(flash[:notice]).to eq("Training session updated succesfully")
+          expect(awarded.reload.course).to eq("Intro")
+        end
+
+        it "hides the edit form on the session page" do
+          get staff_training_session_path(awarded)
+          expect(response.body).not_to include("changed_params[level]")
+          get staff_training_session_path(record)
+          expect(response.body).to include("changed_params[level]")
+        end
+      end
+
+      it "answers 404 for a session that no longer exists" do
+        id = record.id
+        record.destroy
+        patch staff_training_session_path(id), params: { changed_params: { level: "Advanced" } }
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it "drops users by username and deactivates their certification of this session, keeping the row" do
         record.users << student
         cert = create(:certification, user: student, training_session: record, training: training)
+        expect(record.reload.editable?).to be(false)
         patch staff_training_session_path(record), params: { changed_params: { level: "Beginner" }, dropped_users: [student.username] }
         expect(record.reload.users).to be_empty
-        expect(Certification.unscoped.exists?(cert.id)).to be(false)
+        kept = Certification.unscoped.find(cert.id)
+        expect([kept.active, kept.demotion_staff, kept.demotion_reason]).to eq([false, trainer, Certification::TRAINER_REMOVED_REASON])
+        expect(student.certifications.reload).to be_empty
+      end
+
+      it "certifies a dropped trainee again once they are re-added" do
+        record.users << student
+        old = create(:certification, user: student, training_session: record, training: training)
+        patch staff_training_session_path(record), params: { changed_params: { level: "Beginner" }, dropped_users: [student.username] }
+        patch staff_training_session_path(record), params: { changed_params: { level: "Beginner" }, added_users: [student.username] }
+        expect { post certify_trainees_staff_training_session_path(record) }.to change { student.certifications.reload.count }.from(0).to(1)
+        expect(student.certifications.first.id).not_to eq(old.id)
+        expect(Certification.unscoped.find(old.id).active).to be(false)
       end
 
       it "removes a trainee through the remove link rendered on the session page" do
@@ -259,6 +370,26 @@ RSpec.describe "Staff training sessions", type: :request do
         href = Nokogiri::HTML(response.body).at_css("td.action-cell a.x-button")["href"]
         patch href
         expect(record.reload.users).to be_empty
+      end
+
+      it "changes nothing when the session cannot be saved: no user added or dropped" do
+        enrolled = create(:user, :regular_user)
+        record.users << enrolled
+        patch staff_training_session_path(record),
+              params: { changed_params: { training_id: 0 }, added_users: [student.username], dropped_users: [enrolled.username] }
+        expect(flash[:alert]).to eq("The training session was not updated. Training A training subject is required")
+        expect(record.reload.users).to eq([enrolled])
+      end
+
+      it "keeps the certification of a dropped trainee active when the session cannot be saved" do
+        record.users << student
+        cert = create(:certification, user: student, training_session: record, training: training)
+        trainer.update_column(:role, "regular_user")
+        log_in!(create(:user, :admin))
+        patch staff_training_session_path(record), params: { changed_params: { level: "Beginner" }, dropped_users: [student.username] }
+        expect(flash[:alert]).to start_with("The training session was not updated.")
+        expect(record.reload.users).to eq([student])
+        expect(Certification.unscoped.find(cert.id).active).to be(true)
       end
 
       it "refuses to change the trainer unless admin" do
@@ -370,12 +501,22 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(response).to have_http_status(:not_found)
       end
 
-      it "deletes a certification of the session in the URL" do
+      it "deactivates a certification of the session in the URL and keeps the row" do
         cert = create(:certification, user: student, training_session: record, training: training)
         expect { delete revoke_certification_staff_training_session_path(record), params: { cert_id: cert.id } }
-          .to change { Certification.unscoped.count }.by(-1)
+          .not_to change { Certification.unscoped.count }
+        kept = Certification.unscoped.find(cert.id)
+        expect([kept.active, kept.demotion_staff, kept.demotion_reason]).to eq([false, trainer, Certification::TRAINER_REMOVED_REASON])
         expect(response).to redirect_to(user_path(student.username))
-        expect(flash[:notice]).to eq("Deleted Successfully")
+        expect(flash[:notice]).to eq("Revoked Successfully")
+      end
+
+      it "keeps the certification active and gives the reason when it cannot be deactivated" do
+        cert = create(:certification, user: student, training_session: record, training: training)
+        allow_any_instance_of(Certification).to receive(:deactivate) { |c| c.errors.add(:base, "It is locked") && false }
+        delete revoke_certification_staff_training_session_path(record), params: { cert_id: cert.id }
+        expect(Certification.unscoped.find(cert.id).active).to be(true)
+        expect(flash[:alert]).to eq("The certification was not removed. It is locked")
       end
 
       it "answers 404 for an unknown certification" do
@@ -385,12 +526,60 @@ RSpec.describe "Staff training sessions", type: :request do
     end
 
     describe "DELETE destroy" do
-      it "deletes the session, its certifications and exams, redirecting to the staff dashboard" do
+      let(:refusal_en) do
+        "The training session was not deleted. " \
+          "This training session has awarded certifications or has exams, so it cannot be deleted."
+      end
+      let(:refusal_fr) do
+        "La séance de formation n'a pas été supprimée. " \
+          "Cette séance de formation a délivré des certifications ou a des examens, elle ne peut donc pas être supprimée."
+      end
+
+      it "keeps the session and gives the reason when it cannot be destroyed" do
+        allow_any_instance_of(TrainingSession).to receive(:destroy) { |s| s.errors.add(:base, "It is in use") && false }
+        expect { delete staff_training_session_path(record) }.not_to change(TrainingSession, :count)
+        expect(flash[:alert]).to eq("The training session was not deleted. It is in use")
+      end
+
+      it "keeps a session that has certifications, and the certifications" do
         cert = create(:certification, training_session: record, training: training)
+        expect { delete staff_training_session_path(record) }
+          .not_to change { [TrainingSession.count, Certification.unscoped.count] }
+        expect(Certification.unscoped.exists?(cert.id)).to be(true)
+        expect(flash[:alert]).to eq(refusal_en)
+      end
+
+      it "gives the reason in French when it has certifications" do
+        create(:certification, training_session: record, training: training)
+        delete staff_training_session_path(record), params: { locale: "fr" }
+        expect(flash[:alert]).to eq(refusal_fr)
+      end
+
+      it "keeps a session whose only certification is demoted, and its exams" do
+        cert = create(:certification, training_session: record, training: training)
+        cert.update!(active: false)
         create(:exam, training_session: record)
         expect { delete staff_training_session_path(record) }
-          .to change(TrainingSession, :count).by(-1).and change(Exam, :count).by(-1)
-        expect(Certification.unscoped.exists?(cert.id)).to be(false)
+          .not_to change { [TrainingSession.count, Certification.unscoped.count, Exam.count] }
+        expect(flash[:alert]).to eq(refusal_en)
+      end
+
+      it "keeps a session that has exams" do
+        create(:exam, training_session: record)
+        expect { delete staff_training_session_path(record) }
+          .not_to change { [TrainingSession.count, Exam.count] }
+        expect(flash[:alert]).to eq(refusal_en)
+      end
+
+      it "gives the reason in French when it has exams" do
+        create(:exam, training_session: record)
+        delete staff_training_session_path(record), params: { locale: "fr" }
+        expect(flash[:alert]).to eq(refusal_fr)
+      end
+
+      it "deletes a session without certifications or exams, redirecting to the staff dashboard" do
+        expect { delete staff_training_session_path(record) }
+          .to change(TrainingSession, :count).by(-1)
         expect(response).to redirect_to(staff_dashboard_index_path)
         expect(flash[:notice]).to eq("Deleted Successfully")
       end
@@ -407,6 +596,14 @@ RSpec.describe "Staff training sessions", type: :request do
         get training_report_staff_training_session_path(record, format: :xlsx)
         expect(response).to have_http_status(:ok)
         expect(response.body.bytes.first(2)).to eq([0x50, 0x4b]) # zip magic: an xlsx file
+      end
+
+      it "streams the workbook for a session with no training or space" do
+        record.update_columns(training_id: nil, space_id: nil)
+        get training_report_staff_training_session_path(record, format: :xlsx)
+        expect(response).to have_http_status(:ok)
+        expect(response.media_type).to eq("application/octet-stream")
+        expect(response.body.bytes.first(2)).to eq([0x50, 0x4b])
       end
     end
   end
@@ -442,6 +639,14 @@ RSpec.describe "Staff training sessions", type: :request do
       expect(TrainingSession.unscoped.order(:id).last.user_id).to eq(controller.send(:current_user).id)
     end
 
+    it "opens a session in a space no one assigned them to" do
+      elsewhere = create(:space)
+      training.spaces << elsewhere
+      expect { post staff_training_sessions_path, params: create_params(training_session: { space_id: elsewhere.id }) }
+        .to change(TrainingSession, :count).by(1)
+      expect(TrainingSession.unscoped.order(:id).last.space_id).to eq(elsewhere.id)
+    end
+
     it "can create a session for another trainer by passing user_id" do
       expect { post staff_training_sessions_path, params: create_params(user_id: trainer.id) }.to change(TrainingSession, :count).by(1)
       expect(TrainingSession.unscoped.order(:id).last.user).to eq(trainer)
@@ -457,7 +662,7 @@ RSpec.describe "Staff training sessions", type: :request do
       it "is not created for a space id that does not exist" do
         expect { post staff_training_sessions_path, params: create_params(training_session: { space_id: 0 }, user_id: trainer.id) }
           .not_to change(TrainingSession, :count)
-        expect(flash[:alert]).to eq("Something went wrong. Please try again.")
+        expect(flash[:alert]).to eq("The training session was not created. Space This field is required.")
       end
     end
   end

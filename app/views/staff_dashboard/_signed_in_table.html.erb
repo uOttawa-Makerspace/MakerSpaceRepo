@@ -1,4 +1,4 @@
-<% space.signed_in_users_with_history.each do |user| %>
+<% space.signed_in_users_with_history(with_sheets: true).each do |user| %>
     <tr id="<%= return_no_waiver_id(user) %>" data-user-id=<%= user.id %>>
         <td>
             <%= link_to(tag.drop_username(user.name), user_url(user.username), class: "align-middle") %>
@@ -6,13 +6,13 @@
                 <p class="text-success">
                     <% if user.active_membership.membership_tier.title_en.downcase.include?('faculty') %>
                         <i class="fa-solid fa-gears"></i>
-                        Has an Engineering Membership
+                        <%= t('staff_dashboard.membership.engineering') %>
                     <% elsif user.student? %>
                         <i class="fa-solid fa-building-columns"></i>
-                        Has a Community Membership
+                        <%= t('staff_dashboard.membership.community') %>
                     <% else %>
                         <i class="fa-solid fa-circle-check"></i>
-                        Has an External Membership
+                        <%= t('staff_dashboard.membership.external') %>
                     <% end %>
                 </p>
             <% end %>
@@ -23,12 +23,12 @@
         <td class="align-middle">
             <%= render 'staff_dashboard/flag', staff_dashboard_user: user %>
             <% if user.flagged? %>
-                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#flag_message_<%= user.id %>">See Flag</button>
+                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#flag_message_<%= user.id %>"><%= t('staff_dashboard.flags.see_flag') %></button>
             <% else %>
-                None
+                <%= t('staff_dashboard.flags.none') %>
             <% end %>
             <% if space.needs_walk_in_safety_sheet? && !user.walk_in_safety_sheets.any? %>
-                <p class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Did not sign sheet</p>
+                <p class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> <%= t('staff_dashboard.flags.did_not_sign_sheet') %></p>
             <% end %>
         </td>
         <td class="certifications-cell align-middle">
@@ -41,7 +41,7 @@
                             <div id="cert-details" style="display:inline">
                                 <%= certification.training.localized_name %> <br>
                                 <%= certification.trainer.name %> <br>
-                                <%= certification.updated_at.strftime('%B %d, %Y') %>
+                                <%= l(certification.updated_at, format: :certified_on) %>
                             </div>
                             <br/>
                         </div>
@@ -51,7 +51,7 @@
         </td>
         <% if space.makerspace? %>
             <td class="printers-cell align-middle">
-                <% printers_in_use.where(user_id: user.id).find_each do |printer_session| %>
+                <% user.printer_sessions_in_use.each do |printer_session| %>
                     <p class="m-0"><%= printer_session.printer.name %></p>
                 <% end %>
             </td>

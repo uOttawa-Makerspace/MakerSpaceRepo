@@ -1,11 +1,110 @@
 // app/javascript/entrypoints/volunteer_tasks.js
-import TomSelect from "tom-select";
+import { newTomSelect } from "../src/tom_select.js";
+import { bindOnce } from "../src/bind_once.js";
 
 function initTomSelect(selector, options) {
   const el = document.querySelector(selector);
-  if (el && !el.tomselect) {
-    new TomSelect(el, options);
+  if (el && !el.tomselect) newTomSelect(el, options);
+}
+
+function bindImageRemoval(el) {
+  el.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const deleteImagesInput = document.getElementById("deleteimages");
+    if (deleteImagesInput) {
+      deleteImagesInput.value += el.dataset.photoId + ",";
+    }
+    // The whole image card goes, not only the footer that holds the button.
+    el.closest(".image-item")?.remove();
+  });
+}
+
+function bindImageRemovals() {
+  document
+    .querySelectorAll(".image-remove")
+    .forEach((el) => bindOnce(el, bindImageRemoval));
+}
+
+// The TomSelect of a filter select: the one an earlier load of the same page
+// made, or a new one. Null when the page has no such select.
+function filterSelect(el, options) {
+  if (!el) return null;
+  return el.tomselect || newTomSelect(el, options);
+}
+
+function selectedValue(tom) {
+  return tom ? tom.getValue().toLowerCase() : "";
+}
+
+function currentTaskFilters(searchInput, spaceTom, categoryTom, certTom) {
+  return {
+    query: searchInput ? searchInput.value.toLowerCase().trim() : "",
+    space: selectedValue(spaceTom),
+    category: selectedValue(categoryTom),
+    certs: certTom ? certTom.getValue() : [],
+  };
+}
+
+function cardAttribute(card, name) {
+  return (card.getAttribute(name) || "").toLowerCase();
+}
+
+// Every filter is checked, then combined: a card shows only when it matches
+// the search text (anywhere), the space and category (exactly) and at least
+// one of the chosen certifications (by part of its name). Empty filters match.
+function cardMatchesFilters(card, filters) {
+  const certs = cardAttribute(card, "data-certifications");
+  const matches = [
+    !filters.query ||
+      cardAttribute(card, "data-searchable-text").includes(filters.query),
+    !filters.space || cardAttribute(card, "data-space") === filters.space,
+    !filters.category ||
+      cardAttribute(card, "data-category") === filters.category,
+    filters.certs.length === 0 ||
+      filters.certs.some((cert) => certs.includes(cert.toLowerCase())),
+  ];
+  return matches.every(Boolean);
+}
+
+function applyTaskCardFilters(container, filters) {
+  container.querySelectorAll(".task-item-card-col").forEach((card) => {
+    card.style.display = cardMatchesFilters(card, filters) ? "" : "none";
+  });
+}
+
+function initTaskIndexFilters(taskIndexContainer) {
+  const spaceEl = document.getElementById("spaceFilter");
+  const categoryEl = document.getElementById("categoryFilter");
+  const certEl = document.getElementById("certFilter");
+  const searchInput = document.getElementById("taskSearchInput");
+
+  const spaceTom = filterSelect(spaceEl, {
+    allowEmptyOption: true,
+    create: false,
+    controlInput: null,
+  });
+  const categoryTom = filterSelect(categoryEl, {
+    allowEmptyOption: true,
+    create: false,
+    controlInput: null,
+  });
+  const certTom = filterSelect(certEl, {
+    plugins: ["remove_button"],
+    create: false,
+  });
+
+  function applyFilters() {
+    applyTaskCardFilters(
+      taskIndexContainer,
+      currentTaskFilters(searchInput, spaceTom, categoryTom, certTom),
+    );
   }
+
+  if (searchInput) searchInput.addEventListener("input", applyFilters);
+  [spaceTom, categoryTom, certTom].forEach((tom) => {
+    if (tom) tom.on("change", applyFilters);
+  });
 }
 
 document.addEventListener("turbo:load", function () {
@@ -48,120 +147,13 @@ document.addEventListener("turbo:load", function () {
   });
 
   // ------------------------------------------------------------------------
-  // 2. Task Form Image Removals & Completed Task Toggler
+  // 2. Task Form Image Removals
   // ------------------------------------------------------------------------
-  document.querySelectorAll(".image-remove").forEach((el) => {
-    el.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const deleteImagesInput = document.getElementById("deleteimages");
-      if (deleteImagesInput) {
-        deleteImagesInput.value += el.id + ",";
-      }
-      el.parentElement.remove();
-    });
-  });
-
-  const hider = document.getElementById("task-hider");
-  if (hider) {
-    const completedRows = document.querySelectorAll(
-      'tr[completed="completed"]',
-    );
-    hider.addEventListener("click", () => {
-      completedRows.forEach((row) => row.classList.toggle("d-none"));
-      hider.innerHTML =
-        hider.innerHTML === "Hide Completed Task"
-          ? "Show Completed Task"
-          : "Hide Completed Task";
-    });
-  }
+  bindImageRemovals();
 
   // ------------------------------------------------------------------------
   // 3. Volunteer Tasks Index Filter & Search Engine
   // ------------------------------------------------------------------------
   const taskIndexContainer = document.getElementById("volunteerTasksIndex");
-  if (taskIndexContainer) {
-    const spaceEl = document.getElementById("spaceFilter");
-    const categoryEl = document.getElementById("categoryFilter");
-    const certEl = document.getElementById("certFilter");
-    const searchInput = document.getElementById("taskSearchInput");
-
-    let spaceTom = null;
-    let categoryTom = null;
-    let certTom = null;
-
-    if (spaceEl && !spaceEl.tomselect) {
-      spaceTom = new TomSelect(spaceEl, {
-        allowEmptyOption: true,
-        create: false,
-        controlInput: null,
-      });
-    } else if (spaceEl) {
-      spaceTom = spaceEl.tomselect;
-    }
-
-    if (categoryEl && !categoryEl.tomselect) {
-      categoryTom = new TomSelect(categoryEl, {
-        allowEmptyOption: true,
-        create: false,
-        controlInput: null,
-      });
-    } else if (categoryEl) {
-      categoryTom = categoryEl.tomselect;
-    }
-
-    if (certEl && !certEl.tomselect) {
-      certTom = new TomSelect(certEl, {
-        plugins: ["remove_button"],
-        create: false,
-        placeholder: "Filter by Certifications...",
-      });
-    } else if (certEl) {
-      certTom = certEl.tomselect;
-    }
-
-    function applyTaskCardFilters() {
-      const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
-      const selectedSpace = spaceTom ? spaceTom.getValue().toLowerCase() : "";
-      const selectedCategory = categoryTom
-        ? categoryTom.getValue().toLowerCase()
-        : "";
-      const selectedCerts = certTom ? certTom.getValue() : [];
-
-      const cards = taskIndexContainer.querySelectorAll(".task-item-card-col");
-
-      cards.forEach((card) => {
-        const cardText = (
-          card.getAttribute("data-searchable-text") || ""
-        ).toLowerCase();
-        const cardSpace = (card.getAttribute("data-space") || "").toLowerCase();
-        const cardCategory = (
-          card.getAttribute("data-category") || ""
-        ).toLowerCase();
-        const cardCerts = (
-          card.getAttribute("data-certifications") || ""
-        ).toLowerCase();
-
-        const matchesQuery = !query || cardText.includes(query);
-        const matchesSpace = !selectedSpace || cardSpace === selectedSpace;
-        const matchesCategory =
-          !selectedCategory || cardCategory === selectedCategory;
-        const matchesCerts =
-          selectedCerts.length === 0 ||
-          selectedCerts.some((cert) => cardCerts.includes(cert.toLowerCase()));
-
-        if (matchesQuery && matchesSpace && matchesCategory && matchesCerts) {
-          card.style.display = "";
-        } else {
-          card.style.display = "none";
-        }
-      });
-    }
-
-    if (searchInput)
-      searchInput.addEventListener("input", applyTaskCardFilters);
-    if (spaceTom) spaceTom.on("change", applyTaskCardFilters);
-    if (categoryTom) categoryTom.on("change", applyTaskCardFilters);
-    if (certTom) certTom.on("change", applyTaskCardFilters);
-  }
+  bindOnce(taskIndexContainer, initTaskIndexFilters);
 });

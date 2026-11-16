@@ -119,7 +119,7 @@ RSpec.describe LearningAreaController, type: :controller do
           post :create, params: { learning_module: learning_module_params }
         end.to change(LearningModule, :count).by(0)
         expect(response).to have_http_status(:unprocessable_content)
-        expect(flash[:alert]).to eq('Something went wrong')
+        expect(flash[:alert]).to eq('The learning module was not created. Title A title is required.')
       end
     end
   end
@@ -210,7 +210,7 @@ RSpec.describe LearningAreaController, type: :controller do
                   title: ''
                 }
               }
-        expect(flash[:alert]).to eq('Unable to apply the changes.')
+        expect(flash[:alert]).to eq('The learning module was not updated. Title A title is required.')
         expect(response).to have_http_status(:unprocessable_content)
       end
     end
@@ -261,8 +261,8 @@ RSpec.describe LearningAreaController, type: :controller do
       end
 
       it 'should serve extracted SCORM index' do
-        learning_module =
-          perform_enqueued_jobs { create(:learning_module, :with_scorm_object) }
+        learning_module = create(:learning_module, :with_scorm_object)
+        perform_enqueued_jobs { learning_module.process_scorm_package }
         expect(learning_module.reload.scorm_ready?).to be true
 
         get(:scorm_launch, params: { id: learning_module })

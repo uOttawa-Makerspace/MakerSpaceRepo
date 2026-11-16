@@ -1,4 +1,88 @@
 {
-  "ignored_warnings": [],
-  "brakeman_version": "8.0.2"
+  "ignored_warnings": [
+    {
+      "warning_type": "Redirect",
+      "warning_code": 18,
+      "fingerprint": "3a81c011ad967bb10dcb4504d5967295a7867302b3cdc7f37fb60f72e5bcc8b3",
+      "check_name": "Redirect",
+      "message": "Possible unprotected redirect",
+      "file": "app/controllers/memberships_controller.rb",
+      "line": 79,
+      "link": "https://brakemanscanner.org/docs/warning_types/redirect/",
+      "code": "redirect_to(Membership.begin_purchase(current_user, membership_params[:membership_tier_id]), :allow_other_host => true)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "MembershipsController",
+        "method": "start_purchase"
+      },
+      "user_input": "Membership.begin_purchase(current_user, membership_params[:membership_tier_id])",
+      "confidence": "Weak",
+      "note": "The destination is the payment page address returned by the payment provider for the member own pending membership."
+    },
+    {
+      "warning_type": "Cross-Site Scripting",
+      "warning_code": 4,
+      "fingerprint": "b09712cd4a1f6ac6dc194bc2b7e98b55f35e1238ca68e2191b844aa699db87e7",
+      "check_name": "LinkToHref",
+      "message": "Potentially unsafe model attribute in `link_to` href",
+      "file": "app/views/locker_rentals/show.html.erb",
+      "line": 278,
+      "link": "https://brakemanscanner.org/docs/warning_types/link_to_href",
+      "code": "link_to(LockerRental.find(params[:id]).checkout_link, :class => \"btn btn-info w-100\")",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "LockerRentalsController",
+          "method": "show",
+          "line": 66,
+          "file": "app/controllers/locker_rentals_controller.rb",
+          "rendered": {
+            "name": "locker_rentals/show",
+            "file": "app/views/locker_rentals/show.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "locker_rentals/show"
+      },
+      "user_input": "LockerRental.find(params[:id]).checkout_link",
+      "confidence": "Weak",
+      "note": "The link is the payment page address returned by the payment provider for this rental."
+    },
+    {
+      "warning_type": "Cross-Site Scripting",
+      "warning_code": 4,
+      "fingerprint": "d2084acd5a3bc14b0cad602e3a864c3a09783c9bc7e176ccc56b508c9264822b",
+      "check_name": "LinkToHref",
+      "message": "Potentially unsafe model attribute in `link_to` href",
+      "file": "app/views/admin/users/show.html.erb",
+      "line": 47,
+      "link": "https://brakemanscanner.org/docs/warning_types/link_to_href",
+      "code": "link_to(User.find(params[:id]).url.sub(/\\Ahttps?:\\/\\//i, \"\").to_s, User.find(params[:id]).url)",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "Admin::UsersController",
+          "method": "show",
+          "line": 64,
+          "file": "app/controllers/admin/users_controller.rb",
+          "rendered": {
+            "name": "admin/users/show",
+            "file": "app/views/admin/users/show.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "admin/users/show"
+      },
+      "user_input": "User.find(params[:id]).url",
+      "confidence": "Weak",
+      "note": "The link is only rendered when the address starts with http or https."
+    }
+  ],
+  "updated": "2026-11-11 17:31:26 +0000",
+  "brakeman_version": "8.1.0"
 }

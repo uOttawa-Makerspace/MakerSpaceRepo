@@ -111,6 +111,18 @@ RSpec.describe LearningModuleTrack, type: :model do
       expect(track.reload).to be_completed
     end
 
+    # No transition rule: any status can be assigned directly, including back from Completed.
+    it "accepts a status set directly" do
+      track.update!(status: "Completed")
+      expect(track.reload).to be_completed
+    end
+
+    it "lets a completed track be set back to in progress directly" do
+      completed = create(:learning_module_track, :completed)
+      completed.update!(status: "In progress")
+      expect(completed.reload).to be_in_progress
+    end
+
     it "completed scope selects only Completed tracks" do
       create(:learning_module_track, :completed)
       track

@@ -25,6 +25,46 @@ class Certification < ApplicationRecord
         }
   scope :inactive, -> { unscoped.where(active: false) }
 
+  # The reason recorded when revoking a project badge deactivates the certification it granted.
+  BADGE_REVOKED_REASON = "Project badge revoked"
+
+  # The reason recorded when a trainer drops a trainee from a session or revokes the session's certification.
+  TRAINER_REMOVED_REASON = "Removed by the trainer"
+
+  # Takes the certification out of use without deleting it, recording who did it and why; the row
+  # and its history stay. Deactivated certifications are left out of every default query.
+  def deactivate(staff, reason = TRAINER_REMOVED_REASON)
+    update(active: false, demotion_reason: reason, demotion_staff: staff)
+  end
+
+  # Whether an active certification of the same user, training and level already exists, so
+  # restoring this deactivated one would leave the user holding the same certification twice.
+  def duplicate_held?
+    return false if active
+
+    training_id = training_session&.training_id || proficient_project_session&.proficient_project&.training_id
+    training_id.present? && Certification.held_by(user_id, training_id, level).exists?
+  end
+
+  # Every certification (active or not) a user earned through approvals of any proficient project
+  # of the training at the level. The project session carries no link to the order item, so user,
+  # training and level identify it. A certification earned in a training session has no project
+  # session and is never in this set.
+  def self.for_projects(user_id, training_id, level)
+    unscoped.where(
+      user_id: user_id,
+      id: ProficientProjectSession.where(
+        proficient_project_id: ProficientProject.where(training_id: training_id, level: level).select(:id)
+      ).select(:certification_id)
+    )
+  end
+
+  # Inactive certifications that a badge revoke deactivated (not ones demoted by hand), the most
+  # recently deactivated first. Call on a relation from .for_projects.
+  def self.revoked_badges
+    where(active: false, demotion_reason: BADGE_REVOKED_REASON).order(updated_at: :desc, id: :desc)
+  end
+
   # A badge page is addressed by its share token, or by the numeric id older links use.
   # Tokens always contain a non-digit, so an all-digit key is an id.
   def self.find_for_badge_page!(key)
@@ -90,6 +130,20 @@ class Certification < ApplicationRecord
     create(user_id:, training_session_id:, level:)
   end
 
+  # The certification a proficient project of the training grants at the level: the active one the
+  # user already holds, else the most recent one in `restore` (a relation from .for_projects) that a
+  # badge revoke deactivated, which is reactivated, else a new one (raising when it cannot be saved).
+  # A returned certification that is new (previously_new_record?) or reactivated
+  # (saved_change_to_active?) was granted now; any other was already held.
+  def self.certify_for_project(user_id, training_id, level, restore: none)
+    held_by(user_id, training_id, level).first || restore_revoked(restore) || create!(user_id:, level:)
+  end
+
+  def self.restore_revoked(relation)
+    cert = relation.revoked_badges.first
+    cert&.tap { |c| c.update!(active: true, demotion_reason: nil, demotion_staff: nil) }
+  end
+
   def assign_share_token
     self.share_token = self.class.generate_share_token if share_token.blank?
   end
@@ -107,36 +161,41 @@ class Certification < ApplicationRecord
     end
   end
 
+  # The user's highest certification in each training they hold one for, with the training and
+  # trainer each one shows loaded together.
   def self.highest_certifications(user_id)
-    # training_ids = joins(:training).pluck(:training_id)
-    # trainings = Training.where(id: training_ids)
-    trainings = []
-    user = User.including_deleted.find(user_id)
-    user_certs = user.certifications
-    user_certs.each do |cert|
-      trainings << cert.training unless trainings.include? cert.training
-    end
-    certs = []
-    trainings.each do |training|
-      certs << certification_highest_level(training.id, user_id)
-    end
-    certs
+    highest = certifications_with_training(user_id).group_by { |cert| cert.training.id }.values.map { |certs| highest_of(certs) }
+    preload_by_origin(highest, :user, :user)
+    highest
   end
 
-  def self.certification_highest_level(training_id, user_id)
-    user = User.including_deleted.find(user_id)
-    training_certs = []
-    user.certifications.each do |cert|
-      training_certs << cert if cert.training.id == training_id
-    end
-    
-    highest_cert = training_certs.first
-    training_certs.each do |cert|
-      highest_cert = cert if highest_cert.level == "Beginner" && cert.level == "Intermediate"
-      highest_cert = cert if cert.level == "Advanced"
-    end
-    highest_cert
+  # The user's certifications with each one's training loaded: through the training session, or
+  # through the proficient project for a certification earned there.
+  def self.certifications_with_training(user_id)
+    certs = User.including_deleted.find(user_id).certifications.to_a
+    preload_by_origin(certs, :training, { proficient_project: :training })
+    certs
   end
+  private_class_method :certifications_with_training
+
+  def self.preload_by_origin(certs, from_session, from_project_session)
+    from_session_records, from_project_records = certs.partition(&:training_session_id)
+    ActiveRecord::Associations::Preloader.new(records: from_session_records, associations: { training_session: from_session }).call
+    ActiveRecord::Associations::Preloader.new(records: from_project_records, associations: { proficient_project_session: from_project_session }).call
+  end
+  private_class_method :preload_by_origin
+
+  # Of the certifications of one training: Advanced wins (the last one), then Intermediate over a
+  # first Beginner, else the first.
+  def self.highest_of(certs)
+    highest = certs.first
+    certs.each do |cert|
+      highest = cert if highest.level == "Beginner" && cert.level == "Intermediate"
+      highest = cert if cert.level == "Advanced"
+    end
+    highest
+  end
+  private_class_method :highest_of
 
   def self.filter_by_attribute(value)
     if value.present?
@@ -163,29 +222,53 @@ class Certification < ApplicationRecord
     false
   end
 
-  def self.highest_level
-    high_certs = []
-    
-      all
-      .joins(:training_session)
-      .group_by(&:training)
-      .each do |_, certs|
-        certifications = certs
-        level = certifications.map { |c| c.training_session.level }
-        if level.include?("Advanced")
-          high_certs +=
-            certifications.select { |c| c.training_session.level == "Advanced" }
-        elsif level.include?("Intermediate")
-          high_certs +=
-            certifications.select do |c|
-              c.training_session.level == "Intermediate"
-            end
-        elsif level.include?("Beginner")
-          high_certs +=
-            certifications.select { |c| c.training_session.level == "Beginner" }
+  LEVELS = %w[Beginner Intermediate Advanced].freeze
+
+  # Certifications with their training known in SQL, whether earned in a training session or
+  # through a proficient project.
+  scope :with_training,
+        -> do
+          left_joins(:training_session, proficient_project_session: :proficient_project).joins(
+            "INNER JOIN trainings ON trainings.id = " \
+              "COALESCE(training_sessions.training_id, proficient_projects.training_id)"
+          )
         end
-      end
-    high_certs
+
+  # The top-level certifications of each training (all of them when several share that level),
+  # whether earned in a training session or through a proficient project. A certification
+  # whose training cannot be found is left out.
+  def self.highest_level
+    certs = all.to_a
+    preload_trainings(certs)
+    by_training = certs.select(&:training_known?).group_by(&:training)
+    by_training.reject { |training, _| training.nil? }.flat_map { |_, held| top_ranked(held) }
+  end
+
+  def self.top_ranked(held)
+    ranks = held.map(&:rank)
+    top = ranks.compact.max
+    top ? held.select { |c| c.rank == top } : []
+  end
+  private_class_method :top_ranked
+
+  # Loads the training of each certification, through its session or its proficient project.
+  def self.preload_trainings(certs)
+    by_session, by_project = certs.partition(&:training_session_id)
+    ActiveRecord::Associations::Preloader.new(records: by_session, associations: { training_session: :training }).call
+    ActiveRecord::Associations::Preloader.new(
+      records: by_project,
+      associations: [:training_session, { proficient_project_session: { proficient_project: :training } }]
+    ).call
+  end
+
+  # A session certification ranks by its session's level, a project-only one by its own level.
+  # A level outside Beginner, Intermediate and Advanced has no rank.
+  def rank
+    LEVELS.index(training_session_id ? training_session.level : level)
+  end
+
+  def training_known?
+    training_session_id.present? || proficient_project_session&.proficient_project.present?
   end
 
   # The name of the training behind the certification, in the current language.

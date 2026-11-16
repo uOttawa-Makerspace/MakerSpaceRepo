@@ -24,8 +24,9 @@ class RfidController < SessionsController
   # The per-reader limit runs FIRST: its 429 halts the chain, so a reader looping past 60/min does not
   # also count against the shared per-IP ceiling (readers behind one NAT egress IP would otherwise lose
   # the ceiling to one misbehaving reader). The per-reader counter rows this creates are bounded: each key
-  # digests the identifier (fixed length) and lives a minute, and prune! runs every 5 minutes, so one IP
-  # leaves at most (its request rate x the prune interval) rows of fixed length.
+  # digests the identifier (fixed length) and expires when its 1-minute window ends, and prune! deletes
+  # expired rows every 5 minutes, so one IP leaves at most (its request rate x (the window + the prune
+  # interval)) rows of fixed length.
   rate_limit to: 60, within: 1.minute, only: :card_number, name: "tap",
              by: -> { tap_rate_limit_key }, with: RATE_LIMITED
   rate_limit to: 600, within: 1.minute, only: :card_number, name: "tap-ip",
@@ -40,12 +41,8 @@ class RfidController < SessionsController
   # signed up users
   def get_unset_rfids
     rfids = []
-    mac_addresses =
-      PiReader.where(space: @user.space || Space.all).pluck(:pi_mac_address)
-
     Rfid
-      .recent_unset
-      .where(mac_address: mac_addresses)
+      .unlinked_for(@user)
       .first(5)
       .each do |card|
         rfids << {
@@ -89,8 +86,11 @@ class RfidController < SessionsController
     )
 
     # --- Resolve space ---
-    space = Space.find_by(id: params[:space_id].to_s) if staff && params[:space_id].present?
-    space ||= pi_reader&.space
+    # A staff tap names its space with space_id and never takes it from a reader's mac_address; a reader tap
+    # (no session) takes it from the registered reader.
+    space = staff ? staff_requested_space : pi_reader.space
+    return if staff_space_refused?(space)
+
     space_id = space&.id
 
     unless space_id
@@ -126,13 +126,27 @@ class RfidController < SessionsController
   private
 
   # What the tap box sends as its identifier, bounded by PiReader.tap_identifier (the rule registration
-  # uses too): anything longer than 64 characters or with a control character is treated as missing, as a
+  # uses too): after leading and trailing whitespace is stripped, anything longer than 64 characters or
+  # with a space, control or other invisible character is treated as missing, as a
   # hash/array param already is: no reader matches it, it is counted against the caller's IP only, and
   # nothing stores it. (The rate-limit key digests it, so its length is fixed whatever the input.)
   def tap_mac_address
     return @tap_mac_address if defined?(@tap_mac_address)
 
     @tap_mac_address = PiReader.tap_identifier(params[:mac_address])
+  end
+
+  def staff_requested_space
+    Space.find_by(id: params[:space_id].to_s) if tap_staff? && params[:space_id].present?
+  end
+
+  # A signed-in staff tap works only in a space the staff member may work in (User#can_work_in?). Reader taps have
+  # no session, so they never reach this.
+  def staff_space_refused?(space)
+    return false if !tap_staff? || space.nil? || current_user.can_work_in?(space)
+
+    render json: { error: I18n.t("errors.staff.space_not_assigned") }, status: :forbidden
+    true
   end
 
   def tap_without_session?

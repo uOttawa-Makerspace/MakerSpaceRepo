@@ -34,7 +34,8 @@ if Rails.env.production?
 end
 require "rspec/rails"
 
-Dir[Rails.root.join("spec", "support", "**", "*.rb")].sort.each do |f|
+# Support specs (*_spec.rb) are loaded by RSpec itself; requiring them here too would run them twice.
+Dir[Rails.root.join("spec", "support", "**", "*.rb")].reject { |f| f.end_with?("_spec.rb") }.sort.each do |f|
   require f
 end
 

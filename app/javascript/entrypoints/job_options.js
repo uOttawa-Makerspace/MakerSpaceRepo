@@ -1,8 +1,7 @@
-import TomSelect from "tom-select";
-document.addEventListener("turbo:load", function () {
-  if (document.getElementById("job_type_ids_option")) {
-    if (!document.getElementById("job_type_ids_option").tomselect) {
-      new TomSelect("#job_type_ids_option", {});
-    }
-  }
+import { onEveryPageLoad } from "../src/on_page.js";
+import { tomSelectFor } from "../src/tom_select.js";
+
+onEveryPageLoad(() => {
+  const jobTypes = document.getElementById("job_type_ids_option");
+  if (jobTypes) tomSelectFor(jobTypes, {});
 });

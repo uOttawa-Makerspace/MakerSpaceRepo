@@ -1,46 +1,46 @@
-<% provide(:title, "Locker #{@locker.specifier} History") %>
+<% provide(:title, t('lockers.show.title', specifier: @locker.specifier)) %>
 
 <div class="mb-4">
     <%= link_to lockers_path, class: 'text-muted text-decoration-none' do %>
-        <i class="fa-solid fa-arrow-left"></i> Back to Locker Inventory
+        <i class="fa-solid fa-arrow-left"></i> <%= t('lockers.show.back') %>
     <% end %>
 </div>
 
-<h1 class="text-center mb-4">Locker <%= @locker.specifier_was %></h1>
+<h1 class="text-center mb-4"><%= t('lockers.locker_named', specifier: @locker.specifier_was) %></h1>
 
 <% if current_user.staff? %>
     <div class="card mb-4 border shadow-sm">
         <div class="card-header bg-body-tertiary">
-            <h2 class="h5 mb-0">Edit Locker Details</h2>
+            <h2 class="h5 mb-0"><%= t('lockers.show.edit_details') %></h2>
         </div>
         <div class="card-body">
             <%= form_with model: @locker do |f| %>
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <%= f.label :specifier, 'Specifier / Number', class: 'form-label fw-bold' %>
+                        <%= f.label :specifier, t('lockers.show.specifier'), class: 'form-label fw-bold' %>
                         <%= f.text_field :specifier, class: 'form-control', required: true, inputmode: 'numeric', pattern: '\d+' %>
                     </div>
 
                     <div class="col-md-4">
-                        <%= f.label :locker_size_id, 'Locker Size', class: 'form-label fw-bold' %>
+                        <%= f.label :locker_size_id, t('lockers.show.locker_size'), class: 'form-label fw-bold' %>
                         <%= f.select :locker_size_id, @locker_sizes.map { |size|
                             [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]},
-                         { include_blank: 'Select variant...' }, { class: 'form-select locker-variant-select', aria: { label: t('common.names.locker_size') } } %>
+                         { include_blank: t('lockers.select_variant') }, { class: 'form-select locker-variant-select', aria: { label: t('common.names.locker_size') } } %>
                     </div>
 
                     <div class="col-md-4">
-                        <%= f.label :audience, 'Audience / Type', class: 'form-label fw-bold' %>
-                        <%= f.select :audience, options_for_select([['General', 'general'], ['Staff', 'staff'], ['GNG Design', 'gng']], @locker.audience), {}, { class: 'form-select' } %>
+                        <%= f.label :audience, t('lockers.show.audience'), class: 'form-label fw-bold' %>
+                        <%= f.select :audience, options_for_select({ general: 'general', staff: 'staff', gng_design: 'gng' }.map { |key, audience| [t("lockers.audiences.#{key}"), audience] }, @locker.audience), {}, { class: 'form-select' } %>
                     </div>
 
                     <div class="col-12">
-                        <%= f.label :notes, 'Physical Locker Note (Maintenance / Hardware)', class: 'form-label fw-bold' %>
-                        <%= f.text_area :notes, class: 'form-control', rows: 2, placeholder: 'e.g. Broken latch, bottom locker, reserved for robotics demo...' %>
-                        <div class="form-text">These notes stay with this physical locker permanently regardless of who is currently renting it.</div>
+                        <%= f.label :notes, t('lockers.show.physical_note'), class: 'form-label fw-bold' %>
+                        <%= f.text_area :notes, class: 'form-control', rows: 2, placeholder: t('lockers.show.physical_note_placeholder') %>
+                        <div class="form-text"><%= t('lockers.show.physical_note_help') %></div>
                     </div>
 
                     <div class="col-12 d-flex justify-content-end">
-                        <%= f.submit 'Save Locker Changes', class: 'btn btn-primary' %>
+                        <%= f.submit t('lockers.show.save'), class: 'btn btn-primary' %>
                     </div>
                 </div>
             <% end %>
@@ -50,33 +50,33 @@
 
 <div class="card mb-4">
     <div class="card-body">
-        <h2 class="card-title h5">Current Status</h2>
+        <h2 class="card-title h5"><%= t('lockers.show.current_status') %></h2>
         <% if @active_locker_rental %>
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <% if @active_locker_rental.expired? %>
                         <span class="badge bg-danger">
-                            <i class="fa-solid fa-xmark"></i> Expired
+                            <i class="fa-solid fa-xmark"></i> <%= t('lockers.expired') %>
                         </span>
                     <% else %>
                         <%= locker_rental_state_display @active_locker_rental %>
                     <% end %>
                     <span class="text-muted ms-2">
-                        rented by <strong><%= @active_locker_rental.rented_by.username %></strong> since <%= @active_locker_rental.created_at.to_date.to_formatted_s(:long) %>
+                        <%= t('lockers.show.rented_by_since_html', user: @active_locker_rental.rented_by.username, date: l(@active_locker_rental.created_at.to_date, format: :rental_date)) %>
                     </span>
                 </div>
                 <%= link_to locker_rental_path(@active_locker_rental), class: 'btn btn-outline-secondary btn-sm' do %>
-                    View rental details <i class="fa-solid fa-arrow-right"></i>
+                    <%= t('lockers.show.view_rental') %> <i class="fa-solid fa-arrow-right"></i>
                 <% end %>
             </div>
         <% else %>
-            <span class="badge bg-secondary">Unoccupied</span>
+            <span class="badge bg-secondary"><%= t('lockers.show.unoccupied') %></span>
         <% end %>
     </div>
 </div>
 
-<h2 class="text-center h4">Rental History</h2>
-<p class="text-center text-muted mb-4">Log of previous owners of this locker</p>
+<h2 class="text-center h4"><%= t('lockers.show.history') %></h2>
+<p class="text-center text-muted mb-4"><%= t('lockers.show.history_intro') %></p>
 
 <% rentals = @locker.locker_rentals.order(created_at: :desc) %>
 
@@ -89,20 +89,20 @@
                         <strong><%= rental.rented_by.username %></strong>
                         <br>
                         <small class="text-muted">
-                            <%= rental.created_at.to_date.to_formatted_s(:long) %>
+                            <%= l(rental.created_at.to_date, format: :rental_date) %>
                             &mdash;
-                            <%= rental.owned_until&.to_date&.to_formatted_s(:long) || 'Indefinite' %>
+                            <%= rental.owned_until ? l(rental.owned_until.to_date, format: :rental_date) : t('lockers.indefinite') %>
                         </small>
                     </div>
-                    <span class="badge bg-secondary"><%= rental.state %></span>
+                    <span class="badge bg-secondary"><%= t("lockers.history_state.#{rental.state}") %></span>
                 </div>
             <% end %>
         <% end %>
     </div>
 <% else %>
-    <p class="text-center text-muted mb-4">No rental history for this locker.</p>
+    <p class="text-center text-muted mb-4"><%= t('lockers.show.no_history') %></p>
 <% end %>
 
 <% if current_user.admin? %>
-    <%= button_to 'Delete locker', locker_path(@locker), method: :delete, class: 'btn btn-outline-danger', data: { confirm: 'Are you sure you want to delete this locker?' } %>
+    <%= button_to t('lockers.show.delete'), locker_path(@locker), method: :delete, class: 'btn btn-outline-danger', **confirmation_options(t('confirmations.lockers.delete')) %>
 <% end %>

@@ -48,7 +48,7 @@ RSpec.describe BookingStatus, type: :model do
 
   describe "destroy" do
     it "refuses while bookings use the status, and deletes nothing" do
-      booking = create(:sub_space_booking)
+      booking = create(:sub_space_booking, :with_old_status_row)
       link_id = booking.sub_space_booking_status_id
 
       expect(@pending.destroy).to be(false)
@@ -60,7 +60,7 @@ RSpec.describe BookingStatus, type: :model do
     end
 
     it "refuses while only a booking's status column uses it" do
-      booking = create(:sub_space_booking)
+      booking = create(:sub_space_booking, :with_old_status_row)
       booking.update_columns(sub_space_booking_status_id: nil)
       SubSpaceBookingStatus.where(sub_space_booking_id: booking.id).delete_all
 

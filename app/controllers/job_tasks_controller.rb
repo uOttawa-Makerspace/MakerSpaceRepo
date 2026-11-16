@@ -14,7 +14,7 @@ class JobTasksController < SessionsController
 
     respond_to do |format|
       format.html do
-        flash[:notice] = 'Task was successfully deleted.' unless outcome == :sent_back
+        flash[:notice] = t("job_orders.alerts.task_deleted") unless outcome == :sent_back
         redirect_to job_order_path(@job_order)
       end
       format.json { head :no_content }
@@ -44,11 +44,7 @@ class JobTasksController < SessionsController
       @service_groups = JobServiceGroup.not_deleted.where(job_type: @job_type).order(:id)
       render "job_orders/wizard/service"
     when 3
-      @options = JobOption
-        .joins(:job_types)
-        .where(job_types: { id: @job_task.job_type_id })
-        .where("job_options.is_deleted = FALSE OR job_options.id IN (?)", 
-              @job_task.job_task_options.pluck(:job_option_id))
+      load_options_step
       render "job_orders/wizard/options"
     when 4
       render "job_orders/wizard/submission"
@@ -59,6 +55,8 @@ class JobTasksController < SessionsController
 
   def update
     return unless apply_change { apply_task_update! }
+
+    @job_task.prefix_file_names
 
     # The wizard's comments are posted to the order chat once the change has committed. They change neither the bill
     # nor the work, so they never send a quoted order back to staff.
@@ -84,6 +82,18 @@ class JobTasksController < SessionsController
 
   private
 
+  # What the options step lists, with the lookups it needs per option made once for all of them: the task's own rows
+  # (with their uploaded file) and, for job-wide options, the other task of the order that already selected them.
+  def load_options_step
+    @options = JobOption
+      .joins(:job_types)
+      .where(job_types: { id: @job_task.job_type_id })
+      .where("job_options.is_deleted = FALSE OR job_options.id IN (?)",
+            @job_task.job_task_options.pluck(:job_option_id))
+    @task_options_by_option = @job_task.job_task_options.includes(option_file_attachment: :blob).index_by(&:job_option_id)
+    @other_task_by_option = @job_task.other_task_ids_using(@options.select(&:is_job_wide).map(&:id))
+  end
+
   # Runs the block through JobOrder#apply_owner_change!. Returns :applied or :sent_back (with the "sent back for a
   # new quote" notice) when the change committed; otherwise nothing was committed: redirects with the reason and
   # returns false. The refusal has already been reported and logged by the model.
@@ -100,24 +110,20 @@ class JobTasksController < SessionsController
     case result.reason
     when :change_invalid then invalid_change(result.error.message)
     when :wrong_state then refuse_change(t("job_orders.alerts.paid_order_cannot_change"))
-    when :draft_not_voidable then refuse_change(t("job_orders.alerts.owner_change_draft_order_failed"))
-    when :invalid_status_row then refuse_change(t("job_orders.alerts.send_back_failed"))
+    when :draft_not_voidable then refuse_change(t("job_orders.alerts.owner_change_draft_order_failed", reference: error_reference))
+    when :invalid_status_row then refuse_change(t("job_orders.alerts.send_back_failed", reference: error_reference))
     when :order_missing then refuse_change(t("job_orders.alerts.owner_change_order_missing"), to: job_orders_path)
     else refuse_change(t("job_orders.alerts.owner_change_busy")) # busy, deadlock: nothing was changed, retry
     end
   end
 
-  # The change's own writes did not validate: the task errors, back to the step (update) or the order page.
+  # The change's own writes did not validate: the task errors, back to the step (update) or the order page. A new
+  # task has only a title, so create never gets here.
   def invalid_change(message)
-    if action_name == "update"
-      flash[:alert] = message
-      redirect_back(fallback_location: edit_job_order_job_task_path(@job_order, @job_task, step: params[:step]))
-    elsif action_name == "create"
-      flash[:alert] = "Failed to create task: #{message}"
-      redirect_to job_order_path(@job_order)
-    else
-      refuse_change(message)
-    end
+    return refuse_change(message) unless action_name == "update"
+
+    flash[:alert] = message
+    redirect_back(fallback_location: edit_job_order_job_task_path(@job_order, @job_task, step: params[:step]))
     false
   end
 
@@ -133,8 +139,8 @@ class JobTasksController < SessionsController
   end
 
   def create_next_task!
-    highest_numbered_task = @job_order.job_tasks.maximum("CAST(SUBSTRING(title FROM 'Task ([0-9]+)') AS INTEGER)") || 0
-    next_task_number = [highest_numbered_task, @job_order.job_tasks.count].max + 1
+    highest_numbered_task = @job_order.job_tasks.maximum("CAST(SUBSTRING(title FROM '^Task #([0-9]+)$') AS INTEGER)") || 0
+    next_task_number = highest_numbered_task + 1
     @job_order.job_tasks.create!(title: "Task ##{next_task_number}")
   end
 
@@ -143,34 +149,40 @@ class JobTasksController < SessionsController
   def apply_task_update!
     use_custom_service! if params[:job_task] && params[:job_task][:job_service_id] == "custom"
 
-    submitted_options = if job_task_params.present? && job_task_params[:job_task_options_attributes].present?
-      Array(job_task_params[:job_task_options_attributes]).each_with_object({}) do |opt, hash|
-        next if opt[:_destroy] == "1"
-        hash[opt[:job_option_id].to_i] = opt
-      end
-    else
-      {}
-    end
+    submitted_options = submitted_task_options
+    save_task_options!(submitted_options)
+    # Remove options that weren't submitted (if on that step of form)
+    remove_unsubmitted_options!(submitted_options.keys) if params[:step].to_i == 3
 
-    # Update or create options
+    @job_task.update!(job_task_params.except(:job_task_options_attributes)) if job_task_params.present?
+    @job_task = create_next_task! if params[:add_another] == "true"
+  end
+
+  # The submitted task options by job option id, leaving out those flagged _destroy.
+  def submitted_task_options
+    attributes = job_task_params[:job_task_options_attributes]
+    return {} if attributes.blank?
+
+    Array(attributes).each_with_object({}) do |opt, hash|
+      next if opt[:_destroy] == "1"
+      hash[opt[:job_option_id].to_i] = opt
+    end
+  end
+
+  # Update or create options
+  def save_task_options!(submitted_options)
     submitted_options.each do |job_option_id, attrs|
       @job_task.job_task_options
               .find_or_initialize_by(job_option_id: job_option_id)
               .update!(attrs.except(:_destroy, :id))
     end
+  end
 
-    # Remove options that weren't submitted (if on that step of form)
-    if params[:step].to_i == 3
-      @job_task.job_task_options.where.not(job_option_id: submitted_options.keys).destroy_all
-
-      # Also remove quoted options if the option is deselected
-      if @job_task.job_task_quote
-        @job_task.job_task_quote.job_task_quote_options.where.not(job_option_id: submitted_options.keys).destroy_all
-      end
-    end
-
-    @job_task.update!(job_task_params.except(:job_task_options_attributes)) if job_task_params.present?
-    @job_task = create_next_task! if params[:add_another] == "true"
+  # Removes the task's options outside job_option_ids, and their quoted options when the task has a quote.
+  def remove_unsubmitted_options!(job_option_ids)
+    @job_task.job_task_options.where.not(job_option_id: job_option_ids).destroy_all
+    quote = @job_task.job_task_quote
+    quote.job_task_quote_options.where.not(job_option_id: job_option_ids).destroy_all if quote
   end
 
   # Handle custom service if selected
@@ -220,10 +232,7 @@ class JobTasksController < SessionsController
     # transition! still decides; a stale "Draft" read just reaches it and gets a quiet :wrong_state.
     return unless @job_order.latest_status&.job_status_id == JobStatus.draft.id
 
-    @tasks_missing_information = @job_order.job_tasks.select do |task|
-      task.job_type.blank? ||
-        (task.job_type.job_service_groups.any? && task.job_service.blank?)
-    end
+    @tasks_missing_information = @job_order.tasks_missing_information
     return if @tasks_missing_information.any?
 
     submitted = @job_order.transition!(from: JobStatus.draft, to: JobStatus.staff_approval, actor: current_user)
@@ -231,7 +240,7 @@ class JobTasksController < SessionsController
     # say or send; the task update itself succeeded. Any other refusal is said, with the messages of
     # JobOrdersController#update_status.
     unless submitted.ok?
-      flash[:alert] = t(submitted.message_key) unless submitted.reason == :wrong_state
+      flash[:alert] = t(submitted.message_key, reference: error_reference) unless submitted.reason == :wrong_state
       return
     end
 

@@ -16,6 +16,53 @@ RSpec.describe Event, type: :model do
                     end_time: Time.utc(2027, 4, 1, 15, 0) }.merge(attrs))
   end
 
+  describe "last editor" do
+    it "is optional" do
+      expect(build_event).to be_valid
+      expect(build_event.updated_by).to be_nil
+    end
+
+    it "is a user, kept apart from the creator" do
+      editor = create(:user, :admin)
+      event = create(:event, space: space, created_by: creator, updated_by: editor)
+      expect(event.reload).to have_attributes(created_by: creator, updated_by: editor)
+    end
+  end
+
+  describe "#unpublish" do
+    let(:admin) { create(:user, :admin) }
+
+    it "makes the event a draft, clears its Google ids, records who did it and queues nothing" do
+      event = create(:event, space: space, created_by: creator, draft: false, google_event_id: "abc", google_calendar_id: "cal")
+      expect { expect(event.unpublish(by: admin)).to be(true) }.not_to have_enqueued_job
+      expect(event.reload).to have_attributes(draft: true, google_event_id: nil, google_calendar_id: nil, updated_by: admin)
+    end
+
+    it "returns false and keeps the event published when it cannot be saved" do
+      event = create(:event, space: space, created_by: creator, draft: false, google_event_id: "abc")
+      allow(event).to receive(:update).and_return(false)
+      expect(event.unpublish(by: admin)).to be(false)
+      expect(event.reload).to have_attributes(draft: false, google_event_id: "abc")
+    end
+  end
+
+  describe "#publish" do
+    let(:admin) { create(:user, :admin) }
+
+    it "makes a draft live, records who did it, keeps its creator and queues nothing" do
+      event = create(:event, :draft, space: space, created_by: creator)
+      expect { expect(event.publish(by: admin)).to be(true) }.not_to have_enqueued_job
+      expect(event.reload).to have_attributes(draft: false, updated_by: admin, created_by: creator)
+    end
+
+    it "returns false and keeps the draft when its stored rule no longer validates" do
+      event = create(:event, :draft, space: space, created_by: creator)
+      event.update_column(:recurrence_rule, "DTSTART:20270401T140000Z\nRRULE:FREQ=MINUTELY")
+      expect(event.reload.publish(by: admin)).to be(false)
+      expect(event.reload.draft).to be(true)
+    end
+  end
+
   describe "validations" do
     it "is valid with the factory defaults" do
       expect(build_event).to be_valid
@@ -136,6 +183,13 @@ RSpec.describe Event, type: :model do
         expect(GoogleCalendar::EventPushJob).to have_been_enqueued.with(event.id).exactly(:once)
       end
 
+      it "records the push as pending and keeps it when the queue is down" do
+        event = create(:event, space: space, created_by: creator, google_event_id: "abc123")
+        allow(GoogleCalendar::EventPushJob).to receive(:perform_later).and_raise(ActiveRecord::ConnectionNotEstablished)
+        expect { event.push_to_google_later }.not_to raise_error
+        expect(GoogleCalendar::PendingChange.where(action: "push", event_id: event.id)).to exist
+      end
+
       it "keeps the id an event already has" do
         event = create(:event, space: space, created_by: creator, google_event_id: "abc123")
         event.push_to_google_later
@@ -185,5 +239,101 @@ RSpec.describe Event, type: :model do
           .to eq("c_g1bk6ctpenjeko2dourrr0h6pc@group.calendar.google.com")
       end
     end
+  end
+
+  describe "#feed_row" do
+    let(:alex) { create(:user, :staff, name: "Alex One") }
+    let(:blair) { create(:user, :staff, name: "Blair Two") }
+
+    it "draws a one-off event with no assignee as unassigned on grey" do
+      event = create(:event, space: space, created_by: creator, event_type: "shift", title: "Desk", description: "Front",
+                             start_time: Time.utc(2027, 4, 1, 14), end_time: Time.utc(2027, 4, 1, 15))
+      expect(event.feed_row({})).to eq(
+        id: "event-#{event.id}", title: "Desk", start: "2027-04-01T10:00:00-04:00", end: "2027-04-01T11:00:00-04:00",
+        allDay: false,
+        extendedProps: { name: "Shift", draft: false, description: "Front", eventType: "shift", trainingId: nil,
+                         language: nil, course_name: nil, assignedUsers: [{ id: 0, name: "Unassigned" }],
+                         background: "linear-gradient(to right, #bbb 0.0%, #bbb 100.0%);" }
+      )
+    end
+
+    it "stripes each assignee's colour, grey for one without, and fades a draft" do
+      event = create(:event, :draft, space: space, created_by: creator, start_time: Time.utc(2027, 4, 1, 14),
+                                     end_time: Time.utc(2027, 4, 1, 15))
+      create(:event_assignment, event: event, user: alex)
+      create(:event_assignment, event: event, user: blair)
+      row = event.reload.feed_row(alex.id => "#ff0000")
+      expect(row[:extendedProps][:assignedUsers]).to eq([{ id: alex.id, name: "Alex One" }, { id: blair.id, name: "Blair Two" }])
+      expect(row[:extendedProps][:background])
+        .to eq("linear-gradient(to right, #ff0000 0.0%, #ff0000 50.0%, #bbb 50.0%, #bbb 100.0%); opacity: 0.8;")
+    end
+
+    it "gives a series its rule in Toronto time and its length in milliseconds" do
+      event = create(:event, space: space, created_by: creator, start_time: Time.utc(2027, 5, 5, 13),
+                             end_time: Time.utc(2027, 5, 5, 14, 30),
+                             recurrence_rule: "DTSTART:20270505T130000Z\nRRULE:FREQ=WEEKLY;BYDAY=WE\nEXDATE:20270512T130000Z")
+      expect(event.feed_row({})).to include(
+        rrule: "DTSTART:20270505T090000\nRRULE:FREQ=WEEKLY;BYDAY=WE\nEXDATE:20270512T090000", duration: 5_400_000.0
+      )
+    end
+
+    it "leaves the rule and length out of a one-off event" do
+      event = build_event(recurrence_rule: "")
+      expect(event.feed_row({}).keys).not_to include(:rrule, :duration)
+    end
+  end
+
+  describe ".publish_drafts" do
+    let(:editor) { create(:user, :admin) }
+    let(:range) { Time.utc(2027, 4, 1)..Time.utc(2027, 4, 3) }
+
+    def draft(**attrs)
+      create(:event, :draft, space: space, created_by: creator, start_time: Time.utc(2027, 4, 2, 14),
+                             end_time: Time.utc(2027, 4, 2, 15), **attrs)
+    end
+
+    it "publishes the space's drafts in the range as the editor, yielding each saved one, and returns the failures" do
+      first = draft
+      broken = draft(title: "Broken")
+      broken.update_column(:recurrence_rule, "DTSTART:20270402T140000Z\nRRULE:FREQ=MINUTELY")
+      outside = draft(start_time: Time.utc(2027, 4, 5, 14), end_time: Time.utc(2027, 4, 5, 15))
+      elsewhere = create(:event, :draft, space: create(:space), created_by: creator, start_time: Time.utc(2027, 4, 2, 14),
+                                         end_time: Time.utc(2027, 4, 2, 15))
+      yielded = []
+
+      published, failed = described_class.publish_drafts(space.id, range, by: editor) { |event| yielded << event }
+
+      expect(published).to eq([first])
+      expect(yielded).to eq([first])
+      expect(failed).to eq([broken])
+      expect(failed.first.errors[:recurrence_rule]).to be_present
+      expect(first.reload).to have_attributes(draft: false, updated_by: editor)
+      expect([broken, outside, elsewhere].map { |event| event.reload.draft }).to eq([true, true, true])
+    end
+  end
+
+  describe "a stored repeat rule with an unreadable start" do
+    let(:bad_rule) { "DTSTART;TZID=Nowhere/Land:20270401T100000\nRRULE:FREQ=DAILY" }
+
+    it "still saves an unrelated change, but validates a changed rule" do
+      event = build_event.tap(&:save!)
+      event.update_column(:recurrence_rule, bad_rule)
+      event.reload
+      expect(event.update(title: "Renamed")).to be(true)
+      expect(event.update(recurrence_rule: "#{bad_rule}\nEXDATE:20270402T140000Z")).to be(false)
+      expect(event.errors[:recurrence_rule]).to eq([RecurrenceRuleValidator::UNPARSEABLE])
+    end
+  end
+end
+
+RSpec.describe Event, ".types_in", type: :model do
+  it "lists the event types stored for a space, alphabetical, once each" do
+    space = create(:space)
+    create(:event, space: space, event_type: "shift")
+    create(:event, space: space, event_type: "meeting")
+    create(:event, space: space, event_type: "shift")
+    create(:event, event_type: "other")
+
+    expect(described_class.types_in(space.id)).to eq(%w[meeting shift])
   end
 end

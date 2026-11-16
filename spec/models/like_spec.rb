@@ -51,27 +51,55 @@ RSpec.describe Like, type: :model do
     end
   end
 
-  describe "#before_create" do
-    context "increment" do
-      it "should increment the likes from a repo" do
-        user = create(:user, :regular_user)
-        repo = create(:repository)
-        Like.create(user_id: user.id, repository_id: repo.id)
-        expect(Repository.last.likes.count).to eq(1)
-      end
+  describe "saving a like row directly" do
+    it "leaves the repository's counter alone: only give and take_back count" do
+      like = create(:like)
+      expect(like.repository.reload.like).to eq(0)
+      like.destroy
+      expect(like.repository.reload.like).to eq(0)
     end
   end
 
-  describe "#before_destroy" do
-    context "decrement" do
-      it "should decrement the likes from a repo" do
-        user = create(:user, :regular_user)
-        repo = create(:repository)
-        Like.create(user_id: user.id, repository_id: repo.id)
-        expect(Repository.last.likes.count).to eq(1)
-        Like.last.destroy
-        expect(Repository.last.likes.count).to eq(0)
-      end
+  describe ".take_back" do
+    let(:user) { create(:user, :regular_user) }
+    let(:repo) { create(:repository) }
+
+    it "removes the like and its count, and counts nothing when there is no like" do
+      Like.give(repo, user)
+      expect(Like.take_back(repo, user)).to be(true)
+      expect(Like.take_back(repo, user)).to be(false)
+      expect([Like.count, repo.reload.like]).to eq([0, 0])
+    end
+
+    it "counts the like on a hidden repository too" do
+      Like.give(repo, user)
+      repo.hide!(by: user)
+      expect(Like.take_back(repo, user)).to be(true)
+      expect(Repository.including_hidden.find(repo.id).like).to eq(0)
+    end
+  end
+
+  describe "counting with the like" do
+    it "does not keep the like when the counter cannot be written" do
+      allow(Repository).to receive(:update_counters).and_raise(ActiveRecord::StatementInvalid)
+      expect { Like.give(create(:repository), create(:user, :regular_user)) }.to raise_error(ActiveRecord::StatementInvalid)
+      expect(Like.count).to eq(0)
+    end
+
+    it "rolls back the like when no repository row was counted" do
+      allow(Repository).to receive(:update_counters).and_return(0)
+      expect { Like.give(create(:repository), create(:user, :regular_user)) }.to raise_error(ActiveRecord::RecordNotFound)
+      expect(Like.count).to eq(0)
+    end
+
+    it "rolls back the removal when no repository row was counted" do
+      repo = create(:repository)
+      user = create(:user, :regular_user)
+      Like.give(repo, user)
+      allow(Repository).to receive(:update_counters).and_return(0)
+
+      expect { Like.take_back(repo, user) }.to raise_error(ActiveRecord::RecordNotFound)
+      expect(Like.count).to eq(1)
     end
   end
 end

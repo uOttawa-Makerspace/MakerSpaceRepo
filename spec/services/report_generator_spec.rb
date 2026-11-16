@@ -89,7 +89,7 @@ RSpec.describe ReportGenerator do
     let!(:space) { create(:space, name: "Unit Space") }
     let!(:training) { create(:training, name_en: "Unit Training") }
     let!(:session) { create(:training_session, space: space, training: training, created_at: march_10) }
-    let!(:learner) { create(:user, :student, name: "Lena Learner", email: "lena@example.test") }
+    let!(:learner) { create(:user, :student, name: "Lena Learner", email: "lena@uottawa.ca") }
 
     before do
       session.users << learner
@@ -112,7 +112,7 @@ RSpec.describe ReportGenerator do
       expect(sheets.keys).to eq(["Report - Unit Space"])
       rows = sheets["Report - Unit Space"]
       expect(rows.first.first).to eq("Training Attendees - Unit Space")
-      expect(rows.flatten).to include("Lena Learner", "lena@example.test")
+      expect(rows.flatten).to include("Lena Learner", "lena@uottawa.ca")
     end
 
     it "training_attendees: an empty range returns a package with no worksheets at all" do
@@ -132,8 +132,8 @@ RSpec.describe ReportGenerator do
       create(:lab_session, sign_in_time: march_10, created_at: march_10)
       create(:lab_session, sign_in_time: march_10 + 2.hours, created_at: march_10)
       rows = sheets_of(described_class.generate_peak_hours_report(from, to)).fetch("Sheet1")
-      hour = march_10.localtime.hour
-      expect(rows[4].compact).to eq(["Date", "%02i:00" % hour, "%02i:00" % (hour + 1), "%02i:00" % (hour + 2)])
+      # march_10 is 15:00 UTC, 11:00 in the app time zone (Toronto)
+      expect(rows[4].compact).to eq(["Date", "11:00", "12:00", "13:00"])
       day = rows.find { |r| r.first == "2026-03-10" }
       expect(day.first(4)).to eq(["2026-03-10", 1, 0, 1])
     end
@@ -154,6 +154,19 @@ RSpec.describe ReportGenerator do
       expect(rows[5]).to eq(%w[Course Intro])
       expect(rows[6]).to eq(["Number of Trainees", 1])
       expect(rows[8]).to eq(%w[Name Email])
+      expect(rows[9]).to eq(["Tia Trainee", "tia@example.test"])
+    end
+
+    it "shows Unknown for a missing training, instructor or space" do
+      session = create(:training_session, course: "Intro", created_at: march_10)
+      session.users << create(:user, name: "Tia Trainee", email: "tia@example.test")
+      session.update_columns(training_id: nil, user_id: nil, space_id: nil)
+      rows = sheets_of(described_class.generate_training_session_report(session.id)).fetch("Report")
+      expect(rows[1..6]).to eq(
+        [["Training Type", "Unknown"], ["Location", "Unknown"],
+         ["Date", march_10.in_time_zone.strftime("%Y-%m-%d %H:%M")], ["Instructor", "Unknown"],
+         %w[Course Intro], ["Number of Trainees", 1]]
+      )
       expect(rows[9]).to eq(["Tia Trainee", "tia@example.test"])
     end
 
@@ -197,20 +210,6 @@ RSpec.describe ReportGenerator do
       expect(described_class.get_study_level("PhD in Chemistry")).to eq("Doctorate")
       expect(described_class.get_study_level("MBA")).to eq("None")
       expect(described_class.get_study_level(nil)).to eq("None")
-    end
-
-    it "categorize_programs counts Blank / Engineering / Non-Engineering / levels" do
-      programs = { "" => 2, "BASc in Software Engineering" => 3, "Master of Arts" => 1, "BA History" => 4 }
-      expect(described_class.categorize_programs(programs)).to eq(
-        "Blank" => 2, "Engineering" => 3, "Non-Engineering" => 7,
-        "Bachelors" => 7, "Masters" => 1, "Doctorate" => 0
-      )
-    end
-
-    it "categorize_programs misses PhD programs although get_study_level calls them Doctorate" do
-      # categorize_programs looks for the literal "Doctorate" while get_study_level also accepts "PhD|Doctor", so PhD students are counted under no level in the Programs breakdown
-      expect(described_class.get_study_level("PhD in Chemistry")).to eq("Doctorate")
-      expect(described_class.categorize_programs({ "PhD in Chemistry" => 5 })["Doctorate"]).to eq(0)
     end
   end
 

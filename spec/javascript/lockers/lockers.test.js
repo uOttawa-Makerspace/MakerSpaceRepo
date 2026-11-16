@@ -82,13 +82,12 @@ describe("handleLinkInput", () => {
 describe("validateRange", () => {
   const fixture = (existing, start, end) => {
     document.body.innerHTML = `
-      <div id="newRangeLockerModal">
+      <div id="newRangeLockerModal" data-locker-specifiers='${JSON.stringify(existing)}'>
         <input id="newLockerRangeStart" value="${start}">
         <input id="newLockerRangeEnd" value="${end}">
         <div id="newRangeLockersAlreadyPresent"><ul><li>stale</li></ul></div>
         <div id="newRangeLockersPossible"><ul><li>stale</li></ul></div>
-      </div>
-      ${existing.map((s) => `<div data-locker-specifier="${s}"></div>`).join("")}`;
+      </div>`;
   };
   const items = (id) =>
     [...document.querySelectorAll(`#${id} li`)].map((li) => li.textContent);
@@ -148,22 +147,117 @@ describe("validateRange", () => {
     document.body.innerHTML = "";
     expect(() => validateRange()).not.toThrow();
   });
-});
 
-describe("requested-as handler of the inventory script", () => {
-  it("hides and disables the course fieldset on any change, as a select has no checked state", () => {
+  it("leaves the lists untouched when the modal has no end field", () => {
+    fixture([], 1, 3);
+    document.getElementById("newLockerRangeEnd").remove();
+    validateRange();
+    expect(items("newRangeLockersPossible")).toEqual(["stale"]);
+    expect(hidden("newRangeLockersPossible")).toBe(false);
+  });
+
+  it("leaves the lists untouched when the modal has no start field", () => {
+    fixture([], 1, 3);
+    document.getElementById("newLockerRangeStart").remove();
+    validateRange();
+    expect(items("newRangeLockersAlreadyPresent")).toEqual(["stale"]);
+  });
+
+  it.each(["1abc", "1.5", "1e3", "1 2", "1__0", "_1", "0x1"])(
+    "leaves the lists untouched for %j, which the server refuses",
+    (start) => {
+      fixture([], start, 3);
+      validateRange();
+      expect(items("newRangeLockersPossible")).toEqual(["stale"]);
+    },
+  );
+
+  it.each([
+    [" 2 ", "3", "Range from 2 to 3"],
+    ["+2", "0d3", "Range from 2 to 3"],
+    ["1_0", "11", "Range from 10 to 11"],
+    ["-1", "0", "Range from -1 to 0"],
+    ["02", "3", "Range from 2 to 3"],
+  ])("reads %j to %j as the server does", (start, end, possible) => {
+    fixture([], start, end);
+    validateRange();
+    expect(items("newRangeLockersPossible")).toEqual([possible]);
+  });
+
+  it("compares names as text, as the server does: 01 and A1 are not 1", () => {
+    fixture(["A1", "01", "2"], 1, 2);
+    validateRange();
+    expect(items("newRangeLockersAlreadyPresent")).toEqual(["2"]);
+    expect(items("newRangeLockersPossible")).toEqual(["1"]);
+  });
+
+  it("empties a list it hides", () => {
+    fixture(["50"], 1, 3);
+    validateRange();
+    expect(hidden("newRangeLockersAlreadyPresent")).toBe(true);
+    expect(items("newRangeLockersAlreadyPresent")).toEqual([]);
+  });
+
+  it("shows a list again once it has items", () => {
+    fixture(["2"], 1, 1);
+    validateRange();
+    expect(hidden("newRangeLockersAlreadyPresent")).toBe(true);
+    document.getElementById("newLockerRangeEnd").value = "3";
+    validateRange();
+    expect(hidden("newRangeLockersAlreadyPresent")).toBe(false);
+    expect(items("newRangeLockersAlreadyPresent")).toEqual(["2"]);
+  });
+
+  it("fills the other list when one list is missing from the page", () => {
+    fixture(["2"], 1, 3);
+    document.getElementById("newRangeLockersAlreadyPresent").remove();
+    validateRange();
+    expect(items("newRangeLockersPossible")).toEqual(["1", "3"]);
+  });
+
+  it("fills the existing list when the creatable list is missing", () => {
+    fixture(["2"], 1, 3);
+    document.getElementById("newRangeLockersPossible").remove();
+    validateRange();
+    expect(items("newRangeLockersAlreadyPresent")).toEqual(["2"]);
+  });
+
+  it("reads the lists and the existing lockers from the modal only", () => {
     document.body.innerHTML = `
-      <select id="locker_rental_requested_as">
-        <option value="general">General</option>
-        <option value="student" selected>Student</option>
-      </select>
-      <fieldset id="repo-select"></fieldset>`;
-    document.dispatchEvent(new Event("turbo:load"));
-    document
-      .getElementById("locker_rental_requested_as")
-      .dispatchEvent(new Event("change"));
-    const fieldset = document.getElementById("repo-select");
-    expect(fieldset.hidden).toBe(true);
-    expect(fieldset.disabled).toBe(true);
+      <div id="newRangeLockerModal" data-locker-specifiers='["2"]'>
+        <input id="newLockerRangeStart" value="1">
+        <input id="newLockerRangeEnd" value="4">
+        <div id="newRangeLockersAlreadyPresent"><ul></ul></div>
+        <div id="newRangeLockersPossible"><ul></ul></div>
+      </div>
+      <div id="newRangeLockersAlreadyPresent"><ul><li>outside</li></ul></div>
+      <table><tr data-locker-specifier="3"></tr></table>`;
+    validateRange();
+    const modal = document.getElementById("newRangeLockerModal");
+    const inModal = (id) =>
+      [...modal.querySelectorAll(`#${id} li`)].map((li) => li.textContent);
+    expect(inModal("newRangeLockersAlreadyPresent")).toEqual(["2"]);
+    expect(inModal("newRangeLockersPossible")).toEqual([
+      "1",
+      "Range from 3 to 4",
+    ]);
+    expect(
+      document.querySelector("body > #newRangeLockersAlreadyPresent")
+        .textContent,
+    ).toBe("outside");
+  });
+
+  it("treats every locker as new when the modal lists no existing lockers", () => {
+    document.body.innerHTML = `
+      <div id="newRangeLockerModal">
+        <input id="newLockerRangeStart" value="1">
+        <input id="newLockerRangeEnd" value="2">
+        <div id="newRangeLockersAlreadyPresent"><ul><li>stale</li></ul></div>
+        <div id="newRangeLockersPossible"><ul></ul></div>
+      </div>`;
+    validateRange();
+    expect(items("newRangeLockersPossible")).toEqual(["Range from 1 to 2"]);
+    expect(hidden("newRangeLockersAlreadyPresent")).toBe(true);
+    expect(items("newRangeLockersAlreadyPresent")).toEqual([]);
   });
 });

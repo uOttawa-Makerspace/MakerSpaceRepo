@@ -17,6 +17,21 @@ RSpec.describe PrinterIssue, type: :model do
     end
   end
 
+  describe "#resolve!" do
+    it "marks the issue inactive and is safe to repeat" do
+      issue = create(:printer_issue)
+      2.times { issue.resolve! }
+      expect(issue.reload.active).to be(false)
+    end
+
+    it "raises and keeps the issue active when it is invalid" do
+      issue = create(:printer_issue)
+      issue.update_columns(summary: "")
+      expect { issue.resolve! }.to raise_error(ActiveRecord::RecordInvalid)
+      expect(issue.reload.active).to be(true)
+    end
+  end
+
   describe ".summaries" do
     it "lists the three canned summaries" do
       expect(PrinterIssue.summaries).to eq(
@@ -28,19 +43,43 @@ RSpec.describe PrinterIssue, type: :model do
   describe "Printer issue helpers" do
     let(:printer) { create(:printer, :UM2P_01) }
 
-    it "limits active_printer_issues to active ones" do
-      active = create(:printer_issue, printer: printer)
-      create(:printer_issue, :inactive, printer: printer)
-      expect(printer.active_printer_issues).to eq([active])
-    end
-
-    it "groups active issues by the canned summary they contain, else Other" do
+    it "counts each printer's active issues by the canned summary they contain, else Other" do
       create(:printer_issue, :nozzle_clogged, printer: printer)
       create(:printer_issue, :nozzle_clogged, printer: printer)
       create(:printer_issue, :bed_issue, printer: printer)
       create(:printer_issue, printer: printer, summary: "Something else")
       create(:printer_issue, :extrude_issue, :inactive, printer: printer)
-      expect(printer.count_printer_issues).to eq("Nozzle clogged" => 2, "Bed issue" => 1, "Other" => 1)
+      quiet = create(:printer, :UM3_01)
+      create(:printer_issue, :bed_issue, :inactive, printer: quiet)
+      expect(Printer.active_issue_counts([quiet, printer]))
+        .to eq(printer.id => { "Nozzle clogged" => 2, "Bed issue" => 1, "Other" => 1 })
+    end
+
+    it "keys the counts in the order of the printers it is given, in one query" do
+      other = create(:printer, :UM3_01)
+      create(:printer_issue, printer: printer)
+      create(:printer_issue, printer: other)
+      counts = nil
+      expect(count_queries { counts = Printer.active_issue_counts([other, printer]) }).to eq(1)
+      expect(counts.keys).to eq([other.id, printer.id])
+    end
+
+    it "leaves out the given issue when counting" do
+      create(:printer_issue, :nozzle_clogged, printer: printer)
+      left_out = create(:printer_issue, :bed_issue, printer: printer)
+      expect(Printer.active_issue_counts([printer], except: left_out.id)).to eq(printer.id => { "Nozzle clogged" => 1 })
+    end
+
+    it "groups the loaded active issues the same way without another query" do
+      create(:printer_issue, :nozzle_clogged, printer: printer)
+      create(:printer_issue, :bed_issue, printer: printer)
+      create(:printer_issue, :bed_issue, :inactive, printer: printer)
+      create(:printer_issue, printer: printer, summary: "Something else")
+      loaded = Printer.includes(:printer_issues).find(printer.id)
+
+      groups = nil
+      expect(count_queries { groups = loaded.group_loaded_printer_issues }).to eq(0)
+      expect(groups.transform_values(&:size)).to eq("Nozzle clogged" => 1, "Bed issue" => 1, "Other" => 1)
     end
   end
 end

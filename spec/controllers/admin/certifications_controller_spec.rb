@@ -41,7 +41,8 @@ RSpec.describe Admin::CertificationsController, type: :controller do
   describe "GET /show without a user" do
     it "is not found", skip_bullet: true do
       @certification.update_columns(user_id: nil)
-      expect { get :show, params: { id: @certification.id } }.to raise_error(ActiveRecord::RecordNotFound)
+      get :show, params: { id: @certification.id }
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -49,15 +50,14 @@ RSpec.describe Admin::CertificationsController, type: :controller do
     before { @certification.update_columns(user_id: nil) }
 
     it "does not update (demote or reinstate) the certification", skip_bullet: true do
-      expect do
-        patch :update, params: { id: @certification.id, certification: { active: false, demotion_reason: "x" } }
-      end.to raise_error(ActiveRecord::RecordNotFound)
+      patch :update, params: { id: @certification.id, certification: { active: false, demotion_reason: "x" } }
+      expect(response).to have_http_status(:not_found)
       expect(Certification.unscoped.find(@certification.id).active).to be(true)
     end
 
     it "does not open the demote modal", skip_bullet: true do
-      expect { get :open_modal, params: { id: @certification.id }, xhr: true, format: :js }
-        .to raise_error(ActiveRecord::RecordNotFound)
+      get :open_modal, params: { id: @certification.id }, xhr: true, format: :js
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -94,6 +94,29 @@ RSpec.describe Admin::CertificationsController, type: :controller do
           true
         )
         expect(flash[:notice]).to eq("Action completed.")
+      end
+
+      context "when the trainee was dropped, certified again, and an admin restores the old row" do
+        let(:old) { @certification }
+        let!(:current) do
+          old.update!(active: false, demotion_reason: Certification::TRAINER_REMOVED_REASON, demotion_staff: @admin)
+          create(:certification, user: old.user, training_session: old.training_session, level: old.level)
+        end
+
+        it "refuses the restore and changes nothing" do
+          patch :update, params: { id: old.id, certification: { active: true } }
+          expect(response).to redirect_to demotions_admin_certifications_path
+          expect(flash[:alert]).to eq(I18n.t("errors.admin.certifications.restore_duplicate"))
+          expect(Certification.unscoped.find(old.id).active).to be(false)
+          expect(old.user.certifications.reload.pluck(:id)).to eq([current.id])
+        end
+
+        it "restores the old row once the newer one is deactivated" do
+          current.deactivate(@admin)
+          patch :update, params: { id: old.id, certification: { active: true } }
+          expect(Certification.unscoped.find(old.id).active).to be(true)
+          expect(flash[:notice]).to eq("Action completed.")
+        end
       end
     end
   end

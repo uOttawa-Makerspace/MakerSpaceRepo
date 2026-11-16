@@ -33,9 +33,23 @@ RSpec.describe Space, type: :model do
                )
       end
       it do
-        should validate_uniqueness_of(:name).with_message(
+        should validate_uniqueness_of(:name).case_insensitive.with_message(
                  "Space already exists"
                )
+      end
+
+      it "refuses a name that differs from another space's only in case" do
+        create(:space, name: "Makerspace")
+        space = Space.new(name: "MAKERSPACE")
+        expect(space).not_to be_valid
+        expect(space.errors[:name]).to eq(["Space already exists"])
+      end
+
+      it "has the database refuse a name repeated in another case" do
+        create(:space, name: "Makerspace")
+        now = Time.current
+        expect { Space.insert_all!([{ name: "makerSPACE", created_at: now, updated_at: now }]) }
+          .to raise_error(ActiveRecord::RecordNotUnique)
       end
     end
   end
@@ -95,15 +109,38 @@ RSpec.describe Space, type: :model do
       end
     end
 
-    context "#after_create :create_popular_hours" do
-      it "should create popular hours after creating space" do
-        # Enable callback temporarily for this specific test
-        Space.set_callback(:create, :after, :create_popular_hours)
-        
-        expect { create(:space) }.to change(PopularHour, :count).by(168)
-        
-        # Disable it again so other tests stay fast
-        Space.skip_callback(:create, :after, :create_popular_hours)
+    context "#save_with_popular_hours" do
+      it "saves the space and its 168 rows together" do
+        space = Space.new(name: "Delta")
+        expect { expect(space.save_with_popular_hours).to be(true) }.to change(PopularHour, :count).by(168)
+        expect(space).to be_persisted
+      end
+
+      it "returns false and stores nothing for an invalid space" do
+        expect { expect(Space.new(name: "").save_with_popular_hours).to be(false) }.not_to change { [Space.count, PopularHour.count] }
+      end
+
+      it "rolls the space back, reports and adds an error when the rows cannot be inserted" do
+        allow(PopularHour).to receive(:insert_all).and_raise(ActiveRecord::StatementInvalid, "boom")
+        space = Space.new(name: "Epsilon")
+        expect(Rails.error).to receive(:report).with(instance_of(ActiveRecord::StatementInvalid), hash_including(handled: true))
+        expect(space.save_with_popular_hours).to be(false)
+        expect(Space.exists?(name: "Epsilon")).to be(false)
+        expect(space.errors[:base]).not_to be_empty
+      end
+    end
+
+    context "#create_popular_hours" do
+      it "creates a row for every weekday and hour" do
+        space = create(:space)
+        expect { space.create_popular_hours }.to change { space.popular_hours.count }.from(0).to(168)
+        expect(space.popular_hours.pluck(:day, :hour)).to match_array((0..6).to_a.product((0..23).to_a))
+      end
+
+      it "does nothing when the space already has its rows" do
+        space = create(:space)
+        space.create_popular_hours
+        expect { space.create_popular_hours }.not_to change(PopularHour, :count)
       end
     end
 
@@ -235,6 +272,16 @@ RSpec.describe Space, type: :model do
       expect(b.assigned_color).to eq(a.assigned_color)
     end
 
+    it "assigned_color_hex is the assigned colour as #rrggbb, and assigned_color_text is black or white for it" do
+      texts = (0..9).map do |id|
+        space = Space.new
+        space.id = id
+        [space.assigned_color_hex, space.assigned_color_text]
+      end
+      expect(texts.first).to eq(["#e6194b", "#000000"])
+      expect(texts.to_h).to include("#ffe119" => "#000000", "#4363d8" => "#ffffff", "#46f0f0" => "#000000")
+    end
+
     it "destroys sub spaces, staff spaces, shifts, calendars and manager joins with the space" do
       space = create(:space)
       create(:sub_space, space: space)
@@ -252,134 +299,8 @@ RSpec.describe Space, type: :model do
       expect { space.destroy }.to change(Shift, :count).by(-1)
     end
 
-    it "does not create popular hours in the test environment (callback is skipped)" do
+    it "does not create popular hours when a space is saved" do
       expect { create(:space) }.not_to change(PopularHour, :count)
-    end
-
-    describe "#weekly_open_hours" do
-      let(:space) { create(:space) }
-      let(:url) { "https://cal.test/open.ics" }
-
-      before { travel_to(Time.zone.local(2027, 3, 16, 12)) } # Tuesday, week of Sat 03-13 .. Fri 03-19
-      after { travel_back }
-
-      def open_calendar!
-        StaffNeededCalendar.create!(space: space, calendar_url: url, role: "open_hours")
-      end
-
-      it "is empty without an open_hours calendar" do
-        StaffNeededCalendar.create!(space: space, calendar_url: url)
-        expect(space.weekly_open_hours).to eq([])
-      end
-
-      it "is empty when the feed cannot be fetched" do
-        open_calendar!
-        stub_ics(url, status: 500)
-        expect(space.weekly_open_hours).to eq([])
-      end
-
-      it "lists single events inside the Saturday-to-Friday week in Toronto time, sorted" do
-        open_calendar!
-        stub_ics(url, body: ics_document(
-          { uid: "late", summary: "Late", start: Time.utc(2027, 3, 16, 14), end: Time.utc(2027, 3, 16, 22) },
-          { uid: "sat", summary: "Sat", start: Time.utc(2027, 3, 13, 15), end: Time.utc(2027, 3, 13, 20) },
-          { uid: "before", summary: "Before", start: Time.utc(2027, 3, 12, 15), end: Time.utc(2027, 3, 12, 20) },
-          { uid: "after", summary: "After", start: Time.utc(2027, 3, 20, 15), end: Time.utc(2027, 3, 20, 20) }
-        ))
-        rows = space.weekly_open_hours
-        expect(rows.map(&:title)).to eq(%w[Sat Late])
-        expect(rows.map { |r| [r.dtstart.iso8601, r.dtend.iso8601] }).to eq(
-          [["2027-03-13T10:00:00-05:00", "2027-03-13T15:00:00-05:00"], ["2027-03-16T10:00:00-04:00", "2027-03-16T18:00:00-04:00"]]
-        )
-      end
-
-      # parse_ics_calendar hands back RRULE as a String but weekly_open_hours reads it as a hash: any recurring event raises TypeError.
-      it "raises TypeError when the feed contains a recurring event" do
-        open_calendar!
-        stub_ics(url, body: ics_document(uid: "r", summary: "Rec", start: Time.utc(2027, 3, 1, 14), end: Time.utc(2027, 3, 1, 22), rrule: "FREQ=WEEKLY;BYDAY=MO"))
-        expect { space.weekly_open_hours }.to raise_error(TypeError)
-      end
-    end
-
-    # parse_ics_calendar never returns the hash shape below (it gives the RRULE as a String), so these
-    # examples hand the method the hash form it was written for.
-    describe "#weekly_open_hours with an RRULE hash (feed parsing stubbed)" do
-      let(:space) { create(:space) }
-
-      before do
-        travel_to(Time.zone.local(2027, 3, 16, 12)) # Tuesday, week of Sat 03-13 .. Fri 03-19
-        StaffNeededCalendar.create!(space: space, calendar_url: "https://cal.test/open.ics", role: "open_hours")
-      end
-
-      after { travel_back }
-
-      def feed(*events)
-        allow(space).to receive(:parse_ics_calendar).and_return([{ id: "x", color: "#000", events: events }])
-      end
-
-      def times(rows)
-        rows.map { |r| [r.title, r.dtstart.iso8601, r.dtend.iso8601] }
-      end
-
-      it "is empty when the parser returns nothing" do
-        allow(space).to receive(:parse_ics_calendar).and_return([])
-        expect(space.weekly_open_hours).to eq([])
-      end
-
-      it "skips events without a start" do
-        feed({ title: "No start", start: nil, end: "2027-03-16T10:00:00" })
-        expect(space.weekly_open_hours).to eq([])
-      end
-
-      it "ends an event at its end, else after its duration in ms, else one hour later" do
-        feed({ title: "End", start: "2027-03-15T09:00:00", end: "2027-03-15T10:30:00" },
-             { title: "Duration", start: "2027-03-16T09:00:00", duration: 7_200_000 },
-             { title: "Plain", start: "2027-03-17T09:00:00" })
-        expect(times(space.weekly_open_hours)).to eq(
-          [["End", "2027-03-15T09:00:00-04:00", "2027-03-15T10:30:00-04:00"],
-           ["Duration", "2027-03-16T09:00:00-04:00", "2027-03-16T11:00:00-04:00"],
-           ["Plain", "2027-03-17T09:00:00-04:00", "2027-03-17T10:00:00-04:00"]]
-        )
-      end
-
-      it "expands a weekly rule on its weekdays, leaving out exceptions, and keeps the week's occurrences only" do
-        feed({ title: "Weekly", start: "2027-03-01T09:00:00", end: "2027-03-01T11:00:00",
-               rrule: { freq: "weekly", byweekday: %w[mo we xx] }, exdate: ["2027-03-17T09:00:00", "not a date"] })
-        expect(times(space.weekly_open_hours)).to eq([["Weekly", "2027-03-15T09:00:00-04:00", "2027-03-15T11:00:00-04:00"]])
-      end
-
-      it "expands daily, monthly and yearly rules, stopping at an until date or a count" do
-        feed({ title: "Daily", start: "2027-03-01T09:00:00", end: "2027-03-01T10:00:00",
-               rrule: { freq: "DAILY", until: "2027-03-14T23:00:00" } },
-             { title: "Counted", start: "2027-03-13T09:00:00", end: "2027-03-13T10:00:00",
-               rrule: { freq: "DAILY", count: 2 } },
-             { title: "Monthly", start: "2027-02-17T09:00:00", end: "2027-02-17T10:00:00", rrule: { freq: "MONTHLY" } },
-             { title: "Yearly", start: "2026-03-18T09:00:00", end: "2026-03-18T10:00:00", rrule: { freq: "YEARLY" } })
-        expect(times(space.weekly_open_hours).map(&:first).tally).to eq("Daily" => 2, "Counted" => 2, "Monthly" => 1, "Yearly" => 1)
-        daily = space.weekly_open_hours.select { |r| r.title == "Daily" }
-        expect(daily.map { |r| r.dtstart.to_date.to_s }).to eq(["2027-03-13", "2027-03-14"])
-      end
-
-      it "skips a rule with an unknown or missing frequency" do
-        feed({ title: "Hourly", start: "2027-03-16T09:00:00", end: "2027-03-16T10:00:00", rrule: { freq: "HOURLY" } },
-             { title: "None", start: "2027-03-16T09:00:00", end: "2027-03-16T10:00:00", rrule: { byweekday: ["mo"] } })
-        expect(space.weekly_open_hours).to eq([])
-      end
-
-      it "ignores a weekday list without a known day" do
-        feed({ title: "Odd", start: "2027-03-16T09:00:00", end: "2027-03-16T10:00:00",
-               rrule: { freq: "WEEKLY", byweekday: ["xx"] } })
-        expect(space.weekly_open_hours.map(&:title)).to eq(["Odd"])
-      end
-
-      it "falls back to the event length when an occurrence has no end time" do
-        occurrence = double("occurrence", start_time: Time.zone.local(2027, 3, 16, 9))
-        allow(occurrence).to receive(:end_time).and_raise(StandardError)
-        schedule = instance_double(IceCube::Schedule, add_recurrence_rule: nil, occurrences_between: [occurrence])
-        allow(IceCube::Schedule).to receive(:new).and_return(schedule)
-        feed({ title: "Odd", start: "2027-03-16T09:00:00", end: "2027-03-16T10:15:00", rrule: { freq: "DAILY" } })
-        expect(times(space.weekly_open_hours)).to eq([["Odd", "2027-03-16T09:00:00-04:00", "2027-03-16T10:15:00-04:00"]])
-      end
     end
   end
 end

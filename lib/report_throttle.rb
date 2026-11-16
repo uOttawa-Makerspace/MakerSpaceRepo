@@ -2,7 +2,7 @@
 
 # Lets an error report through at most once per interval per process, per failure kind, so a
 # retry storm (or every Shopify session on a misconfigured box) cannot flood the error tracker.
-# Used for the missing webhook secret and for ShopifyContext setup failures.
+# Used for the missing webhook secret and for Shopify context setup failures (lib/shopify_context.rb).
 class ReportThrottle
   def initialize(interval:)
     @interval = interval

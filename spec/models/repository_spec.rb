@@ -25,6 +25,29 @@ RSpec.describe Repository, type: :model do
     end
   end
 
+  describe "a save that hits a unique violation" do
+    it "turns a lost race for the title into a title error" do
+      existing = create(:repository, title: "Race Title")
+      repo = build(:repository, owner: existing.owner, title: "Race Title")
+      allow(repo).to receive(:_create_record).and_raise(
+        ActiveRecord::RecordNotUnique.new("PG::UniqueViolation: duplicate key value violates unique constraint \"#{Repository::TITLE_INDEX}\"")
+      )
+
+      expect(repo.save(validate: false)).to be(false)
+      expect(repo.errors.added?(:title, :taken)).to be(true)
+    end
+
+    it "re-raises a violation of any other unique index, without a title error" do
+      repo = build(:repository)
+      allow(repo).to receive(:_create_record).and_raise(
+        ActiveRecord::RecordNotUnique.new("PG::UniqueViolation: duplicate key value violates unique constraint \"index_repositories_on_something_else\"")
+      )
+
+      expect { repo.save! }.to raise_error(ActiveRecord::RecordNotUnique, /something_else/)
+      expect(repo.errors[:title]).to be_empty
+    end
+  end
+
   describe "Scopes" do
     context "public_repo" do
       it "should only get private repos" do
@@ -49,6 +72,17 @@ RSpec.describe Repository, type: :model do
         should validate_uniqueness_of(:title).scoped_to(
                  :user_id
                ).with_message("Project title is already in use.")
+      end
+    end
+
+    context "title held by a hidden repository" do
+      it "still counts as taken, for the same owner only" do
+        hidden = create(:repository, title: "Hidden Title")
+        hidden.hide!(by: hidden.owner)
+
+        expect(build(:repository, owner: hidden.owner, title: "Hidden Title")).not_to be_valid
+        expect(build(:repository, owner: hidden.owner, title: "hidden title")).to be_valid
+        expect(build(:repository, title: "Hidden Title")).to be_valid
       end
     end
 
@@ -96,18 +130,6 @@ RSpec.describe Repository, type: :model do
       it "should get the right slug" do
         repo = create(:repository, title: "ABC Abc")
         expect(repo.slug).to eq("abc-abc")
-      end
-    end
-  end
-
-  describe "before destroy" do
-    context "reputation" do
-      it "should lower reputation by 25" do
-        user = create(:user, :regular_user)
-        repo = create(:repository)
-        Repository.find(repo.id).users << User.find(user.id)
-        Repository.find(repo.id).destroy!
-        expect(user.reload.reputation).to eq(-25)
       end
     end
   end
@@ -171,6 +193,58 @@ RSpec.describe Repository, type: :model do
           "$2a$12$fJ1zqqOdQVXHt6GZVFWyQu2o4ZUU3KxzLkl1JJSDT0KbhfnoGUvg2"
         )
       end
+    end
+  end
+
+  describe "#owned_by? and #editable_by?" do
+    let(:owner) { create(:user, :regular_user) }
+    let(:member) { create(:user, :regular_user) }
+    let(:stranger) { create(:user, :regular_user) }
+    let(:repository) { create(:repository, owner: owner).tap { |r| r.users << member } }
+
+    it "names only the owner as owner" do
+      expect(repository.owned_by?(owner)).to be(true)
+      expect(repository.owned_by?(member)).to be(false)
+      expect(repository.owned_by?(stranger)).to be(false)
+      expect(repository.owned_by?(User.new)).to be(false)
+      expect(repository.owned_by?(nil)).to be(false)
+    end
+
+    it "lets the owner and members edit, and nobody else" do
+      expect(repository.editable_by?(owner)).to be(true)
+      expect(repository.editable_by?(member)).to be(true)
+      expect(repository.editable_by?(stranger)).to be(false)
+      expect(repository.editable_by?(User.new)).to be(false)
+      expect(repository.editable_by?(nil)).to be(false)
+    end
+  end
+
+  describe "#gallery_photos" do
+    it "returns the photos in position order with their images and blobs loaded" do
+      repository = create(:repository)
+      create(:photo, repository: repository, position: 2)
+      create(:photo, repository: repository, position: 1)
+      photos = Repository.find(repository.id).gallery_photos.to_a
+      expect(photos.map(&:position)).to eq([0, 1, 2])
+      expect(photos.map(&:id)).to eq(repository.photos.reload.map(&:id))
+      expect(photos).to all(satisfy { |photo| photo.association(:image_attachment).loaded? && photo.image_attachment.association(:blob).loaded? })
+    end
+  end
+
+  describe "photos with the same position" do
+    # The lower id is rewritten last, so the table stores it after the higher one: only the id order puts it first.
+    let(:repository) { create(:repository) }
+    let!(:photos) do
+      first = repository.photos.first
+      second = create(:photo, repository: repository, position: first.position)
+      first.update_columns(position: first.position, created_at: second.created_at)
+      [first, second]
+    end
+
+    it "lists them in id order, read alone, preloaded and through the ordered scope" do
+      expect(Repository.find(repository.id).photos.to_a).to eq(photos)
+      expect(Repository.includes(:photos).find(repository.id).photos.to_a).to eq(photos)
+      expect(Photo.where(repository: repository).ordered.to_a).to eq(photos)
     end
   end
 end

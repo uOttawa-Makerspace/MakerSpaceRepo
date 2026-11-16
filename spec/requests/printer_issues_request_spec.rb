@@ -3,7 +3,7 @@ require "rails_helper"
 # Chunk 15: PrinterIssuesController: reporting and resolving printer issues.
 # StaffAreaController gate (guest -> login, regular/volunteer -> root alert);
 # everything inside is open to any staff member except destroy (admin only,
-# silent redirect for staff).
+# staff are redirected with an alert) and the notification email (admin only).
 RSpec.describe "Printer issues", type: :request do
   include ActiveJob::TestHelper
 
@@ -12,6 +12,10 @@ RSpec.describe "Printer issues", type: :request do
 
   def json
     JSON.parse(response.body)
+  end
+
+  def summary_hints
+    JSON.parse(CGI.unescapeHTML(response.body[/issueSummary = (\{.*?\})\s*</m, 1]))
   end
 
   describe "auth matrix" do
@@ -74,15 +78,25 @@ RSpec.describe "Printer issues", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "does not count the edited issue itself in the duplicate summary hints" do
+      other = create(:printer_issue, :bed_issue, printer: printer)
+      get edit_printer_issue_path(other)
+      expect(summary_hints).to eq(printer.id.to_s => { "Nozzle clogged" => 1 })
+      get edit_printer_issue_path(issue)
+      expect(summary_hints).to eq(printer.id.to_s => { "Bed issue" => 1 })
+      other.destroy
+      get edit_printer_issue_path(issue)
+      expect(summary_hints).to eq({})
+    end
+
     it "has no history page route" do
       expect(Rails.application.routes.recognize_path("/printer_issues/history"))
         .to include(controller: "printer_issues", action: "show", id: "history")
     end
 
-    # show for an unknown id uses find_by and renders the template with a nil @issue (500) instead of 404
-    it "500s showing an unknown issue" do
+    it "answers not found showing an unknown issue" do
       get printer_issue_path(0)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:not_found)
     end
 
     describe "POST create" do
@@ -120,7 +134,7 @@ RSpec.describe "Printer issues", type: :request do
       it "re-renders the form with the error on a blank summary and persists nothing" do
         expect { post printer_issues_path, params: { printer_issue: { printer_id: printer.id, summary: "" } } }.not_to change(PrinterIssue, :count)
         expect(response).to have_http_status(:unprocessable_content)
-        expect(flash[:alert]).to start_with("Failed to create issue:")
+        expect(flash[:alert]).to start_with("The printer issue was not created. Summary")
       end
 
       it "re-renders the form on an unknown printer (same failure branch)" do
@@ -153,10 +167,10 @@ RSpec.describe "Printer issues", type: :request do
         expect(issue.reload.active).to be false
       end
 
-      # a failed update redirects to the list and then redirects again, raising DoubleRenderError (500); the issue is unchanged
-      it "500s with a double redirect when the update is invalid" do
+      it "redirects to the list with the validation message when the update is invalid" do
         patch printer_issue_path(issue), params: { printer_issue: { summary: "" } }
-        expect(response).to have_http_status(:internal_server_error)
+        expect(response).to redirect_to(printer_issues_path)
+        expect(flash[:alert]).to start_with("The printer issue was not updated. Summary")
         expect(issue.reload.summary).to include("Nozzle clogged")
       end
 
@@ -178,6 +192,14 @@ RSpec.describe "Printer issues", type: :request do
         expect(issue.reload.active).to be false
       end
 
+      it "422s with the validation errors and leaves the issue active when the issue is invalid" do
+        issue.update_columns(summary: "")
+        post resolve_printer_issue_path(issue), as: :json
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["errors"]).to eq(["Summary This field is required."])
+        expect(issue.reload.active).to be true
+      end
+
       it "404s for an unknown issue" do
         post resolve_printer_issue_path(0), as: :json
         expect(response).to have_http_status(:not_found)
@@ -185,26 +207,27 @@ RSpec.describe "Printer issues", type: :request do
     end
 
     describe "DELETE destroy" do
-      # staff DELETE silently redirects to the list without a flash; only admins delete
-      it "silently ignores staff" do
+      it "refuses staff with an alert and deletes nothing" do
         expect { delete printer_issue_path(issue) }.not_to change(PrinterIssue, :count)
         expect(response).to redirect_to(printer_issues_path)
-        expect(flash[:alert]).to be_nil
+        expect(flash[:alert]).to eq("Only admins can delete printer issues.")
       end
     end
 
     describe "PATCH update_notification_email" do
-      it "stores a valid address, clears a blank one and rejects garbage" do
-        patch update_notification_email_printer_issues_path, params: { notification_email: " maint@example.com " }
+      it "does not let staff change the address" do
+        Setting.maintenance_email = "kept@example.com"
+        patch update_notification_email_printer_issues_path, params: { notification_email: "other@example.com" }
         expect(response).to redirect_to(printer_issues_path)
-        expect(flash[:notice]).to eq("Notification email updated to maint@example.com.")
-        expect(Setting.maintenance_email).to eq("maint@example.com")
-        patch update_notification_email_printer_issues_path, params: { notification_email: "nope" }
-        expect(flash[:alert]).to eq("Invalid email address.")
-        expect(Setting.maintenance_email).to eq("maint@example.com")
-        patch update_notification_email_printer_issues_path, params: { notification_email: "" }
-        expect(flash[:notice]).to eq("Notification email removed.")
-        expect(Setting.maintenance_email).to be_blank
+        expect(flash[:alert]).to eq("Only admins can change the notification email.")
+        expect(Setting.maintenance_email).to eq("kept@example.com")
+      end
+
+      it "shows staff the address without the edit form" do
+        Setting.maintenance_email = "kept@example.com"
+        get printer_issues_path
+        expect(response.body).to include("kept@example.com")
+        expect(response.body).not_to include("name=\"notification_email\"")
       end
     end
   end
@@ -212,16 +235,33 @@ RSpec.describe "Printer issues", type: :request do
   describe "as admin" do
     before { sign_in_as(:admin) }
 
+    it "stores a valid address, clears a blank one and rejects garbage" do
+      patch update_notification_email_printer_issues_path, params: { notification_email: " maint@example.com " }
+      expect(response).to redirect_to(printer_issues_path)
+      expect(flash[:notice]).to eq("Notification email updated to maint@example.com.")
+      expect(Setting.maintenance_email).to eq("maint@example.com")
+      patch update_notification_email_printer_issues_path, params: { notification_email: "nope" }
+      expect(flash[:alert]).to eq("Invalid email address.")
+      expect(Setting.maintenance_email).to eq("maint@example.com")
+      patch update_notification_email_printer_issues_path, params: { notification_email: "" }
+      expect(flash[:notice]).to eq("Notification email removed.")
+      expect(Setting.maintenance_email).to be_blank
+    end
+
+    it "shows admins the edit form" do
+      get printer_issues_path
+      expect(response.body).to include("name=\"notification_email\"")
+    end
+
     it "destroys an issue with a 303 to the list" do
       expect { delete printer_issue_path(issue) }.to change(PrinterIssue, :count).by(-1)
       expect(response).to redirect_to(printer_issues_path)
       expect(response).to have_http_status(:see_other)
     end
 
-    # destroy uses find_by(...).destroy; an unknown id raises NoMethodError (500)
-    it "500s destroying an unknown issue" do
+    it "answers not found when destroying an unknown issue" do
       delete printer_issue_path(0)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:not_found)
     end
   end
 end

@@ -1,9 +1,13 @@
-import TomSelect from "tom-select";
-document.addEventListener("turbo:load", function () {
+import { onEveryPageLoad } from "../src/on_page.js";
+import { newTomSelect } from "../src/tom_select.js";
+
+onEveryPageLoad(() => {
   if (document.getElementById("user_id")) {
     if (!document.getElementById("user_id").tomselect) {
-      new TomSelect("#user_id", {
-        placeholder: "Select a user",
+      const instructor = /** @type {HTMLSelectElement} */ (
+        document.getElementById("user_id")
+      );
+      newTomSelect(instructor, {
         maxItems: 1,
         plugins: ["remove_button"],
       });

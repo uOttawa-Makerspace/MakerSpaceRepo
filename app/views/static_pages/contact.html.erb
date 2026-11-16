@@ -1,8 +1,8 @@
-<% provide(:title, 'Contact') %>
+<% provide(:title, t('static_pages.contact.title')) %>
 
 <section id="contact-us">
 
-  <div class="title">Contact Us</div>
+  <div class="title"><%= t('footer.contact_us') %></div>
 
   <div class="card-group">
   <% @contact_info.each_with_index do |space, i| %>
@@ -32,7 +32,7 @@
   <% end %>
   </div>
 
-  <div class="title">Follow Us</div>
+  <div class="title"><%= t('static_pages.contact.follow') %></div>
   <div class="row">
     <div id="links" class="row">
       <a href="https://www.facebook.com/uOCEED" target="_blank"><i class="fa fa-facebook-official" aria-hidden="true"></i>

@@ -138,7 +138,7 @@ RSpec.describe AnnouncementsController, type: :controller do
           post :create, params: { announcement: announcement_params }
         }.to change(Announcement, :count).by(1)
         expect(flash[:notice]).to eq(
-          "You've successfully created an announcement for Volunteer"
+          "You've successfully created an announcement for Volunteers"
         )
         expect(response).to redirect_to announcements_path
       end
@@ -153,7 +153,7 @@ RSpec.describe AnnouncementsController, type: :controller do
           post :create, params: { announcement: announcement_params }
         }.to change(Announcement, :count).by(1)
         expect(flash[:notice]).to eq(
-          "You've successfully created an announcement for Volunteer"
+          "You've successfully created an announcement for Volunteers"
         )
         expect(response).to redirect_to announcements_path
       end

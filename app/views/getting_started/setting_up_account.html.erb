@@ -1,24 +1,27 @@
 <section id="help">
-  <div class="title">Setting Up An Account</div>
+  <div class="title"><%= t('getting_started.setting_up_account.title') %></div>
 
   <dl class="faq">
 
-    <dt>    If you don't have an MakerRepo account yet, just head on over to
-      <%= link_to 'makerepo.com/new', new_user_path %> or click the <b>Sign Up</b> 
-      button on the <%= link_to 'home page', root_path %>.</dt>
-    
-    <%= vite_image_tag 'images/signup.jpg' %>
-    
-    <dt>Create a short, memorable repository name. <b>All of your own repository names must be unique and must not contain special characters with the exception of a hyphen.</b> For example, "hello-world".</dt>
-  
-    <%= vite_image_tag 'images/signup2.jpg' %>
+    <dt><%= t('getting_started.setting_up_account.sign_up_html',
+              new_user_link: link_to('makerepo.com/new', new_user_path),
+              home_link: link_to(t('getting_started.setting_up_account.home_link'), root_path)) %></dt>
 
-    <dt>Enter in a valid email address. For example, "johndoe@example.com".</dt>
+    <dd><%= vite_image_tag 'images/signup.jpg', alt: t('common.names.signup_home_screenshot') %></dd>
 
-    <dt>Enter in your password. Your password must contain: <b>10 characters, 5 unique characters, and not be a commonly used password.</b></dt>
+    <dt><%= t('getting_started.setting_up_account.repository_name_html') %></dt>
 
-    <br><br><br>
-    Signing up and creating an MakerRepo account is totally free! After you sign up, please be sure to complete your profile and <%= link_to 'link your MakerRepo account to your Github account', '#' %>.
+    <dd><%= vite_image_tag 'images/signup2.jpg', alt: t('common.names.signup_form_screenshot') %></dd>
+
+    <dt><%= t('getting_started.setting_up_account.email_html') %></dt>
+
+    <dt><%= t('getting_started.setting_up_account.password_html') %></dt>
+
   </dl>
+
+  <p class="mt-5">
+    <%= t('getting_started.setting_up_account.free_html',
+          github_link: link_to(t('getting_started.setting_up_account.github_link'), '#')) %>
+  </p>
 
 </section>

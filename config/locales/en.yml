@@ -126,6 +126,7 @@ en:
         other: "Other"
         no_specify: "I prefer not to specify"
         i_am: "I am..."
+        internal_proof_hint: "The uOttawa student, faculty and staff choices need a confirmed @uottawa.ca email address."
         undergrad: "an undergraduate student at uOttawa"
         international_undergrad: "an international undergraduate student at uOttawa"
         grad: "a graduate student at uOttawa"
@@ -161,6 +162,14 @@ en:
         business: "Business"
         how_heard_about_us: "How did you hear about us?"
         accept_waiver_html: "By checking this box, <strong>I ACCEPT AND FULLY ASSUME</strong> all such (health and safety) risks, dangers and hazards which may be associated with my participation."
+  exams:
+    sent_to_user:
+      one: "You've successfully sent the exam to %{name}. It has 1 question."
+      other: "You've successfully sent the exam to %{name}. It has %{count} questions."
+    sent_to_all:
+      one: "You've successfully sent exams to all users in this training. Each exam has 1 question."
+      other: "You've successfully sent exams to all users in this training. Each exam has %{count} questions."
+    no_questions: "This training has no questions at this level, so no exams were created."
   sessions:
     account_created: "Account has been created, please look in your emails to confirm your email address."
     already_signed_in: "You are already signed in."
@@ -175,6 +184,8 @@ en:
       title: "Forgot Password"
       email: "Email address"
       submit: "Submit"
+  orders:
+    deleted: "The order was deleted and its CCs were given back to the user."
   activerecord:
     attributes:
       space:
@@ -208,6 +219,12 @@ en:
               too_long: "Maximum of %{count} characters."
             read_and_accepted_waiver_form:
               inclusion: "You must accept the terms of the waiver."
+        volunteer_hour:
+          attributes:
+            base:
+              duplicate_pending: "You already sent these hours for this task and day; they are awaiting review."
+            volunteer_task_id:
+              not_joined: "is not a task this volunteer is on or has completed"
         locker_rental:
           attributes:
             rented_by:
@@ -235,13 +252,145 @@ en:
     times_required: "Start and end times are required."
     dates_required: "Start and end dates are required."
     start_date_required: "Start date is required."
+  key_request_mailer:
+    denied:
+      subject: "Key request denied"
+      body: "Your key request has been reviewed and denied by an admin."
+      hello: "Hello %{name},"
+      reason: "Reason given:"
+      ask_again: "You may edit your key request and submit it again from your key request page."
+      open_page: "Go to my key request"
+      why_received: "You have received this email because your key request was answered."
+  booking_mailer:
+    declined:
+      subject: "Booking declined"
+      hello: "Hello %{name},"
+      body: "Your booking in %{room} for %{description} on %{start} to %{end} has been declined by an admin."
+      open_page: "Go to MakerRepo Booking"
+      why_received: "You have received this email because your booking has been declined."
+    access_denied:
+      subject:
+        declined: "Booking access request declined"
+        revoked: "Booking access revoked"
+      body:
+        declined: "Your request for booking access has been reviewed and declined by an admin."
+        revoked: "Your booking access has been revoked by an admin. You can no longer book rooms."
+      hello: "Hello %{name},"
+      reason: "Reason given:"
+      ask_again: "You may send a new request from the booking page."
+      open_page: "Go to MakerRepo Booking"
+      why_received: "You have received this email because your booking access request was answered."
+    staff:
+      hello: "Hello,"
+      open_panel: "Visit Panel"
+    send_booking_needs_approval:
+      subject: "Booking needs approval"
+      body: "A booking has been made in %{room} by %{booker} for %{description} on %{start} to %{end}. Please check the Booking Admin Panel to approve or decline this booking."
+      why_received: "You have received this email because a booking requiring approval has been requested."
+    send_booking_automatically_approved:
+      subject: "Booking automatically approved."
+      body: "A booking has been made and automatically approved in %{room} by %{booker} for %{description} on %{start} to %{end}. If you want to disable automatic booking for this subspace, go to the admin space page."
+      why_received: "You have received this email because a booking has been automatically approved."
+    send_booking_approval_request_sent:
+      subject: "Booking approval request sent"
+      body_html: "A user by the name of %{name} has requested to be a room booker in makeroom. Please go to the %{panel} admin panel to approve or deny this request."
+      panel: "MakerRepo Booking"
+      why_received: "You have received this email because a user has requested booking access."
+    send_booking_approved:
+      subject: "Booking approved"
+      hello: "Hello %{name},"
+      body: "Your booking in %{room} for %{description} on %{start} to %{end} has been approved."
+      why_received: "You have received this email because your booking has been approved."
+    send_booking_approval_request_approved:
+      subject: "Booking approval request accepted"
+      hello: "Hello %{name},"
+      body_html: "Your booking approval request has been reviewed and accepted by an admin. Please go to the %{page} page if you would like to book rooms."
+      page: "MakerRepo Booking"
+      why_received: "You have received this email because your booking access request was approved."
   sub_space_booking:
+    # Results of the bulk approve and decline buttons on the admin tab; %{count} = how many were skipped
+    bulk:
+      access_approved: "Selected access requests approved successfully."
+      access_all_approved: "All selected access requests approved successfully."
+      access_skipped:
+        one: "%{count} selected request(s) were already approved and were skipped."
+        other: "%{count} selected request(s) were already approved and were skipped."
+      bookings_approved: "Bookings approved successfully."
+      bookings_declined: "Bookings declined successfully."
+      bookings_skipped:
+        one: "%{count} selected booking(s) were no longer pending and were skipped."
+        other: "%{count} selected booking(s) were no longer pending and were skipped."
+    # Flash messages of the booking pages and actions; %{room} = the room's name, %{name} = the user's name
+    messages:
+      reason_missing: "Please provide a reason for booking access."
+      supervisor_missing: "Please choose a staff member as your supervisor."
+      access_requested: "Access request submitted successfully."
+      access_granted: "Access granted successfully."
+      access_request_approved: "Access request approved successfully."
+      already_has_access: "%{name} already has booking access."
+      access_revoked: "Booking access revoked successfully."
+      access_request_declined: "Access request declined successfully."
+      no_approvals_selected: "No approvals selected."
+      no_bookings_selected: "No bookings selected."
+      edit_refused: "You can't access this subspace booking."
+      approved_edit_refused: "You do not have permission to edit this booking"
+      blocking_refused: "You do not have permission to block a space."
+      no_longer_pending: "Booking for %{room} is no longer pending."
+      approved: "Booking for %{room} approved successfully."
+      declined: "Booking for %{room} declined successfully."
+      created: "Booking for %{room} created successfully."
+      updated: "Successfully updated booking"
+      made_public: "Booking made public successfully."
+      made_private: "Booking made private successfully."
+      deleted: "Booking for %{room} deleted successfully."
+      remaining_deleted: "Remaining bookings for %{room} deleted successfully."
+      not_recurring: "Booking is not attached to a recurring booking."
+      not_authorized: "You are not authorized to view this page."
+      login_required: "You must be logged in to view this page."
+      approval_required: "You must be approved to book to view this page."
+      staff_required: "You must be an admin or staff to view this page."
+      admin_required: "You must be an admin to view this page."
+      owner_required: "You must be the owner of this booking or an admin to delete it."
+    # Titles of the booking calendar's entries; %{title} = the entry's title
+    feed:
+      blocked: "Space Blocked"
+      booked: "Space Booked"
+      pending: "%{title} (Pending)"
+    access_status:
+      none: "You have not requested booking access yet."
+      pending: "Your request has been pending since %{date}."
+      approved: "Your booking access request was approved."
+      declined: "Your request was declined on %{date}."
+      revoked: "Your booking access was revoked on %{date}."
+      reason: "Reason: %{reason}"
+      ask_again: "You may send a new request below."
+    deny:
+      reason_placeholder: "Reason (optional)"
+      decline_reason_label: "Reason for declining %{name} (optional)"
+      revoke_reason_label: "Reason for revoking %{name}'s access (optional)"
+      decline_label: "Decline %{name}"
+    limits:
+      # %{room} = the room's name, %{hours} = the room's limit
+      maximum_duration: "You cannot book %{room} for more than %{hours} hours."
+      weekly_hours: "You cannot book %{room} for more than %{hours} hours per week."
+      # The booking overlaps a block
+      slot_taken: "This time slot is already booked."
     picker:
       min_length: "Type at least %{count} characters to search for a person."
+    rules:
+      maximum_duration: "has a maximum booking duration of %{hours} hours"
+      weekly_hours: "has a maximum booking hours per person per week of %{hours} hours"
+      public_by_default: "bookings (Name and Description of event) are public by default"
+      approval_with_automatic: "Bookings require manual approval, bookings of %{hours} hours or less will be automatically approved"
+      approval_required: "bookings will require manual approval"
     series:
       too_long: "A recurring booking can span at most %{days} days."
       partial: "Booked %{booked} of %{total} occurrences. Not booked: %{failed}."
       first_failed: "The series was not created because the first occurrence, %{date}, could not be booked. %{reason}"
+    series_actions:
+      approve_all: "Approve All"
+      select_specific: "Select Specific"
+      reject_all: "Reject All"
   saml:
     login:
       sign_in: "Sign In"
@@ -258,6 +407,8 @@ en:
       redirecting: "Redirecting\u2026"
       redirect: "Click here if you are not redirected within 5 seconds"
   settings:
+    admin:
+      title: "Account Settings"
     profile:
       title: "Edit Profile"
       public_information: "Public Information"
@@ -287,42 +438,46 @@ en:
       please_upload_valid_file_type: "Please make sure you have a uploaded a valid filetype."
       options_have_not_been_saved: "The options have not been saved successfully."
       job_order_not_found: "The Job Order hasn't been found."
-      error_while_saving_step: "An error occurred while saving the Job Order Step. "
+      assign_staff_not_staff: "Only a staff member or an admin can be assigned to a job order."
+      staff_assigned: "%{name} has been assigned to this job order."
+      no_staff_assigned: "No staff has been assigned to this job order."
+      deleted: "Job order deleted successfully."
       job_order_submitted_for_approval: "Your job order has been submitted for staff approval!"
       job_order_updated: "Your job order has been updated!"
-      error_while_trying_to_create: "An error occurred while trying to create the Job Order. Please try again."
       approval_magic_link_expired: "The following Job Order Approval link is invalid or has expired. Please Sign In to look at the Job Order Page."
-      error_accept_deny_order: "An error occurred while trying to accept or deny the Job Order. Please try again."
       updated_job_status_to_x: "You have updated the Job Order Status to: %{status}!"
-      quote_saved_email_failed: "Quote saved, but the email could not be sent. Use Resend quote email."
+      quote_saved_email_failed: "Quote saved, but the email could not be sent. Use Resend quote email. Reference: %{reference}."
       payment_link_unavailable: "The payment link is temporarily unavailable. Please try again in a few minutes."
-      requote_draft_order_failed: "This order's quote could not be updated because its existing payment link could not be cancelled. Nothing was changed. Please try again later."
+      requote_draft_order_failed: "This order's quote could not be updated because its existing payment link could not be cancelled. Nothing was changed. Please try again later. Reference: %{reference}."
       delete_refused:
-        draft_not_voidable: "This order was not deleted because its payment link could not be cancelled. Nothing was changed. Please try again later."
+        draft_not_voidable: "This order was not deleted because its payment link could not be cancelled. Nothing was changed. Please try again later. Reference: %{reference}."
         order_missing: "This order no longer exists."
         busy: "This order was not deleted because it is being changed by someone else. Nothing was changed. Please try again in a moment."
         not_deletable: "This order can no longer be deleted by you. Please contact the makerspace staff."
       owner_change_busy: "Your change could not be saved because the order is being changed by someone else. Nothing was changed. Please try again in a moment."
       owner_change_order_missing: "Your change could not be saved because this order no longer exists."
       status_change:
-        draft_not_voidable: "The status could not be changed because this order's payment link could not be cancelled. Nothing was changed. Please try again later."
-        invalid_status_row: "The status could not be changed because the change could not be recorded. Nothing was changed. The problem has been reported."
+        service_price_missing: "This order cannot move forward yet: the service price is missing for %{tasks}. Staff must enter a price (0 is allowed for a free service) in the quote first. Nothing was changed."
+        wrong_state: "The status could not be changed because the order is no longer in the status this action needs. Nothing was changed. Reload the page to see its current status."
+        link_spent: "This approval link is no longer valid because the quote has changed since the email was sent. Nothing was changed. Sign in and open the order to see the latest quote."
+        not_requested: "Nothing was changed because the request did not ask for this status change. Reload the page and try again."
+        draft_not_voidable: "The status could not be changed because this order's payment link could not be cancelled. Nothing was changed. Please try again later. Reference: %{reference}."
+        invalid_status_row: "The status could not be changed because the change could not be recorded. Nothing was changed. The problem has been reported. Reference: %{reference}."
         order_missing: "The status could not be changed because this order no longer exists. Nothing was changed."
         busy: "The status could not be changed because the order is being changed by someone else. Nothing was changed. Please try again in a moment."
       zero_order_not_marked_paid:
-        draft_not_voidable: "The order is Completed, but this $0 order could not be marked Paid because its payment link could not be cancelled. Please mark it Paid again later."
-        invalid_status_row: "The order is Completed, but this $0 order could not be marked Paid because the change could not be recorded. The problem has been reported."
+        draft_not_voidable: "The order is Completed, but this $0 order could not be marked Paid because its payment link could not be cancelled. Please mark it Paid again later. Reference: %{reference}."
+        invalid_status_row: "The order is Completed, but this $0 order could not be marked Paid because the change could not be recorded. The problem has been reported. Reference: %{reference}."
         order_missing: "The order is Completed, but this $0 order could not be marked Paid because it no longer exists."
         busy: "The order is Completed, but this $0 order could not be marked Paid because it is being changed by someone else. Please mark it Paid again in a moment."
         other: "The order is Completed, but this $0 order could not be marked Paid because its status changed in the meantime. Please check the order."
       quote_refused_paid: "This order has already been paid, so its quote can no longer be changed or declined."
       paid_order_cannot_change: "This order has already been paid, so it can no longer be changed here. Please contact makerspace@uottawa.ca to change it."
       order_sent_back_for_requote: "Your change has been saved. Because this order had already been quoted, it has been sent back to staff for a new quote. The previous quote and payment link no longer work."
-      owner_change_draft_order_failed: "Your change could not be saved because this order's existing payment link could not be cancelled. Nothing was changed. Please try again later."
-      send_back_failed: "Your change could not be saved because the order could not be sent back to staff for a new quote. Nothing was changed. The problem has been reported; please try again later or contact makerspace@uottawa.ca."
-      pay_send_back_failed: "This order's invoice no longer matches its quote, and the order could not be sent back to staff for a new quote. Nothing was charged. The problem has been reported; please contact makerspace@uottawa.ca."
+      owner_change_draft_order_failed: "Your change could not be saved because this order's existing payment link could not be cancelled. Nothing was changed. Please try again later. Reference: %{reference}."
+      send_back_failed: "Your change could not be saved because the order could not be sent back to staff for a new quote. Nothing was changed. The problem has been reported; please try again later or contact makerspace@uottawa.ca. Reference: %{reference}."
+      pay_send_back_failed: "This order's invoice no longer matches its quote, and the order could not be sent back to staff for a new quote. Nothing was charged. The problem has been reported; please contact makerspace@uottawa.ca. Reference: %{reference}."
       pay_quote_changed: "This order changed after its invoice was prepared, so it has been sent back to staff for a new quote. You will receive an email when the new quote is ready."
-      error_while_updating: "An error occurred while updating the Job Order Status. Please try again later."
       pay_magic_link_expired: "The following Job Order Payment link is invalid or has expired. Please Sign In to look at the Job Order Page."
       no_permission: "You do not have permission to view this job order."
       cannot_edit: "You cannot edit this Job Order. Please contact makerspace@uottawa.ca for assistance."
@@ -330,8 +485,11 @@ en:
       updated_successfully: "Updated successfully!"
       action_required_scroll_to_timeline: "Action Required: Please scroll down to the 'Timeline' section to provide your input. Your response is needed to proceed. Thank you!"
       missing_info: "Your job order is not submitted! The following tasks are missing required information:"
+      task_deleted: "Task was successfully deleted."
     timeline:
       unknown_user: "Unknown"
+      approved_by_html: "Approved by %{name} for the customer"
+      declined_by_html: "Declined by %{name}"
     status_reasons:
       owner_change: "The order was changed after it had been quoted."
       invoice_mismatch: "The payment link no longer matched the order's quote."
@@ -381,14 +539,24 @@ en:
         previous_page_disabled_tooltip: "You cannot go to the previous page because you selected design services."
         design_description: "Describe your project"
         design_description_placeholder: "Please describe your design and what you need help with. This will help us understand your requirements better."
+        create_job_order: "Create Job Order"
+        add_another_file: "Add Another File"
+        fees: "Fees"
+        # A service to choose, with the price per unit: "PLA ($15.0/g)"
+        service_with_price: "%{name} ($%{price}/%{unit})"
       step_3:
         by_unchecking: "Uploading another file will overwrite this one."
         no_options: "There are no options available to you right now. Please continue to the next step."
         job_wide_option: "Applies to All Tasks"
+        option_already_selected: "This option is already selected on another task in this job order."
+        remove_from_other_task: "Remove it from that task first"
       step_4:
         additional_comments: "Additional Comments"
     order:
+      submit_for_approval: "Submit for Approval"
+      submit_for_approval_confirm: "Are you sure you want to submit this job order for staff approval?"
       job_order: "Job Order"
+      no_job_type: "No job type"
       client_information: "Client Information"
       name: "Name"
       email: "Email"
@@ -405,6 +573,7 @@ en:
       comments_from_staff: "Comments from Staff"
       files_from_client: "Client Files"
       files_from_staff: "Files from Staff"
+      order_files: "Order Files"
       none_yet: "None yet"
       no_files: "No files uploaded for this order."
       send: "Send"
@@ -413,6 +582,8 @@ en:
       add_another_task: "Add Another Task"
       save_draft: "Save Draft"
       delete: "Delete"
+      unnamed_task: "Unnamed Task"
+      deleted_user: "[DELETED USER]"
     new:
       title: "What kind of project are you starting?"
       ready_to_make:
@@ -495,3 +666,40 @@ en:
     section8:
       heading: "8. Modifications"
       content: "MakerRepo may revise these terms of service for its website at any time without notice. By using this website you are agreeing to be bound by the then current version of these terms of service."
+
+  staff_unavailabilities:
+    could_not_load: "{host} could not be loaded"
+    unknown_calendar: "a linked calendar"
+    feed_failed: "Your calendar could not be loaded. Try reloading the page."
+    imported_event:
+      title: "Imported event"
+      from: "Imported from a linked calendar ({host})."
+      from_unknown: "Imported from a linked calendar."
+      all_day: "All day"
+      explanation: "It can't be edited or deleted here: change it in that calendar, or remove the link from your imported calendars below."
+  msr_mailer:
+    send_cc_money_email:
+      subject: "Your CEED Credits (CC) order"
+      preheader: "MakerRepo - Your CC purchase was successful"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "You have received this email because you bought CCs for your %{site_link} account."
+      hello: "Hello,"
+      # %{site_link} = link to MakerRepo
+      bought_html: "You have successfully bought CEED Credits (CCs) on %{site_link}!"
+      # %{cc} = number of CCs bought
+      amount_html: "The amount of CCs is: <b>%{cc} CCs</b>."
+      # %{link} = the claim link, text from link_text
+      link_html: "You can add them to your MakerRepo account by going to this %{link}."
+      link_text: "link"
+      # %{url} = the claim address, shown as text
+      copy_link: "If the link doesn't work, you can copy the following link: %{url}"
+      button: "Redeem my CCs"
+    sign_up_attempt:
+      subject: "Someone tried to sign up with your email"
+      hello: "Hello %{name},"
+      body: "Someone tried to create a MakerRepo account with this email address, but it already has an account. No new account was created."
+      if_you: "If it was you, sign in to your existing account. If you have forgotten your password, you can reset it."
+      if_not: "If it was not you, you can ignore this email: your account has not changed."
+      sign_in: "Sign in"
+      reset_password: "Reset my password"
+      why_received: "You have received this email because a sign-up was attempted with your email address."

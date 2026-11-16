@@ -2,6 +2,16 @@
  * This class stores information about accordion states in local storage and sets states on page load.
  */
 
+// Opens or closes a restored panel and keeps aria-expanded on its trigger buttons in step.
+const setPanelOpen = (panel, open) => {
+  panel.classList.toggle("show", open);
+  document
+    .querySelectorAll(
+      `[data-bs-toggle="collapse"][data-bs-target="#${CSS.escape(panel.id)}"]`,
+    )
+    .forEach((trigger) => trigger.setAttribute("aria-expanded", String(open)));
+};
+
 document.addEventListener("turbo:load", () => {
   let storageString = localStorage.getItem(location.pathname);
   let storage;
@@ -14,11 +24,11 @@ document.addEventListener("turbo:load", () => {
     Object.keys(storage).forEach(function (item) {
       if (storage[item] === true) {
         if (document.getElementById(item)) {
-          document.getElementById(item).classList.add("show");
+          setPanelOpen(document.getElementById(item), true);
         }
       } else if (storage[item] === false) {
         if (document.getElementById(item)) {
-          document.getElementById(item).classList.remove("show");
+          setPanelOpen(document.getElementById(item), false);
         }
       }
     });

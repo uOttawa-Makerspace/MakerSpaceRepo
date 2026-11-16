@@ -18,14 +18,14 @@ RSpec.describe AddMissingSpaceAndUnavailabilityIndexes do
 
   AFTER_UP = {
     events: %w[idx_events_on_space_and_draft idx_events_on_space_and_times index_events_on_course_name_id
-               index_events_on_created_by_id index_events_on_training_id],
-    staff_spaces: %w[idx_staff_spaces_space_user index_staff_spaces_on_user_id],
+               index_events_on_created_by_id index_events_on_training_id index_events_on_updated_by_id],
+    staff_spaces: %w[idx_staff_spaces_space_user index_staff_spaces_on_user_id index_staff_spaces_on_user_id_and_space_id],
     staff_unavailabilities: %w[index_staff_unavailabilities_on_user_id]
   }.freeze
 
   AFTER_DOWN = {
-    events: %w[index_events_on_course_name_id index_events_on_created_by_id index_events_on_space_id index_events_on_training_id],
-    staff_spaces: %w[index_staff_spaces_on_space_id index_staff_spaces_on_user_id],
+    events: %w[index_events_on_course_name_id index_events_on_created_by_id index_events_on_space_id index_events_on_training_id index_events_on_updated_by_id],
+    staff_spaces: %w[index_staff_spaces_on_space_id index_staff_spaces_on_user_id index_staff_spaces_on_user_id_and_space_id],
     staff_unavailabilities: %w[index_staff_unavailabilities_on_user_id]
   }.freeze
 

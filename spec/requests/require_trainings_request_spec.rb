@@ -54,34 +54,34 @@ RSpec.describe "Require trainings", type: :request do
         expect { post require_trainings_path, params: invalid, headers: back }
           .not_to change(RequireTraining, :count)
         expect(response).to redirect_to("/volunteer_tasks")
-        expect(flash[:alert]).to eq("Something went wrong")
+        expect(flash[:alert]).to start_with("The required training was not added to this volunteer task. ")
       end
 
       it "falls back to the task page when a failed create has no referer" do
         invalid = { require_training: { volunteer_task_id: task.id, training_id: "" } }
         post require_trainings_path, params: invalid
         expect(response).to redirect_to(volunteer_task_path(task))
-        expect(flash[:alert]).to eq("Something went wrong")
+        expect(flash[:alert]).to start_with("The required training was not added to this volunteer task. ")
       end
 
       it "falls back to the task list when the task does not exist and there is no referer" do
         unknown = { require_training: { volunteer_task_id: 0, training_id: "" } }
         expect { post require_trainings_path, params: unknown }.not_to change(RequireTraining, :count)
         expect(response).to redirect_to(volunteer_tasks_path)
-        expect(flash[:alert]).to eq("Something went wrong")
+        expect(flash[:alert]).to start_with("The required training was not added to this volunteer task. ")
       end
 
       it "saves nothing and alerts when the task id is unknown but the training is valid" do
         unknown = { require_training: { volunteer_task_id: 987_654_321, training_id: training.id } }
         expect { post require_trainings_path, params: unknown }.not_to change(RequireTraining, :count)
         expect(response).to redirect_to(volunteer_tasks_path)
-        expect(flash[:alert]).to eq("Something went wrong")
+        expect(flash[:alert]).to start_with("The required training was not added to this volunteer task. ")
       end
 
       it "saves nothing and alerts when no task id is given" do
         missing = { require_training: { training_id: training.id } }
         expect { post require_trainings_path, params: missing, headers: back }.not_to change(RequireTraining, :count)
-        expect(flash[:alert]).to eq("Something went wrong")
+        expect(flash[:alert]).to start_with("The required training was not added to this volunteer task. ")
       end
 
       it "allows the same training twice on a task (no uniqueness)" do
@@ -113,7 +113,7 @@ RSpec.describe "Require trainings", type: :request do
       other = create(:training)
       expect { post remove_trainings_require_trainings_path, params: { require_training: { volunteer_task_id: task.id, training_id: other.id } } }
         .not_to change(RequireTraining, :count)
-      expect(flash[:alert]).to eq("Something went wrong")
+      expect(flash[:alert]).to eq("That training is not required by this volunteer task, so nothing was removed.")
     end
   end
 end

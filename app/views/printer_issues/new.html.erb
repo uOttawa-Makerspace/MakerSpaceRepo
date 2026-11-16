@@ -17,7 +17,7 @@
             </div>
         </div>
         <div class="form-group my-3">
-            <%= f.label :description, value: 'Issue description (optional)', class: 'form-label' %>
+            <%= f.trix_label :description, 'Issue description (optional)', class: 'form-label' %>
             <%= f.trix_editor :description, class: 'form-control' %>
         </div>
         <%= f.submit 'Submit issue', class: 'btn btn-primary' %>

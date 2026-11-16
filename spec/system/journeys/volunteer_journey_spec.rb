@@ -5,7 +5,7 @@ require "rails_helper"
 # End-to-end volunteer journey: staff assign a volunteer to a task in the task
 # editor, the volunteer submits the task as complete, staff approve the request
 # and the volunteer gets the CC credit and the logged hours.
-RSpec.describe "Journey: volunteer task", type: :system, skip_bullet: true do
+RSpec.describe "Journey: volunteer task", type: :system do
   let!(:volunteer) { create(:user, :volunteer_with_volunteer_program) }
   let!(:staff) { create(:user, :staff) }
   let!(:task) { create(:volunteer_task, title: "stocktake", cc: 10, hours: 5.0, joins: 1, user_id: staff.id) }
@@ -23,10 +23,10 @@ RSpec.describe "Journey: volunteer task", type: :system, skip_bullet: true do
       # wait for the PATCH to redirect off the edit form before asserting on its
       # outcome (a text wait alone can not tell "still submitting" from "failed")
       expect(page).to have_current_path(volunteer_tasks_path)
-      expect(page).to have_text("Volunteer task updated")
+      expect_flash("Volunteer task updated")
     end
     join = VolunteerTaskJoin.find_by!(volunteer_task: task, user: volunteer)
-    expect(join.active).to be(true)
+    expect(join.state).to eq("joined")
     expect(join.user_type).to eq("Volunteer")
 
     as_actor(:volunteer) do
@@ -34,7 +34,7 @@ RSpec.describe "Journey: volunteer task", type: :system, skip_bullet: true do
       expect(page).to have_text("You are assigned to this volunteer task!")
       audit_accessibility("volunteer task")
       accept_confirm { click_button "Submit Task as Complete" }
-      expect(page).to have_text("You've sent a request. No further action is needed.")
+      expect_flash("You've sent a request. No further action is needed.")
     end
     request = VolunteerTaskRequest.find_by!(volunteer_task: task, user: volunteer)
     expect(request.approval).to be_nil
@@ -45,9 +45,10 @@ RSpec.describe "Journey: volunteer task", type: :system, skip_bullet: true do
       visit volunteer_task_requests_path
       expect(page).to have_text(/stocktake/i)
       accept_confirm { click_button "Approve" }
-      expect(page).to have_text("Task request updated")
+      expect_flash("Task request updated")
     end
     expect(request.reload.approval).to be(true)
+    expect(join.reload).to have_attributes(state: "completed", active: false, state_changed_by_id: staff.id)
     expect(CcMoney.where(user: volunteer).sum(:cc)).to eq(10)
     expect(VolunteerHour.where(user: volunteer, volunteer_task: task).pluck(:total_time, :approval)).to eq([[5.0, true]])
     updated = deliver_mail.find { |m| m.subject == "Your request was updated: Stocktake" }

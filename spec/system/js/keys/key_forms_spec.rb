@@ -47,7 +47,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       tom_select "Wood Shop (WS-2)", from: "space-select", search: "Wood"
       select "Inventory", from: "status-select"
       click_button "Create Key"
-      expect(page).to have_text("Successfully created key.")
+      expect_flash("Successfully created key.")
       expect(Key.find_by(number: 12)).to have_attributes(space_id: other_space.id, key_type: "regular", status: "inventory")
     end
 
@@ -57,7 +57,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       fill_in "custom-keycode", with: "CARD-77"
       select "Inventory", from: "status-select"
       click_button "Create Key"
-      expect(page).to have_text("Successfully created key.")
+      expect_flash("Successfully created key.")
       expect(Key.find_by(number: 77)).to have_attributes(key_type: "keycard", custom_keycode: "CARD-77")
     end
 
@@ -95,7 +95,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       expect(page).to have_css("#space-select.tomselected", visible: :all)
       select "Lost", from: "status-select"
       click_button "Update Key"
-      expect(page).to have_text("The key was successfully updated.")
+      expect_flash("The key was successfully updated.")
       expect(regular.reload).to have_attributes(status: "lost", space_id: space.id, number: "5")
     end
   end
@@ -115,7 +115,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       tom_select "Hank Holder", from: "key-request-select", search: "Hank"
       fill_in "deposit_amount", with: "25"
       click_button "Assign Key"
-      expect(page).to have_text("Successfully assigned key")
+      expect_flash("Successfully assigned key")
       expect(key.reload).to have_attributes(status: "held", user_id: holder.id, supervisor_id: admin.id)
       expect(KeyTransaction.find_by(key_id: key.id).deposit_amount).to eq(25)
     end
@@ -149,7 +149,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       find(".flatpickr-calendar.open .flatpickr-day.today").click
       expect(page).to have_field("deposit-return-date", with: Time.zone.today.to_s)
       click_button "Revoke Key"
-      expect(page).to have_text("Successfully revoked key")
+      expect_flash("Successfully revoked key")
       expect(key.reload).to have_attributes(status: "inventory", user_id: nil)
       expect(deposit.reload.deposit_return_date).to eq(Time.zone.today)
       expect(deposit.return_date).to eq(Time.zone.today)
@@ -163,7 +163,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       click_button "deposit-return-date-clear"
       expect(page).to have_field("deposit-return-date", with: "")
       click_button "Revoke Key"
-      expect(page).to have_text("Successfully revoked key")
+      expect_flash("Successfully revoked key")
       expect(key.reload.status).to eq("inventory")
       expect(deposit.reload.deposit_return_date).to be_nil
     end
@@ -179,6 +179,36 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
 
     def count_prints
       page.execute_script("window.__prints = 0; window.print = function () { window.__prints += 1; };")
+    end
+
+    # The page waits one second after the last frame loads before printing.
+    # Holding that timer makes "loaded but not yet printed" a state the spec
+    # controls, instead of one that depends on how fast the frame loads.
+    def hold_print_timers
+      page.execute_script(<<~JS)
+        window.__heldTimers = [];
+        window.__frameLoads = 0;
+        document.querySelectorAll(".key-cert-iframe").forEach(function (frame) {
+          frame.addEventListener("load", function () { window.__frameLoads += 1; });
+        });
+        const realSetTimeout = window.setTimeout;
+        window.setTimeout = function (callback, delay, ...args) {
+          if (delay === 1000) { window.__heldTimers.push(callback); return 0; }
+          return realSetTimeout.call(window, callback, delay, ...args);
+        };
+      JS
+    end
+
+    def held_print_timers
+      page.evaluate_script("window.__heldTimers.length")
+    end
+
+    def frame_loads
+      page.evaluate_script("window.__frameLoads")
+    end
+
+    def release_print_timers
+      page.execute_script("window.__heldTimers.splice(0).forEach(function (callback) { callback(); });")
     end
 
     def prints
@@ -201,8 +231,11 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       expect(page).to have_css("iframe.key-cert-iframe", visible: :all, count: 1)
       wait_for_app_js
       count_prints
+      hold_print_timers
       click_button "print-button"
+      wait_until("frames not reloaded") { frame_loads == 1 && held_print_timers == 1 }
       expect(prints).to eq(0)
+      release_print_timers
       wait_until("print not called after frames loaded") { prints == 1 }
     end
   end
@@ -216,6 +249,78 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       expect(page).to have_css("#space-select.tomselected", visible: :all)
       select "Keycard", from: "key-type-select"
       expect(page).to have_field("custom-keycode", visible: :visible)
+    end
+  end
+
+  describe "moving between key pages with Turbo" do
+    def pickers = %w[supervisor-select space-select]
+
+    # Marks the next Turbo page load, after the page scripts' own handlers ran.
+    def mark_next_load
+      page.execute_script(<<~JS)
+        document.addEventListener("turbo:load", () => {
+          document.documentElement.dataset.markedLoad = "done";
+        }, { once: true });
+      JS
+    end
+
+    def wait_for_marked_load
+      expect(page).to have_css("html[data-marked-load='done']", visible: :all)
+      page.execute_script("delete document.documentElement.dataset.markedLoad")
+    end
+
+    def turbo_visit(path)
+      wait_for_app_js
+      mark_next_load
+      page.execute_script("Turbo.visit(#{path.to_json})")
+      wait_for_marked_load
+    end
+
+    def expect_one_working_picker(id)
+      expect(page).to have_css("##{id} ~ .ts-wrapper", count: 1, visible: :all)
+      expect(page.evaluate_script("Boolean(document.getElementById(#{id.to_json}).tomselect)")).to be(true)
+    end
+
+    def expect_working_form
+      pickers.each { |id| expect_one_working_picker(id) }
+      select "Keycard", from: "key-type-select"
+      expect(page).to have_field("custom-keycode", visible: :visible)
+      select "Regular", from: "key-type-select"
+      expect(page).to have_no_field("custom-keycode", visible: :visible)
+    end
+
+    let!(:key) { create(:key, :regular_key_type, :unknown_status, number: 5, space: space) }
+
+    before do
+      log_in_as(admin, to: edit_admin_key_path(key))
+      expect(page).to have_css("#space-select.tomselected", visible: :all)
+      turbo_visit(new_admin_key_path)
+      expect(page).to have_current_path(new_admin_key_path)
+    end
+
+    it "sets up the new key form reached by a Turbo visit from another key page" do
+      expect_working_form
+      fill_in "key_number", with: "31"
+      tom_select "Wood Shop (WS-2)", from: "space-select", search: "Wood"
+      select "Inventory", from: "status-select"
+      click_button "Create Key"
+      expect_flash("Successfully created key.")
+      expect(Key.find_by(number: 31)).to have_attributes(space_id: other_space.id, status: "inventory")
+    end
+
+    it "keeps one working picker per select on the key pages restored by going back and forward" do
+      mark_next_load
+      page.go_back
+      wait_for_marked_load
+      expect(page).to have_current_path(edit_admin_key_path(key))
+      expect_working_form
+      mark_next_load
+      page.go_forward
+      wait_for_marked_load
+      expect(page).to have_current_path(new_admin_key_path)
+      expect_working_form
+      tom_select "Wood Shop (WS-2)", from: "space-select", search: "Wood"
+      expect(page).to have_css("#space-select + .ts-wrapper .item", text: "Wood Shop")
     end
   end
 end

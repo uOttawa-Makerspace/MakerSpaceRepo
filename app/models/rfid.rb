@@ -4,6 +4,11 @@ class Rfid < ApplicationRecord
 
   belongs_to :user, optional: true
   scope :recent_unset, -> { where(user: nil).order("updated_at desc") }
+  # Unlinked cards, newest first, last tapped on a reader in a space the user may work in (User#workable_spaces:
+  # every space for an admin, the assigned spaces for staff, none otherwise).
+  scope :unlinked_for, lambda { |user|
+    recent_unset.where(mac_address: PiReader.where(space: user.workable_spaces).select(:pi_mac_address))
+  }
   # Uniqueness is the unique index's job (find_or_create_card handles the conflict).
   validates :card_number, presence: true
 
@@ -103,8 +108,9 @@ class Rfid < ApplicationRecord
     end
   end
 
+  # The reader a freed card goes back to: the lowest-id reader of the space the actor works in (User#current_space).
   def self.rehome_reader(actor)
-    actor&.space&.pi_readers&.first
+    actor&.current_space&.pi_readers&.order(:id)&.first
   end
   private_class_method :rehome_reader
 

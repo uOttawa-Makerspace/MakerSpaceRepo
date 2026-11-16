@@ -25,19 +25,19 @@
             <table class="table table-striped job-order-table">
                 <thead class="table-primary">
                     <tr class="text-center">
-                        <th>Chats</th>
-                        <th>User</th>
-                        <th>ID</th>
-                        <th>Submitted</th>
-                        <th>Type</th>
-                        <th>Status</th>
-                        <th>View</th>
+                        <th><%= t('job_orders.list.chats') %></th>
+                        <th><%= t('job_orders.list.user') %></th>
+                        <th><%= t('job_orders.list.id') %></th>
+                        <th><%= t('job_orders.list.submitted') %></th>
+                        <th><%= t('job_orders.list.type') %></th>
+                        <th><%= t('job_orders.list.status') %></th>
+                        <th><%= t('job_orders.list.view') %></th>
                     </tr>
                 </thead>
                 <tbody>
                     <% @job_orders.each do |jo| %>
                         <tr id="job-order-row-<%= jo.id %>">
-                            <%= render 'client_row', jo: jo %>
+                            <%= render 'client_row', jo:, unread: @unread_counts.fetch(jo.id, 0) %>
                         </tr>
                     <% end %>
                 </tbody>

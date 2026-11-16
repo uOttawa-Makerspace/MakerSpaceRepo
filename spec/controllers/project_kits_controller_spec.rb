@@ -97,12 +97,12 @@ RSpec.describe ProjectKitsController, type: :controller do
         expect(response).to redirect_to project_kits_path
       end
 
-      it "should fail to create a kit" do
+      it "answers not found for a kit that does not exist" do
         expect { delete :destroy, params: { id: "" } }.to change(
           ProjectKit,
           :count
         ).by(0)
-        expect(response).to redirect_to project_kits_path
+        expect(response).to have_http_status(:not_found)
       end
     end
   end

@@ -116,6 +116,39 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "index p=signed_in_users filters by the reader's location" do
+      space = create(:space)
+      reader = create(:pi_reader, pi_location: "Main Room", space: space)
+      other_reader = create(:pi_reader, pi_location: "Back Room", space: space)
+      here = create(:user, :regular_user)
+      there = create(:user, :regular_user)
+      create(:lab_session, user_id: here.id, space: space, mac_address: reader.pi_mac_address,
+                           sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+      create(:lab_session, user_id: there.id, space: space, mac_address: other_reader.pi_mac_address,
+                           sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+
+      get admin_users_path(p: "signed_in_users", location: "main room")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(here.username)
+      expect(response.body).not_to include(there.username)
+    end
+
+    it "index p=signed_in_users lists a session once when two readers share an address" do
+      space = create(:space)
+      reader = create(:pi_reader, pi_location: "Main Room", space: space)
+      twin = create(:pi_reader, pi_location: "Main Room", space: space)
+      twin.update_column(:pi_mac_address, reader.pi_mac_address)
+      create(:lab_session, user_id: target.id, space: space, mac_address: reader.pi_mac_address,
+                           sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+
+      get admin_users_path(p: "signed_in_users")
+      appearances = response.body.scan(target.username).size
+      get admin_users_path(p: "signed_in_users", location: "Main Room")
+
+      expect(response.body.scan(target.username).size).to eq(appearances)
+    end
+
     it "index: unknown p redirects with 'Invalid parameters!'" do
       get admin_users_path(p: "bogus")
       expect(response).to redirect_to(admin_users_path)
@@ -147,16 +180,41 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response.body).to include(idle.username)
     end
 
-    it "search without q redirects back with 'Invalid parameters!'" do
+    it "search without q shows the search page with a message to enter a name or email" do
       get search_admin_users_path
-      expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to eq("Invalid parameters!")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Enter a name or email to search")
+      # visible text only: every page carries the widget texts (such as "No results found") in a data attribute
+      expect(Nokogiri::HTML(response.body).text).not_to include("No results")
+    end
+
+    it "search labels the filter select for assistive technology" do
+      get search_admin_users_path(q: target.username)
+      expect(response.body).to match(/<select[^>]*id="filter"[^>]*aria-label="Search by"|<select[^>]*aria-label="Search by"[^>]*id="filter"/)
     end
 
     it "search with at least one hit renders the result" do
       get search_admin_users_path(q: target.username, filter: "Username")
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(target.username)
+    end
+
+    it "the list shows each user as a row with no selection checkboxes or bulk form", skip_bullet: true do
+      get admin_users_path
+      doc = Nokogiri::HTML(response.body)
+      expect(doc.css("table#admin-index td a[href='#{admin_user_path(target)}']")).not_to be_empty
+      expect(doc.css("input[type=checkbox], input#select-all")).to be_empty
+      expect(doc.css("form[action='#{admin_users_path}']")).to be_empty
+      expect(doc.css("table#admin-index th").size).to eq(5)
+      expect(doc.at_css("table#admin-index td.link-table").parent.css("td").size).to eq(5)
+    end
+
+    it "search lists every hit as a row linking to the user, with no selection checkboxes or bulk form" do
+      get search_admin_users_path(q: target.username, filter: "Username")
+      doc = Nokogiri::HTML(response.body)
+      expect(doc.css("table.admin-table td a[href='#{admin_user_path(target)}']")).not_to be_empty
+      expect(doc.css("input[type=checkbox], input#select-all, select#bulk_certifications")).to be_empty
+      expect(doc.css("form[action='#{admin_users_path}']")).to be_empty
     end
 
     it "search shows when a hit last signed in" do
@@ -187,6 +245,32 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       gone = create(:user, :regular_user, deleted: true)
       get admin_user_path(gone)
       expect(response).to have_http_status(:not_found)
+    end
+
+    it "show gives visit times in the app time zone (Toronto), whatever the server's own zone" do
+      original_tz = ENV.fetch("TZ", nil)
+      ENV["TZ"] = "Asia/Tokyo"
+      travel_to(Time.zone.local(2026, 11, 13, 16, 0)) do
+        create(:lab_session, user: target, sign_in_time: Time.zone.local(2026, 11, 13, 9, 15),
+                             sign_out_time: Time.zone.local(2026, 11, 13, 11, 45, 30))
+        get admin_user_path(target)
+      end
+
+      cells = Nokogiri::HTML(response.body).css(".admin-table td").map { |td| td.text.strip }
+      expect(cells.first(2)).to eq(["November 13, 2026 09:15:00", "November 13, 2026 11:45:30"])
+    ensure
+      ENV["TZ"] = original_tz
+    end
+
+    it "show links the web address of a user only when it is an http(s) address" do
+      target.update_columns(url: "https://example.org/me")
+      get admin_user_path(target)
+      expect(response.body).to include('<a href="https://example.org/me">example.org/me</a>')
+
+      target.update_columns(url: "javascript:alert(1)")
+      get admin_user_path(target)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("javascript:alert")
     end
 
     it "edit renders" do
@@ -244,6 +328,72 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     it "manage_roles renders" do
       get manage_roles_admin_users_path
       expect(response).to have_http_status(:ok)
+    end
+
+    it "manage_roles ticks each admin's and staff member's spaces in a number of queries that does not grow with them", :aggregate_failures do
+      spaces = create_list(:space, 2)
+      add_people = lambda do
+        create(:staff_space, user: create(:user, :staff), space: spaces[0])
+        create(:staff_space, user: create(:user, :admin), space: spaces[1])
+        both = create(:user, :staff)
+        spaces.each { |space| create(:staff_space, user: both, space: space) }
+      end
+      add_people.call
+      get manage_roles_admin_users_path # warm caches
+      few = count_queries { get manage_roles_admin_users_path }
+      2.times { add_people.call }
+      many = count_queries { get manage_roles_admin_users_path }
+      expect(many).to eq(few)
+
+      ticked = Nokogiri::HTML(response.body).css("input.set-user-space-button[checked]")
+                       .map { |box| [box["data-user-id"].to_i, box["data-space-id"].to_i] }
+      expect(ticked).to match_array(StaffSpace.where(user: User.where(role: %w[admin staff])).pluck(:user_id, :space_id))
+    end
+
+    describe "space buttons" do
+      def luminance(hex)
+        r, g, b = hex.delete("#").scan(/../).map { |c| c.hex / 255.0 }.map { |c| c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055)**2.4 }
+        (0.2126 * r) + (0.7152 * g) + (0.0722 * b)
+      end
+
+      def ratio(fg, bg)
+        hi, lo = [luminance(fg), luminance(bg)].sort.reverse
+        (hi + 0.05) / (lo + 0.05)
+      end
+
+      # One space per palette colour (the colour follows the space id).
+      let!(:spaces) { create_list(:space, 10) }
+
+      it "keeps the palette colour as the border and fill, with readable text in the outline, hover and checked states" do
+        get manage_roles_admin_users_path
+        rules = response.body.scan(/\.btn-outline-space-(\d+) \{([^}]*)\}/m).to_h { |id, css| [id.to_i, css.scan(/--bs-btn-([\w-]+): ([^;]+);/).to_h] }
+        ratios = {}
+
+        Space.all.each do |space|
+          vars = rules.fetch(space.id)
+          hex = space.assigned_color_hex
+          expect(vars).to include("color" => "var(--bs-body-color)", "border-color" => hex, "hover-bg" => hex,
+                                  "hover-border-color" => hex, "active-bg" => hex, "active-border-color" => hex)
+          expect(vars["hover-color"]).to eq(space.assigned_color_text)
+          expect(vars["active-color"]).to eq(space.assigned_color_text)
+          ratios[hex] = ratio(vars["hover-color"], hex)
+        end
+
+        expect(ratios.size).to eq(10)
+        expect(ratios.values.min).to be >= 4.5
+        # Outline text is the body colour on the page background, in both themes.
+        expect(ratio("#212529", "#ffffff")).to be >= 4.5
+        expect(ratio("#dee2e6", "#212529")).to be >= 4.5
+      end
+
+      it "keeps the space name out of the page stylesheet and out of the button class" do
+        space = Space.first
+        space.update_columns(name: "x{color:red} .y")
+        get manage_roles_admin_users_path
+        style = response.body[/<style>.*?<\/style>/m]
+        expect(style).not_to include("color:red")
+        expect(response.body).to include("btn-outline-primary btn-outline-space-#{space.id}")
+      end
     end
   end
 
@@ -412,6 +562,14 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(many.size).to eq(few.size)
     end
 
+    it "answers a script request like a form submit: the role changes and it redirects back" do
+      patch set_role_admin_users_path(format: :js), params: { role: "staff", user_ids: [target.id] },
+                                                    headers: { "HTTP_REFERER" => "http://www.example.com/admin/users/manage_roles" }, xhr: true
+
+      expect(response).to redirect_to("http://www.example.com/admin/users/manage_roles")
+      expect(target.reload.role).to eq("staff")
+    end
+
     it "json: head 200" do
       patch set_role_admin_users_path, params: { role: "volunteer", user_ids: [target.id] }, as: :json
       expect(response).to have_http_status(:ok)
@@ -508,6 +666,21 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   describe "DELETE /admin/users/delete_user (soft delete)" do
     before { login!(admin) }
 
+    it "refuses an admin who was demoted after the request was authorised" do
+      other_admin = create(:user, :admin)
+      allow(User).to receive(:serialising_account_deletion).and_wrap_original do |original, &block|
+        User.where(id: admin.id).update_all(role: "regular_user")
+        original.call(&block)
+      end
+
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+
+      expect(response).to redirect_to(user_path(target.username))
+      expect(flash[:alert]).to eq("Only admins can delete accounts.")
+      expect(target.reload.deleted).to be(false)
+      expect(other_admin.reload.deleted).to be(false)
+    end
+
     it "requires the admin's own password" do
       delete delete_user_admin_users_path, params: { id: target.id, password: "wrong" }
       expect(response).to redirect_to(user_path(target.username))
@@ -574,7 +747,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
         delete delete_user_admin_users_path, params: { id: target.id, password: password }
         kept = Repository.find(repo.id)
         expect(kept.user_id).to eq([later, partner].map(&:id).min)
-        expect(kept.owned_by?(partner)).to be(true)
+        expect(kept.editable_by?(partner)).to be(true)
         expect(kept.deleted).to be(false)
         expect(kept.users).not_to include(target)
         expect(Repository.unscoped.find(repo.id).users.unscope(where: :deleted)).to include(target)
@@ -797,6 +970,50 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(Repository.find_by(id: repo.id)).to eq(repo)
     end
 
+    it "keeps a repository the user deleted before the account was deleted hidden" do
+      repo = create(:repository, owner: target)
+      repo.users << target
+      repo.hide!(by: repo.owner)
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+      patch restore_user_admin_users_path, params: { id: target.id }
+      expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true, hidden_reason: "user_deleted")
+    end
+
+    it "keeps a repository an admin deleted before the account was deleted hidden" do
+      repo = create(:repository, owner: target)
+      repo.users << target
+      repo.hide!(by: create(:user, :admin))
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+      patch restore_user_admin_users_path, params: { id: target.id }
+      expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true, hidden_reason: "admin_deleted")
+    end
+
+    it "keeps a repository hidden before the reason was recorded hidden, and its reputation unchanged" do
+      repo = create(:repository, owner: target)
+      repo.users << target
+      repo.update_columns(deleted: true)
+      target.update!(reputation: 40)
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+      patch restore_user_admin_users_path, params: { id: target.id }
+      expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true, hidden_reason: nil)
+      expect(target.reload.reputation).to eq(40)
+    end
+
+    it "brings back only the repositories the account deletion hid, clearing their reason, with no reputation change" do
+      kept = create(:repository, owner: target, title: "Hidden by account")
+      kept.users << target
+      gone = create(:repository, owner: target, title: "Deleted by user")
+      gone.users << target
+      gone.hide!(by: gone.owner)
+      target.update!(reputation: 40)
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+      expect(Repository.unscoped.find(kept.id)).to have_attributes(deleted: true, hidden_reason: "account_deleted")
+      patch restore_user_admin_users_path, params: { id: target.id }
+      expect(Repository.unscoped.find(kept.id)).to have_attributes(deleted: false, hidden_reason: nil)
+      expect(Repository.unscoped.find(gone.id).deleted).to be(true)
+      expect(target.reload.reputation).to eq(40)
+    end
+
     it "does not undo a handover: the repository stays with its new owner and the old owner is a member again" do
       partner = create(:user, :regular_user)
       repo = create(:repository, owner: target)
@@ -976,6 +1193,11 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("No username provided")
     end
 
+    it "opens the invalid username message in French for a French request" do
+      patch rename_user_admin_users_path(locale: "fr"), params: { id: target.id, rename: "bad name!" }
+      expect(flash[:alert]).to start_with("Nom d'utilisateur invalide :")
+    end
+
     it "invalid or taken username: alert and unchanged" do
       old = target.username
       patch rename_user_admin_users_path, params: { id: target.id, rename: "bad name!" }
@@ -989,12 +1211,26 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   describe "DELETE /admin/users/delete_repository" do
     before { login!(admin) }
 
-    it "destroys any repository and redirects to root" do
+    it "hides any repository, keeps its rows, and redirects to root" do
       repo = create(:repository)
+      create(:comment, repository: repo)
       delete delete_repository_admin_users_path, params: { id: repo.id }
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq("Repository Deleted!")
       expect(Repository.exists?(repo.id)).to be(false)
+      expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true, hidden_reason: "admin_deleted")
+      expect(Comment.where(repository_id: repo.id).count).to eq(1)
+    end
+
+    it "drops the cached zip of the deleted repository" do
+      cache_dir = Pathname(Dir.mktmpdir("repository_zips"))
+      allow(Repository::ZipCache).to receive(:directory).and_return(cache_dir)
+      repo = create(:repository)
+      FileUtils.touch(repo.zip_path)
+      delete delete_repository_admin_users_path, params: { id: repo.id }
+      expect(File.exist?(repo.zip_path)).to be(false)
+    ensure
+      FileUtils.rm_rf(cache_dir.to_s)
     end
 
     it "unknown id: 404" do

@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# The room booking calendar and its modal (entrypoints/sub_space_booking.js):
+# The room booking calendar and its modal (booking_calendar and booking_modal controllers):
 # create one booking or a series, conflicts and limits, edit, update, delete.
 # The server clock is fixed (:booking_clock, Dec 2026); the week shown is the
 # one containing 2027-03-16 (the page's own ?start= parameter).
@@ -43,6 +43,14 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
     pick("book-end", finish)
   end
 
+  # A booking saved or deleted through the modal answers with an empty 204 and
+  # the page then reloads to show the server's notice. The notice exists only
+  # on the reloaded page, so waiting for it waits for the reload to finish
+  # instead of querying the old document while it is being replaced.
+  def expect_notice_after_reload(text)
+    expect(page).to have_css("#flash .alert", text: text)
+  end
+
   def stored(booking)
     booking.reload.start_time.in_time_zone(eastern).strftime("%Y-%m-%d %H:%M")
   end
@@ -59,6 +67,13 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(page).to have_css("#subspace", visible: :hidden)
       expect(page).to have_css("#book-recurring", visible: :visible)
       expect(page).to have_css("#book-recurring-end", visible: :hidden)
+    end
+
+    it "names the Book button and the day links in French on a French page", js: true, skip_bullet: true do
+      log_in_as(user, to: sub_space_booking_index_path(room: subspace.id, start: "2027-03-16", locale: "fr"))
+
+      expect(page).to have_css("#booked-calendar .fc-book-button", exact_text: "Réserver")
+      expect(find(".fc-col-header-cell[data-date='2027-03-16'] [data-navlink]")[:title]).to eq("Aller au 16 mars 2027")
     end
 
     it "fills the dates from a range dragged on the calendar", js: true, skip_bullet: true do
@@ -106,6 +121,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       fill_booking
       click_button "bookSave"
 
+      expect_notice_after_reload("Booking for Laser Room created successfully.")
       expect(page).to have_no_css("#bookModal.show", visible: :all)
       expect(page).to have_css(".fc-timegrid-event", text: "Laser practice - Cutting acrylic", visible: :all)
       booking = SubSpaceBooking.find_by!(name: "Laser practice")
@@ -149,6 +165,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       select "Weekly", from: "book-recurring-type"
       click_button "bookSave"
 
+      expect_notice_after_reload("Booking for Laser Room created successfully.")
       expect(page).to have_no_css("#bookModal.show", visible: :all)
       expect(page).to have_css(".fc-timegrid-event", text: "Laser practice", visible: :all)
       bookings = SubSpaceBooking.where(name: "Laser practice").order(:start_time)
@@ -216,8 +233,26 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       check "book-blocking"
       click_button "bookSave"
 
+      expect_notice_after_reload("Booking for Laser Room created successfully.")
       expect(page).to have_no_css("#bookModal.show", visible: :all)
       expect(SubSpaceBooking.find_by!(name: "Closed").blocking).to be(true)
+    end
+
+    # The browser logs the 403 itself, inside this example.
+    it "shows the server's reason in a toast when a block is refused, and keeps the modal open", js: true, skip_bullet: true,
+                                                                                                 js_errors: :allow do
+      open_calendar(admin)
+      open_book_modal
+      fill_booking(name: "Closed")
+      check "book-blocking"
+      admin.update!(role: "regular_user") # no longer an admin when the block is sent
+      click_button "bookSave"
+
+      expect(page).to have_css("#booking_toast.show", text: "Booking failed")
+      expect(page).to have_css("#toast_text", text: "You do not have permission to block a space.")
+      expect(page).to have_css("#bookModal.show", visible: :all)
+      expect(page).to have_no_css("#bookSave[disabled]")
+      expect(SubSpaceBooking.where(name: "Closed")).to be_empty
     end
   end
 
@@ -233,6 +268,18 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(page).to have_css(".fc-timegrid-event", text: title, visible: :all)
       find(".fc-timegrid-event", text: title, visible: :all).click
       expect(page).to have_css("#bookModal.show", visible: :all)
+    end
+
+    it "draws bookings at their Toronto wall times in the week daylight saving time starts", js: true, skip_bullet: true do
+      create(:sub_space_booking, sub_space: subspace, user: admin, name: "Change day", description: "Spring",
+                                 start_time: eastern.local(2027, 3, 14, 10), end_time: eastern.local(2027, 3, 14, 11))
+        .change_status!(@approved_status)
+      open_calendar(admin)
+
+      expect(page).to have_css(".fc-timegrid-col[data-date='2027-03-14'] .fc-timegrid-event", text: "10:00 - 11:00", visible: :all)
+      expect(page).to have_css(".fc-timegrid-col[data-date='2027-03-16'] .fc-timegrid-event", text: "10:00 - 11:00", visible: :all)
+      open_booking("Change day")
+      expect(page.evaluate_script("document.getElementById('book-start').value")).to eq("2027-03-14 10:00")
     end
 
     it "opens an update modal filled from the booking for an admin", js: true, skip_bullet: true do
@@ -264,6 +311,30 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(stored(booking)).to eq("2027-03-16 14:00")
     end
 
+    it "tells the user the booking was updated without reloading the page", js: true, skip_bullet: true do
+      open_calendar(admin)
+      page.execute_script("window.sameDocument = 'yes'")
+      open_booking
+      fill_in "book-name", with: "Team lab (renamed)"
+      click_button "bookUpdate"
+
+      expect(page).to have_css("#booking_toast.show.text-bg-success", text: "Booking updated")
+      expect(page).to have_css("#toast_text", text: "The booking was saved.")
+      expect(page).to have_css(".fc-timegrid-event", text: "Team lab (renamed)", visible: :all)
+      expect(page.evaluate_script("window.sameDocument")).to eq("yes")
+    end
+
+    it "tells a French-speaking user in French", js: true, skip_bullet: true do
+      log_in_as(admin, to: sub_space_booking_index_path(room: subspace.id, start: "2027-03-16", locale: "fr"))
+      expect(page).to have_css("#booked-calendar .fc-view")
+      open_booking
+      fill_in "book-name", with: "Team lab (renamed)"
+      click_button "bookUpdate"
+
+      expect(page).to have_css("#booking_toast.show", text: "Réservation modifiée")
+      expect(page).to have_css("#toast_text", text: "La réservation a été enregistrée.")
+    end
+
     it "rejects an end before the start without sending", js: true, skip_bullet: true do
       open_calendar(admin)
       open_booking
@@ -280,6 +351,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       open_booking
       accept_confirm("Delete this booking?") { click_button "bookDelete" }
 
+      expect_notice_after_reload("Booking for Laser Room deleted successfully.")
       expect(page).to have_no_css(".fc-timegrid-event", text: "Team lab", visible: :all)
       expect(SubSpaceBooking.exists?(booking.id)).to be(false)
     end
@@ -351,6 +423,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       click_button "Delete..."
       accept_confirm("Delete this booking?") { click_button "bookRecurringDeleteOne" }
 
+      expect_notice_after_reload("Booking for Laser Room deleted successfully.")
       expect(page).to have_no_css("#bookModal.show", visible: :all)
       expect(SubSpaceBooking.where(name: "Club night").count).to eq(1)
     end
@@ -361,6 +434,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       click_button "Delete..."
       accept_confirm("Delete this and all remaining occurrences?") { click_button "bookRecurringDeleteRest" }
 
+      expect_notice_after_reload("Remaining bookings for Laser Room deleted successfully.")
       expect(page).to have_no_css(".fc-timegrid-event", text: "Club night", visible: :all)
       expect(SubSpaceBooking.where(name: "Club night")).to be_empty
     end

@@ -1,36 +1,24 @@
 import { RRule } from "rrule";
 import { Modal } from "bootstrap";
 
-/*
- * Converts a Date object to a local datetime string in the format YYYY-MM-DDTHH:MM
- * If the value is empty, it returns null.
- */
-export function toLocalDatetimeString(date) {
-  if (!date) return null;
+import {
+  dateValue,
+  fieldValue,
+  instantFromCalendar,
+  storedRule,
+  wallEnd,
+  wallFromCalendar,
+} from "./recurrence";
 
-  const pad = (n) => (n < 10 ? "0" + n : n);
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-/*
- * Converts a Date object to a local date string in the format YYYY-MM-DD
- * If the value is empty, it returns null.
- */
-export function toLocalDateString(date) {
-  if (!date) return null;
-
-  const pad = (n) => (n < 10 ? "0" + n : n);
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
-/*
- * Parses a local datetime string in the format YYYY-MM-DDTHH:MM
- * and returns a Date object.
- * If the value is empty, it returns the current date.
- */
-export function parseLocalDatetimeString(value) {
-  if (!value) return new Date();
-  return new Date(value);
+// The dialog's time fields as they stand; saving compares them with how they
+// were filled, so "update all" keeps the series' own times unless they changed.
+export function timesShown() {
+  const start = document.getElementById("start_time_field").value;
+  const end = document.getElementById("end_time_field").value;
+  const allDay = document.getElementById("all_day_checkbox").checked;
+  return [start, end, allDay].join("|");
 }
 
 // -------------------
@@ -38,66 +26,35 @@ export function parseLocalDatetimeString(value) {
 // -------------------
 function resetModalState() {
   const form = document.querySelector("#eventModal form");
+  delete document.getElementById("keep_series_times").dataset.filled;
   const saveButton = document.getElementById("save_button");
   const saveButtonContainer = document.getElementById("save_button_container");
-  const dropdownSaveContainer = document.getElementById(
-    "dropdown_save_button_container",
-  );
-  const updateDropdown = document.getElementById("update_dropdown");
   const eventTypeSelect = document.getElementById("event_type_select");
   const staffSelect = document.getElementById("staff_select");
 
-  // Move save button back to main container
-  if (
-    saveButton &&
-    saveButtonContainer &&
-    !saveButtonContainer.contains(saveButton)
-  ) {
+  // Save button back in its own container, labelled for a new draft
+  if (!saveButtonContainer.contains(saveButton)) {
     saveButtonContainer.appendChild(saveButton);
   }
+  saveButton.value = "Save Draft";
+  document.getElementById("update_dropdown").style.display = "none";
 
-  // Hide the update dropdown
-  if (updateDropdown) {
-    updateDropdown.style.display = "none";
-  }
+  // Back to the form for a new event: no PATCH/DELETE method, the create address
+  form.querySelector('input[name="_method"]')?.remove();
+  form.action = "/admin/events";
 
-  // Reset save button text
-  if (saveButton) {
-    saveButton.value = "Save Draft";
-  }
+  // Event type unlocked, and its unavailability marks removed
+  eventTypeSelect.disabled = false;
+  eventTypeSelect.value = "";
+  eventTypeSelect.parentElement.querySelector(".lock-indicator")?.remove();
+  form
+    .querySelector('input[name="staff_unavailability[event_type]"]')
+    ?.remove();
 
-  // Remove any _method input (used for PATCH/DELETE)
-  const methodInput = form?.querySelector('input[name="_method"]');
-  if (methodInput) methodInput.remove();
-
-  // Reset form action
-  if (form) {
-    form.action = "/admin/events";
-  }
-
-  // Reset event type select
-  if (eventTypeSelect) {
-    eventTypeSelect.disabled = false;
-    eventTypeSelect.value = "";
-
-    // Remove lock indicator if present
-    const lockIndicator =
-      eventTypeSelect.parentElement?.querySelector(".lock-indicator");
-    if (lockIndicator) lockIndicator.remove();
-
-    // Remove hidden type input
-    const hiddenTypeInput = form?.querySelector(
-      'input[name="staff_unavailability[event_type]"]',
-    );
-    if (hiddenTypeInput) hiddenTypeInput.remove();
-  }
-
-  // Reset staff select
-  if (staffSelect) {
-    staffSelect.innerHTML = "";
-    staffSelect.setAttribute("multiple", "multiple");
-    staffSelect.name = "staff_select[]";
-  }
+  // Staff select empty and multiple
+  staffSelect.innerHTML = "";
+  staffSelect.setAttribute("multiple", "multiple");
+  staffSelect.name = "staff_select[]";
 
   // Reset recurrence fields
   const frequency = document.querySelector("#recurrence_frequency");
@@ -134,6 +91,7 @@ function resetModalState() {
   // Hide publish/delete footer
   document.getElementById("publish_and_delete_forms").style.display = "none";
   document.getElementById("publish_form").style.display = "none";
+  document.getElementById("unpublish_form").style.display = "none";
   document.getElementById("delete_following_form").style.display = "none";
   document.getElementById("delete_all_form").style.display = "none";
 
@@ -164,31 +122,22 @@ function setFormScope(scope) {
 
   // Update specific fields
   Object.entries(fieldMappings).forEach(([fieldId, paramName]) => {
-    const field = document.getElementById(fieldId);
-    if (field) {
-      field.name = `${scope}[${paramName}]`;
-    }
+    document.getElementById(fieldId).name = `${scope}[${paramName}]`;
   });
 
   // Handle staff select specifically
   const staffSelect = document.getElementById("staff_select");
-  if (staffSelect) {
-    if (scope === "staff_unavailability") {
-      staffSelect.name = "staff_unavailability[user_id]";
-      staffSelect.removeAttribute("multiple");
-    } else {
-      staffSelect.name = "staff_select[]";
-      staffSelect.setAttribute("multiple", "multiple");
-    }
+  if (scope === "staff_unavailability") {
+    staffSelect.name = "staff_unavailability[user_id]";
+    staffSelect.removeAttribute("multiple");
+  } else {
+    staffSelect.name = "staff_select[]";
+    staffSelect.setAttribute("multiple", "multiple");
   }
 
   // Handle space_id
-  const spaceIdField = form.querySelector(
-    'input[id$="space_id"], input[name$="[space_id]"]',
-  );
-  if (spaceIdField) {
-    spaceIdField.name = `${scope}[space_id]`;
-  }
+  form.querySelector('input[id$="space_id"], input[name$="[space_id]"]').name =
+    `${scope}[space_id]`;
 }
 
 // -------------------
@@ -279,7 +228,7 @@ function setEventTypeLock(isLocked) {
 // -------------------
 // Position save button correctly based on recurrence
 // -------------------
-function positionSaveButton(hasRecurrence, isEditing) {
+export function positionSaveButton(hasRecurrence, isEditing) {
   const saveButton = document.getElementById("save_button");
   const saveButtonContainer = document.getElementById("save_button_container");
   const dropdownSaveContainer = document.getElementById(
@@ -289,57 +238,19 @@ function positionSaveButton(hasRecurrence, isEditing) {
 
   if (!saveButton) return;
 
-  if (hasRecurrence && isEditing) {
-    // Move to dropdown for recurring event edits
-    if (dropdownSaveContainer && !dropdownSaveContainer.contains(saveButton)) {
-      dropdownSaveContainer.appendChild(saveButton);
-    }
-    if (updateDropdown) updateDropdown.style.display = "block";
-    saveButton.value = "Update";
-  } else {
-    // Keep in main container
-    if (saveButtonContainer && !saveButtonContainer.contains(saveButton)) {
-      saveButtonContainer.appendChild(saveButton);
-    }
-    if (updateDropdown) updateDropdown.style.display = "none";
-    saveButton.value = isEditing ? "Update" : "Save Draft";
-  }
+  // Recurring event edits save from the dropdown; everything else from the main container
+  const inDropdown = hasRecurrence && isEditing;
+  moveInto(
+    inDropdown ? dropdownSaveContainer : saveButtonContainer,
+    saveButton,
+  );
+  if (updateDropdown)
+    updateDropdown.style.display = inDropdown ? "block" : "none";
+  saveButton.value = isEditing ? "Update" : "Save Draft";
 }
 
-// -------------------
-// Populate staff users for the select
-// -------------------
-async function populateStaffSelect() {
-  const staffSelect = document.getElementById("staff_select");
-  if (!staffSelect) return;
-
-  // Only populate if empty
-  if (staffSelect.options.length > 0) return;
-
-  try {
-    const spaceIdElem =
-      document.getElementById("space_id") ||
-      document.querySelector('input[name="event[space_id]"]') ||
-      document.querySelector('input[name="staff_unavailability[space_id]"]');
-
-    if (!spaceIdElem) return;
-
-    const response = await fetch(
-      `/admin/calendar/staff_json/${spaceIdElem.value}`,
-    );
-    if (!response.ok) return;
-
-    const staffData = await response.json();
-
-    staffData.forEach((staff) => {
-      const option = document.createElement("option");
-      option.value = staff.id;
-      option.textContent = staff.name;
-      staffSelect.appendChild(option);
-    });
-  } catch (error) {
-    console.error("Error fetching staff data:", error);
-  }
+function moveInto(container, element) {
+  if (container && !container.contains(element)) container.appendChild(element);
 }
 
 // -------------------
@@ -348,9 +259,6 @@ async function populateStaffSelect() {
 export function addEventClick() {
   // Reset everything first
   resetModalState();
-
-  // Populate staff options if needed
-  populateStaffSelect();
 
   // Set up event type change listener
   const eventTypeSelect = document.getElementById("event_type_select");
@@ -379,10 +287,67 @@ export function eventClick(eventImpl) {
   openEventForEditing(eventImpl);
 }
 
+// The title to edit: the stored one when the feed sends it (an entry with no
+// title sends null, which is an empty field), otherwise the calendar's label
+// without its pencil mark.
+function storedTitle(event) {
+  if ("title" in event.extendedProps) return event.extendedProps.title ?? "";
+  return event.title.replace(/✎/g, "").trim() || "";
+}
+
+const WEEKDAYS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
+
+// The repeat of the clicked entry as the dialog shows it ({ frequency,
+// weekdays, until }), or null for a single entry: what the feed sent
+// (unavailabilities), or what the rule the calendar repeats an event by says
+// (the rrule plugin's series definition).
+function seriesOf(event) {
+  if ("series" in event.extendedProps) return event.extendedProps.series;
+  const options = event.recurringDef?.typeData.rruleSet._rrule[0].origOptions;
+  return options ? seriesFromRule(options) : null;
+}
+
+function seriesFromRule(options) {
+  const { freq, byweekday, until } = new RRule(options).options;
+  return {
+    frequency: RRule.FREQUENCIES[freq],
+    weekdays: (byweekday || []).map((day) => WEEKDAYS[day]),
+    until: until && dateValue(until.getTime()),
+  };
+}
+
+// The repeat fields of a series, and the rule they make from the clicked
+// occurrence's start (wall time), as it is stored.
+function fillRepeatFields({ frequency, weekdays, until }, startWall) {
+  const untilDate = until || "";
+  const weekly = frequency === "WEEKLY";
+  document.querySelector("#recurrence_rule_field").value = storedRule(
+    { freq: RRule[frequency], byweekday: weekdays.map((day) => RRule[day]) },
+    startWall,
+    untilDate,
+  );
+  document.querySelector("#recurrence_options").style.display = "block";
+  document.querySelector("#recurrence_frequency").value = frequency;
+  document.querySelector("#weekly_options").style.display = weekly
+    ? "block"
+    : "none";
+  weekdays.forEach((day) => {
+    const box = document.getElementById(`day_${day}`);
+    if (box) box.checked = weekly;
+  });
+  document.querySelector("#recurrence_until").value = untilDate;
+}
+
 function openEventForEditing(eventImpl) {
   const event = eventImpl._def;
   const id = eventImpl.id.replace("event-", "");
   const isUnavailability = event.extendedProps.eventType === "unavailability";
+  const [recordPath, scope] = isUnavailability
+    ? [
+        `/staff/unavailabilities/${event.extendedProps.recordId}`,
+        "staff_unavailability",
+      ]
+    : [`/admin/events/${id}`, "event"];
 
   // Only edit events with an eventType
   if (!event.extendedProps.eventType) return;
@@ -393,13 +358,8 @@ function openEventForEditing(eventImpl) {
   const form = document.querySelector("#eventModal form");
 
   // SETUP FORM ACTION & METHOD
-  if (isUnavailability) {
-    form.action = `/staff/unavailabilities/${eventImpl.id}`;
-    setFormScope("staff_unavailability");
-  } else {
-    form.action = `/admin/events/${id}`;
-    setFormScope("event");
-  }
+  form.action = recordPath;
+  setFormScope(scope);
 
   // Add PATCH method
   const methodInput = document.createElement("input");
@@ -440,103 +400,30 @@ function openEventForEditing(eventImpl) {
       : event.extendedProps.eventType || "other",
   );
 
-  // TIME FIELDS
+  // TIME FIELDS, in Toronto wall-clock time like the calendar
   const startTimeField = document.getElementById("start_time_field");
   const endTimeField = document.getElementById("end_time_field");
   const allDayCheckbox = document.getElementById("all_day_checkbox");
 
-  if (eventImpl.allDay) {
-    allDayCheckbox.checked = true;
-    const startDate = new Date(eventImpl.startStr);
-    if (eventImpl.startStr.indexOf("T") === -1) {
-      startDate.setHours(0, 0, 0, 0);
-    }
-    const endDate = eventImpl.end
-      ? new Date(eventImpl.endStr)
-      : new Date(startDate);
-    if (!eventImpl.end) endDate.setDate(endDate.getDate() + 1);
-
-    startTimeField.value = toLocalDatetimeString(startDate);
-    endTimeField.value = toLocalDatetimeString(endDate);
-    endTimeField.disabled = true;
-  } else {
-    allDayCheckbox.checked = false;
-    const start = new Date(eventImpl.startStr);
-    startTimeField.value = toLocalDatetimeString(start);
-    const end = eventImpl.end
-      ? new Date(eventImpl.endStr)
-      : new Date(start.getTime() + 3600000);
-    endTimeField.value = toLocalDatetimeString(end);
-    endTimeField.disabled = false;
-  }
+  const start = wallFromCalendar(eventImpl.startStr);
+  allDayCheckbox.checked = eventImpl.allDay;
+  endTimeField.disabled = eventImpl.allDay;
+  startTimeField.value = fieldValue(start);
+  endTimeField.value = fieldValue(
+    eventImpl.allDay && !eventImpl.end
+      ? start + DAY_MS
+      : wallEnd(eventImpl.endStr, start),
+  );
+  document.getElementById("keep_series_times").dataset.filled = timesShown();
 
   // TITLE & DESCRIPTION
-  document.getElementById("title").value =
-    event.title.replace(/✎/g, "").trim() || "";
+  document.getElementById("title").value = storedTitle(event);
   document.getElementById("description").value =
     event.extendedProps.description || "";
 
   // RECURRENCE
-  let rruleData = null;
-
-  if (event.recurringDef?.typeData?.rruleSet) {
-    rruleData = event.recurringDef.typeData.rruleSet._rrule[0].origOptions;
-  } else if (event.extendedProps.rrule) {
-    try {
-      const rruleStr = event.extendedProps.rrule;
-      rruleData = RRule.fromString(
-        rruleStr.startsWith("RRULE:") ? rruleStr : `RRULE:${rruleStr}`,
-      ).options;
-    } catch (e) {
-      console.log("RRule parse error", e);
-    }
-  }
-
-  const frequency = document.querySelector("#recurrence_frequency");
-  const options = document.querySelector("#recurrence_options");
-  const weeklyOptions = document.querySelector("#weekly_options");
-  const untilInput = document.querySelector("#recurrence_until");
-  const ruleField = document.querySelector("#recurrence_rule_field");
-  const dayCheckboxes = [...document.querySelectorAll(".dayCheckbox")];
-
-  if (rruleData) {
-    const rule = new RRule(rruleData);
-    options.style.display = "block";
-
-    switch (rule.options.freq) {
-      case RRule.DAILY:
-        frequency.value = "DAILY";
-        break;
-      case RRule.WEEKLY:
-        frequency.value = "WEEKLY";
-        weeklyOptions.style.display = "block";
-        if (rule.options.byweekday) {
-          rule.options.byweekday.forEach((day) => {
-            const dayMap = {
-              0: "MO",
-              1: "TU",
-              2: "WE",
-              3: "TH",
-              4: "FR",
-              5: "SA",
-              6: "SU",
-            };
-            const dayCode = dayMap[day];
-            const cb = document.getElementById(`day_${dayCode}`);
-            if (cb) cb.checked = true;
-          });
-        }
-        break;
-      case RRule.MONTHLY:
-        frequency.value = "MONTHLY";
-        break;
-    }
-
-    if (rule.options.until) {
-      untilInput.value = toLocalDateString(rule.options.until);
-    }
-    ruleField.value = rule.toString();
-  }
+  const series = seriesOf(event);
+  if (series) fillRepeatFields(series, start);
 
   // TRAINING FIELDS
   const trainingFields = document.getElementById("training-fields");
@@ -581,7 +468,7 @@ function openEventForEditing(eventImpl) {
   }
 
   // POSITION SAVE BUTTON
-  const hasRecurrence = event.recurringDef || rruleData;
+  const hasRecurrence = Boolean(series);
   positionSaveButton(hasRecurrence, true);
 
   // HANDLE PUBLISH BUTTON (events only)
@@ -591,6 +478,17 @@ function openEventForEditing(eventImpl) {
     publishForm.style.display = "block";
   } else {
     publishForm.style.display = "none";
+  }
+
+  // HANDLE UNPUBLISH BUTTON (published events only)
+  const unpublishForm = /** @type {HTMLFormElement} */ (
+    document.getElementById("unpublish_form")
+  );
+  if (!event.extendedProps.draft && !isUnavailability) {
+    unpublishForm.action = `/admin/events/${id}/publication`;
+    unpublishForm.style.display = "block";
+  } else {
+    unpublishForm.style.display = "none";
   }
 
   // HANDLE DELETE BUTTONS
@@ -608,24 +506,20 @@ function openEventForEditing(eventImpl) {
     allForm.style.display = "none";
   }
 
-  // Set start_date for deletion
-  const startDateValue = parseLocalDatetimeString(
-    eventImpl.startStr,
-  ).toISOString();
+  // Set start_date for deletion: the instant of the clicked occurrence, as the
+  // feed sent it (unavailabilities) or as the calendar draws it (events)
+  const startDateValue =
+    event.extendedProps.occurrenceStart ??
+    new Date(instantFromCalendar(eventImpl.startStr)).toISOString();
   document.querySelectorAll(".delete_start_date").forEach((e) => {
     e.value = startDateValue;
   });
 
   // Set form actions
-  if (isUnavailability) {
-    singleForm.action = `/staff/unavailabilities/${eventImpl.id}/delete_with_scope`;
-    followingForm.action = `/staff/unavailabilities/${eventImpl.id}/delete_with_scope`;
-    allForm.action = `/staff/unavailabilities/${eventImpl.id}/delete_with_scope`;
-  } else {
-    singleForm.action = `/admin/events/${id}/delete_with_scope`;
-    followingForm.action = `/admin/events/${id}/delete_with_scope`;
-    allForm.action = `/admin/events/${id}/delete_with_scope`;
-  }
+  singleForm.action =
+    followingForm.action =
+    allForm.action =
+      `${recordPath}/delete_with_scope`;
 
   // SHOW MODAL
   const modal = new Modal(document.getElementById("eventModal"));
@@ -638,11 +532,11 @@ export function eventCreate(info) {
     return;
   }
 
-  document.getElementById("start_time_field").value = toLocalDatetimeString(
-    new Date(info.startStr),
+  document.getElementById("start_time_field").value = fieldValue(
+    wallFromCalendar(info.startStr),
   );
-  document.getElementById("end_time_field").value = toLocalDatetimeString(
-    new Date(info.endStr),
+  document.getElementById("end_time_field").value = fieldValue(
+    wallFromCalendar(info.endStr),
   );
 
   // Click the add button then call addEventClick

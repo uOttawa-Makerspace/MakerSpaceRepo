@@ -1,21 +1,21 @@
 <% content_for :preheader do %>
-  MakerRepo - Your locker rental has been modified
+  <%= t(".preheader") %>
 <% end %>
 
 <% content_for :why_received do %>
-  You have received this email because you have a locker occupied.
+  <%= t(".why_received") %>
 <% end %>
 
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.name %>,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t("locker_mailer.shared.hello", name: @user.name) %></p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-    Your rental details for locker <b><%= @locker_rental.locker.specifier %></b> have been modified.
-    <% if @moved_locker %>
-        Your rental has been moved from locker <%= @moved_locker.specifier %> to locker <b> <%= @locker_rental.locker.specifier %></b>.
-    <% end %>
+  <%= t(".modified_html", specifier: @locker_rental.locker.specifier) %>
+  <% if @moved_locker %>
+    <%= t(".moved_html", from: @moved_locker.specifier, to: @locker_rental.locker.specifier) %>
+  <% end %>
 
-    <% if @moved_date && @locker_rental.owned_until.present? %>
-        Your rental is now active until <%= @locker_rental.owned_until.to_date.to_fs :long %>.
-    <% end %>
+  <% if @moved_date && @locker_rental.owned_until.present? %>
+    <%= t(".active_until", date: l(@locker_rental.owned_until.to_date, format: :locker_mail)) %>
+  <% end %>
 </p>
 
 <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
@@ -26,7 +26,7 @@
           <tbody>
             <tr>
               <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; border-radius: 5px; text-align: center; background-color: #e55426ff;" valign="top" align="center" bgcolor="#e55426ff">
-                <a href="<%= locker_rental_url(@locker_rental) %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;">View Your Locker Details</a>
+                <a href="<%= locker_rental_url(@locker_rental) %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;"><%= t(".view_details") %></a>
               </td>
             </tr>
           </tbody>

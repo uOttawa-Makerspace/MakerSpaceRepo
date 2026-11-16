@@ -1,23 +1,23 @@
 <% content_for :preheader do %>
-  Makerepo - You finished an exam
+  <%= t(".preheader") %>
 <% end %>
 
 <% content_for :team_name do %>
-  The MakerRepo Team
+  <%= t("layouts.mailer.makerrepo_team") %>
 <% end %>
 
 <% content_for :why_received do %>
-  You have received this email because you have completed an exam on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+  <%= t(".why_received") %> <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
 <% end %>
 
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.name %>,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t("msr_mailer.account.hello", name: @user.name) %></p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  You are receiving this email because you were in the <b><%= @training_session.training.localized_name %> at uOttawa.</b> </br>
-  You finished your exam. Your score was <%= @exam.score %>. You <%= @exam.status %> the exam. <br />
+  <%= t("msr_mailer.exam.in_training_html", training: @training_session.training.localized_name) %> </br>
+  <%= t(".result.#{@exam.status}", default: :"msr_mailer.finishing_exam.result.other", score: @exam.score, status: @exam.status) %> <br />
   <% if @exam.status == "passed" %>
-    Congratulations. Your certification is already available in your profile.
+    <%= t(".congratulations") %>
   <% else %>
-    If this is your first try, you will be able to try one more time. <br />
-    Check <%= link_to 'Exams', exams_url %> for new exams.
+    <%= t(".retry") %> <br />
+    <%= t(".check_html", link: link_to(t(".exams_link"), exams_url)) %>
   <% end %>
 </p>

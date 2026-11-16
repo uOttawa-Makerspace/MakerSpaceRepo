@@ -19,10 +19,8 @@ RSpec.describe "Password reset race with a committed password change", type: :re
     other_hash = BCrypt::Password.create("Other-passw0rd#y", cost: 4).to_s
     allow_any_instance_of(User).to receive(:store_new_password!).and_wrap_original do |m, *args, **opts|
       id = m.receiver.id
-      Thread.new do
-        ActiveRecord::Base.connection_pool.with_connection do
-          User.where(id: id).update_all(["password = ?, token_version = token_version + 1", other_hash])
-        end
+      race_thread do
+        User.where(id: id).update_all(["password = ?, token_version = token_version + 1", other_hash])
       end.join
       m.call(*args, **opts)
     end

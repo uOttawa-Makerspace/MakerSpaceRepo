@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# The booking page outside the calendar (entrypoints/sub_space_booking.js):
+# The booking page outside the calendar (its Stimulus controllers):
 # the access-request form, the tabs, the admin panel's selection boxes, the
 # recurring-approval modal and the user search.
 
@@ -49,7 +49,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       fill_in "comments", with: "Capstone laser cutting"
       click_button "Submit Request"
 
-      expect(page).to have_text("Access request submitted successfully.")
+      expect_flash("Access request submitted successfully.")
       request = UserBookingApproval.find_by!(user: newcomer)
       expect(request.identity).to eq("Other")
       expect(request.comments).to eq("Capstone laser cutting")
@@ -85,6 +85,40 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
     end
   end
 
+  describe "the edit page" do
+    let!(:booking) { pending_booking("Soldering club", user: admin) }
+
+    def expect_date_time_pickers
+      %w[start_time end_time].each do |field|
+        expect(page).to have_css("#sub_space_booking_#{field}.flatpickr-input[type=hidden]", visible: :hidden)
+        expect(page).to have_css("#sub_space_booking_#{field} + input[type=text]", visible: :visible)
+        expect(page).to have_css("#sub_space_booking_#{field} ~ input", count: 1, visible: :all)
+      end
+    end
+
+    it "gives the start and end fields date and time pickers on a full load", js: true, skip_bullet: true do
+      log_in_as(admin, to: sub_space_booking_edit_path(sub_space_booking_id: booking.id))
+      expect_date_time_pickers
+    end
+
+    it "gives the start and end fields date and time pickers when reached from My Bookings", js: true, skip_bullet: true do
+      log_in_as(admin, to: "#{sub_space_booking_index_path(room: subspace.id)}#booking-tab")
+      find("#booking-tab form[action='#{sub_space_booking_edit_path(sub_space_booking_id: booking.id)}'] button").click
+      expect(page).to have_css("#bookingEdit")
+      expect_date_time_pickers
+    end
+
+    it "keeps one picker per field on the edit page restored from the Turbo cache", js: true, skip_bullet: true do
+      log_in_as(admin, to: sub_space_booking_edit_path(sub_space_booking_id: booking.id))
+      expect_date_time_pickers
+      page.execute_script("Turbo.visit(arguments[0])", sub_space_booking_index_path(room: subspace.id))
+      expect(page).to have_css("#booking-tab-list")
+      page.go_back
+      expect(page).to have_css("#bookingEdit")
+      expect_date_time_pickers
+    end
+  end
+
   describe "pending bookings" do
     let!(:first) { pending_booking("Soldering club") }
     let!(:second) { pending_booking("Robotics", start: eastern.local(2027, 3, 17, 10)) }
@@ -105,7 +139,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       check "booking_#{first.id}"
       find("button[form=bulkApproveDeclineForm][value=approve]").click
 
-      expect(page).to have_text("Bookings approved successfully.")
+      expect_flash("Bookings approved successfully.")
       expect(first.reload.booking_status).to eq(@approved_status)
       expect(second.reload.booking_status).to eq(@pending_status)
     end
@@ -115,7 +149,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       find("#pending_bookings_select_all").check
       click_button "Bulk Reject Selected"
 
-      expect(page).to have_text("Bookings declined successfully.")
+      expect_flash("Bookings declined successfully.")
       expect([first, second].map { |b| b.reload.booking_status }).to all(eq(@declined_status))
     end
 
@@ -123,7 +157,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       open_admin_panel
       within(find("tr", text: "Soldering club")) { click_button "Approve" }
 
-      expect(page).to have_text("approved successfully")
+      expect_flash("approved successfully")
       expect(first.reload.booking_status).to eq(@approved_status)
     end
   end
@@ -148,21 +182,39 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       open_admin_panel
       find("button[title='Approve All']").click
 
-      expect(page).to have_text("Bookings approved successfully.")
+      expect_flash("Bookings approved successfully.")
       expect(SubSpaceBooking.where(name: "Club night").map { |b| b.booking_status }).to all(eq(@approved_status))
     end
 
-    # The modal has no container for the dates the script builds (an element
-    # that is not in the page), so the script throws and the dialog shows only
-    # its template row.
-    it "opens the select-dates dialog with a single unlabelled template row and logs an error", js: true, skip_bullet: true do
+    it "lists each date of the series in the select-dates dialog, all ticked, with select all and none", js: true, skip_bullet: true do
       open_admin_panel
       find("button[title='Select Specific']").click
 
       expect(page).to have_css("#approveRecurringModal.show", visible: :all)
-      expect(page).to have_css("#approveRecurringModal input[name='sub_space_booking_ids[]']", count: 1, visible: :all)
-      expect(find("#approveRecurringModal input[name='sub_space_booking_ids[]']", visible: :all).value).to eq("")
-      expect(page).to have_no_css("#recurring-checkboxes", visible: :all)
+      boxes = "#approveRecurringModal #recurring-checkboxes input[name='sub_space_booking_ids[]']"
+      expect(page).to have_css(boxes, count: 2, visible: :all)
+      expect(all(boxes, visible: :all).map(&:checked?)).to all(be(true))
+
+      click_button "Select none"
+      expect(all(boxes, visible: :all).map(&:checked?)).to all(be(false))
+      click_button "Select all"
+      expect(all(boxes, visible: :all).map(&:checked?)).to all(be(true))
+    end
+
+    it "approves only the dates left ticked in the dialog", js: true, skip_bullet: true do
+      open_admin_panel
+      find("button[title='Select Specific']").click
+      wait_for_modal_ready("#approveRecurringModal")
+      boxes = "#approveRecurringModal #recurring-checkboxes input[name='sub_space_booking_ids[]']"
+      expect(page).to have_css(boxes, count: 2, visible: :all)
+      last_date = SubSpaceBooking.where(name: "Club night").order(:start_time).last
+      uncheck_and_confirm("rc_#{last_date.id}")
+      click_button "Approve Selected"
+
+      expect_flash("Bookings approved successfully.")
+      statuses = SubSpaceBooking.where(name: "Club night").order(:start_time).map(&:booking_status)
+      expect(statuses.first).to eq(@approved_status)
+      expect(statuses.last).not_to eq(@approved_status)
     end
   end
 
@@ -176,18 +228,46 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       end
     end
 
-    # The bulk form wraps the per-row approve and deny forms (nested forms),
-    # so the browser submits a mixed set of tokens and the app answers with its
-    # stale-form message; nothing is approved.
-    it "ticks every request with the header box, but submitting them together is refused as a stale form", js: true, skip_bullet: true do
+    it "ticks every request with the header box and approves them together", js: true, skip_bullet: true do
       open_admin_panel
       find("#userRequestSelectAll").check
       expect(page).to have_checked_field(class: "user-request-select", count: 2)
 
-      find("input[type=submit][value='Bulk Approve Selected']").click
-      expect(page).to have_text("Your session changed; please try again.")
-      expect(requester_one.reload.booking_approval).to be(false)
+      find("button[form='bulkApproveAccessForm']").click
+      expect_flash("All selected access requests approved successfully.")
+      expect(requester_one.reload.booking_approval).to be(true)
+      expect(requester_two.reload.booking_approval).to be(true)
+    end
+
+    it "approves one request with the button in its row", js: true, skip_bullet: true do
+      open_admin_panel
+      find("button[form='approve-access-#{requester_one.user_booking_approvals.first.id}']").click
+
+      expect_flash("Access request approved successfully.")
+      expect(requester_one.reload.booking_approval).to be(true)
       expect(requester_two.reload.booking_approval).to be(false)
+    end
+
+    it "declines one request with the reason typed in its row", js: true, skip_bullet: true do
+      open_admin_panel
+      fill_in "Reason for declining Rex Requester (optional)", with: "Not a GNG student", enable_aria_label: true
+      click_button "Decline Rex Requester", enable_aria_label: true
+
+      expect_flash("Access request declined successfully.")
+      expect(requester_two.user_booking_approvals.first)
+        .to have_attributes(status: "declined", reason: "Not a GNG student", decided_by_id: admin.id)
+      expect(requester_one.user_booking_approvals.first.status).to eq("pending")
+    end
+
+    it "revokes an approved user with the reason typed in their row", js: true, skip_bullet: true do
+      requester_one.approve_booking_access(by: admin)
+      open_admin_panel
+      fill_in "Reason for revoking Rita Requester's access (optional)", with: "Misused the room", enable_aria_label: true
+      click_button "Revoke"
+
+      expect_flash("Booking access revoked successfully.")
+      expect(requester_one.user_booking_approvals.first).to have_attributes(status: "revoked", reason: "Misused the room")
+      expect(requester_one.reload.booking_approval).to be(false)
     end
 
     it "clears every request box again", js: true, skip_bullet: true do
@@ -203,7 +283,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       tom_select "Rita Requester", from: "user_booking_select", search: "Rita"
       click_button "Permit Access"
 
-      expect(page).to have_text("Access granted successfully.")
+      expect_flash("Access granted successfully.")
       expect(requester_one.reload.booking_approval).to be(true)
     end
 
@@ -287,7 +367,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       tom_select "Rita Requester", from: "user_booking_select", search: "quokka"
       click_button "Permit Access"
 
-      expect(page).to have_text("Access granted successfully.")
+      expect_flash("Access granted successfully.")
       expect(requester_one.reload.booking_approval).to be(true)
     end
 

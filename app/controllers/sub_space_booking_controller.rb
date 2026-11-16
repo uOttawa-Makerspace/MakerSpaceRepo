@@ -20,23 +20,7 @@ class SubSpaceBookingController < SessionsController
   before_action -> { @with_sub_space = true }
 
   def index
-    if params[:room].present?
-      @subspace = SubSpace.find(params[:room])
-      @rules = []
-      if @subspace.maximum_booking_duration.present?
-        @rules << "has a maximum booking duration of #{@subspace.maximum_booking_duration} hours"
-      end
-      if @subspace.maximum_booking_hours_per_week.present?
-        @rules << "has a maximum booking hours per person per week of #{@subspace.maximum_booking_hours_per_week} hours"
-      end
-      @rules << "bookings (Name and Description of event) are public by default" if @subspace.default_public
-      if @subspace.max_automatic_approval_hour.present? &&
-          @subspace.approval_required
-        @rules << "Bookings require manual approval, bookings of #{@subspace.max_automatic_approval_hour} hours or less will be automatically approved"
-      elsif @subspace.approval_required
-        @rules << "bookings will require manual approval"
-      end
-    end
+    @subspace = SubSpace.find(params[:room]) if params[:room].present?
     @bookings =
       SubSpaceBooking
         .where(user_id: current_user.id)
@@ -44,29 +28,13 @@ class SubSpaceBookingController < SessionsController
         .includes(:sub_space)
         .order(start_time: :desc)
 
-    if current_user.admin?
-      @current_time = Time.now
-      
-      @pagy_pending, @pending_bookings = current_bookings(BookingStatus.pending.id, page_key: "pending_page")
-      load_recurring_bookings_for_page(@pending_bookings)
-      
-      @pagy_approved, @approved_bookings = current_bookings(BookingStatus.approved.id, page_key: "approved_page")
-      @pagy_declined, @declined_bookings = current_bookings(BookingStatus.declined.id, page_key: "declined_page")
-      @pagy_old_pending, @old_pending_bookings = old_bookings(BookingStatus.pending.id, page_key: "old_pending_page")
-      @pagy_old_approved, @old_approved_bookings = old_bookings(BookingStatus.approved.id, page_key: "old_approved_page")
-      @pagy_old_declined, @old_declined_bookings = old_bookings(BookingStatus.declined.id, page_key: "old_declined_page")
-    end
-
-    @supervisors = []
-    SpaceManagerJoin.includes(:user).each do |smj|
-      @supervisors << [smj.user.name, smj.user.id] unless @supervisors.include?([smj.user.name, smj.user.id])
-    end
-    @supervisors = @supervisors.sort_by { |elem| elem[0].downcase }
+    load_admin_queues if current_user.admin?
+    @supervisors = SpaceManagerJoin.supervisor_options
   end
 
   def request_access
     if params[:comments].blank?
-      flash[:alert] = "Please provide a reason for booking access."
+      flash[:alert] = t("sub_space_booking.messages.reason_missing")
       redirect_to root_path
       return
     end
@@ -77,28 +45,12 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
-    if UserBookingApproval.where(user: current_user).first.nil?
-      booking_approval =
-        UserBookingApproval.new(
-          user: current_user,
-          date: Time.now,
-          comments: params[:comments],
-          approved: false,
-          identity: params[:identity]
-        )
-
-      if booking_approval.save
-        BookingMailer.send_booking_approval_request_sent(
-          booking_approval.id,
-          emails
-        ).deliver_later
-
-        flash[:notice] = "Access request submitted successfully."
-      else
-        flash[:alert] = booking_approval.errors.full_messages.join(", ")
-      end
+    booking_approval = current_user.request_booking_access(comments: params[:comments], identity: params[:identity])
+    if booking_approval.persisted?
+      BookingMailer.send_booking_approval_request_sent(booking_approval.id, emails).deliver_later
+      flash[:notice] = t("sub_space_booking.messages.access_requested")
     else
-      flash[:alert] = "You have already requested access."
+      flash[:alert] = access_request_refusal(booking_approval)
     end
     redirect_to root_path
   end
@@ -106,46 +58,43 @@ class SubSpaceBookingController < SessionsController
   def approve_access
     if params[:id].nil?
       user = User.find(params[:user_id])
-      uba = UserBookingApproval.find_or_initialize_by(user: user)
-      if uba.approved? && user.booking_approval?
-        redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                    notice: "#{user.name} already has booking access."
-        return
-      end
-      id = grant_booking_access!(uba)
-      BookingMailer.send_booking_approval_request_approved(id).deliver_later
-      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  notice: "Access granted successfully."
+      id = user.approve_booking_access(by: current_user)
+      granted_notice = t("sub_space_booking.messages.access_granted")
     else
-      uba = UserBookingApproval.find(params[:id])
-      if uba.approved? && uba.user.booking_approval?
-        redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                    notice: "#{uba.user.name} already has booking access."
-        return
-      end
-      id = grant_booking_access!(uba)
-      BookingMailer.send_booking_approval_request_approved(id).deliver_later
+      request = UserBookingApproval.find(params[:id])
+      user = request.user
+      id = user.approve_booking_access(by: current_user, request_id: request.id)
+      granted_notice = t("sub_space_booking.messages.access_request_approved")
+    end
+    if id.nil?
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  notice: "Access request approved successfully."
+                  notice: t("sub_space_booking.messages.already_has_access", name: user.name)
+    else
+      BookingMailer.send_booking_approval_request_approved(id).deliver_later
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"), notice: granted_notice
     end
   rescue ActiveRecord::RecordInvalid => e
     approval_failed(e)
   end
 
+  # Declines a pending request or revokes an approved one; the request is kept with its status,
+  # and the requester is mailed once the decision is saved.
   def deny_access
-    uba = UserBookingApproval.find(params[:id])
-    UserBookingApproval.transaction do
-      uba.user.update_column(:booking_approval, false)
-      uba.destroy!
-    end
+    approval = UserBookingApproval.find(params[:id])
+    approval.user.deny_booking_access(approval, by: current_user, reason: params[:reason].to_s.strip.presence)
+    BookingMailer.send_booking_access_denied(approval.id).deliver_later
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                notice: "Access request declined successfully."
+                notice: t(approval.revoked? ? "sub_space_booking.messages.access_revoked" :
+                                              "sub_space_booking.messages.access_request_declined")
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                alert: validation_message(e.record, "failed_saves.booking_decline")
   end
 
   def bulk_approve_access
     if params[:user_booking_approval_ids].blank?
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  alert: "No approvals selected."
+                  alert: t("sub_space_booking.messages.no_approvals_selected")
       return
     end
 
@@ -158,9 +107,9 @@ class SubSpaceBookingController < SessionsController
     set_bulk_result_flash(
       approved_ids.size,
       skipped,
-      notice: "Selected access requests approved successfully.",
-      all_notice: "All selected access requests approved successfully.",
-      alert: "#{skipped} selected request(s) were already approved and were skipped."
+      notice: t("sub_space_booking.bulk.access_approved"),
+      all_notice: t("sub_space_booking.bulk.access_all_approved"),
+      alert: t("sub_space_booking.bulk.access_skipped", count: skipped)
     )
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab")
   rescue ActiveRecord::RecordInvalid => e
@@ -191,54 +140,16 @@ class SubSpaceBookingController < SessionsController
 
     # Permission first: a non-admin asking to block gets the forbidden answer,
     # whatever else is wrong with the request.
-    if ActiveModel::Type::Boolean.new.cast(attrs[:blocking]) &&
-         !current_user.admin?
-      message = "You do not have permission to block a space."
-      respond_to do |format|
-        format.json do
-          render json: { errors: [message] }, status: :forbidden
-        end
-        format.html do
-          flash[:alert] = message
-          redirect_to sub_space_booking_index_path
-        end
-      end
-      return
-    end
+    return refuse_blocking if blocking_refused?(attrs)
 
     booking = new_occurrence(attrs, now)
     booking.valid_without_status?
     # A recurring series skips its past occurrences instead of failing, so a
     # past first occurrence is not an error yet (see book_series).
     booking.errors.delete(:start_time, :in_the_past) if recurring
-    if booking.errors.any?
-      render_booking_failure(invalid_booking_failure(booking))
-      return
-    end
+    return render_booking_failure(SubSpaceBooking::Refusal.invalid(booking)) if booking.errors.any?
 
-    if recurring
-      end_date = series_end_date # nil when missing or malformed
-      unless end_date && params[:sub_space_booking][:recurring_frequency].present?
-        render json: {
-                 errors: "Invalid recurring parameters"
-               },
-               status: :unprocessable_content
-        return
-      end
-      if end_date > booking.start_time.to_date + SERIES_MAX_DAYS.days
-        message = I18n.t("sub_space_booking.series.too_long", days: SERIES_MAX_DAYS)
-        render_booking_failure(errors: ["Recurring #{message}"], alert: message)
-        return
-      end
-      book_series(attrs, BookingSeries.new(booking.start_time, booking.end_time, end_date, params[:sub_space_booking][:recurring_frequency]), now)
-    else
-      failure = book_occurrence(booking)
-      if failure
-        render_booking_failure(failure)
-      else
-        render_booking_success(booking.sub_space)
-      end
-    end
+    recurring ? create_series(attrs, booking, now) : create_single(booking)
   end
 
   def edit
@@ -249,21 +160,13 @@ class SubSpaceBookingController < SessionsController
            !@user.eql?(@sub_space_booking.user)
        ) || (@sub_space_booking.approved? && !@user.admin?)
       redirect_to sub_space_booking_index_path,
-                  alert: "You can't access this subspace booking."
+                  alert: t("sub_space_booking.messages.edit_refused")
     end
   end
 
   def update
     @sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
-
-    if @sub_space_booking.approved? && !@user.admin?
-      redirect_to sub_space_booking_index_path(
-                    anchor: "booking-calendar-tab",
-                    room: @sub_space_booking.sub_space_id
-                  ),
-                  alert: "You do not have permission to edit this booking"
-      return
-    end
+    return refuse_approved_edit if @sub_space_booking.approved? && !@user.admin?
 
     # Check the overlap and the limits against the values the model will store
     # (zoned, the user's own offsets included), not against a re-parsed copy of
@@ -271,131 +174,50 @@ class SubSpaceBookingController < SessionsController
     # times stay); an unparseable one leaves the time nil, and the model's
     # presence check answers it.
     @sub_space_booking.assign_attributes(sub_space_booking_update_params)
-    times_present = @sub_space_booking.start_time.present? && @sub_space_booking.end_time.present?
-
-    # The overlap is checked in the room the booking ends up in, and only when
-    # the booking moves (in time or to another room): a rename must not be
-    # refused because an admin blocked the slot afterwards.
-    if times_present &&
-         (@sub_space_booking.times_changing? || @sub_space_booking.will_save_change_to_sub_space_id?) &&
-         SubSpaceBooking
-           .where(sub_space_id: @sub_space_booking.sub_space_id)
-           .where(blocking: true)
-           .where.not(id: @sub_space_booking.id)
-           .overlapping(@sub_space_booking.start_time.utc, @sub_space_booking.end_time.utc)
-           .any?
-      flash[:alert] = "This time slot is already booked."
-      respond_to do |format|
-        format.json do
-          render json: {
-                   errors: ["TimeSlot This time slot is already booked."]
-                 },
-                 status: :unprocessable_content
-        end
-        format.html { redirect_to sub_space_booking_edit_path }
-      end
-
-      return
-    end
-
-    sub_space = @sub_space_booking.sub_space
-    duration = times_present ? (@sub_space_booking.end_time - @sub_space_booking.start_time) / 1.hour : 0
-
-    # The limits only matter when the booking's times move; renaming a booking
-    # must not be blocked because a room's limits were lowered since. Minute
-    # precision, the same test as the model's past-date rule.
-    times_changed = times_present && @sub_space_booking.times_changing?
-
-    max_duration = sub_space.maximum_booking_duration
-    if !max_duration.nil? && !@user.admin? && times_changed && duration > max_duration
-      render_update_limit_error(
-        "DurationHour",
-        "You cannot book #{sub_space.name} for more than #{max_duration} hours."
-      )
-      return
-    end
-
-    max_per_week = sub_space.maximum_booking_hours_per_week
-    if !max_per_week.nil? && !@user.admin? && times_changed &&
-         weekly_booked_hours(@sub_space_booking) + duration > max_per_week
-      render_update_limit_error(
-        "DurationWeek",
-        "You cannot book #{sub_space.name} for more than #{max_per_week} hours per week."
-      )
-      return
-    end
+    refusal = update_refusal(@sub_space_booking)
+    return render_update_limit_error(refusal) if refusal
 
     if @sub_space_booking.update(sub_space_booking_update_params)
-      flash[:notice] = "Successfully updated booking"
-      respond_to do |format|
-        format.json { render json: { status: "ok" }, status: :ok }
-        format.html do
-          redirect_to sub_space_booking_index_path(
-                        anchor: "booking-calendar-tab",
-                        room: @sub_space_booking.sub_space_id
-                      )
-        end
-      end
+      render_updated
     else
-      respond_to do |format|
-        format.json do
-          render json: { errors: @sub_space_booking.errors.full_messages },
-                 status: :unprocessable_content
-        end
-        format.html do
-          flash.now[:alert] = @sub_space_booking.errors.full_messages.join(", ")
-          render "edit"
-        end
-      end
+      render_update_invalid
     end
   end
 
   def approve
     sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
 
-    unless sub_space_booking.pending?
+    unless sub_space_booking.approve_if_pending!(by: current_user)
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  alert: "Booking for #{sub_space_booking.sub_space.name} is no longer pending."
+                  alert: t("sub_space_booking.messages.no_longer_pending", room: sub_space_booking.sub_space.name)
       return
     end
 
-    # 1. Update status
-    sub_space_booking.change_status!(BookingStatus.approved)
-    
-    # 2. Stamp the approval with update_columns, so a row that no longer passes
-    # some validation can still be approved. It writes only the approval
-    # columns, never the times, so the past-date rule (it checks only
-    # saves that set or move the times) allows approving a past pending booking.
-    sub_space_booking.update_columns(
-      approved_at: DateTime.now,
-      approved_by_id: current_user.id
-    )
-
-    # 3. Pass the integer ID to align with expected enqueued job arguments
     BookingMailer.send_booking_approved(sub_space_booking.id).deliver_later
 
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                notice: "Booking for #{sub_space_booking.sub_space.name} approved successfully."
+                notice: t("sub_space_booking.messages.approved", room: sub_space_booking.sub_space.name)
   end
 
   def decline
     sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
 
-    unless sub_space_booking.pending?
+    unless sub_space_booking.decline_if_pending!
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  alert: "Booking for #{sub_space_booking.sub_space.name} is no longer pending."
+                  alert: t("sub_space_booking.messages.no_longer_pending", room: sub_space_booking.sub_space.name)
       return
     end
 
-    sub_space_booking.change_status!(BookingStatus.declined)
-    
+    BookingMailer.send_booking_declined(sub_space_booking.id).deliver_later
+
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                notice: "Booking for #{sub_space_booking.sub_space.name} declined successfully."
+                notice: t("sub_space_booking.messages.declined", room: sub_space_booking.sub_space.name)
   end
 
   def bulk_approve_decline
     if params[:sub_space_booking_ids].blank?
-      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"), alert: "No bookings selected."
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                  alert: t("sub_space_booking.messages.no_bookings_selected")
       return
     end
 
@@ -403,19 +225,19 @@ class SubSpaceBookingController < SessionsController
 
     unless %w[approve decline].include?(bulk_status)
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  alert: "Failed to bulk update booking status."
+                  alert: t("errors.bookings.bulk_status_invalid")
       return
     end
 
     booking_ids = apply_bulk_booking_status(bulk_status)
 
-    booking_ids.each { |id| BookingMailer.send_booking_approved(id).deliver_later } if bulk_status == "approve"
+    mail_bulk_result(bulk_status, booking_ids)
     skipped = Array(params[:sub_space_booking_ids]).uniq.size - booking_ids.size
     set_bulk_result_flash(
       booking_ids.size,
       skipped,
-      notice: bulk_status == "approve" ? "Bookings approved successfully." : "Bookings declined successfully.",
-      alert: "#{skipped} selected booking(s) were no longer pending and were skipped."
+      notice: t(bulk_status == "approve" ? "sub_space_booking.bulk.bookings_approved" : "sub_space_booking.bulk.bookings_declined"),
+      alert: t("sub_space_booking.bulk.bookings_skipped", count: skipped)
     )
 
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab")
@@ -426,25 +248,16 @@ class SubSpaceBookingController < SessionsController
     booking.public = !booking.public
     booking.save
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                notice:
-                  "Booking made #{booking.public ? "public" : "private"} successfully."
+                notice: t(booking.public ? "sub_space_booking.messages.made_public" :
+                                           "sub_space_booking.messages.made_private")
   end
 
+  # Only the owner or an admin gets here (user_booking_belongs).
   def delete
-    unless current_user.admin? ||
-             SubSpaceBooking.find(params[:sub_space_booking_id]).user_id ==
-               current_user.id
-      return(
-        redirect_to root_path,
-                    alert: "You are not authorized to view this page."
-      )
-    end
-
     booking = SubSpaceBooking.find(params[:sub_space_booking_id])
     subspaceName = booking.sub_space.name
     booking.destroy_with_status!
-    redirect_to sub_space_booking_index_path(anchor: "booking-tab"),
-                notice: "Booking for #{subspaceName} deleted successfully."
+    render_deleted(t("sub_space_booking.messages.deleted", room: subspaceName))
   end
 
   def delete_remaining_recurring
@@ -452,14 +265,14 @@ class SubSpaceBookingController < SessionsController
     unless current_user.admin? || booking.user_id == current_user.id
       return(
         redirect_to root_path,
-                    alert: "You are not authorized to view this page."
+                    alert: t("sub_space_booking.messages.not_authorized")
       )
     end
 
     unless booking.recurring_booking.present?
       return(
         redirect_to sub_space_booking_index_path(anchor: "booking-tab"),
-                    notice: "Booking is not attached to a recurring booking."
+                    notice: t("sub_space_booking.messages.not_recurring")
       )
     end
 
@@ -475,9 +288,7 @@ class SubSpaceBookingController < SessionsController
     ActiveRecord::Base.transaction do
       remaining_bookings.each(&:destroy_with_status!)
     end
-    redirect_to sub_space_booking_index_path(anchor: "booking-tab"),
-                notice:
-                  "Remaining bookings for #{subspaceName} deleted successfully."
+    render_deleted(t("sub_space_booking.messages.remaining_deleted", room: subspaceName))
   end
 
   def get_sub_space_booking
@@ -491,6 +302,61 @@ class SubSpaceBookingController < SessionsController
   # so the calendar feed tells the page whether a click can open one.
   def viewer_may_open_details
     @user.admin? || @user.staff?
+  end
+
+  # A delete from the booking page's fetch (JSON) is answered 204 and the page reloads to show the notice; any other
+  # request is redirected to the bookings list.
+  def render_deleted(notice)
+    flash[:notice] = notice
+    respond_to do |format|
+      format.json { head :no_content }
+      format.html { redirect_to sub_space_booking_index_path(anchor: "booking-tab") }
+    end
+  end
+
+  def blocking_refused?(attrs)
+    ActiveModel::Type::Boolean.new.cast(attrs[:blocking]) && !current_user.admin?
+  end
+
+  def refuse_blocking
+    message = t("sub_space_booking.messages.blocking_refused")
+    respond_to do |format|
+      format.json do
+        render json: { errors: [message] }, status: :forbidden
+      end
+      format.html do
+        flash[:alert] = message
+        redirect_to sub_space_booking_index_path
+      end
+    end
+  end
+
+  def create_single(booking)
+    failure = book_occurrence(booking)
+    if failure
+      render_booking_failure(failure)
+    else
+      render_booking_success(booking.sub_space)
+    end
+  end
+
+  # The first occurrence passed the record's own checks; the series still needs
+  # a frequency and an end date at most SERIES_MAX_DAYS after its first day.
+  def create_series(attrs, first, now)
+    end_date = series_end_date # nil when missing or malformed
+    frequency = params[:sub_space_booking][:recurring_frequency]
+    refusal = series_refusal(first, end_date, frequency)
+    return render_booking_failure(refusal) if refusal
+
+    book_series(attrs, BookingSeries.new(first.start_time, first.end_time, end_date, frequency), now)
+  end
+
+  def series_refusal(first, end_date, frequency)
+    if end_date.nil? || frequency.blank?
+      SubSpaceBooking::Refusal.coded("Recurring", t("errors.bookings.recurring_invalid"))
+    elsif end_date > first.start_time.to_date + SERIES_MAX_DAYS.days
+      SubSpaceBooking::Refusal.coded("Recurring", I18n.t("sub_space_booking.series.too_long", days: SERIES_MAX_DAYS))
+    end
   end
 
   # A booking for one occurrence, owned by the current user, whose past-date
@@ -511,7 +377,7 @@ class SubSpaceBookingController < SessionsController
   def series_end_date
     raw = params[:sub_space_booking][:recurring_end]
     Date.parse(raw.to_s) if raw.present?
-  rescue Date::Error
+  rescue ArgumentError
     nil
   end
 
@@ -550,93 +416,62 @@ class SubSpaceBookingController < SessionsController
       render_series_failure(failures, booked)
     elsif booked.zero? # every occurrence was in the past
       message = SubSpaceBooking.past_start_message
-      render_booking_failure(errors: [message], alert: message)
+      render_booking_failure(SubSpaceBooking::Refusal.new(errors: [message], alert: message))
     else
       render_booking_success(last_booked.sub_space)
     end
   end
 
-  # Checks one occurrence on the unsaved record, then saves it with its status
-  # in one transaction, so a failure leaves no half-made row. Renders nothing:
-  # returns nil when booked, or a failure ({ errors:, alert:, timeslot: }) for
+  # Checks one occurrence against the room's blocks and limits, then saves it
+  # with its status in one transaction, so a failure leaves no half-made row.
+  # The record's own checks already passed in create: a series occurrence
+  # differs from the first only by its date, and past ones are skipped; save!
+  # still runs them. Renders nothing:
+  # returns nil when booked, or a SubSpaceBooking::Refusal for
   # the caller to render.
   def book_occurrence(booking, recurring_booking: nil, send_email: true)
-    return invalid_booking_failure(booking) unless booking.valid_without_status?
+    failure = occurrence_refusal(booking)
+    return failure if failure
 
-    sub_space = booking.sub_space
-
-    # the zoned instants the model stores, compared with the stored UTC
-    # instants of the blocks (half-open overlap).
-    if !booking.blocking &&
-        SubSpaceBooking
-          .where(sub_space_id: sub_space.id)
-          .where(blocking: true)
-          .overlapping(booking.start_time.utc, booking.end_time.utc)
-          .any?
-      return { errors: ["TimeSlot This time slot is already booked."],
-               alert: "This time slot is already booked.", timeslot: true }
-    end
-
-    # Check time violations
-    duration = (booking.end_time - booking.start_time) / 1.hour
-    if !sub_space.maximum_booking_duration.nil? && !current_user.admin? &&
-         duration > sub_space.maximum_booking_duration
-      return limit_failure("DurationHour",
-                           "You cannot book #{sub_space.name} for more than #{sub_space.maximum_booking_duration} hours.")
-    end
-
-    if !sub_space.maximum_booking_hours_per_week.nil? && !current_user.admin? &&
-         weekly_booked_hours(booking) + duration > sub_space.maximum_booking_hours_per_week
-      return limit_failure(
-        "DurationWeek",
-        "You cannot book #{sub_space.name} for more than #{sub_space.maximum_booking_hours_per_week} hours per week."
-      )
-    end
-
-    status =
-      # Auto-approve bookings made by admins
-      if current_user.admin?
-        BookingStatus.approved
-      elsif sub_space.approval_required
-        if sub_space.max_automatic_approval_hour.nil?
-          BookingStatus.pending
-        elsif duration <= sub_space.max_automatic_approval_hour
-          BookingStatus.approved
-        else
-          BookingStatus.pending
-        end
-      else
-        BookingStatus.approved
-      end
-
-    booking.public = sub_space.default_public
+    booking.apply_initial_state(by: current_user)
     booking.recurring_booking = recurring_booking # Attach the RecurringBooking handle, is saved with the booking itself
-    # Set approved_at and approved_by for admin bookings
-    if current_user.admin? && status == BookingStatus.approved
-      booking.approved_at = DateTime.now
-      booking.approved_by_id = current_user.id
-    end
-
-    booking.save_with_status!(status)
+    booking.save!
 
     send_booking_created_mail(booking) if send_email
     nil
   rescue ActiveRecord::RecordInvalid => e
-    invalid_booking_failure(e.record)
+    SubSpaceBooking::Refusal.invalid(e.record)
   end
 
-  def invalid_booking_failure(record)
-    { errors: record.errors.full_messages, alert: record.errors.full_messages.join(", ") }
+  # A new booking may not overlap a block unless it is a block itself, and only
+  # admins may break the room's limits.
+  def occurrence_refusal(booking)
+    return slot_taken_failure if !booking.blocking && booking.overlaps_block?
+
+    room_limit_failure(booking) unless current_user.admin?
   end
 
-  def limit_failure(code, message)
-    { errors: ["#{code} #{message}"], alert: message }
+  def slot_taken_failure
+    SubSpaceBooking::Refusal.coded("TimeSlot", t("sub_space_booking.limits.slot_taken"))
+  end
+
+  # The first of its room's limits the booking breaks, or nil: the maximum
+  # duration, then the owner's maximum hours in the room that week.
+  def room_limit_failure(booking)
+    room = booking.sub_space
+    if booking.exceeds_maximum_duration?
+      SubSpaceBooking::Refusal.coded("DurationHour", t("sub_space_booking.limits.maximum_duration",
+                                                       room: room.name, hours: room.maximum_booking_duration))
+    elsif booking.exceeds_weekly_hours?
+      SubSpaceBooking::Refusal.coded("DurationWeek", t("sub_space_booking.limits.weekly_hours",
+                                                       room: room.name, hours: room.maximum_booking_hours_per_week))
+    end
   end
 
   def send_booking_created_mail(booking)
     if booking.pending?
       BookingMailer.send_booking_needs_approval(booking.id).deliver_later
-    elsif booking.approved?
+    else # approved: a new booking is saved as pending or approved
       # Send appropriate confirmation for approved bookings
       if current_user.admin?
         BookingMailer.send_booking_approved(booking.id).deliver_later
@@ -652,15 +487,14 @@ class SubSpaceBookingController < SessionsController
                                  room: params[:sub_space_booking][:sub_space_id])
   end
 
-  # JSON: 422 with the errors (a timeslot conflict also leaves the flash alert,
-  # as before). HTML: back to the room's calendar with the alert.
+  # JSON: 422 with the errors (the page shows them without reloading, so no
+  # flash is set). HTML: back to the room's calendar with the alert.
   def render_booking_failure(failure)
     respond_to do |format|
       format.json do
-        flash[:alert] = failure[:alert] if failure[:timeslot]
-        render json: { errors: failure[:errors] }, status: :unprocessable_content
+        render json: { errors: failure.errors }, status: :unprocessable_content
       end
-      format.html { redirect_to booking_calendar_path, alert: failure[:alert] }
+      format.html { redirect_to booking_calendar_path, alert: failure.alert }
     end
   end
 
@@ -669,11 +503,10 @@ class SubSpaceBookingController < SessionsController
   # series was not created.
   def render_first_occurrence_refused(booking, failure)
     summary = I18n.t("sub_space_booking.series.first_failed",
-                     date: booking.start_time.to_date.iso8601, reason: failure[:alert])
+                     date: booking.start_time.to_date.iso8601, reason: failure.alert)
     respond_to do |format|
       format.json do
-        flash[:alert] = summary
-        render json: { errors: failure[:errors], summary: summary }, status: :unprocessable_content
+        render json: { errors: failure.errors, summary: summary }, status: :unprocessable_content
       end
       format.html { redirect_to booking_calendar_path, alert: summary }
     end
@@ -688,8 +521,7 @@ class SubSpaceBookingController < SessionsController
                      booked: booked, total: booked + failures.size, failed: failed_dates.join(", "))
     respond_to do |format|
       format.json do
-        flash[:alert] = summary
-        render json: { errors: failures.first.last[:errors], booked: booked, failed: failed_dates,
+        render json: { errors: failures.first.last.errors, booked: booked, failed: failed_dates,
                        summary: summary },
                status: :unprocessable_content
       end
@@ -697,47 +529,73 @@ class SubSpaceBookingController < SessionsController
     end
   end
 
-  # JSON: an empty 204, as before (the page refetches the calendar). HTML:
+  # JSON: an empty 204, as before (the page reloads to show the notice). HTML:
   # back to the room's calendar with the notice (there is no create template).
   def render_booking_success(sub_space)
-    flash[:notice] = "Booking for #{sub_space.name} created successfully."
+    flash[:notice] = t("sub_space_booking.messages.created", room: sub_space.name)
     respond_to do |format|
       format.json { head :no_content }
       format.html { redirect_to booking_calendar_path }
     end
   end
 
-  # Hours the booking's owner already has in the booking's sub space, in the week
-  # (Time.zone) containing the booking's start_time, not counting the booking itself.
-  def weekly_booked_hours(booking)
-    week = booking.start_time.in_time_zone.all_week
-    SubSpaceBooking
-      .where(sub_space_id: booking.sub_space_id, user_id: booking.user_id)
-      .where.not(id: booking.id)
-      .where(start_time: week)
-      .sum { |other| other.end_time - other.start_time } / 1.hour
-  end
-
-  def render_update_limit_error(code, message)
+  def render_update_limit_error(failure)
     respond_to do |format|
       format.json do
-        render json: { errors: ["#{code} #{message}"] },
+        render json: { errors: failure.errors },
                status: :unprocessable_content
       end
       format.html do
-        redirect_to sub_space_booking_edit_path, alert: message
+        redirect_to sub_space_booking_edit_path, alert: failure.alert
       end
     end
   end
 
-  def grant_booking_access!(uba)
-    uba.identity = "Other" unless %w[JMTS Staff GNG Other].include?(uba.identity)
-    uba.date ||= Time.now
-    UserBookingApproval.transaction do
-      uba.update!(approved: true, staff: current_user)
-      uba.user.update!(booking_approval: true)
+  # The overlap is checked in the room the booking ends up in, and only when
+  # the booking moves (in time or to another room): a rename must not be
+  # refused because an admin blocked the slot afterwards. The limits only
+  # matter when the booking's times move; renaming a booking must not be
+  # blocked because a room's limits were lowered since. Minute precision, the
+  # same test as the model's past-date rule. A missing time is no refusal: the
+  # model's presence check answers it. Returns a SubSpaceBooking::Refusal or nil.
+  def update_refusal(booking)
+    return slot_taken_failure if booking.moving? && booking.overlaps_block?
+
+    room_limit_failure(booking) if !@user.admin? && booking.times_changing?
+  end
+
+  def refuse_approved_edit
+    redirect_to sub_space_booking_index_path(
+                  anchor: "booking-calendar-tab",
+                  room: @sub_space_booking.sub_space_id
+                ),
+                alert: t("sub_space_booking.messages.approved_edit_refused")
+  end
+
+  def render_updated
+    respond_to do |format|
+      format.json { render json: { status: "ok" }, status: :ok }
+      format.html do
+        redirect_to sub_space_booking_index_path(
+                      anchor: "booking-calendar-tab",
+                      room: @sub_space_booking.sub_space_id
+                    ),
+                    notice: t("sub_space_booking.messages.updated")
+      end
     end
-    uba.id
+  end
+
+  def render_update_invalid
+    respond_to do |format|
+      format.json do
+        render json: { errors: @sub_space_booking.errors.full_messages },
+               status: :unprocessable_content
+      end
+      format.html do
+        flash.now[:alert] = @sub_space_booking.errors.full_messages.join(", ")
+        render "edit"
+      end
+    end
   end
 
   def access_request_recipients(identity)
@@ -766,31 +624,30 @@ class SubSpaceBookingController < SessionsController
   def staff_access_request_recipients
     supervisor = User.find_by(id: params[:supervisor]) if params[:supervisor].present?
     if supervisor.nil? || !supervisor.staff?
-      flash[:alert] = "Please choose a staff member as your supervisor."
+      flash[:alert] = t("sub_space_booking.messages.supervisor_missing")
       return nil
     end
     [supervisor.email]
   end
 
+  # Users are locked in id order so two bulk approvals cannot wait on each other.
   def grant_pending_access(ids)
-    approved_ids = []
     UserBookingApproval.transaction do
       UserBookingApproval
         .where(id: ids)
-        .reject { |uba| uba.approved? && uba.user.booking_approval? }
-        .each { |uba| approved_ids << grant_booking_access!(uba) }
+        .reorder(:user_id, :id)
+        .filter_map { |uba| uba.user.approve_booking_access(by: current_user, request_id: uba.id) }
     end
-    approved_ids
   end
 
   # Only bookings that are still pending are changed; returns their ids.
   def apply_bulk_booking_status(bulk_status)
     booking_ids = []
     SubSpaceBooking.transaction do
-      pending = SubSpaceBooking.pending.includes(sub_space_booking_status: :booking_status).where(id: params[:sub_space_booking_ids]).to_a
-      booking_ids = pending.map(&:id)
+      pending = SubSpaceBooking.pending.where(id: params[:sub_space_booking_ids]).to_a
 
       if bulk_status == "approve"
+        booking_ids = pending.map(&:id)
         SubSpaceBooking.change_status_of!(pending, BookingStatus.approved)
         # update_all bypasses validations identically to update_columns
         SubSpaceBooking.where(id: booking_ids).update_all(
@@ -798,10 +655,16 @@ class SubSpaceBookingController < SessionsController
           approved_by_id: current_user.id
         )
       else
-        SubSpaceBooking.change_status_of!(pending, BookingStatus.declined)
+        booking_ids = pending.select(&:decline_if_pending!).map(&:id)
       end
     end
     booking_ids
+  end
+
+  # Queues the booker's mail for each booking the bulk action changed.
+  def mail_bulk_result(bulk_status, booking_ids)
+    mailer_method = bulk_status == "approve" ? :send_booking_approved : :send_booking_declined
+    booking_ids.each { |id| BookingMailer.public_send(mailer_method, id).deliver_later }
   end
 
   # Notice when something was applied (all_notice when nothing was skipped), alert when something was skipped.
@@ -810,9 +673,31 @@ class SubSpaceBookingController < SessionsController
     flash[:alert] = alert if skipped.positive?
   end
 
+  # The request was refused (access already held or already pending, said as is on the base) or failed
+  # validation (the fields are named after the translated sentence).
+  def access_request_refusal(booking_approval)
+    return booking_approval.errors.full_messages.join(", ") if booking_approval.errors.include?(:base)
+
+    validation_message(booking_approval, "errors.bookings.access_request_failed")
+  end
+
   def approval_failed(error)
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                alert: "Failed to approve: #{error.record.errors.full_messages.join(", ")}"
+                alert: validation_message(error.record, "errors.bookings.access_approve_failed")
+  end
+
+  def load_admin_queues
+    @current_time = Time.now
+
+    @pagy_pending, @pending_bookings = current_bookings(BookingStatus.pending.id, page_key: "pending_page")
+    load_recurring_bookings_for_page(@pending_bookings)
+
+    @pagy_approved, @approved_bookings = current_bookings(BookingStatus.approved.id, page_key: "approved_page")
+    @pagy_declined, @declined_bookings = current_bookings(BookingStatus.declined.id, page_key: "declined_page")
+    @pagy_old_pending, @old_pending_bookings = old_bookings(BookingStatus.pending.id, page_key: "old_pending_page")
+    @pagy_old_approved, @old_approved_bookings = old_bookings(BookingStatus.approved.id, page_key: "old_approved_page")
+    @pagy_old_declined, @old_declined_bookings = old_bookings(BookingStatus.declined.id, page_key: "old_declined_page")
+    @pending_access_requests = UserBookingApproval.pending.from_active_accounts.includes(:user).to_a
   end
 
   def load_recurring_bookings_for_page(paginated_bookings)
@@ -827,7 +712,7 @@ class SubSpaceBookingController < SessionsController
     # Use the same timestamp as the main query to avoid timing issues
     all_recurring_bookings = SubSpaceBooking
       .pending
-      .includes(:user, sub_space: :space)
+      .includes(sub_space: :space)
       .where(recurring_booking_id: recurring_ids)
       .where('sub_space_bookings.end_time > ?', @current_time)
       .order(start_time: :asc)
@@ -838,13 +723,17 @@ class SubSpaceBookingController < SessionsController
 
   # The pending and approved bookings of the room, which are the ones the
   # calendar shows. A booking without a status is neither, so it is not listed.
+  # Bookings with no owner or a deleted owner are listed too: they still hold the room.
+  # Owners are loaded, in one query, only for the entries whose title names them.
   def feed_bookings
-    SubSpaceBooking
-      .where(sub_space_id: params[:room])
-      .joins(:user)
-      .where(booking_status_id: [BookingStatus.approved.id, BookingStatus.pending.id])
-      .includes(:user)
-      .order(:start_time, :id)
+    bookings = SubSpaceBooking
+                 .where(sub_space_id: params[:room])
+                 .where(booking_status_id: [BookingStatus.approved.id, BookingStatus.pending.id])
+                 .order(:start_time, :id)
+                 .to_a
+    ActiveRecord::Associations::Preloader.new(records: bookings.select { |booking| owner_shown?(booking) },
+                                              associations: :display_user).call
+    bookings
   end
 
   def feed_event(booking)
@@ -859,27 +748,43 @@ class SubSpaceBookingController < SessionsController
   end
 
   def feed_title(booking)
-    return "Space Blocked" if blocked_for_viewer?(booking)
+    return t("sub_space_booking.feed.blocked") if blocked_for_viewer?(booking)
 
-    title = details_visible?(booking) ? "#{booking.name} - #{booking.description}" : "Space Booked"
-    title += " (Pending)" if booking.pending?
-    title += " - #{booking.user.name}" if @user.admin? && booking.user != @user
+    title = details_visible?(booking) ? "#{booking.name} - #{booking.description}" : t("sub_space_booking.feed.booked")
+    title = t("sub_space_booking.feed.pending", title: title) if booking.pending?
+    owner = feed_owner_name(booking)
+    title += " - #{owner}" if owner
     title
   end
 
+  # Admins see who booked someone else's slot: nothing for a booking with no owner, and the
+  # deleted-account wording for an owner whose account was deleted.
+  def feed_owner_name(booking)
+    helpers.staff_user_name(booking.display_user) if owner_shown?(booking)
+  end
+
+  def owner_shown?(booking)
+    @user.admin? && !own_booking?(booking) && !blocked_for_viewer?(booking)
+  end
+
+  # The feed is for signed-in users only, so the viewer always has an id.
+  def own_booking?(booking)
+    booking.user_id == @user.id
+  end
+
   def blocked_for_viewer?(booking)
-    booking.blocking && !booking.public && (!@user.admin? || booking.user != @user)
+    booking.blocking && !booking.public && (!@user.admin? || !own_booking?(booking))
   end
 
   def details_visible?(booking)
-    @user.admin? || booking.user == @user || booking.public
+    @user.admin? || own_booking?(booking) || booking.public
   end
 
   def current_bookings(booking_status_id, page_key: "pending_page")
     scope = SubSpaceBooking
               .where(booking_status_id: booking_status_id)
               .where("sub_space_bookings.end_time > ?", @current_time)
-              .includes(:user, sub_space: :space)
+              .includes(:display_user, sub_space: :space)
               .order(start_time: :asc)
 
     pagy(scope, page_key: page_key, limit: 15)
@@ -889,7 +794,7 @@ class SubSpaceBookingController < SessionsController
     scope = SubSpaceBooking
               .where(booking_status_id: booking_status_id)
               .where("sub_space_bookings.end_time < ?", @current_time)
-              .includes(:user, sub_space: :space)
+              .includes(:display_user, sub_space: :space)
               .order(start_time: :desc)
 
     pagy(scope, page_key: page_key, limit: 15)
@@ -897,24 +802,24 @@ class SubSpaceBookingController < SessionsController
 
   def user_account
     return if signed_in?
-      redirect_to login_path, alert: "You must be logged in to view this page."
+      redirect_to login_path, alert: t("sub_space_booking.messages.login_required")
     
   end
   def user_approved
     return if current_user.booking_approval || current_user.admin?
       redirect_to root_path,
-                  alert: "You must be approved to book to view this page."
+                  alert: t("sub_space_booking.messages.approval_required")
     
   end
   def user_admin_or_staff
     return if current_user.admin? || current_user.staff?
       redirect_to root_path,
-                  alert: "You must be an admin or staff to view this page."
+                  alert: t("sub_space_booking.messages.staff_required")
     
   end
   def user_admin
     return if current_user.admin?
-      redirect_to root_path, alert: "You must be an admin to view this page."
+      redirect_to root_path, alert: t("sub_space_booking.messages.admin_required")
     
   end
   def user_booking_belongs
@@ -922,7 +827,7 @@ class SubSpaceBookingController < SessionsController
              current_user.id || current_user.admin?
       redirect_to root_path,
                   alert:
-                    "You must be the owner of this booking or an admin to delete it."
+                    t("sub_space_booking.messages.owner_required")
     end
   end
 

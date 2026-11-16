@@ -8,6 +8,8 @@ require "rails_helper"
 #   my_tasks                         staff or volunteer-program member (`volunteer_access`)
 #   complete_task (POST)             sign-in + staff or the task's creator
 RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
+  include ContentSpecHelpers
+
   let(:space) { create(:space) }
   let(:staff) { create(:user, :staff) }
   let(:volunteer) { create(:user, :volunteer_with_volunteer_program) }
@@ -159,20 +161,26 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       expect(VolunteerTask.last.require_trainings.pluck(:training_id)).to match_array(trainings.map(&:id))
     end
 
-    it "joins listed staff (typed by role) and volunteers (typed Volunteer, active)" do
+    it "joins listed staff (typed by role) and volunteers (typed Volunteer, joined)" do
       other_staff = create(:user, :admin)
       post volunteer_tasks_path, params: task_params.merge(staff_id: other_staff.id, volunteer_id: [volunteer.id])
       joins = VolunteerTask.last.volunteer_task_joins.order(:id)
       expect(joins.map { |j| [j.user_id, j.user_type, j.active] })
         .to eq([[other_staff.id, "Admin", true], [volunteer.id, "Volunteer", true]])
+      expect(joins.map { |j| [j.state, j.state_changed_at, j.state_changed_by_id] }).to eq([["joined", nil, nil]] * 2)
     end
 
-    # only the hours are validated: negative cc, zero seats, blank title and arbitrary status are stored
-    it "stores negative cc, zero seats, an empty title and a bogus status" do
-      post volunteer_tasks_path, params: task_params(title: "", cc: -50, hours: 3, joins: 0, status: "bogus")
-      expect(response).to redirect_to(volunteer_tasks_path)
-      created = VolunteerTask.last
-      expect(created.attributes.values_at("title", "cc", "joins", "status")).to eq(["", -50, 0, "bogus"])
+    {
+      { title: "" } => "Title This field is required.",
+      { cc: -50 } => "Cc must be greater than or equal to 0",
+      { joins: 0 } => "Joins must be greater than or equal to 1",
+      { status: "bogus" } => "Status Selection is not valid."
+    }.each do |attrs, message|
+      it "refuses #{attrs.inspect} and creates nothing" do
+        expect { post volunteer_tasks_path, params: task_params(**attrs) }.not_to change(VolunteerTask, :count)
+        expect(response).to redirect_to(new_volunteer_task_path)
+        expect(flash[:alert]).to eq(message)
+      end
     end
 
     { 0 => "must be greater than 0", -3 => "must be greater than 0", "abc" => "is not a number", "" => "is not a number" }.each do |hours, reason|
@@ -217,7 +225,7 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
     it "redirects to root with the missing-param message when volunteer_task is absent" do
       post volunteer_tasks_path, params: {}
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to match(/param is missing/)
+      expect(flash[:alert]).to match(/The form is missing required information/)
     end
 
     it "attaches an uploaded image as a Photo (max 5 taken)" do
@@ -246,6 +254,95 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       expect(task.reload.attributes.values_at("title", "hours")).to eq(["Setup crew", 2])
       expect(task.require_trainings.count).to eq(1)
       expect(task.volunteer_task_joins.count).to eq(1)
+    end
+
+    {
+      "an oversized photo" => [-> { content_png_upload_of_size(Photo::MAX_IMAGE_SIZE + 1) }, "is larger than 10 MB"],
+      "a picture in an unaccepted format" => [-> { content_bmp_upload }, "Image"],
+      "a file that is not a picture" => [-> { content_named_upload("x.png", content: "not an image", type: "image/png") }, "could not be read"]
+    }.each do |label, (upload, message)|
+      it "refuses #{label} on update, saving no other change and showing the message" do
+        expect do
+          patch volunteer_task_path(task), params: task_params(title: "Renamed").merge(images: [instance_exec(&upload)])
+        end.not_to change(Photo, :count)
+        expect(task.reload.title).to eq("Setup crew")
+        expect(response).to redirect_to(edit_volunteer_task_path(task))
+        expect(flash[:alert]).to start_with("The volunteer task was not saved.").and include(message)
+        expect(flash[:notice]).to be_nil
+      end
+
+      it "refuses #{label} on create, creating no task" do
+        expect do
+          post volunteer_tasks_path, params: task_params.merge(images: [instance_exec(&upload)])
+        end.not_to change { [VolunteerTask.count, Photo.count] }
+        expect(response).to redirect_to(new_volunteer_task_path)
+        expect(flash[:alert]).to start_with("The volunteer task was not saved.").and include(message)
+        expect(flash[:notice]).to be_nil
+      end
+    end
+
+    it "keeps a ticked photo when a new photo in the same request is refused" do
+      photo = create(:photo, volunteer_task: task)
+      patch volunteer_task_path(task),
+            params: task_params.merge(images: [content_bmp_upload], deleteimages: "#{photo.id},")
+      expect(Photo.exists?(photo.id)).to be(true)
+      expect(photo.reload.image).to be_attached
+    end
+
+    describe "removing ticked photos" do
+      def named_photo(filename, on: task)
+        png = Rails.root.join("spec/support/assets/avatar.png")
+        image = Rack::Test::UploadedFile.new(png, "image/png", original_filename: filename)
+        create(:photo, volunteer_task: on, image: image)
+      end
+
+      let!(:short) { named_photo("a.png") }
+      let!(:long) { named_photo("aa.png") }
+
+      def remaining_names
+        task.photos.reload.map { |photo| photo.image.filename.to_s }.sort
+      end
+
+      it "removes only the photo whose id the form sent" do
+        expect { patch volunteer_task_path(task), params: task_params.merge(deleteimages: "#{long.id},") }
+          .to change(Photo, :count).by(-1)
+        expect(remaining_names).to eq(["a.png"])
+        expect(short.reload.image).to be_attached
+      end
+
+      it "removes a photo whose file name contains a comma" do
+        comma = named_photo("before,after.png")
+        expect { patch volunteer_task_path(task), params: task_params.merge(deleteimages: "#{comma.id},") }
+          .to change(Photo, :count).by(-1)
+        expect(Photo.exists?(comma.id)).to be(false)
+        expect(remaining_names).to eq(["a.png", "aa.png"])
+      end
+
+      it "removes every photo the form sent, and keeps the others" do
+        named_photo("b.png")
+        patch volunteer_task_path(task), params: task_params.merge(deleteimages: "#{short.id},#{long.id},")
+        expect(remaining_names).to eq(["b.png"])
+      end
+
+      it "removes nothing for an id of another task's photo or one that does not exist" do
+        other = named_photo("a.png", on: create(:volunteer_task))
+        missing = Photo.maximum(:id) + 1
+        expect { patch volunteer_task_path(task), params: task_params.merge(deleteimages: "#{other.id},#{missing},") }
+          .not_to change(Photo, :count)
+        expect(other.reload.image).to be_attached
+        expect(remaining_names).to eq(["a.png", "aa.png"])
+      end
+
+      it "removes nothing for a sent file name" do
+        expect { patch volunteer_task_path(task), params: task_params.merge(deleteimages: "a.png,") }
+          .not_to change(Photo, :count)
+      end
+
+      it "removes nothing and saves the form when the field is blank" do
+        expect { patch volunteer_task_path(task), params: task_params(title: "Renamed").merge(deleteimages: "") }
+          .not_to change(Photo, :count)
+        expect(task.reload.title).to eq("Renamed")
+      end
     end
 
     it "edits the other fields of a stored 36 hour task" do
@@ -282,8 +379,8 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       new_volunteer = create(:user, :volunteer_with_volunteer_program)
       patch volunteer_task_path(task),
             params: task_params.merge(volunteer_id: [new_volunteer.id], remove_volunteer_id: [gone.user_id])
-      expect(task.volunteer_task_joins.active.pluck(:user_id)).to contain_exactly(keep.user_id, new_volunteer.id)
-      expect(gone.reload.active).to be(false)
+      expect(task.volunteer_task_joins.joined.pluck(:user_id)).to contain_exactly(keep.user_id, new_volunteer.id)
+      expect(gone.reload).to have_attributes(active: false, state: "removed", state_changed_by_id: staff.id)
     end
 
     describe "a refused edit changes nothing" do
@@ -347,8 +444,8 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
         patch volunteer_task_path(task), params: task_params.merge(remove_volunteer_id: [volunteer.id])
       end.not_to change(VolunteerTaskJoin, :count)
       expect(flash[:notice]).to eq("Volunteer task updated")
-      expect(current.reload.active).to be(false)
-      expect(other.reload.active).to be(true)
+      expect(current.reload).to have_attributes(active: false, state: "removed", state_changed_by_id: staff.id)
+      expect(other.reload.state).to eq("joined")
       expect(history.reload.attributes.values_at("active", "updated_at")).to eq([false, old_stamp])
     end
 
@@ -369,6 +466,7 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       patch volunteer_task_path(task), params: task_params.merge(remove_staff_id: [staff.id])
       expect(task.reload.user_id).to eq(other.id)
       expect([old, mine].map { |j| j.reload.active }).to eq([false, false])
+      expect(mine.state).to eq("left")
       expect(task.volunteer_task_joins.count).to eq(4)
     end
 
@@ -384,9 +482,9 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
     end
 
     it "shows the failing record's message when a join cannot be saved" do
-      allow_any_instance_of(VolunteerTaskJoin).to receive(:save!) do |join|
+      allow_any_instance_of(VolunteerTaskJoin).to receive(:save) do |join|
         join.errors.add(:base, "Join is invalid")
-        raise ActiveRecord::RecordInvalid, join
+        false
       end
       patch volunteer_task_path(task), params: task_params(title: "Renamed").merge(volunteer_id: [volunteer.id])
       expect(flash[:alert]).to eq("Join is invalid")

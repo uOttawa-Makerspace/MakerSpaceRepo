@@ -46,26 +46,13 @@ module JourneyHelpers
   end
 
   # The application's JS entry is a deferred module script, so a click made
-  # right after the page appears can beat it; the data-confirm prompt (a
-  # window.confirm added by that script) is then never shown and the form
-  # submits unprompted, so the confirm modal never appears. The entry sets
-  # this flag as its last statement, after the confirm listeners exist.
+  # right after the page appears can beat it. The entry sets this flag as its
+  # last statement, once its Stimulus controllers are registered. The flag
+  # describes the current document only, so it is no wait across a navigation.
+  # Confirm prompts do not use it: a confirming button is rendered disabled and
+  # click_button only matches enabled buttons.
   def wait_for_app_js
     wait_until("application JS not ready") { page.evaluate_script("document.documentElement.dataset.appJsReady === 'true'") }
-  end
-
-  # Every confirm waits for the app JS first. These methods override the ones
-  # the example group gets from Capybara::DSL, and this module is included in
-  # every `type: :system` spec, so the override covers all of them; a call made
-  # as `page.accept_confirm` would bypass it.
-  def accept_confirm(*, **, &)
-    wait_for_app_js
-    super
-  end
-
-  def dismiss_confirm(*, **, &)
-    wait_for_app_js
-    super
   end
 
   # Wait until a Bootstrap modal has FINISHED opening, not just got `.show`.
@@ -119,6 +106,8 @@ module JourneyHelpers
   # the typed text.
   # The pick is confirmed on the hidden native select (what the form submits),
   # and the dropdown must be closed before returning: it overlays the form.
+  # A picker that closes itself on a pick is left alone; an open one gets
+  # Escape, which Tom Select keeps to itself, so a dialog around it stays open.
   def tom_select(option_text, from:, search: nil, exact: true)
     native = find(:select, from, visible: :all)
     wait_until("##{native[:id]} not yet a Tom Select") { native[:class].to_s.split.include?("tomselected") }
@@ -140,7 +129,7 @@ module JourneyHelpers
       chosen = exact ? selected.include?(option_text) : selected.any? { |text| text.include?(option_text) }
       raise Capybara::ExpectationNotMet, "#{option_text.inspect} not selected in ##{native[:id]}" unless chosen
     end
-    input.send_keys(:escape)
+    input.send_keys(:escape) if wrapper.matches_css?(".dropdown-active", wait: false)
     expect(wrapper).to have_no_css(".ts-dropdown", visible: true)
   end
 

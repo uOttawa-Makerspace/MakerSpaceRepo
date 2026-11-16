@@ -9,7 +9,7 @@ module Api
 
       def create
         session = TrainingSession.find(params[:training_session_id])
-        unless current_user.admin? || session.user_id == current_user.id
+        unless session.editable_by?(current_user)
           return render_error(:forbidden, "Not allowed", status: :forbidden)
         end
 

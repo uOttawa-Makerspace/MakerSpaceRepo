@@ -153,7 +153,7 @@ RSpec.describe "Calendar JSON across DST changes", type: :request do
   end
 
   describe "GET /api/v1/spaces/:id/shifts" do
-    let(:staff) { create(:user, :staff) }
+    let(:staff) { create(:user, :staff).tap { |u| StaffSpace.create!(user: u, space: space) } }
 
     def shifts(from, to)
       get "/api/v1/spaces/#{space.id}/shifts",
@@ -226,8 +226,8 @@ RSpec.describe "Calendar JSON across DST changes", type: :request do
     end
   end
 
-  # These endpoints send the stored row (rrule expansion happens in the browser),
-  # so the allDay check runs on each row's own start/end.
+  # These endpoints send the stored row or, for the unavailabilities feeds, its occurrence in the range asked for;
+  # the allDay check runs on each row's own start/end.
   describe "row endpoints with an event / unavailability ending on the day after a change" do
     let(:staff) { create(:user, :staff) }
 
@@ -249,33 +249,27 @@ RSpec.describe "Calendar JSON across DST changes", type: :request do
           expect(rows["event-#{all_day.id}"]["allDay"]).to be(true)
         end
 
-        it "GET /admin/calendar/unavailabilities_json/:id and utc_unavailabilities_json/:id render it" do
+        it "GET /admin/calendar/unavailabilities_json/:id renders it" do
           StaffSpace.create!(user: staff, space: space)
           u = create(:staff_unavailability, user: staff, start_time: local(*s), end_time: local(*e))
           whole = create(:staff_unavailability, user: staff, start_time: local(*day_start), end_time: local(*day_end))
           at(now, :admin)
-          get unavailabilities_json_admin_calendar_index_path(id: space.id)
+          get unavailabilities_json_admin_calendar_index_path(id: space.id), params: { start: local(*day_start).iso8601, end: (local(*day_end) + 1.day).iso8601 }
           expect(response).to have_http_status(:ok)
           rows = unavailabilities_of(response.parsed_body, staff).index_by { |r| r["id"] }
-          expect(rows[u.id]).to include("end" => local(*e).strftime("%Y-%m-%dT%H:%M:%S"), "allDay" => false)
-          expect(rows[whole.id]["allDay"]).to be(true)
-
-          get utc_unavailabilities_json_admin_calendar_index_path(id: space.id)
-          expect(response).to have_http_status(:ok)
-          rows = unavailabilities_of(response.parsed_body, staff).index_by { |r| r["id"] }
-          expect(rows[u.id]["allDay"]).to be(false)
-          expect(rows[whole.id]["allDay"]).to be(true)
+          expect(rows[u.id]).to include("end" => local(*e).iso8601, "allDay" => false)
+          expect(rows[whole.id]).to include("start" => local(*day_start).to_date.iso8601, "allDay" => true)
         end
 
         it "GET /staff/unavailabilities/json renders it" do
           me = at(now, :staff)
           u = create(:staff_unavailability, user: me, start_time: local(*s), end_time: local(*e))
           whole = create(:staff_unavailability, user: me, start_time: local(*day_start), end_time: local(*day_end))
-          get json_staff_unavailabilities_path
+          get json_staff_unavailabilities_path, params: { start: local(*day_start).iso8601, end: (local(*day_end) + 1.day).iso8601 }
           expect(response).to have_http_status(:ok)
           rows = response.parsed_body.index_by { |r| r["id"] }
           expect(rows[u.id]).to include("end" => local(*e).iso8601, "allDay" => false)
-          expect(rows[whole.id]["allDay"]).to be(true)
+          expect(rows[whole.id]).to include("start" => local(*day_start).to_date.iso8601, "allDay" => true)
         end
       end
     end

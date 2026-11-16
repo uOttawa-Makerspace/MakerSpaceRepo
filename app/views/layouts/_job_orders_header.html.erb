@@ -7,24 +7,24 @@
     <div class="collapse navbar-collapse" id="navbarJobOrders">
       <ul class="navbar-nav mx-auto align-items-xl-center">
         <li class="nav-item">
-          <%= link_to "#{t('navbar.user.joborder', default: 'Job Orders')} #{t('navbar.home', default: 'Home')}", landing_job_orders_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
+          <%= link_to "#{t('navbar.user.joborder')} #{t('navbar.home')}", landing_job_orders_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
         </li>
         <li class="nav-item">
-          <%= link_to t('job_orders.public_page.my_job_orders', default: 'My Job Orders'), job_orders_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
+          <%= link_to t('job_orders.public_page.my_job_orders'), job_orders_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
         </li>
         <li class="nav-item">
-          <%= link_to t('job_orders.public_page.create_a_new_job_order', default: 'Create a new Job Order'), new_job_order_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
+          <%= link_to t('job_orders.public_page.create_a_new_job_order'), new_job_order_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
         </li>
 
         <% if current_user.staff? || current_user.admin? %>
           <li class="nav-item">
-            <%= link_to 'All Job Orders (Staff Only)', admin_job_orders_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
+            <%= link_to t('job_orders.navigation.all_job_orders_staff_only'), admin_job_orders_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
           </li>
         <% end %>
 
         <% if current_user.admin? %>
           <li class="nav-item">
-            <%= link_to 'Settings (Admin Only)', settings_job_orders_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
+            <%= link_to t('job_orders.navigation.settings_admin_only'), settings_job_orders_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
           </li>
         <% end %>
       </ul>

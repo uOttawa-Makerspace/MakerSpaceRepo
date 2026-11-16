@@ -3,6 +3,8 @@
 class VolunteerTasksController < SessionsController
   include VolunteerTasksHelper
   include VolunteerAreaAccess
+  skip_authorization only: :complete_task,
+                     reason: "#{Authorization::ROLLOUT_PENDING}checked by task_owner_or_staff"
   before_action -> { @with_volunteer_header = true }
   before_action :staff_access, except: %i[show index my_tasks complete_task]
   before_action :volunteer_access, only: %i[show index my_tasks]
@@ -11,25 +13,25 @@ class VolunteerTasksController < SessionsController
 
   def index
     # Find all tasks that currently have an active volunteer assigned
-    active_assigned_task_ids = VolunteerTaskJoin.active
+    active_assigned_task_ids = VolunteerTaskJoin.joined
                                                 .where(user_type: "Volunteer")
                                                 .select(:volunteer_task_id)
 
     # 1. Available Tasks (Open tasks with NO active volunteer assigned)
     available_scope = VolunteerTask.where(status: "open")
                                    .where.not(id: active_assigned_task_ids)
-                                   .includes(:space, { require_trainings: :training }, volunteer_task_joins: :user)
+                                   .includes(:space, :volunteer_task_joins, { require_trainings: :training }, responsible_staff_joins: :user)
                                    .order(created_at: :desc)
 
     # 2. Assigned Tasks (Open tasks WITH an active volunteer assigned)
     assigned_scope = VolunteerTask.where(status: "open")
                                   .where(id: active_assigned_task_ids)
-                                  .includes(:space, { require_trainings: :training }, volunteer_task_joins: :user)
+                                  .includes(:space, :volunteer_task_joins, { require_trainings: :training }, responsible_staff_joins: :user)
                                   .order(created_at: :desc)
 
     # 3. Completed Tasks
     completed_scope = VolunteerTask.where(status: "completed")
-                                   .includes(:space, { require_trainings: :training }, volunteer_task_joins: :user)
+                                   .includes(:space, :volunteer_task_joins, { require_trainings: :training }, responsible_staff_joins: :user)
                                    .order(updated_at: :desc)
 
     @pagy_available, @available_volunteer_tasks = pagy(available_scope, page_key: "page_available", limit: 50)
@@ -48,11 +50,10 @@ class VolunteerTasksController < SessionsController
   def create
     @volunteer_task = VolunteerTask.new
     @volunteer_task.user_id = @user.try(:id)
-    if @volunteer_task.update_from_form(volunteer_task_params, **task_edit_params)
-      update_photos
-      redirect_to volunteer_tasks_path, notice: "You've successfully created a new Volunteer Task"
+    if save_task_with_photos(@volunteer_task)
+      redirect_to volunteer_tasks_path, notice: I18n.t("volunteer_area.flash.task_created")
     else
-      redirect_to new_volunteer_task_path, alert: @volunteer_task.errors.full_messages.to_sentence
+      redirect_to new_volunteer_task_path, alert: task_refusal(@volunteer_task)
     end
   end
 
@@ -64,8 +65,6 @@ class VolunteerTasksController < SessionsController
     trainings_already_added = @volunteer_task.require_trainings.pluck(:training_id)
     @trainings = Training.where.not(id: trainings_already_added).pluck(:name, :id)
     @trainings_already_added = Training.where(id: trainings_already_added).pluck(:name, :id)
-    @user_trainings = user_trainings
-    @volunteer_task_trainings = volunteer_task_trainings
     @volunteer_task_request = @volunteer_task
                                 .volunteer_task_requests
                                 .where(user_id: current_user.id)
@@ -77,21 +76,24 @@ class VolunteerTasksController < SessionsController
     if current_user.staff?
       @volunteers = User.joins(:programs)
                         .where(programs: { program_type: Program::VOLUNTEER })
-                        .where.not(id: active_user_ids(@volunteer_task))
+                        .where.not(id: joined_user_ids(@volunteer_task))
                         .pluck(:name, :id)
       @staff = User.where(role: %w[staff admin])
-                   .where.not(id: active_user_ids(@volunteer_task))
+                   .where.not(id: joined_user_ids(@volunteer_task))
                    .pluck(:name, :id)
       @volunteers_in_task = User.joins(:programs)
-                                .where(programs: { program_type: Program::VOLUNTEER }, id: active_user_ids(@volunteer_task))
+                                .where(programs: { program_type: Program::VOLUNTEER }, id: joined_user_ids(@volunteer_task))
                                 .pluck(:name, :id)
-      @staff_in_task = User.where(role: %w[staff admin], id: active_user_ids(@volunteer_task))
+      @staff_in_task = User.where(role: %w[staff admin], id: joined_user_ids(@volunteer_task))
                            .pluck(:name, :id)
     end
   end
 
   def my_tasks
-    @your_volunteer_tasks = current_user.get_volunteer_tasks_from_volunteer_joins
+    @your_volunteer_tasks = current_user.volunteer_task_joins.joined
+                                        .includes(volunteer_task: [:space, { require_trainings: :training }])
+                                        .map(&:volunteer_task)
+    @under_review_task_ids = current_user.volunteer_task_requests.not_processed.pluck(:volunteer_task_id).to_set
     @completed_task_requests = current_user.volunteer_task_requests
                                            .processed
                                            .approved
@@ -110,43 +112,41 @@ class VolunteerTasksController < SessionsController
     @tasks_categories = %w[Events Projects Supervising Workshops Other]
     @certifications = Training.all
     @volunteers_in_task = User.where(
-      id: @volunteer_task.volunteer_task_joins.active.where(user_type: "Volunteer").pluck(:user_id)
+      id: @volunteer_task.volunteer_task_joins.joined.where(user_type: "Volunteer").pluck(:user_id)
     )
     @staff_in_task = User.where(
-      id: @volunteer_task.volunteer_task_joins.active.where.not(user_type: "Volunteer").pluck(:user_id)
+      id: @volunteer_task.volunteer_task_joins.joined.where.not(user_type: "Volunteer").pluck(:user_id)
     )
     @staff_available = User.where(role: %w[staff admin])
-                           .where.not(id: active_user_ids(@volunteer_task))
+                           .where.not(id: joined_user_ids(@volunteer_task))
     @volunteers_available = User.joins(:programs)
                                 .where(programs: { program_type: Program::VOLUNTEER })
-                                .where.not(id: active_user_ids(@volunteer_task))
+                                .where.not(id: joined_user_ids(@volunteer_task))
   end
 
   def update
     volunteer_task = VolunteerTask.find(params[:id])
-    if volunteer_task.update_from_form(volunteer_task_params, **task_edit_params)
-      @volunteer_task = volunteer_task
-      update_photos
-      redirect_to volunteer_tasks_path, notice: "Volunteer task updated"
+    if save_task_with_photos(volunteer_task)
+      redirect_to volunteer_tasks_path, notice: I18n.t("volunteer_area.flash.task_updated")
     else
-      redirect_to edit_volunteer_task_path(volunteer_task), alert: volunteer_task.errors.full_messages.to_sentence
+      redirect_to edit_volunteer_task_path(volunteer_task), alert: task_refusal(volunteer_task)
     end
   end
 
   def destroy
     volunteer_task = VolunteerTask.find(params[:id])
     if volunteer_task.destroy
-      flash[:notice] = "Volunteer Task Deleted"
+      flash[:notice] = I18n.t("volunteer_area.flash.task_deleted")
     else
-      flash[:alert] = volunteer_task.errors.full_messages.to_sentence.presence || "Something went wrong"
+      flash[:alert] = volunteer_task.errors.full_messages.to_sentence.presence || I18n.t("volunteer_area.flash.task_not_deleted")
     end
     redirect_to volunteer_tasks_path
   end
 
   private
 
-  def active_user_ids(task)
-    task.volunteer_task_joins.active.pluck(:user_id)
+  def joined_user_ids(task)
+    task.volunteer_task_joins.joined.pluck(:user_id)
   end
 
   # The form's selects submit an empty value when nothing is chosen; those are not ids.
@@ -168,33 +168,44 @@ class VolunteerTasksController < SessionsController
     task = VolunteerTask.find(params[:id])
     return if current_user.staff? || (task.user_id.present? && task.user_id == current_user.id)
 
-    flash[:alert] = "You cannot access this area."
+    flash[:alert] = I18n.t("volunteer_area.flash.no_access")
     redirect_to root_path
   end
 
+  # Saves the form and the posted photos together: when the form is refused or a photo is
+  # refused, nothing is stored (a photo's reason is added to the task's errors).
+  def save_task_with_photos(task)
+    @volunteer_task = task
+    saved =
+      VolunteerTask.transaction do
+        raise ActiveRecord::Rollback unless task.update_from_form(volunteer_task_params, by: current_user, **task_edit_params)
+
+        update_photos
+        true
+      end
+    saved == true
+  rescue Photo::Refused => e
+    task.errors.add(:base, "#{I18n.t('errors.volunteer.tasks.photos_refused')} #{e.message}")
+    false
+  end
+
+  def task_refusal(task)
+    task.errors.full_messages.to_sentence
+  end
+
+  # New photos (at most five) are added before any ticked one is removed, so a refused photo
+  # leaves the existing photos untouched. Only this task's photos with a ticked id are removed;
+  # removing a photo deletes only its row here, and Active Storage deletes the stored file after
+  # the surrounding transaction has committed.
   def update_photos
-    if params[:deleteimages].present?
-      @volunteer_task.photos.each do |img|
-        if params[:deleteimages].include?(img.image.filename.to_s)
-          img.image.purge
-          img.destroy
-        end
-      end
-    end
+    uploads = Array(params[:images]).first(5).reject(&:blank?)
+    Photo.create_from_uploads!(uploads, volunteer_task_id: @volunteer_task.id)
+    @volunteer_task.photos.where(id: ticked_photo_ids).find_each(&:destroy)
+  end
 
-    if params[:images].present?
-      params[:images].first(5).each do |img|
-        next if img.blank?
-
-        dimension = FastImage.size(img.tempfile, raise_on_failure: true)
-        Photo.create(
-          image: img,
-          volunteer_task_id: @volunteer_task.id,
-          width: dimension.first,
-          height: dimension.last
-        )
-      end
-    end
+  # The photo ids the edit form ticked for removal: a comma-joined string (or a list).
+  def ticked_photo_ids
+    Array(params[:deleteimages]).flat_map { |v| v.to_s.split(",") }.map(&:strip).reject(&:blank?).map(&:to_i)
   end
 
   def volunteer_task_params

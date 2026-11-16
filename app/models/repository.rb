@@ -2,6 +2,8 @@
 
 class Repository < ApplicationRecord
   include BCrypt
+  include Categorizable
+  include Hideable
   require 'bcrypt'
 
   # There's two ways to reach a user, one is the user that created the repo
@@ -15,7 +17,7 @@ class Repository < ApplicationRecord
   has_and_belongs_to_many :users
   belongs_to :project_proposal, optional: true
 
-  has_many :photos, -> { order(position: :asc) }, dependent: :destroy, inverse_of: :repository
+  has_many :photos, -> { order(position: :asc, id: :asc) }, dependent: :destroy, inverse_of: :repository
   # https://api.rubyonrails.org/classes/ActiveRecord/NestedAttributes/ClassMethods.html
   # This method requires us to mark photos for deletion.
   # TODO: Move the attachments into a concern?
@@ -26,18 +28,30 @@ class Repository < ApplicationRecord
   accepts_nested_attributes_for :repo_files, allow_destroy: true
   validates_associated :repo_files
 
-  has_many :categories, dependent: :destroy
   has_many :equipments, dependent: :destroy
   has_many :comments, dependent: :destroy
   has_many :likes, dependent: :destroy
   has_many :makes, class_name: 'Repository', foreign_key: 'make_id', dependent: :nullify
   belongs_to :parent,
+             -> { including_hidden },
              class_name: 'Repository',
              foreign_key: 'make_id',
              optional: true
-  after_commit :clear_zip_cache, on: %i[update destroy]
 
   scope :public_repos, -> { where(share_type: 'public') }
+
+  # The repositories a viewer may open: public ones, and private ones the viewer owns or is a member
+  # of, or has unlocked with the password (unlocked_ids); staff and admins see all. The same rule as
+  # SessionsController#repository_unlocked?, as a scope.
+  def self.viewable_by(viewer, unlocked_ids = [])
+    return all if viewer.staff?
+
+    member_ids = unscoped.joins(:users).where(users: { id: viewer.id }).select(:id)
+    public_repos.or(where(user_id: viewer.id)).or(where(id: member_ids)).or(where(id: unlocked_ids))
+  end
+
+  # What a repository card shows: the owner's username and the first photo.
+  scope :with_card_data, -> { includes(:owner, photos: { image_attachment: :blob }) }
 
   scope :fuzzy_search,
         ->(query) do
@@ -63,6 +77,9 @@ class Repository < ApplicationRecord
     ]
   end
 
+  # Hidden repositories hold their title too. The unique index on (user_id, title) enforces the same rule in the
+  # database; a save that loses a race for a title gets the same error as one that fails this validation.
+  TITLE_INDEX = "index_repositories_on_user_id_and_title"
   validates :title, presence: true, uniqueness: { scope: :user_id } # :owner
 
   validates :share_type, inclusion: { in: %w[public private], message: '' }
@@ -70,7 +87,7 @@ class Repository < ApplicationRecord
   validates :password, presence: true, if: :private?
 
   # This seems to work fine for limiting association counts.
-  # Max 5 gallery photos per repository.
+  # Between 1 and 10 gallery photos per repository.
   validates :photos,
             length: {
               maximum: 10,
@@ -81,8 +98,6 @@ class Repository < ApplicationRecord
   #           inclusion: { within: CategoryOption.show_options },
   #           presence: { message: "A category is required."},
   #           length: {maximum: 5, message:"You may only select 5 categories."}
-  default_scope { where(deleted: false) }
-
   scope :between_dates_picked,
         ->(start_date, end_date) do
           where('created_at BETWEEN ? AND ? ', start_date, end_date)
@@ -97,13 +112,23 @@ class Repository < ApplicationRecord
   end
 
   before_update do
-    self.slug =
-      id.to_s + '.' + title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')
+    self.slug = id_slug
   end
 
-  # Undo what creating it awarded: 25 for a repository, 15 for a make
-  before_destroy do
-    users.each { |u| u.decrement!(:reputation, make_id.present? ? 15 : 25) }
+  # The stored slug is "<id>.<title>". A new record has no id until its row is inserted, so the create path calls
+  # this inside its transaction once the record is saved. An edit already stores it (before_update).
+  def store_id_slug!
+    update_column(:slug, id_slug) unless slug == id_slug
+    true
+  end
+
+  def id_slug
+    "#{id}.#{title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')}"
+  end
+
+  # The gallery photos in display order, with the image attachments and blobs the gallery reads.
+  def gallery_photos
+    photos.includes(image_attachment: :blob)
   end
 
   def thumbnail_variant(variant)
@@ -120,11 +145,16 @@ class Repository < ApplicationRecord
     share_type.eql?('private')
   end
 
-  # Owner (user_id) or member of the habtm `users`. A guest (User.new) is never an owner.
+  # The owner (user_id). A guest (User.new) is never an owner.
   def owned_by?(user)
     return false if user.nil? || user.id.blank?
 
-    user_id == user.id || users.include?(user)
+    user_id == user.id
+  end
+
+  # The owner or a member of the habtm `users`.
+  def editable_by?(user)
+    owned_by?(user) || (user&.id.present? && users.include?(user))
   end
 
   # What deleting an account does to the repositories it owns (repositories.user_id), inside the
@@ -143,17 +173,19 @@ class Repository < ApplicationRecord
                       .where('NOT EXISTS (SELECT 1 FROM repositories owned WHERE owned.user_id = users.id AND owned.title = ?)',
                              repository.title)
                       .order(:id).lock('FOR SHARE').first
-      changes = new_owner ? { user_id: new_owner.id } : { deleted: true }
+      changes = new_owner ? { user_id: new_owner.id } : { deleted: true, hidden_reason: "account_deleted" }
       repository.update_columns(changes.merge(updated_at: Time.current))
       clear_zip_cache_after_commit(repository)
     end
   end
 
-  # Brings back what release_owned_by! hid: the hidden repositories still owned by the user. A
-  # repository handed to another member has a different owner and stays with them.
+  # Brings back what release_owned_by! hid: the repositories still owned by the user that were hidden
+  # by the account deletion. One the user or an admin deleted, or one hidden before the reason was
+  # recorded, stays hidden. A repository handed to another member has a different owner and stays
+  # with them.
   def self.restore_hidden_for!(user)
-    unscoped.where(user_id: user.id, deleted: true).find_each do |repository|
-      repository.update_columns(deleted: false, updated_at: Time.current)
+    unscoped.where(user_id: user.id, deleted: true, hidden_reason: :account_deleted).find_each do |repository|
+      repository.update_columns(deleted: false, hidden_reason: nil, updated_at: Time.current)
       clear_zip_cache_after_commit(repository)
     end
   end
@@ -187,8 +219,21 @@ class Repository < ApplicationRecord
 
   def clear_zip_cache
     File.delete(zip_path) if File.exist?(zip_path)
-  rescue StandardError => e
-    Rails.logger.error("Failed to delete cached zip for Repository ##{id}: #{e.message}")
+  rescue SystemCallError => e
+    # The stale zip stays on disk until the next build replaces it.
+    HandledError.report(e, severity: :warning, source: "repository.clear_zip_cache", repository_id: id)
+  end
+
+  private
+
+  # A save that loses a race for a title runs in its own savepoint, so an enclosing transaction stays usable.
+  def create_or_update(...)
+    transaction(requires_new: true) { super }
+  rescue ActiveRecord::RecordNotUnique => e
+    raise unless e.message.include?(TITLE_INDEX)
+
+    errors.add(:title, :taken)
+    false
   end
 
   # validates :license,

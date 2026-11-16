@@ -262,6 +262,37 @@ RSpec.describe Certification, type: :model do
         .to change(Certification, :count).by(1)
     end
 
+    it "certify_for_project returns the certification the user already holds for that training and level" do
+      held = Certification.certify_user(ts.id, user.id, "Beginner")
+      expect { expect(Certification.certify_for_project(user.id, training.id, "Beginner")).to eq(held) }
+        .not_to change(Certification, :count)
+      expect(held.previously_new_record?).to be(true)
+      expect(Certification.certify_for_project(user.id, training.id, "Beginner").previously_new_record?).to be(false)
+    end
+
+    it "certify_for_project creates a certification for another level or user, or after the earlier one was deactivated" do
+      held = Certification.certify_user(ts.id, user.id, "Beginner")
+      expect(Certification.certify_for_project(user.id, training.id, "Advanced")).to be_previously_new_record
+      expect(Certification.certify_for_project(create(:user, :regular_user).id, training.id, "Beginner")).to be_previously_new_record
+      held.update!(active: false)
+      expect(Certification.certify_for_project(user.id, training.id, "Beginner")).to be_previously_new_record
+    end
+
+    it "certify_for_project reactivates the most recent revoked project badge only when none is held" do
+      project = create(:proficient_project, training: training)
+      granted = create(:certification, user: user, training_session: nil, training: nil, level: "Beginner")
+      create(:proficient_project_session, certification: granted, user: user, proficient_project: project, level: "Beginner")
+      granted.update!(active: false, demotion_reason: Certification::BADGE_REVOKED_REASON)
+      restore = Certification.for_projects(user.id, training.id, "Beginner")
+      expect(Certification.certify_for_project(user.id, training.id, "Beginner", restore: restore)).to eq(granted)
+      expect(granted.reload).to be_active
+      expect(Certification.certify_for_project(user.id, training.id, "Beginner", restore: restore).saved_change_to_active?).to be(false)
+    end
+
+    it "certify_for_project raises when the certification cannot be saved" do
+      expect { Certification.certify_for_project(user.id, training.id, "Expert") }.to raise_error(ActiveRecord::RecordInvalid)
+    end
+
     it "certify_user still certifies a different level, a different user, or after the earlier one was deactivated" do
       first = Certification.certify_user(ts.id, user.id, "Beginner")
       expect { Certification.certify_user(ts.id, user.id, "Advanced") }.to change(Certification, :count).by(1)
@@ -305,11 +336,81 @@ RSpec.describe Certification, type: :model do
       expect(Certification.highest_level).to eq([top])
     end
 
+    def project_certification(for_user, project_training, level)
+      granted = create(:certification, user: for_user, training_session: nil, training: nil, level: level)
+      create(:proficient_project_session, certification: granted, user: for_user, level: level,
+                                          proficient_project: create(:proficient_project, training: project_training))
+      granted
+    end
+
+    it "highest_level includes a certification earned only through a proficient project" do
+      create(:certification, user: user, training_session: ts, training: training, level: "Beginner")
+      other_training = create(:training)
+      project_only = project_certification(user, other_training, "Beginner")
+      expect(user.certifications.highest_level).to include(project_only)
+      expect(user.certifications.highest_level.size).to eq(2)
+    end
+
+    it "highest_level ranks a project certification against session ones of the same training" do
+      create(:certification, user: user, training_session: ts, training: training, level: "Beginner")
+      higher = project_certification(user, training, "Advanced")
+      expect(user.certifications.highest_level).to eq([higher])
+    end
+
+    it "highest_level ranks a session certification by its session's level, not its own level" do
+      advanced_session = create(:training_session, training: training, level: "Advanced")
+      beginner_session = create(:training_session, training: training, level: "Beginner")
+      by_session = create(:certification, user: user, training_session: advanced_session, training: training, level: "Beginner")
+      create(:certification, user: user, training_session: beginner_session, training: training, level: "Advanced")
+      expect(user.certifications.highest_level).to eq([by_session])
+    end
+
+    it "highest_level drops a training whose levels are all unknown" do
+      odd = create(:training_session, training: training, level: "Beginner")
+      odd.update_column(:level, "Expert")
+      create(:certification, user: user, training_session: odd, training: training, level: "Beginner")
+      expect(user.certifications.highest_level).to eq([])
+    end
+
+    it "highest_level skips a certification whose training cannot be found" do
+      orphan = create(:certification, user: user, training_session: nil, training: nil, level: "Beginner")
+      project_without_training = create(:proficient_project, training: nil)
+      create(:proficient_project_session, certification: orphan, user: user, level: "Beginner",
+                                          proficient_project: project_without_training)
+      create(:certification, user: user, training_session: nil, training: nil, level: "Beginner")
+      kept = create(:certification, user: user, training_session: ts, training: training, level: "Beginner")
+      expect(user.certifications.highest_level).to eq([kept])
+    end
+
     it "demoted (inactive) certifications disappear from the default scope but not from unscoped" do
       cert = create(:certification, user: user, training_session: ts, training: training)
       cert.update!(active: false)
       expect(user.certifications.reload).to be_empty
       expect(Certification.unscoped.where(id: cert.id)).to exist
+    end
+  end
+
+  describe "#duplicate_held?" do
+    let(:cert) { create(:certification) }
+
+    it "is false for an active certification" do
+      expect(cert.duplicate_held?).to be(false)
+    end
+
+    it "is false for a deactivated certification when the user holds no other" do
+      cert.update!(active: false)
+      expect(cert.duplicate_held?).to be(false)
+    end
+
+    it "is true for a deactivated certification when an active one of the same training and level exists" do
+      cert.update!(active: false)
+      create(:certification, user: cert.user, training_session: cert.training_session, level: cert.level)
+      expect(cert.duplicate_held?).to be(true)
+    end
+
+    it "is false when the training cannot be found" do
+      cert.update_columns(active: false, training_session_id: nil)
+      expect(Certification.unscoped.find(cert.id).duplicate_held?).to be(false)
     end
   end
 end

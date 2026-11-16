@@ -34,8 +34,10 @@ class RepositoriesController < SessionsController
   before_action -> { ensure_repository_unlocked(@repository) }, only: :add_like
   before_action :set_member_repository,
                 only: %i[link_to_pp add_member remove_member]
-  before_action :check_ownership,
-                only: %i[edit update destroy add_member remove_member]
+  before_action :check_editable, only: %i[edit update]
+  before_action :check_ownership, only: %i[destroy add_member remove_member]
+  # After the permission checks, so who owns a locked repository is never told to someone turned away
+  before_action :require_owner_address, only: %i[edit update destroy add_like]
   # Same rule as the show page's link form: members, staff and admin
   before_action :check_link_permission, only: :link_to_pp
 
@@ -48,7 +50,7 @@ class RepositoriesController < SessionsController
     end
 
     # Replace `.page params[:page]` with `pagy(...)`:
-    @pagy, @comments = pagy(@repository.comments.order(comment_filter), limit: 5)
+    @pagy, @comments = pagy(@repository.comments.includes(:user).order(comment_filter), limit: 5)
 
     @vote =
       @user
@@ -66,29 +68,24 @@ class RepositoriesController < SessionsController
 
     @liked = @repository.likes.find_by(user_id: @user.id).nil? ? false : true
 
-    # Add this repo to recently viewed cookie
-    begin
-      this_link =
-        repository_path id: @repository.id,
-                        user_username: @repository.user_username
-      this_proj_name = @repository.title[..35]
-      recently_viewed =
-        begin
-          JSON.parse(cookies[:recently_viewed])
-        rescue StandardError
-          {}
-        end
-      recently_viewed = {} unless recently_viewed.is_a?(Hash)
-      unless recently_viewed.key?(this_link)
-        recently_viewed[this_link] = this_proj_name
-        recently_viewed = recently_viewed.take(5).to_h
-      end
-    rescue StandardError
-      cookies[:recently_viewed] = nil
-    else
-      cookies[:recently_viewed] = JSON.generate(recently_viewed)
-    end
+    remember_recently_viewed
   end
+
+  # Puts this repository first in the recently viewed cookie, which keeps the five latest views
+  # without repeats. A cookie that is missing, not a JSON object, or holds links that are not paths on
+  # this site starts the list again or loses just those entries.
+  def remember_recently_viewed
+    link = repository_path(id: @repository.id, user_username: @repository.user_username)
+    earlier = parse_recently_viewed.except(link)
+    recently_viewed = { link => @repository.title[..35] }.merge(earlier).first(5).to_h
+    cookies[:recently_viewed] = JSON.generate(recently_viewed)
+  end
+  private :remember_recently_viewed
+
+  def parse_recently_viewed
+    RecentlyViewed.parse(cookies[:recently_viewed])
+  end
+  private :parse_recently_viewed
 
   def download_files
     # Verify authorization for private repositories
@@ -120,7 +117,11 @@ class RepositoriesController < SessionsController
   end
 
   def edit
-    if @repository.owned_by?(@user) || @user.admin?
+    if @repository.editable_by?(@user) || @user.admin?
+      # The form lists every photo with its image and file name.
+      ActiveRecord::Associations::Preloader.new(
+        records: [@repository], associations: { photos: { image_attachment: :blob } }
+      ).call
       @project_proposals =
         ProjectProposal.approved.order(title: :asc).pluck(:title, :id) if params[
         :project_proposal_id
@@ -132,27 +133,13 @@ class RepositoriesController < SessionsController
   end
 
 
+  # The repository, its owners, categories and equipment are stored together or not at all; the
+  # reputation is awarded once that has committed.
   def create
-    @repository =
-      Repository.new(repository_params.except(:categories, :equipments))
-    @repository.user_id = @user.id
-    @repository.users << @user
-    update_password
+    @repository = Repository.new(user_id: @user.id, users: [@user, *extra_owners])
 
-    if @repository.save
+    if save_with_categories_and_equipments
       @user.increment!(:reputation, 25)
-
-      if params[:owner].present?
-        params[:owner].each do |owner|
-          if User.exists?(id: owner)
-            @repository.users << User.find_by(id: owner)
-          end
-        end
-        @repository.save
-      end
-      
-      create_categories
-      create_equipments
       redirect_to repository_path(@user.username, @repository.slug).to_s
     else
       @project_proposals =
@@ -162,12 +149,8 @@ class RepositoriesController < SessionsController
   end
 
   def update
-    @repository.categories.destroy_all
-    @repository.equipments.destroy_all
-    update_password
-    if @repository.update(repository_params.except(:categories, :equipments))
-      create_categories
-      create_equipments
+    if save_with_categories_and_equipments
+      @repository.clear_zip_cache
       flash[:notice] = "Project updated successfully!"
       redirect_to repository_path(
                     @repository.user_username,
@@ -178,13 +161,13 @@ class RepositoriesController < SessionsController
         ProjectProposal.approved.order(title: :asc).pluck(:title, :id) if params[
         :project_proposal_id
       ].blank?
-      flash[:alert] = "Unable to apply the changes."
+      flash.now[:alert] = validation_message(@repository, "errors.repositories.not_updated")
       render 'edit', status: :unprocessable_content
     end
   end
 
   def destroy
-    @repository.destroy
+    @repository.hide!(by: current_user)
     respond_to do |format|
       format.html do
         redirect_to user_path(@repository.user_username),
@@ -198,7 +181,7 @@ class RepositoriesController < SessionsController
     current_like = @repository.likes.find_by(user_id: @user.id)
 
     # Members do not like their own repository (a like already given can still be taken back).
-    if current_like.nil? && @repository.owned_by?(@user)
+    if current_like.nil? && @repository.editable_by?(@user)
       flash[:alert] = "You cannot like a project you are a member of"
       return redirect_to repository_path(@repository.user_username, @repository.slug)
     end
@@ -260,13 +243,8 @@ class RepositoriesController < SessionsController
       redirect_to repository_path(repository.user_username, repository.slug) and return
     end
     repository.project_proposal_id = project_proposal_id
-    if repository.save
-      flash[
-        :notice
-      ] = "This Repository was linked to the selected Project Proposal"
-    else
-      flash[:alert] = "Something went wrong."
-    end
+    write_flash(repository, "errors.repositories.proposal_not_linked",
+                "This Repository was linked to the selected Project Proposal") { repository.save }
     redirect_to repository_path(repository.user_username, repository.slug)
   end
 
@@ -287,11 +265,7 @@ class RepositoriesController < SessionsController
 
     repository.users << member
 
-    if repository.save
-      flash[:notice] = "This user was added to your repository."
-    else
-      flash[:alert] = "Something went wrong."
-    end
+    write_flash(repository, "errors.repositories.member_not_added", "This user was added to your repository.") { repository.save }
     redirect_to repository_path(repository.user_username, repository.slug)
   end
 
@@ -302,16 +276,17 @@ class RepositoriesController < SessionsController
 
     if member.nil?
       flash[:alert] = "Couldn't find user, please try again."
+    elsif !repository.users.include?(member)
+      flash[:alert] = "This user is not a member of this repository."
     elsif repository.users.length == 1
       flash[
         :alert
       ] = "You cannot remove the last person in this repository. Please go to your profile page if you want to delete this repository."
     elsif member.id == repository.user_id
       flash[:alert] = "You cannot remove the current owner of this repository."
-    elsif repository.users.delete(member)
-      flash[:notice] = "This user was removed from your repository."
     else
-      flash[:alert] = "Something went wrong."
+      repository.users.delete(member)
+      flash[:notice] = "This user was removed from your repository."
     end
     redirect_to repository_path(repository.user_username, repository.slug)
   end
@@ -332,28 +307,15 @@ class RepositoriesController < SessionsController
       flash[:alert] = "This user is not a member of your repository."
     elsif member.id == repository.user_id
       flash[:alert] = "This user is already the owner of the repository."
-    elsif repository.update(user_id: member_id)
-      flash[:notice] = "Repository ownership was successfully transferred."
     else
-      flash[
-        :alert
-      ] = "Something went wrong when transferring ownership. Please try again later."
+      write_flash(repository, "errors.repositories.ownership_not_transferred",
+                  "Repository ownership was successfully transferred.") { repository.update(user_id: member_id) }
     end
     redirect_to repository_path(denial_username(repository), repository.slug)
   end
 
   def populate_users
-    # Only the fields the user-search autocompletes read (repositories.js, teams.js, add_new_staff.js)
-    json_data =
-      User
-        .where(
-          "LOWER(name) like LOWER(?)",
-          "%#{User.sanitize_sql_like(params[:search].to_s)}%"
-        )
-        .limit(10)
-        .pluck(:id, :name, :username)
-        .map { |id, name, username| { id: id, name: name, username: username } }
-    render json: { users: json_data }
+    render json: { users: User.picker_entries(params[:search], current_user) }
   end
 
   private
@@ -365,13 +327,19 @@ class RepositoriesController < SessionsController
     @repository.users.each { |u| u.decrement!(:reputation, 5) }
   end
 
-  # Block if user is not authorized to modify repository
+  # Edit and update: the owner, a member or an admin.
+  def check_editable
+    refuse_action unless @user.admin? || @repository.editable_by?(@user)
+  end
+
+  # Delete and member management: the owner or an admin.
   def check_ownership
-    # admins can modify repo
-    unless @user.admin? || @repository.owned_by?(@user)
-      flash[:alert] = "You are not allowed to perform this action!"
-      redirect_to repository_path(denial_username(@repository), @repository.slug)
-    end
+    refuse_action unless @user.admin? || @repository.owned_by?(@user)
+  end
+
+  def refuse_action
+    flash[:alert] = "You are not allowed to perform this action!"
+    redirect_to repository_path(denial_username(@repository), @repository.slug)
   end
 
   def set_member_repository
@@ -380,7 +348,7 @@ class RepositoriesController < SessionsController
   end
 
   def check_link_permission
-    unless @user.staff? || @user.admin? || @repository.owned_by?(@user)
+    unless @user.staff? || @user.admin? || @repository.editable_by?(@user)
       flash[:alert] = "You are not allowed to perform this action!"
       redirect_to repository_path(denial_username(@repository), @repository.slug)
     end
@@ -434,6 +402,14 @@ class RepositoriesController < SessionsController
                     .or(Repository.where(slug: id))
                     .or(Repository.where(title: id))
                     .first!
+    raise ActiveRecord::RecordNotFound if ReservedUsernames.include?(params[:user_username])
+  end
+
+  # Views are found by key alone so old links keep working (redirect_to_owner_url sends them to the owner), and the
+  # password form accepts the username the guest used. Changing actions must name the owner, and a first segment
+  # that is a reserved app prefix is never a username (set_repository).
+  def require_owner_address
+    raise ActiveRecord::RecordNotFound unless @repository.user_username.to_s.casecmp?(params[:user_username].to_s)
   end
 
   def repository_params
@@ -463,37 +439,45 @@ class RepositoriesController < SessionsController
     end
   end
 
-  def create_categories
-    if params[:repository][:categories].present?
-      params[:repository][:categories]
-        .filter(&:present?)
-        .first(5)
-        .each { |c| Category.create(name: c, repository_id: @repository.id) }
+  # Like categories: names not sent (nil) keep the stored equipment; a list, even an empty one, replaces it with up
+  # to five non-blank names.
+  def replace_equipments(names)
+    return if names.nil?
+
+    @repository.equipments.destroy_all
+    names.compact_blank.first(5).each do |e|
+      # Create EquipmentOption if not there already.
+      EquipmentOption.find_or_create_by(name: e)
+      Equipment.create(name: e, repository_id: @repository.id)
     end
   end
 
-  def create_equipments
-    return if params[:repository][:equipments].blank?
-    
-    params[:repository][:equipments]
-      .filter(&:present?)
-      .first(5)
-      .each do |e|
-        # Create EquipmentOption if not there already.
-        EquipmentOption.find_or_create_by(name: e)
-        Equipment.create(name: e, repository_id: @repository.id)
+  # The new or edited repository is validated and saved first; categories and equipment are replaced only once it
+  # has saved, in the same transaction, so a refused or failed save stores nothing and leaves them as they were.
+  def save_with_categories_and_equipments
+    Repository.transaction do
+      attributes = repository_params.except(:categories, :equipments).merge(password_attributes)
+      next false unless @repository.update_with_categories(attributes, repository_params[:categories])
+
+      @repository.store_id_slug!
+      replace_equipments(repository_params[:equipments])
+      true
     end
   end
 
-  def update_password
+  # A public share type clears the password; a private one changes it only when a new one is sent.
+  def password_attributes
     if repository_params[:share_type].eql?("public")
-      @repository.password = nil
-      @repository.save
+      { password: nil }
+    elsif params[:password].present?
+      { password: BCrypt::Password.create(params[:password].join("")) }
     else
-      if params[:password].present?
-        pass = params[:password].join("")
-        @repository.update(password: BCrypt::Password.create(pass))
-      end
+      {}
     end
+  end
+
+  # Other members named on the new repository form; unknown ids are skipped.
+  def extra_owners
+    User.where(id: Array(params[:owner])).where.not(id: @user.id)
   end
 end

@@ -92,7 +92,7 @@ RSpec.describe Admin::KeyTransactionsController, type: :controller do
 
         expect(response).to redirect_to admin_key_transactions_path
         expect(flash[:alert]).to eql(
-          "Something went wrong while updating the deposit"
+          "Enter the date the deposit was returned."
         )
       end
     end

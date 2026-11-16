@@ -30,12 +30,13 @@ The data is the published (non-draft) `events` of `event_type = "shift"` that ad
 ```
 
 - A one-off event is listed only when it lies fully inside `[start, end]`. A recurring event (`recurrence_rule`) is expanded to the occurrences that start in the window, with ids `event-<id>-<unix start>`.
-- Work is capped: at most 500 occurrences per recurring event and 2000 items per response (recurrence rules are admin-entered and unvalidated, e.g. `FREQ=MINUTELY`). Past a cap the occurrences found so far are returned (earliest first) and the response carries the header `X-Truncated: true`; the body shape does not change. The header is absent when nothing was cut.
+- Work is capped: at most 500 occurrences per recurring event and 2000 items per response (a daily rule over 100 days is already 100 occurrences; a `FREQ=DAILY` event with a longer window or several events reach the caps). A rule finer than daily (`FREQ=HOURLY`, `MINUTELY`, `SECONDLY`) is not expanded: no such rule can be saved, and one stored before that check existed is listed once, as `event-<id>`, when the event lies inside the window; it does not set `X-Truncated`. Past a cap the occurrences found so far are returned (earliest first) and the response carries the header `X-Truncated: true`; the body shape does not change. The header is absent when nothing was cut.
 - `background` is `#3788d8` for an unassigned shift, otherwise a gradient of the assignees' space colours (`staff_spaces.color`, default `#3788d8`).
 - Only the fields the app reads are sent: no `name`, `draft`, `hasCurrentUser`, and no email or other user column (assignee display names appear in `title`).
 
-| Status    | `error.code`                    | When                                                                                                                                |
-| --------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| 401 / 403 | `unauthenticated` / `forbidden` | No token / not staff                                                                                                                |
-| 404       | `not_found`                     | No such space (or a non-integer id)                                                                                                 |
-| 422       | `validation_failed`             | `start`/`end` missing or not ISO 8601, `end` before `start`, range over 100 days, or `user_id` not an integer (`fields` names each) |
+| Status    | `error.code`                    | When                                                                                                                                    |
+| --------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 401 / 403 | `unauthenticated` / `forbidden` | No token / not staff                                                                                                                    |
+| 403       | `space_not_assigned`            | Staff (non-admin) named a space they are not assigned to (admins may read any space); `message` is "You are not assigned to that space" |
+| 404       | `not_found`                     | No such space (or a non-integer id)                                                                                                     |
+| 422       | `validation_failed`             | `start`/`end` missing or not ISO 8601, `end` before `start`, range over 100 days, or `user_id` not an integer (`fields` names each)     |

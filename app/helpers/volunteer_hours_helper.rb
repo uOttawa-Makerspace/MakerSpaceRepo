@@ -8,19 +8,20 @@ module VolunteerHoursHelper
   def return_approval(approval)
     case approval
     when nil
-      "Not Accessed"
+      t("volunteer_area.hours.approval.pending")
     when true
-      "Approved"
+      t("volunteer_area.hours.approval.approved")
     when false
-      "Not Approved"
+      t("volunteer_area.hours.approval.rejected")
     end
   end
 
-  def define_redirect(role)
-    if role == "volunteer"
-      redirect_to volunteer_hours_path
-    else
+  # Staff go back to the requests page; every other volunteer to their own hours.
+  def define_redirect(user)
+    if user.staff?
       redirect_to volunteer_hour_requests_volunteer_hours_path
+    else
+      redirect_to volunteer_hours_path
     end
   end
 end

@@ -2,7 +2,7 @@ class ExamsController < SessionsController
   before_action :current_user
   before_action :set_exam
   before_action :signed_in,
-                only: %i[create_from_training create_for_single_user destroy finish_exam]
+                only: %i[index show create_from_training create_for_single_user destroy finish_exam]
   before_action :grant_access, only: [:show]
   before_action :check_exam_status, only: [:show]
   before_action :only_admin_access, only: [:destroy]
@@ -17,20 +17,28 @@ class ExamsController < SessionsController
   end
 
   def create_from_training
-    training_session = @training_session
-    training_session.users.find_each do |user|
-      create_exam_and_exam_questions(user, training_session)
-      MsrMailer.send_exam(user, training_session).deliver_now
+    users = @training_session.users.to_a
+    counts = create_exams(users, @training_session)
+    if counts.nil?
+      flash[:alert] = I18n.t("exams.no_questions")
+    elsif counts.any?
+      send_exams(users, @training_session)
+      flash[:notice] = I18n.t("exams.sent_to_all", count: counts.min)
     end
-    redirect_to staff_dashboard_index_path(space_id: training_session.space.id)
+    redirect_to staff_dashboard_index_path(space_id: @training_session.space.id)
   end
 
   def create_for_single_user
     training_session = @training_session
     user = User.find(params[:user_id])
-    create_exam_and_exam_questions(user, training_session)
+    counts = create_exams([user], training_session)
+    if counts
+      send_exams([user], training_session)
+      flash[:notice] = I18n.t("exams.sent_to_user", name: user.name, count: counts.first)
+    else
+      flash[:alert] = I18n.t("exams.no_questions")
+    end
     redirect_to staff_training_session_path(training_session.id)
-    # SEND EMAIL
   end
 
   def show
@@ -45,11 +53,7 @@ class ExamsController < SessionsController
 
   def destroy
     exam = Exam.find(params[:id])
-    if exam.destroy
-      flash[:notice] = "Exam Deleted"
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    write_flash(exam, "errors.training.exam_not_deleted", I18n.t("exams.flash.deleted")) { exam.destroy }
     redirect_to exams_path
   end
 
@@ -84,19 +88,36 @@ class ExamsController < SessionsController
       exam.update(status: status, score: score)
     end
     if empty
-      flash[:alert] = "This exam has no questions. Ask staff to resend it."
+      flash[:alert] = I18n.t("exams.flash.no_exam_questions")
       return redirect_to exams_path
     end
     return reject_unopen_exam unless graded
 
     MsrMailer.finishing_exam(user, exam).deliver_now
     # MsrMailer.exam_results_staff(user, exam).deliver_now
-    flash[:notice] = "Score: #{score}. You #{status} the exam."
+    flash[:notice] = I18n.t("exams.flash.score.#{status}", score: score)
     redirect_to exams_path
   end
 
   private
 
+  # Creates one exam per user and returns how many questions each got (an exam takes every
+  # question available when the pool is smaller than the configured size). Returns nil, with
+  # nothing saved, when any exam would have no questions.
+  def create_exams(users, training_session)
+    counts = nil
+    Exam.transaction do
+      counts = users.map { |user| create_exam_and_exam_questions(user, training_session) }
+      raise ActiveRecord::Rollback if counts.any?(&:zero?)
+    end
+    counts unless counts.any?(&:zero?)
+  end
+
+  def send_exams(users, training_session)
+    users.each { |user| MsrMailer.send_exam(user, training_session).deliver_later }
+  end
+
+  # Returns the number of questions the new exam holds.
   def create_exam_and_exam_questions(user, training_session)
     new_exam =
       user.exams.new(
@@ -105,18 +126,12 @@ class ExamsController < SessionsController
         expired_at: DateTime.now + 3.days
       )
     new_exam.save!
-    if ExamQuestion.create_exam_questions(
-         new_exam.id,
-         new_exam.training.id,
-         $n_exams_question,
-         training_session.level
-       )
-      flash[
-        :notice
-      ] = "You've successfully sent exams to all users in this training."
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    ExamQuestion.create_exam_questions(
+      new_exam.id,
+      new_exam.training.id,
+      $n_exams_question,
+      training_session.level
+    )
   end
 
   def set_exam
@@ -125,28 +140,27 @@ class ExamsController < SessionsController
 
   def only_admin_access
     return if current_user.admin?
-    flash[:alert] = "You cannot access this area."
+    flash[:alert] = I18n.t("exams.flash.no_access")
     redirect_to root_path
   end
 
   def only_session_staff_access
     @training_session = TrainingSession.find(params[:training_session_id])
     return if current_user.admin? || @training_session.user.eql?(current_user)
-    flash[:alert] = "You cannot access this area."
+    flash[:alert] = I18n.t("exams.flash.no_access")
     redirect_to root_path
   end
 
   def require_question_pool
     return if @training_session.training.questions.exists?(level: @training_session.level)
-    flash[:alert] =
-      "This training has no questions at this level, so no exams were created."
+    flash[:alert] = I18n.t("exams.no_questions")
     redirect_to staff_training_session_path(@training_session.id)
   end
 
   def only_owner_access
     @exam = Exam.find(params[:exam_id])
     return if @exam.user.eql?(current_user)
-    flash[:alert] = "You cannot access this area."
+    flash[:alert] = I18n.t("exams.flash.no_access")
     redirect_to root_path
   end
 
@@ -158,16 +172,16 @@ class ExamsController < SessionsController
   def reject_unopen_exam
     flash[:alert] =
       if @exam.ungraded?
-        "This exam has expired."
+        I18n.t("exams.flash.expired")
       else
-        "You cannot finish an exam that is already finished."
+        I18n.t("exams.flash.cannot_finish_finished")
       end
     redirect_to exams_path
   end
 
   def grant_access
     return if @exam.user.eql?(current_user) || current_user.staff?
-      flash[:alert] = "You cannot access this area."
+      flash[:alert] = I18n.t("exams.flash.no_access")
       redirect_to root_path
     
   end
@@ -178,9 +192,9 @@ class ExamsController < SessionsController
     if !@exam.open_for_answers?
       flash[:alert] =
         if @exam.ungraded?
-          "This exam has expired."
+          I18n.t("exams.flash.expired")
         else
-          "You cannot access an exam after being finished."
+          I18n.t("exams.flash.cannot_open_finished")
         end
       redirect_to exams_path
     end

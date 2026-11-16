@@ -32,6 +32,15 @@ RSpec.describe "config/recurring.yml" do
     expect(Fugit.parse("every 5 minutes", multi: :fail)).to be_a(Fugit::Cron)
   end
 
+  it "holds the stale membership checkout expiry out of the schedule in every environment" do
+    config.each_value do |tasks|
+      next unless tasks.is_a?(Hash)
+
+      expect(tasks).not_to have_key("membership_expiry")
+      expect(tasks.values.grep(Hash).pluck("class")).not_to include("MembershipExpiryJob")
+    end
+  end
+
   it "mails the CDEL report from production only, on the 1st at midnight" do
     expect(config.dig("production", "cdel_report")).to include("class" => "CdelReportJob", "schedule" => "0 0 1 * *")
     expect(config["staging"]).not_to have_key("cdel_report")
@@ -43,9 +52,30 @@ RSpec.describe "config/recurring.yml" do
     expect(config["production"]).not_to have_key("google_calendar_sync")
   end
 
+  it "queues unconfirmed Google Calendar changes again every 15 minutes in production and staging" do
+    %w[production staging].each do |env|
+      expect(config.dig(env, "google_calendar_resend")).to include("class" => "GoogleCalendar::ResendJob", "schedule" => "every 15 minutes")
+    end
+    expect(Fugit.parse("every 15 minutes", multi: :fail)).to be_a(Fugit::Cron)
+  end
+
+  it "checks the locker payment records once a day in production and staging" do
+    %w[production staging].each do |env|
+      expect(config.dig(env, "locker_payment_records_check"))
+        .to include("class" => "LockerPaymentRecordsCheckJob", "schedule" => "every day at 4:30am")
+    end
+    expect(Fugit.parse("every day at 4:30am", multi: :fail)).to be_a(Fugit::Cron)
+  end
+
+  it "queues unfinished help requests again every 15 minutes in production and staging" do
+    %w[production staging].each do |env|
+      expect(config.dig(env, "help_filing_sweep")).to include("class" => "HelpFilingSweepJob", "schedule" => "every 15 minutes")
+    end
+  end
+
   it "keeps the maintenance jobs that were already scheduled" do
     %w[production staging].each do |env|
-      expect(config.fetch(env).keys).to include("clear_solid_queue_finished_jobs", "tap_box_log_cleanup")
+      expect(config.fetch(env).keys).to include("clear_solid_queue_finished_jobs", "tap_box_log_cleanup", "kiosk_sign_event_cleanup")
     end
   end
 

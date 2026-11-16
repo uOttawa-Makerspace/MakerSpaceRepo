@@ -5,6 +5,8 @@ module Api
     # Public contacts with opening hours (replaces the broken GET /hours JSON).
     # Contract: doc/api/v1/contact_infos.md.
     class ContactInfosController < BaseController
+      skip_authorization only: :index, reason: "Public by contract: contact details and opening hours"
+
       def index
         contacts = ContactInfo.where(show_hours: true).includes(:opening_hours).order(:name, :id)
         render json: contacts.map { |c| ContactInfoSerializer.call(c) }

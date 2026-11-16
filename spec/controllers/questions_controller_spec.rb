@@ -82,6 +82,7 @@ RSpec.describe QuestionsController, type: :controller do
   describe "PATCH /update" do
     context "logged as admin" do
       it "should update the question" do
+        question = create(:question, level: "Beginner").tap { |q| create(:answer, :correct, question: q); create(:answer, question: q) }
         patch :update,
               params: {
                 id: question.id,

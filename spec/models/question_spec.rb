@@ -53,6 +53,112 @@ RSpec.describe Question, type: :model do
     end
   end
 
+  describe "#update_from_form" do
+    let(:question) do
+      create(:question, level: "Beginner").tap do |q|
+        4.times { |i| Answer.create!(question: q, correct: i.zero?, description: "Answer #{i}") }
+      end
+    end
+
+    def answers_attributes_for(question)
+      question.answers.order(:id).each_with_index.to_h do |answer, i|
+        [i.to_s, { id: answer.id, description: "Edited #{i}", correct: answer.correct }]
+      end
+    end
+
+    it "saves the edited text of every answer" do
+      fresh = Question.find(question.id)
+      expect(fresh.update_from_form(description: "Changed?", answers_attributes: answers_attributes_for(question))).to be(true)
+      expect(Question.find(question.id).answers.order(:id).map { |a| a.description.to_plain_text }).to eq((0..3).map { |i| "Edited #{i}" })
+    end
+
+    def selects_while
+      queries = []
+      callback = ->(*, payload) { queries << payload[:sql] if payload[:sql].start_with?("SELECT") }
+      ActiveSupport::Notifications.subscribed(callback, "sql.active_record") { yield }
+      queries
+    end
+
+    it "loads the answer texts together and their embedded files together" do
+      fresh = Question.find(question.id)
+      attributes = answers_attributes_for(question)
+      queries = selects_while { fresh.update_from_form(description: "Changed?", answers_attributes: attributes) }
+      expect(queries.grep(/FROM "action_text_rich_texts"/).size).to eq(1)
+      expect(queries.grep(/FROM "active_storage_attachments".*"record_type" = \$1/m).size).to eq(1)
+    end
+
+    it "loads the answer texts together and does not load embedded files when the form is refused" do
+      fresh = Question.find(question.id)
+      attributes = answers_attributes_for(question).tap { |a| a["1"][:description] = "" }
+      queries = selects_while { fresh.update_from_form(answers_attributes: attributes) }
+      expect(queries.grep(/FROM "action_text_rich_texts"/).size).to eq(1)
+      expect(queries.grep(/SELECT "active_storage_attachments"\.\*/)).to be_empty
+    end
+
+    it "refuses an edit that leaves out a stored answer without text, like a submitted blank text" do
+      blank = Answer.create!(question: question, correct: false, description: "")
+      fresh = Question.find(question.id)
+      partial = { "0" => { id: question.answers.order(:id).first.id, description: "Edited 0", correct: true } }
+      expect(fresh.update_from_form(description: "Changed?", answers_attributes: partial)).to be(false)
+      submitted = Question.find(question.id)
+      submitted.update_from_form(answers_attributes: { "0" => { id: blank.id, description: "", correct: false } })
+      expect(fresh.errors.full_messages).to eq(submitted.errors.full_messages)
+      expect(fresh.errors.full_messages).not_to be_empty
+      expect(Question.find(question.id).description).not_to eq("Changed?")
+    end
+
+    it "refuses an answer without text and keeps the stored text" do
+      fresh = Question.find(question.id)
+      attributes = answers_attributes_for(question).tap { |a| a["1"][:description] = "" }
+      expect(fresh.update_from_form(answers_attributes: attributes)).to be(false)
+      expect(Question.find(question.id).answers.order(:id).map { |a| a.description.to_plain_text }).to eq((0..3).map { |i| "Answer #{i}" })
+    end
+  end
+
+  describe "answer count in the question form" do
+    def question_with(count, correct_first: true)
+      build(:question, level: "Beginner").tap do |q|
+        count.times { |i| q.answers.build(correct: correct_first && i.zero?, description: "Answer #{i}") }
+      end
+    end
+
+    it "refuses a new question with fewer than two answers" do
+      [0, 1].each do |count|
+        question = question_with(count)
+        expect(question.save(context: :question_form)).to be(false)
+        expect(question.errors.full_messages).to include("A question needs at least two answers")
+      end
+      expect(Question.count).to eq(0)
+    end
+
+    it "accepts a new question with two answers" do
+      expect(question_with(2).save(context: :question_form)).to be(true)
+    end
+
+    it "refuses an edit that leaves one answer, and keeps the stored answers" do
+      question = create(:question, level: "Beginner")
+      Answer.create!(question: question, correct: true, description: "One")
+      expect(Question.find(question.id).update_from_form(description: "Changed?")).to be(false)
+      expect(Question.find(question.id).description).not_to eq("Changed?")
+    end
+
+    it "does not count an answer marked for removal" do
+      question = create(:question, level: "Beginner")
+      Answer.create!(question: question, correct: true, description: "One")
+      Answer.create!(question: question, correct: false, description: "Two")
+      fresh = Question.find(question.id)
+      fresh.answers.to_a.last.mark_for_destruction
+      expect(fresh.valid?(:question_form)).to be(false)
+      expect(fresh.errors.full_messages).to include("A question needs at least two answers")
+    end
+
+    it "does not check a question that is saved without the form rules" do
+      question = create(:question, level: "Beginner")
+      Answer.create!(question: question, correct: true, description: "One")
+      expect(question.save).to be(true)
+    end
+  end
+
   describe "Chunk 12: answers and exam responses" do
     it "response_for_exam returns the response recorded for that exam only" do
       q = create(:question)

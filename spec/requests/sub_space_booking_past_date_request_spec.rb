@@ -493,8 +493,17 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       post_json_series(start_time: "2026-12-02 10:00", end_time: "2026-12-02 11:00",
                        recurring_end: "not-a-date", name: "BadEnd")
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body).to eq("errors" => "Invalid recurring parameters")
+      expect(response.parsed_body).to eq("errors" => ["Recurring #{I18n.t("errors.bookings.recurring_invalid")}"])
       expect(SubSpaceBooking.where(name: "BadEnd")).to be_empty
+    end
+
+    it "answers a recurring_end too long to be a date with the invalid-parameters 422" do
+      log_in!(user)
+      post_json_series(start_time: "2026-12-02 10:00", end_time: "2026-12-02 11:00",
+                       recurring_end: "2027-01-31#{" " * 200}", name: "LongEnd")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to eq("errors" => ["Recurring #{I18n.t("errors.bookings.recurring_invalid")}"])
+      expect(SubSpaceBooking.where(name: "LongEnd")).to be_empty
     end
 
     it "redirects a successful HTML create to the room's calendar with the notice" do
@@ -520,7 +529,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       expect(response.parsed_body["failed"]).to eq(["2026-12-09"])
       expect(response.parsed_body["summary"]).to eq("Booked 2 of 3 occurrences. Not booked: 2026-12-09.")
       expect(flash[:notice]).to be_nil
-      expect(flash[:alert]).to eq("Booked 2 of 3 occurrences. Not booked: 2026-12-09.")
+      expect(flash[:alert]).to be_nil
       expect(toronto_walls("Partial")).to eq(["2026-12-02 10:00", "2026-12-16 10:00"])
     end
 

@@ -1,46 +1,46 @@
-<div class="modal" id="newRangeLockerModal">
+<div class="modal" id="newRangeLockerModal" data-locker-specifiers="<%= Array(@lockers).filter_map(&:specifier).to_json %>">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">Make a range of lockers</h3>
+                <h3 class="modal-title"><%= t('lockers.index.make_range') %></h3>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
             </div>
 
             <div class="modal-body">
-                <p>Create lockers with numbers start from up to and including end of range. For example, 100 to 150 would create 50 lockers named 100, 101, 102...</p>
+                <p><%= t('lockers.new_locker.range_intro') %></p>
                 <%= form_with url: create_multiple_lockers_path, method: :post do |f| %>
                     <div class="d-md-flex align-items-baseline mb-3">
                         <span class="me-3">
-                            Create new lockers ranging from
+                            <%= t('lockers.new_locker.ranging_from') %>
                         </span>
                         <div class="me-3">
-                            <%= f.label :range_start, 'First locker number', class: 'visually-hidden', for: 'newLockerRangeStart' %>
+                            <%= f.label :range_start, t('lockers.new_locker.first_number'), class: 'visually-hidden', for: 'newLockerRangeStart' %>
                             <%= f.number_field :range_start, class: 'form-control', id: 'newLockerRangeStart', required: true %>
                         </div>
                         <span class="me-3">
-                            to
+                            <%= t('lockers.new_locker.to') %>
                         </span>
                         <div class="me-3">
-                            <%= f.label :range_end, 'Last locker number', class: 'visually-hidden', for: 'newLockerRangeEnd' %>
+                            <%= f.label :range_end, t('lockers.new_locker.last_number'), class: 'visually-hidden', for: 'newLockerRangeEnd' %>
                             <%= f.number_field :range_end, class: 'form-control', id: 'newLockerRangeEnd', required: true %>
                         </div>
                     </div>
                     <div class="input-group">
-                        <%= f.label :locker_size_id, 'Change locker size', class: 'input-group-text' %>
+                        <%= f.label :locker_size_id, t('lockers.change_locker_size'), class: 'input-group-text' %>
                         <%= f.select :locker_size_id, @locker_sizes.map { |size|
-                            [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]},
-                         {include_blank: 'Select variant...'}, { class: 'form-select locker-variant-select', aria: { label: t('common.names.locker_size') } } %>
+                            [ size.size, size.id, { 'data-data' => (@locker_product_info.dig(:variants, size.shopify_gid) || {}).to_json } ]},
+                         {include_blank: t('lockers.select_variant')}, { class: 'form-select locker-variant-select', aria: { label: t('common.names.locker_size') } } %>
                         <%= f.submit class: 'btn btn-primary' %>
                     </div>
                 <% end %>
 
                 <div id="newRangeLockersAlreadyPresent">
-                    <p>The following lockers are <b>already present</b> and will be skipped</p>
+                    <p><%= t('lockers.new_locker.already_present_html') %></p>
                     <ul></ul>
                 </div>
 
                 <div id="newRangeLockersPossible">
-                    <p>The following lockers will be created</p>
+                    <p><%= t('lockers.new_locker.will_be_created') %></p>
                     <ul></ul>
                 </div>
             </div>
@@ -52,29 +52,29 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">Make a single lockers</h3>
+                <h3 class="modal-title"><%= t('lockers.new_locker.single_title') %></h3>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
             </div>
 
             <div class="modal-body">
-                <p>Create a single locker</p>
+                <p><%= t('lockers.new_locker.single_intro') %></p>
                 <%= form_with controller: :lockers, model: Locker.new do |f| %>
                     <div class="input-group mb-3">
                         <%= f.label :specifier, class: 'input-group-text' %>
                         <%= f.number_field :specifier, class: 'form-control', required: true %>
                     </div>
                     <div class="input-group mb-3">
-                        <%= f.label :locker_size_id, 'Change locker size', class: 'input-group-text' %>
+                        <%= f.label :locker_size_id, t('lockers.change_locker_size'), class: 'input-group-text' %>
                         <%= f.select :locker_size_id, @locker_sizes.map { |size|
-                            [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]},
-                         {include_blank: 'Select variant...'}, { class: 'form-select locker-variant-select', aria: { label: t('common.names.locker_size') } } %>
+                            [ size.size, size.id, { 'data-data' => (@locker_product_info.dig(:variants, size.shopify_gid) || {}).to_json } ]},
+                         {include_blank: t('lockers.select_variant')}, { class: 'form-select locker-variant-select', aria: { label: t('common.names.locker_size') } } %>
                     </div>
                     <%= f.submit class: 'btn btn-primary float-end' %>
                 <% end %>
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><%= t('common.close') %></button>
             </div>
         </div>
     </div>

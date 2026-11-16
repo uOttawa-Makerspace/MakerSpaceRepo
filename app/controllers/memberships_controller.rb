@@ -31,15 +31,7 @@ class MembershipsController < SessionsController
     days = params[:extend_days].to_i
 
     if days.positive?
-      start_time = Membership.calculate_end_date(user)
-      Membership.create!(
-        user: user,
-        membership_tier: MembershipTier.find_by!(title_en: "Custom Membership"),
-        status: 'paid',
-        start_date: start_time,
-        end_date: start_time + days.days
-      )
-      flash[:notice] = "Custom membership added for #{days} days."
+      grant_custom_membership(user, days)
     else
       flash[:alert] = "Please enter a valid number of days."
     end
@@ -48,13 +40,22 @@ class MembershipsController < SessionsController
   end
 
   def revoke
-    membership = Membership.find(params[:id])
-    membership.update!(status: 'revoked')
+    Membership.find(params[:id]).revoke!
     flash[:notice] = "Membership revoked successfully."
+    redirect_back(fallback_location: memberships_path)
+  rescue Membership::NotRevocable => e
+    flash[:alert] = e.message
     redirect_back(fallback_location: memberships_path)
   end
 
   private
+
+  def grant_custom_membership(user, days)
+    Membership.grant_custom!(user, days)
+    flash[:notice] = "Custom membership added for #{days} days."
+  rescue Membership::DuplicateGrant
+    flash[:alert] = "The same custom membership was just added for this member."
+  end
 
   # Why this purchase is refused before anything is saved, or nil. Checked in this order: the
   # renewal cutoff, a hidden tier, a faculty tier.
@@ -72,20 +73,21 @@ class MembershipsController < SessionsController
     end
   end
 
-  # Saves the pending membership and sends the user to its checkout; any failure removes it again.
+  # Sends the user to the checkout of their pending membership for the tier (made now if there is none). A
+  # failure leaves the pending membership in place: it is reused by the next attempt.
   def start_purchase
-    @membership = current_user.memberships.new(membership_params)
-    @membership.save!
-    redirect_to @membership.checkout_link, allow_other_host: true
+    redirect_to Membership.begin_purchase(current_user, membership_params[:membership_tier_id]), allow_other_host: true
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to your_memberships_memberships_path, alert: validation_message(e.record, 'errors.memberships.not_created')
   rescue StandardError => e
-    Rails.logger.error "Membership creation failed: #{e.message}"
-    @membership.destroy if @membership&.persisted?
-    redirect_to your_memberships_memberships_path, alert: 'Error creating membership. Please try again.'
+    report_unexpected(e, source: 'memberships#create')
+    redirect_to your_memberships_memberships_path,
+                alert: I18n.t('errors.memberships.checkout_failed', reference: error_reference)
   end
 
   def load_membership_data
-    @memberships = current_user.memberships.where(status: 'paid').order(created_at: :desc)
-    @active_memberships = current_user.memberships.active
+    @memberships = current_user.memberships.where(status: 'paid').order(created_at: :desc).preload(:membership_tier)
+    @active_memberships = current_user.memberships.active.preload(:membership_tier)
   end
   
   def membership_params

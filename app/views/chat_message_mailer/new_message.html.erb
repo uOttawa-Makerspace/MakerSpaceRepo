@@ -1,26 +1,24 @@
 <% content_for :preheader do %>
-  MakerRepo - Nouveau message // New message
+  <%= @subject %>
 <% end %>
 
 <% content_for :why_received do %>
-  Vous avez reçu ce courriel parce qu'un nouveau message a été posté sur votre commande de travail sur
-  <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+  <%= t(".why_received_html", locale: :fr, site_link: tag.a("makerepo.com", href: "https://makerepo.com", style: "text-decoration: underline; color: #999999; font-size: 12px; text-align: center;")) %>
   <br>
-  You received this email because a new message was posted on your job order on
-  <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+  <%= t(".why_received_html", locale: :en, site_link: tag.a("makerepo.com", href: "https://makerepo.com", style: "text-decoration: underline; color: #999999; font-size: 12px; text-align: center;")) %>
 <% end %>
 
 <% content_for :team_name do %>
-  The MakerRepo Team
+  <%= t("layouts.mailer.makerrepo_team") %>
 <% end %>
 
 <!-- French Content -->
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Bonjour,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t(".hello", locale: :fr) %></p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  Vous avez reçu un nouveau message concernant votre commande de travail #<%= @job_order.id %> de la part de <%= @sender_name[:fr] %>.
+  <%= t(".body", id: @job_order.id, sender: @sender_name[:fr], locale: :fr) %>
 </p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  Message :<br/>
+  <%= t(".message", locale: :fr) %><br/>
   <span style="font-style: italic"><%= @chat_message.message %></span>
 </p>
 <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
@@ -31,7 +29,7 @@
           <tbody>
             <tr>
               <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; border-radius: 5px; text-align: center; background-color: #e55426ff;" valign="top" align="center" bgcolor="#e55426ff">
-                <a href="<%= job_order_url(@job_order) %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;">Voir la commande</a>
+                <a href="<%= job_order_url(@job_order) %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;"><%= t(".button", locale: :fr) %></a>
               </td>
             </tr>
           </tbody>
@@ -44,12 +42,12 @@
 <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
 
 <!-- English Content -->
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t(".hello", locale: :en) %></p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  You have received a new message regarding your Job Order #<%= @job_order.id %> from <%= @sender_name[:en] %>.
+  <%= t(".body", id: @job_order.id, sender: @sender_name[:en], locale: :en) %>
 </p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  Message:<br/>
+  <%= t(".message", locale: :en) %><br/>
   <span style="font-style: italic"><%= @chat_message.message %></span>
 </p>
 <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
@@ -60,7 +58,7 @@
           <tbody>
             <tr>
               <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; border-radius: 5px; text-align: center; background-color: #e55426ff;" valign="top" align="center" bgcolor="#e55426ff">
-                <a href="<%= job_order_url(@job_order) %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;">View Job Order</a>
+                <a href="<%= job_order_url(@job_order) %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;"><%= t(".button", locale: :en) %></a>
               </td>
             </tr>
           </tbody>

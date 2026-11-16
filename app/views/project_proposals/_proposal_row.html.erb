@@ -18,28 +18,28 @@
 
                 <% if project_proposal.linked_project_proposal.present? %>
                     <span class="badge text-bg-secondary small">
-                        <i class="fa-solid fa-code-branch"></i> Rev of <%= link_to "##{project_proposal.linked_project_proposal_id}", project_proposal_path(project_proposal.linked_project_proposal.slug), class: 'text-white text-decoration-underline' %>
+                        <i class="fa-solid fa-code-branch"></i> Rev of <%= link_to "##{project_proposal.linked_project_proposal_id}", project_proposal_path(project_proposal.linked_project_proposal), class: 'text-white text-decoration-underline' %>
                     </span>
                 <% end %>
 
                 <h2 class="fs-6 fw-bold mb-0 ms-1">
-                    <%= link_to project_proposal.title, project_proposal_path(project_proposal.slug), class: 'text-decoration-none link-body-emphasis' %>
+                    <%= link_to project_proposal.title, project_proposal_path(project_proposal), class: 'text-decoration-none link-body-emphasis' %>
                 </h2>
             </div>
 
             <div class="d-flex align-items-center gap-1 ms-auto">
-                <%= link_to '<i class="fa-solid fa-eye"></i>'.html_safe, project_proposal_path(project_proposal.slug),
+                <%= link_to '<i class="fa-solid fa-eye"></i>'.html_safe, project_proposal_path(project_proposal),
                             class: 'btn btn-sm btn-outline-primary py-0 px-2', title: 'View proposal' %>
 
                 <% if signed_in? && current_user.admin? %>
                     <% unless project_proposal.approved? %>
-                        <%= button_to approve_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-sm btn-success py-0 px-2', title: 'Approve', data: { confirm: 'Approve this proposal?' } do %>
+                        <%= button_to approve_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-sm btn-success py-0 px-2', title: 'Approve', **confirmation_options(t('confirmations.project_proposals.approve_row')) do %>
                             <i class="fa-solid fa-check"></i>
                         <% end %>
                     <% end %>
 
                     <% unless project_proposal.not_approved? %>
-                        <%= button_to decline_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-sm btn-danger py-0 px-2', title: 'Decline', data: { confirm: 'Decline this proposal?' } do %>
+                        <%= button_to decline_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-sm btn-danger py-0 px-2', title: 'Decline', **confirmation_options(t('confirmations.project_proposals.decline_row')) do %>
                             <i class="fa-solid fa-xmark"></i>
                         <% end %>
                     <% end %>
@@ -52,7 +52,7 @@
 
                 <% if signed_in? && current_user.admin? %>
                     <%= button_to project_proposal_path(project_proposal), method: :delete,
-                                  class: 'btn btn-sm btn-outline-danger py-0 px-2', title: 'Delete proposal', data: { confirm: 'Delete this proposal?' } do %>
+                                  class: 'btn btn-sm btn-outline-danger py-0 px-2', title: 'Delete proposal', **confirmation_options(t('confirmations.project_proposals.delete_row')) do %>
                         <i class="fa-solid fa-trash"></i>
                     <% end %>
                 <% end %>

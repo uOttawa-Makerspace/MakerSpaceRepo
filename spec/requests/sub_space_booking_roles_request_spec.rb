@@ -60,7 +60,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
   end
 
   def uba_for(user, approved: false, identity: "Other")
-    UserBookingApproval.create!(user: user, identity: identity, approved: approved,
+    UserBookingApproval.create!(user: user, identity: identity, status: (approved ? "approved" : "pending"),
                                 comments: "please", date: Date.new(2027, 1, 1))
   end
 
@@ -165,18 +165,46 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
           expect(booking.approved_by_id).to eq(user.id)
         end
 
-        it "decline flips the booking to Declined and leaves approved_at / approved_by untouched" do
-          # decline neither clears an earlier approval nor mails the booker
+        it "decline flips the booking to Declined, clears the approval stamp and mails the booker once" do
           booking = pending_booking(approved_at: Time.utc(2027, 1, 1, 9), approved_by_id: owner.id)
           sign_in_as(role)
+          ActionMailer::Base.deliveries.clear
           perform_enqueued_jobs do
             put sub_space_booking_decline_path(sub_space_booking_id: booking.id)
           end
           expect(response).to redirect_to(sub_space_booking_index_path(anchor: "booking-admin-tab"))
           expect(status_name(booking)).to eq("Declined")
-          expect(booking.approved_at).to eq(Time.utc(2027, 1, 1, 9))
-          expect(booking.approved_by_id).to eq(owner.id)
-          expect(ActionMailer::Base.deliveries).to be_empty
+          expect(booking.approved_at).to be_nil
+          expect(booking.approved_by_id).to be_nil
+          expect(ActionMailer::Base.deliveries.size).to eq(1)
+          mail = ActionMailer::Base.deliveries.last
+          expect(mail.to).to eq([owner.email])
+          expect(mail.subject).to eq("MakerRepo - Réservation refusée // Booking declined")
+          expect(mail.body.encoded).to include("du 03 avril 2027 à 06:00 au 03 avril 2027 à 07:00 a été refusée par un administrateur").and include("on April 03, 2027 06:00 to April 03, 2027 07:00 has been declined by an admin")
+        end
+
+        it "declining the same booking twice mails the booker only once" do
+          booking = pending_booking
+          sign_in_as(role)
+          ActionMailer::Base.deliveries.clear
+          perform_enqueued_jobs do
+            2.times { put sub_space_booking_decline_path(sub_space_booking_id: booking.id) }
+          end
+          expect(flash[:alert]).to include("no longer pending")
+          expect(ActionMailer::Base.deliveries.size).to eq(1)
+        end
+
+        it "bulk decline clears the approval stamp and mails each declined booker once" do
+          booking = pending_booking(approved_at: Time.utc(2027, 1, 1, 9), approved_by_id: owner.id)
+          sign_in_as(role)
+          ActionMailer::Base.deliveries.clear
+          perform_enqueued_jobs do
+            put bulk_approve_decline_sub_space_booking_index_path,
+                params: { sub_space_booking_ids: [booking.id, booking.id], bulk_status: "decline" }
+          end
+          expect(status_name(booking)).to eq("Declined")
+          expect(booking.approved_at).to be_nil
+          expect(ActionMailer::Base.deliveries.map(&:to)).to eq([[owner.email]])
         end
 
         it "approve_access with an unknown request id is a 404" do
@@ -199,13 +227,13 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
           expect(mail.subject).to eq("Booking approval request accepted")
         end
 
-        it "deny_access removes the request and revokes access" do
+        it "deny_access revokes access and keeps the request as revoked" do
           applicant = create(:user, :regular_user, booking_approval: true)
           uba = uba_for(applicant, approved: true)
           sign_in_as(role)
           put deny_access_sub_space_booking_index_path, params: { id: uba.id }
-          expect(flash[:notice]).to eq("Access request declined successfully.")
-          expect(UserBookingApproval.exists?(uba.id)).to be(false)
+          expect(flash[:notice]).to eq("Booking access revoked successfully.")
+          expect(uba.reload.status).to eq("revoked")
           expect(applicant.reload.booking_approval).to be(false)
         end
 
@@ -342,7 +370,10 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
     end
 
     it "lets an admin delete another user's booking and removes both rows" do
+      booking = create(:sub_space_booking, :with_old_status_row, sub_space: subspace, user: owner,
+                       start_time: DateTime.parse("2027-04-03 10:00"), end_time: DateTime.parse("2027-04-03 11:00"))
       status_id = booking.sub_space_booking_status_id
+      expect(status_id).to be_present
       sign_in_as(:admin)
       delete sub_space_booking_delete_path(booking.id)
       expect(response).to redirect_to(sub_space_booking_index_path(anchor: "booking-tab"))
@@ -474,7 +505,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
       expect(status_name(b1)).to eq("Approved")
     end
 
-    it "declines several bookings at once and sends no mail" do
+    it "declines several bookings at once and mails the booker for each" do
       b1 = pending_booking
       b2 = pending_booking(start_time: DateTime.parse("2027-04-04 10:00"),
                            end_time: DateTime.parse("2027-04-04 11:00"))
@@ -486,8 +517,8 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
       end
 
       expect([b1, b2].map { |b| status_name(b) }).to eq(%w[Declined Declined])
-      expect(SubSpaceBookingStatus.where(sub_space_booking_id: [b1.id, b2.id]).map { |r| r.booking_status.name }).to eq(%w[Declined Declined])
-      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(SubSpaceBookingStatus.where(sub_space_booking_id: [b1.id, b2.id])).to be_empty
+      expect(ActionMailer::Base.deliveries.size).to eq(2)
     end
 
     it "ignores ids that do not exist and reports them as skipped (staff)" do

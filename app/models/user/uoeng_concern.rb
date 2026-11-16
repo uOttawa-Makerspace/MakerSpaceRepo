@@ -5,20 +5,89 @@ module User::UoengConcern
   include ApplicationHelper
 
   UpstreamError = Class.new(StandardError)
+  # Raised by the shape check; its message is fixed text, unlike a parser error,
+  # whose message quotes part of the body.
+  UnexpectedShape = Class.new(JSON::ParserError)
+
+  # Results that carry no answer about the user. :unavailable means the
+  # upstream failed in a way that may pass (timeout, refused connection, 5xx),
+  # so asking again later can succeed; :unknown means asking again will not
+  # help (other statuses, a malformed body, nothing to look the user up by);
+  # :mismatch means the answer is about a student number other than the one on
+  # the account, so it says nothing about this user.
+  NO_ANSWER = %i[unknown unavailable mismatch].freeze
+
+  class_methods do
+    # #shown_faculty in SQL, for a query that left-joins users to uoeng_profiles: the uOEng faculty
+    # when there is one, otherwise the user's own.
+    def shown_faculty_sql
+      Arel.sql("COALESCE(NULLIF(uoeng_profiles.faculty, ''), users.faculty)")
+    end
+
+    # The users with their shown faculty read in the same query, so #shown_faculty needs no
+    # further one.
+    def with_shown_faculty
+      left_joins(:uoeng_profile).select(arel_table[Arel.star], shown_faculty_sql.as("shown_faculty"))
+    end
+
+    # { shown faculty => number of users }, in one query.
+    def count_by_shown_faculty
+      left_joins(:uoeng_profile).group(shown_faculty_sql).count
+    end
+  end
 
   included do
+    has_one :uoeng_profile, dependent: :destroy
+
     # Verify if user qualifies for a faculty membership. Returns the granted
     # membership, nil when the user is not engineering (any active faculty
-    # membership is revoked), or :unknown when the upstream could not answer:
-    # then the stored memberships are left exactly as they are.
+    # membership is revoked), or :unknown / :unavailable / :mismatch when the
+    # upstream gave no answer about this user (see NO_ANSWER): then the stored memberships are left
+    # exactly as they are. After the grant or revoke, the answer is kept in the
+    # user's uOEng record (see #record_uoeng_answer!).
     def validate_uoeng_membership(card_number: nil, space: nil)
       faculty_tier = MembershipTier.find_by!(title_en: "Faculty membership")
 
-      case engineering?(card_number: card_number, space: space)
-      when :unknown then :unknown
-      when true then grant_faculty_membership(faculty_tier)
-      else revoke_faculty_memberships(faculty_tier, card_number: card_number, space: space)
-      end
+      details = uoeng_answer(card_number: card_number, space: space)
+      return details if NO_ANSWER.include?(details)
+
+      outcome = if engineering?(details, card_number, space)
+                  grant_faculty_membership(faculty_tier)
+                else
+                  revoke_faculty_memberships(faculty_tier, card_number: card_number, space: space)
+                end
+      record_uoeng_answer!(details) if details
+      outcome
+    end
+
+    # Only staff may run the faculty membership check for a user from the profile.
+    def membership_checkable_by?(staff)
+      staff.staff?
+    end
+
+    # Whether uOEng can be asked about this user: by student number, or by a
+    # uOttawa email address.
+    def uoeng_queryable?
+      student_id.present? || email.to_s.ends_with?("@uottawa.ca")
+    end
+
+    # Keeps what uOEng said about this user (student number, faculty, program code, level,
+    # full-time and current-semester status) in the user's uOEng record, replacing the previous
+    # answer. The user's own profile fields are left as they are.
+    def record_uoeng_answer!(answer)
+      UoengProfile.record!(self, answer, source: uoeng_lookup_source)
+    end
+
+    # The faculty to show: the one uOEng states, when it maps to a faculty the app knows, otherwise
+    # the one on the profile. A user loaded through .with_shown_faculty already carries it.
+    def shown_faculty
+      return self[:shown_faculty] if has_attribute?(:shown_faculty)
+
+      uoeng_profile&.faculty.presence || faculty
+    end
+
+    def active_faculty_membership_count
+      memberships.active.joins(:membership_tier).where(membership_tiers: { title_en: "Faculty membership" }).count
     end
 
     private
@@ -50,17 +119,23 @@ module User::UoengConcern
       nil
     end
 
-    # true, false, or :unknown when the upstream gave no usable answer.
-    def engineering?(card_number: nil, space: nil)
-      return faculty == "Engineering" if Rails.env.test?
+    # The checked answer about this user (a Hash), or :unknown / :unavailable /
+    # :mismatch when there is no usable answer (a user who cannot be looked up is
+    # logged and :unknown). nil in the test environment, where nothing is asked.
+    def uoeng_answer(card_number:, space:)
+      return if Rails.env.test?
 
       details = uoeng_details(card_number: card_number, space: space)
-      return :unknown if details == :unknown
+      return details if details
 
-      unless details
-        TapBoxLog.log_no_queryable_identifier(user: self, card_number: card_number, space: space)
-        return :unknown
-      end
+      TapBoxLog.log_no_queryable_identifier(user: self, card_number: card_number, space: space)
+      :unknown
+    end
+
+    # Whether the answer says the user is an engineering student. In the test
+    # environment (no answer) the faculty column is compared instead.
+    def engineering?(details, card_number, space)
+      return faculty == "Engineering" if details.nil?
 
       is_fulltime_eng = details["student_this_semester"] && details["faculty"] == "GENIE"
       enrolled_gng = details["courses_enrolled"]&.any? { |course| course.include?("GNG") }
@@ -75,21 +150,22 @@ module User::UoengConcern
     end
 
     # The parsed answer (a Hash), false when the user cannot be looked up, or
-    # :unknown when the upstream timed out, refused, answered with a non-200
-    # status or sent a body that does not have the expected shape.
+    # :unavailable when the upstream timed out, refused the connection or
+    # answered 5xx, or :unknown when it answered another non-200 status or sent
+    # a body that does not have the expected shape.
     def uoeng_details(card_number: nil, space: nil)
       creds = Rails.application.credentials.dig(Rails.env.to_sym, :uoeng) || {}
 
-      url =
-        if student_id.present?
-          "#{creds[:query_by_id]}#{student_id}"
-        elsif email.to_s.ends_with?("@uottawa.ca")
-          "#{creds[:query_by_email]}#{email}"
-        else
-          return false
-        end
+      return false unless uoeng_queryable?
+
+      url = uoeng_lookup_source == "student_number" ? "#{creds[:query_by_id]}#{student_id}" : "#{creds[:query_by_email]}#{email}"
 
       fetch_uoeng_details(url, creds[:student_information_key], card_number, space)
+    end
+
+    # How uOEng is asked about this user: by the student number when there is one, else by email.
+    def uoeng_lookup_source
+      student_id.present? ? "student_number" : "email"
     end
 
     def fetch_uoeng_details(url, key, card_number, space)
@@ -101,20 +177,19 @@ module User::UoengConcern
       return uoeng_http_failure(response, elapsed, card_number, space) if response.status != 200
 
       parsed = JSON.parse(response.body)
-      raise JSON::ParserError, "unexpected answer shape" unless expected_uoeng_shape?(parsed)
+      raise UnexpectedShape, "unexpected answer shape" unless expected_uoeng_shape?(parsed)
 
-      detect_student_id_mismatch(parsed, card_number, space)
-      parsed
+      checked_uoeng_answer(parsed, card_number, space)
     rescue Excon::Error::Timeout => e
       elapsed = ((Time.current - api_start) * 1000).round(1)
       TapBoxLog.log_api_timeout(user: self, elapsed_ms: elapsed, exception: e, card_number: card_number, space: space)
-      uoeng_unknown(e)
+      uoeng_no_answer(e, :unavailable)
     rescue JSON::ParserError => e
-      TapBoxLog.log_api_bad_json(user: self, exception: e, response_body: response&.body, card_number: card_number, space: space)
-      uoeng_unknown(e)
+      TapBoxLog.log_api_bad_json(user: self, exception: e, response: response, card_number: card_number, space: space)
+      uoeng_unknown(UpstreamError.new("uOEng answer: #{TapBoxLog.bad_json_reason(e)}"))
     rescue Excon::Error => e
       TapBoxLog.log_engineering_check_error(user: self, exception: e, card_number: card_number, space: space)
-      uoeng_unknown(e)
+      uoeng_no_answer(e, :unavailable)
     end
 
     # Every field the check reads may be missing or null, but when present it
@@ -137,16 +212,20 @@ module User::UoengConcern
         user: self,
         http_status: response.status,
         elapsed_ms: elapsed,
-        response_body: response.body,
+        response: response,
         card_number: card_number,
         space: space
       )
-      uoeng_unknown(UpstreamError.new("uOEng answered HTTP #{response.status}"))
+      uoeng_no_answer(UpstreamError.new("uOEng answered HTTP #{response.status}"), response.status >= 500 ? :unavailable : :unknown)
     end
 
     def uoeng_unknown(error)
+      uoeng_no_answer(error, :unknown)
+    end
+
+    def uoeng_no_answer(error, kind)
       Rails.error.report(error, handled: true, context: { user_id: id })
-      :unknown
+      kind
     end
 
     def detect_name_mismatch(details, card_number, space)
@@ -154,19 +233,33 @@ module User::UoengConcern
       return if uoeng_name.blank?
       return if name.to_s.downcase.include?(uoeng_name.split(" ").first&.downcase.to_s)
 
-      TapBoxLog.log_name_mismatch(user: self, uoeng_name: uoeng_name, card_number: card_number, space: space)
+      TapBoxLog.log_name_mismatch(user: self, card_number: card_number, space: space)
     end
 
-    def detect_student_id_mismatch(parsed, card_number, space)
-      return unless student_id.present? && parsed["student_number"].present?
-      return if parsed["student_number"].to_s == student_id.to_s
+    # The answer, or :mismatch when it carries a student number other than the
+    # one on the account (the typed number is left as it is). The mismatch is
+    # logged for staff.
+    def checked_uoeng_answer(parsed, card_number, space)
+      return parsed unless uoeng_student_number_differs?(parsed)
 
-      TapBoxLog.log_student_id_mismatch(
-        user: self,
-        uoeng_student_id: parsed["student_number"],
-        card_number: card_number,
-        space: space
-      )
+      TapBoxLog.log_student_id_mismatch(user: self, card_number: card_number, space: space)
+      :mismatch
+    end
+
+    # uOEng sends the student number as `emplid`; `student_number` is read as a fallback.
+    def uoeng_student_number_differs?(parsed)
+      verified = parsed["emplid"].presence || parsed["student_number"].presence
+      student_id.present? && verified.present? && !same_student_number?(verified, student_id)
+    end
+
+    # All-digit numbers are compared as numbers, so an integer answer that lost
+    # a leading zero still matches; anything else is compared as text.
+    def same_student_number?(verified, typed)
+      verified = verified.to_s.strip
+      typed = typed.to_s.strip
+      return verified == typed unless [verified, typed].all?(/\A\d+\z/)
+
+      Integer(verified, 10) == Integer(typed, 10)
     end
   end
 end

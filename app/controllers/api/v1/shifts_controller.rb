@@ -6,23 +6,18 @@ module Api
     # Events of type "shift" (the Shift model/table is retired; this data lives in
     # events, which the admin calendar still creates).
     class ShiftsController < BaseController
-      MAX_RANGE = 100.days
-
       before_action :require_staff!
 
       def index
         space = Space.find(params[:id])
+        return if refuse_unworkable_space(space)
+
         errors = {}
         from = parse_time(:start, errors)
         to = parse_time(:end, errors)
         user_id = parse_user_id(errors)
-        if from && to
-          if to < from
-            errors[:end] = ["must not be before start"]
-          elsif to - from > MAX_RANGE
-            errors[:end] = ["range must be at most #{MAX_RANGE.in_days.to_i} days"]
-          end
-        end
+        range_problem = range_error(from, to)
+        errors[:end] = range_problem if range_problem
         return render_error(:validation_failed, "Validation failed", status: :unprocessable_content, fields: errors) if errors.any?
 
         result = ShiftEventSerializer.result(space: space, from: from, to: to, user_id: user_id)
@@ -31,6 +26,13 @@ module Api
       end
 
       private
+
+      def range_error(from, to)
+        return unless from && to
+        return ["must not be before start"] if to < from
+
+        ["range must be at most #{Event::MAX_FEED_RANGE.in_days.to_i} days"] if Event.feed_range_too_long?(from, to)
+      end
 
       def parse_time(key, errors)
         raw = params[key]

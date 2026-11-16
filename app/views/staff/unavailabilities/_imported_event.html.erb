@@ -1,0 +1,25 @@
+<div class="modal fade" id="importedEventModal" tabindex="-1" aria-labelledby="importedEventModalLabel" aria-hidden="true"
+     data-controller="imported-event-details"
+     data-action="hidden.bs.modal->imported-event-details#returnFocus"
+     data-imported-event-details-source-template-value="<%= t('staff_unavailabilities.imported_event.from') %>"
+     data-imported-event-details-source-unknown-value="<%= t('staff_unavailabilities.imported_event.from_unknown') %>"
+     data-imported-event-details-all-day-label-value="<%= t('staff_unavailabilities.imported_event.all_day') %>"
+     data-imported-event-details-locale-value="<%= I18n.locale %>">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importedEventModalLabel" data-imported-event-details-target="title"><%= t('staff_unavailabilities.imported_event.title') %></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
+            </div>
+            <div class="modal-body">
+                <p class="fw-bold mb-1" data-imported-event-details-target="time"></p>
+                <p class="mb-1" data-imported-event-details-target="source"></p>
+                <p class="imported-event-description" data-imported-event-details-target="description" hidden></p>
+                <p class="alert alert-info mb-0"><%= t('staff_unavailabilities.imported_event.explanation') %></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><%= t('common.close') %></button>
+            </div>
+        </div>
+    </div>
+</div>

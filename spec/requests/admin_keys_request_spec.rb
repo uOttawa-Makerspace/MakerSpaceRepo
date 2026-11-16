@@ -95,7 +95,7 @@ RSpec.describe "Admin keys", type: :request do
     it "redirects to new with an alert for an invalid key (duplicate number in a space)" do
       expect { post admin_keys_path, params: { key: key_attrs(number: 11) } }.not_to change(Key, :count)
       expect(response).to redirect_to(new_admin_key_path)
-      expect(flash[:alert]).to eq("Something went wrong while creating the key.")
+      expect(flash[:alert]).to eq("The key was not created. Number A key already has that number")
     end
 
     it "requires a custom keycode for non-regular keys" do
@@ -121,7 +121,7 @@ RSpec.describe "Admin keys", type: :request do
 
     it "redirects to the edit path on an invalid update" do
       patch admin_key_path(key), params: { key: { number: "" } }
-      expect(flash[:alert]).to eq("Something went wrong while updating the key.")
+      expect(flash[:alert]).to eq("The key was not updated. Number A key number is required")
       expect(key.reload.number).not_to eq("")
     end
 
@@ -233,6 +233,18 @@ RSpec.describe "Admin keys", type: :request do
       expect(response.body).to include("Request form awaiting approval")
     end
 
+    it "lists several staff holders with their request status without a query per holder" do
+      3.times do
+        extra = create(:user, :staff)
+        create(:key_request, :status_approved, :all_questions_answered, user: extra, supervisor: supervisor, space: space)
+      end
+
+      get admin_key_assign_path(key)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body.scan(/<option /).size).to be >= 4
+    end
+
     it "assigns an inventory key: key becomes held and a KeyTransaction with the deposit is created" do
       expect {
         patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 25 }
@@ -247,18 +259,18 @@ RSpec.describe "Admin keys", type: :request do
     it "refuses to assign a key that is not in inventory" do
       key.update!(status: :lost)
       expect { patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id }, deposit_amount: 25 } }.not_to change(KeyTransaction, :count)
-      expect(flash[:alert]).to start_with("Something went wrong while trying to assign the key")
+      expect(flash[:alert]).to start_with("The key was not assigned. ")
     end
 
     it "refuses to assign without a supervisor (held keys require one) and leaves the key unchanged" do
       expect { patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id }, deposit_amount: 25 } }.not_to change(KeyTransaction, :count)
-      expect(flash[:alert]).to start_with("Something went wrong while trying to assign the key")
+      expect(flash[:alert]).to start_with("The key was not assigned. ")
       expect(key.reload.status).to eq("inventory")
     end
 
     it "refuses to assign without a deposit amount, leaving the key and transactions unchanged" do
       expect { patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id } } }.not_to change(KeyTransaction, :count)
-      expect(flash[:alert]).to include("Something went wrong while trying to assign the key", "Deposit amount")
+      expect(flash[:alert]).to start_with("The key was not assigned. Deposit amount")
       expect(key.reload).to have_attributes(status: "inventory", user_id: nil, supervisor_id: nil)
     end
 
@@ -268,7 +280,7 @@ RSpec.describe "Admin keys", type: :request do
         patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 25 }
       }.not_to change(KeyTransaction, :count)
       expect(response).to redirect_to(admin_keys_path)
-      expect(flash[:alert]).to include("Something went wrong while trying to assign the key", "already has an open transaction")
+      expect(flash[:alert]).to start_with("The key was not assigned. ") & include("already has an open transaction")
       expect(key.reload).to have_attributes(status: "inventory", user_id: nil)
     end
 
@@ -283,12 +295,11 @@ RSpec.describe "Admin keys", type: :request do
       expect(key.get_latest_key_transaction).to have_attributes(return_date: Date.current, deposit_return_date: Date.current)
     end
 
-    # revoke stamps return_date with Date.today (server/UTC date), so after 20:00 Eastern the key is returned "tomorrow"
-    it "stamps the UTC date as the return date when revoked in the Eastern evening" do
-      travel_to(Time.zone.now.change(hour: 21))
+    it "stamps the app-zone date as the return date when revoked in the Eastern evening" do
+      travel_to(Time.find_zone!("America/Toronto").local(2026, 3, 10, 22, 30))
       patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 0 }
       patch admin_key_revoke_key_path(key)
-      expect(key.get_latest_key_transaction.return_date).to eq(Date.current + 1)
+      expect(key.get_latest_key_transaction.return_date).to eq(Date.new(2026, 3, 10))
     end
 
     it "revokes with a non-zero deposit: deposit stays outstanding unless a return date is given" do
@@ -308,14 +319,14 @@ RSpec.describe "Admin keys", type: :request do
 
     it "refuses to revoke a key that is not held" do
       patch admin_key_revoke_key_path(key)
-      expect(flash[:alert]).to eq("Something went wrong while trying to revoke the key: Only a held key can be revoked.")
+      expect(flash[:alert]).to eq("The key was not revoked. Only a held key can be revoked.")
     end
 
     it "refuses to revoke a held key with no open transaction, changing nothing" do
       key.update!(status: :held, user: holder, supervisor: supervisor)
       expect { patch admin_key_revoke_key_path(key) }.not_to change(KeyTransaction, :count)
       expect(response).to redirect_to(admin_keys_path)
-      expect(flash[:alert]).to eq("Something went wrong while trying to revoke the key: This key has no open transaction to close.")
+      expect(flash[:alert]).to eq("The key was not revoked. This key has no open transaction to close.")
       expect(key.reload).to have_attributes(status: "held", user_id: holder.id)
     end
 
@@ -326,10 +337,20 @@ RSpec.describe "Admin keys", type: :request do
       expect(KeyTransaction.where(key: key).not_returned).to be_empty
     end
 
-    # assign_key does User.find(params[:key][:user_id]) so a missing/unknown user is a RecordNotFound (404) instead of a flash alert
-    it "404s assigning to an unknown user" do
-      patch admin_key_assign_key_path(key), params: { key: { user_id: 0 }, deposit_amount: 1 }
-      expect(response).to have_http_status(:not_found)
+    it "refuses to assign to an unknown user with an alert, changing nothing" do
+      expect { patch admin_key_assign_key_path(key), params: { key: { user_id: 0 }, deposit_amount: 1 } }.not_to change(KeyTransaction, :count)
+      expect(response).to redirect_to(admin_keys_path)
+      expect(flash[:alert]).to eq("The key was not assigned. The selected key holder was not found.")
+      expect(key.reload).to have_attributes(status: "inventory", user_id: nil)
+    end
+
+    it "refuses an unreadable deposit return date, leaving the key held and its transaction open" do
+      patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 30 }
+      patch admin_key_revoke_key_path(key), params: { deposit_return_date: "not a date" }
+      expect(response).to redirect_to(admin_keys_path)
+      expect(flash[:alert]).to eq("The key was not revoked. Enter the deposit return date as a valid date.")
+      expect(key.reload).to have_attributes(status: "held", user_id: holder.id)
+      expect(KeyTransaction.where(key: key).not_returned.count).to eq(1)
     end
   end
 
@@ -344,18 +365,118 @@ RSpec.describe "Admin keys", type: :request do
       expect(kr.reload.status).to eq("approved")
     end
 
-    it "denies a waiting request by sending it back to in_progress" do
-      patch deny_key_request_admin_keys_path, params: { id: kr.id }
+    it "denies a waiting request and stores the reason" do
+      patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "Supervisor must be a professor" }
       expect(flash[:notice]).to eq("Successfully denied key request.")
-      expect(kr.reload.status).to eq("in_progress")
+      expect(kr.reload).to have_attributes(status: "denied", denial_reason: "Supervisor must be a professor")
+    end
+
+    it "denies a waiting request without a reason" do
+      patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "" }
+      expect(kr.reload).to have_attributes(status: "denied", denial_reason: nil)
+    end
+
+    it "mails the requester in French and English after a denial, with the reason" do
+      perform_enqueued_jobs do
+        patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "Supervisor must be a professor" }
+      end
+      mail = ActionMailer::Base.deliveries.sole
+      expect(mail.to).to eq([holder.email])
+      expect(mail.subject).to eq("MakerRepo - Demande de clé refusée // Key request denied")
+      expect(mail.body.decoded).to include("Supervisor must be a professor")
+    end
+
+    it "mails the requester without a reason line when none was given" do
+      perform_enqueued_jobs { patch deny_key_request_admin_keys_path, params: { id: kr.id } }
+      mail = ActionMailer::Base.deliveries.sole
+      expect(mail.body.decoded).not_to include("Reason given:")
+    end
+
+    it "mails once when the same request is denied twice" do
+      perform_enqueued_jobs do
+        patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "First" }
+        patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "Second" }
+      end
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      expect(kr.reload.denial_reason).to eq("First")
+    end
+
+    it "mails the reason written at denial even if the owner resubmits before delivery" do
+      patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "Supervisor must be a professor" }
+      kr.reload.submit
+      perform_enqueued_jobs
+      expect(ActionMailer::Base.deliveries.sole.body.decoded).to include("Supervisor must be a professor")
+    end
+
+    it "asks for confirmation on the deny button of the requests page and the request page" do
+      get requests_admin_keys_path
+      form = Nokogiri::HTML(response.body).at_css("form[action='#{deny_key_request_admin_keys_path(id: kr.id)}']")
+      expect(form.at_css("button[disabled]")["data-confirmation-message-value"]).to eq(I18n.t("confirmations.key_requests.deny"))
+      expect(form.at_css("label[for='denial_reason_#{kr.id}']")).to be_present
+      get key_request_path(kr.id)
+      page_form = Nokogiri::HTML(response.body).at_css("form[action='#{deny_key_request_admin_keys_path(id: kr.id)}']")
+      expect(page_form.at_css("button[disabled]")["data-confirmation-message-value"]).to be_present
+      expect(page_form.at_css("input#denial_reason_#{kr.id}")).to be_present
+    end
+
+    it "sends no mail when the request is not denied" do
+      kr.update_columns(status: KeyRequest.statuses[:approved])
+      perform_enqueued_jobs { patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "No" } }
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(kr.reload).to have_attributes(status: "approved", denial_reason: nil)
+    end
+
+    it "sends no mail and keeps the request waiting when the reason is too long" do
+      perform_enqueued_jobs do
+        patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "x" * 1001 }
+      end
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(flash[:alert]).to start_with("The key request was not denied.")
+      expect(kr.reload.status).to eq("waiting_for_approval")
+    end
+
+    it "lists a denied request under Denied, not under Waiting or Approved" do
+      kr.deny("No")
+      get requests_admin_keys_path
+      doc = Nokogiri::HTML(response.body)
+      expect(doc.css("table.key-requests-table-denied tbody tr").size).to eq(1)
+      expect(doc.css("table.key-requests-table-approval tbody tr, table.key-requests-table-approved tbody tr")).to be_empty
+    end
+
+    # Bullet's own bookkeeping reads each attachment's blob, which the page does not, so the count runs without it.
+    it "shows each requester's certificate counts in a number of queries that does not grow with the requests", :aggregate_failures, skip_bullet: true do
+      pdf = Rack::Test::UploadedFile.new(StringIO.new("%PDF-1.4"), "application/pdf", original_filename: "cert.pdf")
+      add_requests = lambda do
+        user = create(:user, :staff)
+        create(:key_request, :status_waiting_for_approval, :all_questions_answered, user: user, supervisor: supervisor, space: space)
+        certification = KeyCertification.create!(user: user)
+        [1, 2, KeyCertification::TOTAL_NUMBER_OF_FILES].each { |n| certification.pdf_file_at(n).attach(pdf.tap(&:rewind)) }
+        create(:key_request, :status_approved, :all_questions_answered, user: create(:user, :staff), supervisor: supervisor, space: space)
+      end
+      add_requests.call
+      get requests_admin_keys_path # warm caches
+      few = count_queries { get requests_admin_keys_path }
+      2.times { add_requests.call }
+      get requests_admin_keys_path # warm caches again
+      many = count_queries { get requests_admin_keys_path }
+      expect(many).to eq(few)
+
+      counts = Nokogiri::HTML(response.body).css("table tbody tr").map { |tr| tr.css("td")[7].text.squish }
+      with_files = "#{I18n.t('admin_pages.keys.staff_files_count', attached: 2, total: 9)} #{I18n.t('admin_pages.keys.supervisor_files_count', attached: 1, total: 1)}"
+      expect(counts.count(with_files)).to eq(3)
+    end
+
+    it "shows the reason field next to Deny for a waiting request" do
+      get requests_admin_keys_path
+      expect(response.body).to include('name="denial_reason"')
     end
 
     it "does not approve or deny a request that is not waiting" do
       kr.update_columns(status: KeyRequest.statuses[:approved])
       patch approve_key_request_admin_keys_path, params: { id: kr.id }
-      expect(flash[:alert]).to eq("Something went wrong while approving the key request.")
+      expect(flash[:alert]).to eq("This key request is no longer waiting for approval, so it was left as it is.")
       patch deny_key_request_admin_keys_path, params: { id: kr.id }
-      expect(flash[:alert]).to eq("Something went wrong while denying the key request.")
+      expect(flash[:alert]).to eq("This key request is no longer waiting for approval, so it was left as it is.")
       expect(kr.reload.status).to eq("approved")
     end
 
@@ -436,6 +557,25 @@ RSpec.describe "Admin keys", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "lists every transaction with its key, holder and supervisor in a number of queries that does not grow with them", :aggregate_failures do
+      add_transactions = lambda do
+        held = create(:key, :regular_key_type, :inventory_status, space: create(:space), supervisor: create(:user, :admin))
+        KeyTransaction.create!(user: create(:user, :staff), key: held, deposit_amount: 20)
+        card = create(:key, :keycard_key_type, :inventory_status, supervisor: create(:user, :admin))
+        KeyTransaction.create!(user: create(:user, :staff), key: card, deposit_amount: 10)
+      end
+      add_transactions.call
+      get admin_key_transactions_path # warm caches
+      few = count_queries { get admin_key_transactions_path }
+      2.times { add_transactions.call }
+      get admin_key_transactions_path # warm caches again
+      many = count_queries { get admin_key_transactions_path }
+      expect(many).to eq(few)
+
+      rows = Nokogiri::HTML(response.body).css("table.key-request-all tbody tr").map { |tr| tr.css("td").first(3).map { |td| td.text.squish } }
+      expect(rows).to eq(KeyTransaction.order(created_at: :desc).map { |kt| [kt.key.get_keycode, kt.user.name, kt.key.supervisor&.name.to_s] })
+    end
+
     it "redirects an unknown transaction to the index with an alert" do
       get admin_key_transaction_path(0)
       expect(response).to redirect_to(admin_key_transactions_path)
@@ -452,14 +592,14 @@ RSpec.describe "Admin keys", type: :request do
 
     it "refuses a blank deposit return date" do
       patch admin_key_transaction_path(tx), params: { key_transaction: { deposit_return_date: "" } }
-      expect(flash[:alert]).to eq("Something went wrong while updating the deposit")
+      expect(flash[:alert]).to eq("Enter the date the deposit was returned.")
       expect(tx.reload.deposit_return_date).to be_nil
     end
 
     it "treats a missing deposit return date like a blank one" do
       patch admin_key_transaction_path(tx), params: { key_transaction: { deposit_amount: 999 } }
       expect(response).to redirect_to(admin_key_transactions_path)
-      expect(flash[:alert]).to eq("Something went wrong while updating the deposit")
+      expect(flash[:alert]).to eq("Enter the date the deposit was returned.")
       expect(tx.reload.deposit_return_date).to be_nil
       expect(tx.deposit_amount).to eq(20)
     end

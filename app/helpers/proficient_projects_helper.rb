@@ -13,53 +13,13 @@ module ProficientProjectsHelper
     end
   end
 
-  def training_status(training_id, user_id)
-    user = User.including_deleted.find(user_id)
-    level =
-      Certification
-        .joins(:user, :training_session)
-        .where(training_sessions: { training_id: training_id }, user: user)
-        .pluck(:level)
+  # The user's standing in a training as a badge: the highest certified level, Newbie once they
+  # have started it, else Not Started. Reads the user's progress, loaded once for all trainings.
+  def training_status(training_id, user)
+    standing = user.training_standing(training_id)
+    return certification_status(standing) if User::TRAINING_LEVELS.include?(standing)
+    return content_tag(:span, '🐥 Newbie', class: 'text-body text-nowrap') if standing
 
-    return certification_status('Advanced') if level.include?('Advanced')
-    if level.include?('Intermediate')
-      return certification_status('Intermediate')
-    end
-    return certification_status('Beginner') if level.include?('Beginner')
-
-    training = Training.find(training_id)
-
-    started =
-      training
-        .learning_modules
-        .joins(:learning_module_tracks)
-        .where(learning_module_tracks: { user: user, status: 'Completed' })
-        .exists? ||
-        training
-          .proficient_projects
-          .where(id: user.order_items.awarded.pluck(:proficient_project_id))
-          .exists?
-
-    if started
-      content_tag(:span, '🐥 Newbie', style: 'color: black; white-space: nowrap')
-    else
-      content_tag(
-        :span,
-        '🐣 Not Started',
-        style: 'color: gray; white-space: nowrap'
-      )
-    end
-  end
-
-  def return_levels(training_id, user_id)
-    current_status = ProficientProject.training_status(training_id, user_id)
-    case current_status
-    when 'Beginner'
-      ['Beginner']
-    when 'Intermediate'
-      %w[Beginner Intermediate]
-    when 'Advanced'
-      %w[Beginner Intermediate Advanced]
-    end
+    content_tag(:span, '🐣 Not Started', class: 'text-body-secondary text-nowrap')
   end
 end

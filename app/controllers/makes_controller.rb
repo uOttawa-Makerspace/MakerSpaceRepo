@@ -18,7 +18,7 @@ class MakesController < SessionsController
         r.user_id = @user.id
         r.users << @user
         r.share_type = 'public'
-        r.photos_attributes = make_params[:photos_attributes]
+        r.photos_attributes = photo_attributes
         r.slug =
           "#{r.id}.#{r.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')}"
       end
@@ -29,7 +29,7 @@ class MakesController < SessionsController
       redirect_to repository_path(@user.username, @make.slug)
       @user.increment!(:reputation, 15)
     else
-      flash[:alert] = 'Something went wrong'
+      flash.now[:alert] = validation_message(@make, 'errors.makes.not_created')
       @repo = @repository
       render :new
     end
@@ -43,7 +43,7 @@ class MakesController < SessionsController
   private
 
   def make_params
-    params.require(@repository.title).permit(
+    params.require(:repository).permit(
       :title,
       :description,
       photos_attributes: %i[id image _destroy]
@@ -52,7 +52,7 @@ class MakesController < SessionsController
 
   def set_repository
     @repository =
-      Repository.includes(:owner).find_by(
+      Repository.includes(:owner).find_by!(
         owner: {
           username: params[:user_username]
         },
@@ -60,18 +60,14 @@ class MakesController < SessionsController
       )
   end
 
-  def create_photos
-    if params[:images].present?
-      params[:images].each do |img|
-        dimension = FastImage.size(img.tempfile, raise_on_failure: true)
-        Photo.create(
-          image: img,
-          repository_id: @make.id,
-          width: dimension.first,
-          height: dimension.last
-        )
-      end
-    end
+  # The files the make form posts as images[] (each becomes a Photo checked by
+  # its validations); photos_attributes is accepted too. Without either, the
+  # make fails the photo count validation.
+  def photo_attributes
+    uploads = Array(params[:images]).grep(ActionDispatch::Http::UploadedFile)
+    return uploads.map { |image| { image: image } } if uploads.any?
+
+    make_params[:photos_attributes] || []
   end
 
   def copy_categories_and_equipment

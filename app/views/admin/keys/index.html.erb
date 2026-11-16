@@ -1,11 +1,11 @@
-<% provide(:title, 'Keys') %>
+<% provide(:title, t('admin.keys')) %>
 <section>
-  <h2 class="m-0 fw-bold py-4 text-center">Key Management</h2>
+  <h2 class="m-0 fw-bold py-4 text-center"><%= t('admin_pages.keys.management') %></h2>
 
   <div class="d-flex flex-row gap-2 justify-content-center mb-4">
-    <%= link_to 'Add a new Key', new_admin_key_path, class: 'btn btn-success' %>
-    <%= link_to 'Key Requests', requests_admin_keys_path, class: 'btn btn-primary' %>
-    <%= link_to 'Key Transactions', admin_key_transactions_path, class: 'btn btn-primary' %>
+    <%= link_to t('admin_pages.keys.add_new'), new_admin_key_path, class: 'btn btn-success' %>
+    <%= link_to t('admin_pages.keys.key_requests'), requests_admin_keys_path, class: 'btn btn-primary' %>
+    <%= link_to t('admin_pages.keys.key_transactions'), admin_key_transactions_path, class: 'btn btn-primary' %>
   </div>
 
   <div class="accordion" id="keysAccordion">
@@ -13,7 +13,7 @@
     <div class="accordion-item">
       <h2 class="accordion-header" id="keysHeld">
         <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-          Keys Being Held
+          <%= t('admin_pages.keys.keys_held') %>
         </button>
       </h2>
       <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="keysHeld" data-bs-parent="#keysAccordion">
@@ -23,7 +23,7 @@
             <div class="accordion-item">
               <h2 class="accordion-header" id="held-all">
                 <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-held-all" aria-expanded="false" aria-controls="collapse-held-all">
-                  All
+                  <%= t('admin_pages.keys.all') %>
                 </button>
               </h2>
               <div id="collapse-held-all" class="accordion-collapse collapse" aria-labelledby="held-all" data-bs-parent="#keysHeldAccordion">
@@ -36,7 +36,7 @@
             <div class="accordion-item">
               <h2 class="accordion-header" id="held-submaster">
                 <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-held-submaster" aria-expanded="false" aria-controls="collapse-held-submaster">
-                  Submaster
+                  <%= t('admin_pages.keys.submaster') %>
                 </button>
               </h2>
               <div id="collapse-held-submaster" class="accordion-collapse collapse" aria-labelledby="held-submaster" data-bs-parent="#keysHeldAccordion">
@@ -48,7 +48,7 @@
             <div class="accordion-item">
               <h2 class="accordion-header" id="held-keycard">
                 <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-held-keycard" aria-expanded="false" aria-controls="collapse-held-keycard">
-                  Keycard
+                  <%= t('admin_pages.keys.keycard') %>
                 </button>
               </h2>
               <div id="collapse-held-keycard" class="accordion-collapse collapse" aria-labelledby="held-keycard" data-bs-parent="#keysHeldAccordion">
@@ -62,7 +62,7 @@
               <div class="accordion-item">
                 <h2 class="accordion-header" id="held-<%= space.name.gsub(' ', '-') %>">
                   <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-held-<%= space.name.gsub(' ', '-') %>" aria-expanded="false" aria-controls="collapse-held-<%= space.name.gsub(' ', '-') %>">
-                    <%= "#{space.name} (#{space.keycode})" %>
+                    <%= t('admin_pages.keys.space_with_keycode', space: space.name, keycode: space.keycode) %>
                   </button>
                 </h2>
                 <div id="collapse-held-<%= space.name.gsub(' ', '-') %>" class="accordion-collapse collapse" aria-labelledby="held-<%= space.name.gsub(' ', '-') %>" data-bs-parent="#keysHeldAccordion">
@@ -81,7 +81,7 @@
     <div class="accordion-item">
       <h2 class="accordion-header" id="keysAll">
         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-          All Keys
+          <%= t('admin_pages.keys.all_keys') %>
         </button>
       </h2>
       <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="keysAll" data-bs-parent="#keysAccordion">
@@ -91,7 +91,7 @@
             <div class="accordion-item">
               <h2 class="accordion-header" id="all-all">
                 <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-all-all" aria-expanded="false" aria-controls="collapse-all-all">
-                  All
+                  <%= t('admin_pages.keys.all') %>
                 </button>
               </h2>
               <div id="collapse-all-all" class="accordion-collapse collapse" aria-labelledby="all-all" data-bs-parent="#keysAllAccordion">
@@ -104,7 +104,7 @@
             <div class="accordion-item">
               <h2 class="accordion-header" id="all-submaster">
                 <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-all-submaster" aria-expanded="false" aria-controls="collapse-all-submaster">
-                  Submaster
+                  <%= t('admin_pages.keys.submaster') %>
                 </button>
               </h2>
               <div id="collapse-all-submaster" class="accordion-collapse collapse" aria-labelledby="all-submaster" data-bs-parent="#keysAllAccordion">
@@ -116,7 +116,7 @@
             <div class="accordion-item">
               <h2 class="accordion-header" id="all-keycard">
                 <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-all-keycard" aria-expanded="false" aria-controls="collapse-all-keycard">
-                  Keycard
+                  <%= t('admin_pages.keys.keycard') %>
                 </button>
               </h2>
               <div id="collapse-all-keycard" class="accordion-collapse collapse" aria-labelledby="all-keycard" data-bs-parent="#keysAllAccordion">
@@ -130,7 +130,7 @@
               <div class="accordion-item">
                 <h2 class="accordion-header" id="all-<%= space.name.gsub(' ', '-') %>">
                   <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-all-<%= space.name.gsub(' ', '-') %>" aria-expanded="false" aria-controls="collapse-all-<%= space.name.gsub(' ', '-') %>">
-                    <%= "#{space.name} (#{space.keycode})" %>
+                    <%= t('admin_pages.keys.space_with_keycode', space: space.name, keycode: space.keycode) %>
                   </button>
                 </h2>
                 <div id="collapse-all-<%= space.name.gsub(' ', '-') %>" class="accordion-collapse collapse" aria-labelledby="all-<%= space.name.gsub(' ', '-') %>" data-bs-parent="#keysAllAccordion">

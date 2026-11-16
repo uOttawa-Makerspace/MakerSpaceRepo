@@ -1,11 +1,10 @@
-import TomSelect from "tom-select";
+import { tomSelectFor } from "../src/tom_select.js";
 // This is also used in printers/_send_print_failed_form
 // and in locker_rentals/new
 // make sure you don't break that too
 document.addEventListener("turbo:load", function () {
   document.querySelectorAll("[data-user-search-bar]").forEach((el) => {
-    if (el.tomsselect) return;
-    new TomSelect(el, {
+    tomSelectFor(el, {
       // https://github.com/orchidjs/tom-select/issues/78#issuecomment-837319408
       // Disable local search
       searchField: [],

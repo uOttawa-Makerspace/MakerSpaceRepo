@@ -31,14 +31,6 @@ RSpec.describe "CC wallet races", type: :request do
     User.unscoped.where(id: user.id).delete_all
   end
 
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
-    end
-  end
-
   def blocked_backends
     ActiveRecord::Base.connection.select_value(
       "SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND datname = current_database()"
@@ -108,7 +100,7 @@ RSpec.describe "CC wallet races", type: :request do
     expect(cart_one.reload.order_status.name).to eq("Completed")
     expect(cart_two.reload.order_status.name).to eq("In progress")
     expect(cart_two.cc_moneys).to be_empty
-    expect(session_two.flash[:alert]).to eq("Not enough Cc Points.")
+    expect(session_two.flash[:alert]).to eq("Not enough CCs.")
     expect(@second_waited).to be(true)
   end
 
@@ -140,7 +132,7 @@ RSpec.describe "CC wallet races", type: :request do
     expect(user.reload.wallet).to eq(10)
     expect(cart.reload.order_status.name).to eq("Completed")
     expect(coupon.reload.user_id).to be_nil
-    expect(session_two.flash[:alert]).to eq("Not enough CC points")
+    expect(session_two.flash[:alert]).to eq("Not enough CCs.")
     expect(@second_waited).to be(true)
   end
 

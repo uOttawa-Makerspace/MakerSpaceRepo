@@ -4,6 +4,8 @@ require "uri"
 class ProficientProject < ApplicationRecord
   include Filterable
   has_and_belongs_to_many :users
+  # Each session holds the certification it awarded, so a project with sessions cannot be deleted.
+  has_many :proficient_project_sessions, dependent: :restrict_with_error
   belongs_to :training, optional: true
   has_many :photos, dependent: :destroy
   has_many :repo_files, dependent: :destroy
@@ -21,21 +23,22 @@ class ProficientProject < ApplicationRecord
   has_many :order_items, dependent: :destroy
   has_many :training_requirements, dependent: :destroy
   has_many :project_kits, dependent: :destroy
-  has_many :proficient_project_sessions, dependent: :destroy
   belongs_to :drop_off_location, optional: true
 
   # The CC price is a whole number, never negative (a negative cc made checkout fail; DB CHECK
   # too; the column is an integer, so a fraction would be silently truncated).
   validates :cc, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
 
-  validates :title, presence: true, uniqueness: true
-  before_save :capitalize_title
-  
+  # The title is capitalised first, so the uniqueness check compares the text that gets stored.
+  # Both only run when the title is new or changed, so a project saved before this rule stays editable.
+  before_validation :capitalize_title, if: :will_save_change_to_title?
+  validates :title, presence: true
+  validates :title, uniqueness: { case_sensitive: false }, if: :will_save_change_to_title?
 
   scope :filter_by_level, ->(level) { where(level: level) }
 
   def capitalize_title
-    self.title = title.capitalize
+    self.title = title.capitalize if title
   end
 
   def self.filter_by_attribute(attribute, value)
@@ -85,22 +88,5 @@ class ProficientProject < ApplicationRecord
     rescue URI::InvalidURIError
       false
     end
-  end
-
-  def self.training_status(training_id, user_id)
-    user = User.including_deleted.find(user_id)
-    level =
-      Certification
-        .joins(:user, :training_session)
-        .where(training_sessions: { training_id: training_id }, user: user)
-        .pluck(:level)
-    if level.include?("Advanced")
-        "Advanced"
-      elsif level.include?("Intermediate")
-        "Intermediate"
-      else
-        "Beginner"
-      end
-    
   end
 end

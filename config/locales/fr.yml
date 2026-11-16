@@ -148,7 +148,7 @@ fr:
         email_address: "Adresse courriel"
         username: "Nom d'utilisateur"
         password: "Mot de passe"
-        password_hint: "Votre mot de passe doit comporter 10 caractères, 5 caractères uniques, et ne pas être un mot de passe couramment utilisé.."
+        password_hint: "Votre mot de passe doit comporter 10 caractères, 5 caractères uniques, et ne pas être un mot de passe couramment utilisé."
         password_confirmation: "Confirmation de mot de passe"
         gender: "Genre"
         male: "Homme"
@@ -156,6 +156,7 @@ fr:
         other: "Autre"
         no_specify: "Je préfère ne pas spécifier"
         i_am: "Je suis..."
+        internal_proof_hint: "Les choix étudiant, professeur et employé de uOttawa demandent une adresse courriel @uottawa.ca confirmée."
         undergrad: "un étudiant de premier cycle de uOttawa"
         international_undergrad: "un étudiant international de premier cycle de uOttawa"
         grad: "un étudiant aux cycles supérieurs de uOttawa"
@@ -191,6 +192,14 @@ fr:
         business: "Compagnie"
         how_heard_about_us: "Comment avez-vous entendu parler de nous?"
         accept_waiver_html: "En cochant cette case, <strong>J’ACCEPTE ET J’ASSUME PLEINEMENT</strong> tous les risques et dangers pour la santé et la sécurité que peut comporter ma participation."
+  exams:
+    sent_to_user:
+      one: "L'examen a été envoyé à %{name}. Il contient 1 question."
+      other: "L'examen a été envoyé à %{name}. Il contient %{count} questions."
+    sent_to_all:
+      one: "Les examens ont été envoyés à tous les utilisateurs de cette formation. Chaque examen contient 1 question."
+      other: "Les examens ont été envoyés à tous les utilisateurs de cette formation. Chaque examen contient %{count} questions."
+    no_questions: "Cette formation n'a aucune question à ce niveau; aucun examen n'a donc été créé."
   sessions:
     account_created: "Votre compte a été créé. Veuillez consulter vos courriels pour confirmer votre adresse courriel."
     already_signed_in: "Vous êtes déjà connecté."
@@ -205,6 +214,8 @@ fr:
       title: "Mot de passe oublié"
       email: "Adresse courriel"
       submit: "Soumettre"
+  orders:
+    deleted: "La commande a été supprimée et ses CC ont été rendus à l'utilisateur."
   activerecord:
     attributes:
       space:
@@ -228,7 +239,7 @@ fr:
               invalid: "Votre nom d'utilisateur peut seulement contenir des caractères alphanumériques."
               too_long: "Votre nom doit comporter moins de %{count} caractères."
             password:
-              invalid: "Votre mot de passe doit comporter 10 caractères, 5 caractères uniques, et ne pas être un mot de passe couramment utilisé.."
+              invalid: "Votre mot de passe doit comporter 10 caractères, 5 caractères uniques, et ne pas être un mot de passe couramment utilisé."
             password_confirmation:
               confirmation: "Les mots de passe ne correspondent pas."
             email:
@@ -238,6 +249,12 @@ fr:
               too_long: "Maximum de %{count} caractères."
             read_and_accepted_waiver_form:
               inclusion: "Vous devez accepter les conditions de la renonciation."
+        volunteer_hour:
+          attributes:
+            base:
+              duplicate_pending: "Vous avez déjà envoyé ces heures pour cette tâche et ce jour; elles sont en attente de révision."
+            volunteer_task_id:
+              not_joined: "n'est pas une tâche à laquelle ce bénévole participe ou qu'il a terminée"
         locker_rental:
           attributes:
             rented_by:
@@ -265,13 +282,145 @@ fr:
     times_required: "Les heures de début et de fin sont requises."
     dates_required: "Les dates de début et de fin sont requises."
     start_date_required: "La date de début est requise."
+  key_request_mailer:
+    denied:
+      subject: "Demande de clé refusée"
+      body: "Votre demande de clé a été examinée et refusée par un administrateur."
+      hello: "Bonjour %{name},"
+      reason: "Raison donnée :"
+      ask_again: "Vous pouvez modifier votre demande de clé et la soumettre de nouveau depuis la page de votre demande."
+      open_page: "Aller à ma demande de clé"
+      why_received: "Vous avez reçu ce courriel parce que votre demande de clé a reçu une réponse."
+  booking_mailer:
+    declined:
+      subject: "Réservation refusée"
+      hello: "Bonjour %{name},"
+      body: "Votre réservation dans %{room} pour %{description} du %{start} au %{end} a été refusée par un administrateur."
+      open_page: "Aller à la réservation MakerRepo"
+      why_received: "Vous avez reçu ce courriel parce que votre réservation a été refusée."
+    access_denied:
+      subject:
+        declined: "Demande d'accès aux réservations refusée"
+        revoked: "Accès aux réservations retiré"
+      body:
+        declined: "Votre demande d'accès aux réservations a été examinée et refusée par un administrateur."
+        revoked: "Votre accès aux réservations a été retiré par un administrateur. Vous ne pouvez plus réserver de salles."
+      hello: "Bonjour %{name},"
+      reason: "Raison donnée :"
+      ask_again: "Vous pouvez envoyer une nouvelle demande depuis la page des réservations."
+      open_page: "Aller à la réservation MakerRepo"
+      why_received: "Vous avez reçu ce courriel parce que votre demande d'accès aux réservations a reçu une réponse."
+    staff:
+      hello: "Bonjour,"
+      open_panel: "Ouvrir le panneau"
+    send_booking_needs_approval:
+      subject: "Réservation à approuver"
+      body: "Une réservation a été faite dans %{room} par %{booker} pour %{description} du %{start} au %{end}. Veuillez consulter le panneau d'administration des réservations pour approuver ou refuser cette réservation."
+      why_received: "Vous avez reçu ce courriel parce qu'une réservation nécessitant une approbation a été demandée."
+    send_booking_automatically_approved:
+      subject: "Réservation approuvée automatiquement"
+      body: "Une réservation a été faite et approuvée automatiquement dans %{room} par %{booker} pour %{description} du %{start} au %{end}. Pour désactiver l'approbation automatique des réservations de ce sous-espace, allez à la page d'administration de l'espace."
+      why_received: "Vous avez reçu ce courriel parce qu'une réservation a été approuvée automatiquement."
+    send_booking_approval_request_sent:
+      subject: "Demande d'accès aux réservations envoyée"
+      body_html: "%{name} a demandé l'accès aux réservations de salles dans makeroom. Veuillez aller au panneau d'administration %{panel} pour approuver ou refuser cette demande."
+      panel: "Réservation MakerRepo"
+      why_received: "Vous avez reçu ce courriel parce qu'un utilisateur a demandé l'accès aux réservations."
+    send_booking_approved:
+      subject: "Réservation approuvée"
+      hello: "Bonjour %{name},"
+      body: "Votre réservation dans %{room} pour %{description} du %{start} au %{end} a été approuvée."
+      why_received: "Vous avez reçu ce courriel parce que votre réservation a été approuvée."
+    send_booking_approval_request_approved:
+      subject: "Demande d'accès aux réservations acceptée"
+      hello: "Bonjour %{name},"
+      body_html: "Votre demande d'accès aux réservations a été examinée et acceptée par un administrateur. Veuillez aller à la page %{page} si vous souhaitez réserver des salles."
+      page: "Réservation MakerRepo"
+      why_received: "Vous avez reçu ce courriel parce que votre demande d'accès aux réservations a été approuvée."
   sub_space_booking:
+    # Results of the bulk approve and decline buttons on the admin tab; %{count} = how many were skipped
+    bulk:
+      access_approved: "Les demandes d'accès sélectionnées ont été approuvées."
+      access_all_approved: "Toutes les demandes d'accès sélectionnées ont été approuvées."
+      access_skipped:
+        one: "%{count} demande sélectionnée était déjà approuvée et a été ignorée."
+        other: "%{count} demandes sélectionnées étaient déjà approuvées et ont été ignorées."
+      bookings_approved: "Les réservations ont été approuvées."
+      bookings_declined: "Les réservations ont été refusées."
+      bookings_skipped:
+        one: "%{count} réservation sélectionnée n'était plus en attente et a été ignorée."
+        other: "%{count} réservations sélectionnées n'étaient plus en attente et ont été ignorées."
+    # Flash messages of the booking pages and actions; %{room} = the room's name, %{name} = the user's name
+    messages:
+      reason_missing: "Veuillez indiquer la raison de votre demande d'accès aux réservations."
+      supervisor_missing: "Veuillez choisir un membre du personnel comme superviseur."
+      access_requested: "Votre demande d'accès a été envoyée."
+      access_granted: "L'accès a été accordé."
+      access_request_approved: "La demande d'accès a été approuvée."
+      already_has_access: "%{name} a déjà accès aux réservations."
+      access_revoked: "L'accès aux réservations a été retiré."
+      access_request_declined: "La demande d'accès a été refusée."
+      no_approvals_selected: "Aucune demande sélectionnée."
+      no_bookings_selected: "Aucune réservation sélectionnée."
+      edit_refused: "Vous n'avez pas accès à cette réservation."
+      approved_edit_refused: "Vous n'avez pas la permission de modifier cette réservation."
+      blocking_refused: "Vous n'avez pas la permission de bloquer un espace."
+      no_longer_pending: "La réservation de %{room} n'est plus en attente."
+      approved: "La réservation de %{room} a été approuvée."
+      declined: "La réservation de %{room} a été refusée."
+      created: "La réservation de %{room} a été créée."
+      updated: "La réservation a été mise à jour."
+      made_public: "La réservation est maintenant publique."
+      made_private: "La réservation est maintenant privée."
+      deleted: "La réservation de %{room} a été supprimée."
+      remaining_deleted: "Les réservations restantes de %{room} ont été supprimées."
+      not_recurring: "Cette réservation ne fait pas partie d'une série récurrente."
+      not_authorized: "Vous n'êtes pas autorisé à voir cette page."
+      login_required: "Vous devez être connecté pour voir cette page."
+      approval_required: "Vous devez être autorisé à réserver pour voir cette page."
+      staff_required: "Vous devez être administrateur ou membre du personnel pour voir cette page."
+      admin_required: "Vous devez être administrateur pour voir cette page."
+      owner_required: "Vous devez être le propriétaire de cette réservation ou un administrateur pour la supprimer."
+    # Titles of the booking calendar's entries; %{title} = the entry's title
+    feed:
+      blocked: "Espace bloqué"
+      booked: "Espace réservé"
+      pending: "%{title} (en attente)"
+    access_status:
+      none: "Vous n'avez pas encore demandé l'accès aux réservations."
+      pending: "Votre demande est en attente depuis le %{date}."
+      approved: "Votre demande d'accès aux réservations a été approuvée."
+      declined: "Votre demande a été refusée le %{date}."
+      revoked: "Votre accès aux réservations a été retiré le %{date}."
+      reason: "Raison : %{reason}"
+      ask_again: "Vous pouvez envoyer une nouvelle demande ci-dessous."
+    deny:
+      reason_placeholder: "Raison (facultative)"
+      decline_reason_label: "Raison du refus pour %{name} (facultative)"
+      revoke_reason_label: "Raison du retrait de l'accès de %{name} (facultative)"
+      decline_label: "Refuser %{name}"
+    limits:
+      # %{room} = the room's name, %{hours} = the room's limit
+      maximum_duration: "Vous ne pouvez pas réserver %{room} pour plus de %{hours} heures."
+      weekly_hours: "Vous ne pouvez pas réserver %{room} pour plus de %{hours} heures par semaine."
+      # The booking overlaps a block
+      slot_taken: "Cette plage horaire est déjà réservée."
     picker:
       min_length: "Saisissez au moins %{count} caractères pour rechercher une personne."
+    rules:
+      maximum_duration: "a une durée maximale de réservation de %{hours} heures"
+      weekly_hours: "a un maximum de %{hours} heures de réservation par personne par semaine"
+      public_by_default: "les réservations (nom et description de l'événement) sont publiques par défaut"
+      approval_with_automatic: "Les réservations nécessitent une approbation manuelle, les réservations de %{hours} heures ou moins seront approuvées automatiquement"
+      approval_required: "les réservations nécessiteront une approbation manuelle"
     series:
       too_long: "Une réservation récurrente peut couvrir au plus %{days} jours."
       partial: "%{booked} occurrences sur %{total} réservées. Non réservées : %{failed}."
       first_failed: "La série n'a pas été créée, car la première occurrence, le %{date}, n'a pas pu être réservée. %{reason}"
+    series_actions:
+      approve_all: "Tout approuver"
+      select_specific: "Choisir les dates"
+      reject_all: "Tout refuser"
   saml:
     login:
       sign_in: "Connexion"
@@ -288,6 +437,8 @@ fr:
       redirecting: "Redirection en cours\u2026"
       redirect: "Cliquez ici si vous n'êtes pas redirigé d'ici 5 secondes"
   settings:
+    admin:
+      title: "Paramètres du compte"
     profile:
       title: "Modifier mon profil"
       public_information: "Informations publiques"
@@ -365,42 +516,46 @@ fr:
       please_upload_valid_file_type: "Vérifiez que vous avez téléversé un type de fichier valide."
       options_have_not_been_saved: "Les options n'ont pas été enregistrées avec succès."
       job_order_not_found: "La commande n'a pas été trouvée"
-      error_while_saving_step: "Une erreur s'est produite lors de l'enregistrement de l'étape de commande.  "
+      assign_staff_not_staff: "Seul un membre du personnel ou un administrateur peut être assigné à une commande."
+      staff_assigned: "%{name} a été assigné à cette commande."
+      no_staff_assigned: "Aucun membre du personnel n'est assigné à cette commande."
+      deleted: "La commande a été supprimée."
       job_order_submitted_for_approval: "Votre commande a été soumise à l'approbation du personnel !"
       job_order_updated: "Votre commande a été mise a jour !"
-      error_while_trying_to_create: "Une erreur s'est produite lors de la création de la commande. Veuillez réessayer."
       approval_magic_link_expired: "Le lien d'approbation de la commande suivante n'est pas valide ou a expiré. Veuillez vous connecter pour consulter la page des commandes."
-      error_accept_deny_order: "Une erreur s'est produite lors de la tentative d'acceptation ou de refus de la commande. Veuillez réessayer."
       updated_job_status_to_x: "Vous avez mis a jour le status de la commande à : %{status} !"
-      quote_saved_email_failed: "Devis enregistré, mais le courriel n'a pas pu être envoyé. Utilisez « Renvoyer le courriel du devis »."
+      quote_saved_email_failed: "Devis enregistré, mais le courriel n'a pas pu être envoyé. Utilisez « Renvoyer le courriel du devis ». Référence : %{reference}."
       payment_link_unavailable: "Le lien de paiement est temporairement indisponible. Veuillez réessayer dans quelques minutes."
-      requote_draft_order_failed: "Le devis de cette commande n'a pas pu être mis à jour car son lien de paiement existant n'a pas pu être annulé. Rien n'a été modifié. Veuillez réessayer plus tard."
+      requote_draft_order_failed: "Le devis de cette commande n'a pas pu être mis à jour car son lien de paiement existant n'a pas pu être annulé. Rien n'a été modifié. Veuillez réessayer plus tard. Référence : %{reference}."
       delete_refused:
-        draft_not_voidable: "Cette commande n'a pas été supprimée car son lien de paiement n'a pas pu être annulé. Rien n'a été modifié. Veuillez réessayer plus tard."
+        draft_not_voidable: "Cette commande n'a pas été supprimée car son lien de paiement n'a pas pu être annulé. Rien n'a été modifié. Veuillez réessayer plus tard. Référence : %{reference}."
         order_missing: "Cette commande n'existe plus."
         busy: "Cette commande n'a pas été supprimée car elle est en cours de modification par quelqu'un d'autre. Rien n'a été modifié. Veuillez réessayer dans un instant."
         not_deletable: "Vous ne pouvez plus supprimer cette commande. Veuillez contacter le personnel du makerspace."
       owner_change_busy: "Votre modification n'a pas pu être enregistrée car la commande est en cours de modification par quelqu'un d'autre. Rien n'a été modifié. Veuillez réessayer dans un instant."
       owner_change_order_missing: "Votre modification n'a pas pu être enregistrée car cette commande n'existe plus."
       status_change:
-        draft_not_voidable: "Le statut n'a pas pu être modifié car le lien de paiement de cette commande n'a pas pu être annulé. Rien n'a été modifié. Veuillez réessayer plus tard."
-        invalid_status_row: "Le statut n'a pas pu être modifié car le changement n'a pas pu être enregistré. Rien n'a été modifié. Le problème a été signalé."
+        service_price_missing: "Cette commande ne peut pas avancer pour le moment : le prix du service est manquant pour %{tasks}. Le personnel doit d'abord saisir un prix dans le devis (0 est permis pour un service gratuit). Rien n'a été modifié."
+        wrong_state: "Le statut n'a pas pu être modifié car la commande n'est plus dans le statut requis pour cette action. Rien n'a été modifié. Rechargez la page pour voir son statut actuel."
+        link_spent: "Ce lien d'approbation n'est plus valide car le devis a changé depuis l'envoi du courriel. Rien n'a été modifié. Connectez-vous et ouvrez la commande pour voir le dernier devis."
+        not_requested: "Rien n'a été modifié car la demande ne demandait pas ce changement de statut. Rechargez la page et réessayez."
+        draft_not_voidable: "Le statut n'a pas pu être modifié car le lien de paiement de cette commande n'a pas pu être annulé. Rien n'a été modifié. Veuillez réessayer plus tard. Référence : %{reference}."
+        invalid_status_row: "Le statut n'a pas pu être modifié car le changement n'a pas pu être enregistré. Rien n'a été modifié. Le problème a été signalé. Référence : %{reference}."
         order_missing: "Le statut n'a pas pu être modifié car cette commande n'existe plus. Rien n'a été modifié."
         busy: "Le statut n'a pas pu être modifié car la commande est en cours de modification par quelqu'un d'autre. Rien n'a été modifié. Veuillez réessayer dans un instant."
       zero_order_not_marked_paid:
-        draft_not_voidable: "La commande est terminée, mais cette commande à 0 $ n'a pas pu être marquée comme payée car son lien de paiement n'a pas pu être annulé. Veuillez la marquer comme payée plus tard."
-        invalid_status_row: "La commande est terminée, mais cette commande à 0 $ n'a pas pu être marquée comme payée car le changement n'a pas pu être enregistré. Le problème a été signalé."
+        draft_not_voidable: "La commande est terminée, mais cette commande à 0 $ n'a pas pu être marquée comme payée car son lien de paiement n'a pas pu être annulé. Veuillez la marquer comme payée plus tard. Référence : %{reference}."
+        invalid_status_row: "La commande est terminée, mais cette commande à 0 $ n'a pas pu être marquée comme payée car le changement n'a pas pu être enregistré. Le problème a été signalé. Référence : %{reference}."
         order_missing: "La commande est terminée, mais cette commande à 0 $ n'a pas pu être marquée comme payée car elle n'existe plus."
         busy: "La commande est terminée, mais cette commande à 0 $ n'a pas pu être marquée comme payée car elle est en cours de modification par quelqu'un d'autre. Veuillez la marquer comme payée dans un instant."
         other: "La commande est terminée, mais cette commande à 0 $ n'a pas pu être marquée comme payée car son statut a changé entre-temps. Veuillez vérifier la commande."
       quote_refused_paid: "Cette commande a déjà été payée ; son devis ne peut plus être modifié ni refusé."
       paid_order_cannot_change: "Cette commande a déjà été payée et ne peut plus être modifiée ici. Veuillez contacter makerspace@uottawa.ca pour la modifier."
       order_sent_back_for_requote: "Votre modification a été enregistrée. Comme cette commande avait déjà reçu un devis, elle a été renvoyée au personnel pour un nouveau devis. Le devis et le lien de paiement précédents ne fonctionnent plus."
-      owner_change_draft_order_failed: "Votre modification n'a pas pu être enregistrée car le lien de paiement existant de cette commande n'a pas pu être annulé. Rien n'a été modifié. Veuillez réessayer plus tard."
-      send_back_failed: "Votre modification n'a pas pu être enregistrée car la commande n'a pas pu être renvoyée au personnel pour un nouveau devis. Rien n'a été modifié. Le problème a été signalé ; veuillez réessayer plus tard ou contacter makerspace@uottawa.ca."
-      pay_send_back_failed: "La facture de cette commande ne correspond plus à son devis, et la commande n'a pas pu être renvoyée au personnel pour un nouveau devis. Rien n'a été facturé. Le problème a été signalé ; veuillez contacter makerspace@uottawa.ca."
+      owner_change_draft_order_failed: "Votre modification n'a pas pu être enregistrée car le lien de paiement existant de cette commande n'a pas pu être annulé. Rien n'a été modifié. Veuillez réessayer plus tard. Référence : %{reference}."
+      send_back_failed: "Votre modification n'a pas pu être enregistrée car la commande n'a pas pu être renvoyée au personnel pour un nouveau devis. Rien n'a été modifié. Le problème a été signalé ; veuillez réessayer plus tard ou contacter makerspace@uottawa.ca. Référence : %{reference}."
+      pay_send_back_failed: "La facture de cette commande ne correspond plus à son devis, et la commande n'a pas pu être renvoyée au personnel pour un nouveau devis. Rien n'a été facturé. Le problème a été signalé ; veuillez contacter makerspace@uottawa.ca. Référence : %{reference}."
       pay_quote_changed: "Cette commande a été modifiée après la préparation de sa facture ; elle a donc été renvoyée au personnel pour un nouveau devis. Vous recevrez un courriel lorsque le nouveau devis sera prêt."
-      error_while_updating: "Une erreur s'est produite lors de la mise à jour du statut de la commande. Veuillez réessayer plus tard."
       pay_magic_link_expired: "Le lien suivant vers le paiement de la commande est invalide ou a expiré. Veuillez vous connecter pour accéder à la page de commande."
       no_permission: "Vous n'avez pas la permission de voir cette commande."
       cannot_edit: "Vous ne pouvez pas modifier cette commande. Veuillez contacter makerspace@uottawa.ca pour obtenir de l'aide."
@@ -408,8 +563,11 @@ fr:
       updated_successfully: "Mis à jour avec succès !"
       action_required_scroll_to_timeline: "Action Requise : Veuillez descendre jusqu'à la section « Chronologie » pour fournir votre contribution. Votre réponse est nécessaire pour continuer. Merci !"
       missing_info: "Votre commande n'est pas soumise ! Il manque des informations requises dans les tâches suivantes :"
+      task_deleted: "La tâche a été supprimée."
     timeline:
       unknown_user: "Inconnu"
+      approved_by_html: "Approuvé par %{name} pour le client"
+      declined_by_html: "Refusé par %{name}"
     status_reasons:
       owner_change: "La commande a été modifiée après avoir reçu un devis."
       invoice_mismatch: "Le lien de paiement ne correspondait plus au devis de la commande."
@@ -459,14 +617,24 @@ fr:
         previous_page_disabled_tooltip: "Vous ne pouvez pas accéder à la page précédente car vous avez sélectionné des services de conception."
         design_description: "Décrivez votre projet"
         design_description_placeholder: "Veuillez décrire votre design et ce dont vous avez besoin d'aide. Cela nous aidera à mieux comprendre vos besoins."
+        create_job_order: "Créer une commande"
+        add_another_file: "Ajouter un autre fichier"
+        fees: "Frais"
+        # A service to choose, with the price per unit: "PLA ($15.0/g)"
+        service_with_price: "%{name} (%{price} $/%{unit})"
       step_3:
         by_unchecking: "Le téléchargement d’un autre fichier écrasera celui-ci."
         no_options: "Il n'y a pas d'options disponibles pour vous. Veuillez continuer vers la prochaine étape."
         job_wide_option: "S'applique à toutes les tâches"
+        option_already_selected: "Cette option est déjà sélectionnée pour une autre tâche de cette commande."
+        remove_from_other_task: "La retirer d'abord de cette tâche"
       step_4:
         additional_comments: "Commentaires supplémentaires"
     order:
+      submit_for_approval: "Soumettre pour approbation"
+      submit_for_approval_confirm: "Voulez-vous vraiment soumettre cette commande à l'approbation du personnel ?"
       job_order: "Commande"
+      no_job_type: "Aucun type de tâche"
       client_information: "Informations du client"
       name: "Nom"
       email: "Courriel"
@@ -483,6 +651,7 @@ fr:
       comments_from_staff: "Commentaires du personnel"
       files_from_client: "Fichiers du client"
       files_from_staff: "Fichiers du personnel"
+      order_files: "Fichiers de la commande"
       none_yet: "Aucun pour l'instant"
       no_files: "Aucun fichier téléversé pour cette commande."
       send: "Envoyer"
@@ -491,6 +660,8 @@ fr:
       add_another_task: "Ajouter une Autre Tâche"
       save_draft: "Enregistrer le Brouillon"
       delete: "Supprimer"
+      unnamed_task: "Tâche sans nom"
+      deleted_user: "[UTILISATEUR SUPPRIMÉ]"
     new:
       title: "Quel type de projet commencez-vous?"
       ready_to_make:
@@ -573,3 +744,40 @@ fr:
     section8:
       heading: "8. Modifications"
       content: "MakerRepo peut réviser ces conditions d'utilisation de son site Web à tout moment sans préavis. En utilisant ce site Web, vous acceptez d'être lié par la version actuelle de ces conditions d'utilisation."
+
+  staff_unavailabilities:
+    could_not_load: "{host} n'a pas pu être chargé"
+    unknown_calendar: "un calendrier lié"
+    feed_failed: "Votre calendrier n'a pas pu être chargé. Essayez de recharger la page."
+    imported_event:
+      title: "Événement importé"
+      from: "Importé depuis un calendrier lié ({host})."
+      from_unknown: "Importé depuis un calendrier lié."
+      all_day: "Toute la journée"
+      explanation: "Il ne peut pas être modifié ni supprimé ici : modifiez-le dans ce calendrier, ou retirez le lien de vos calendriers importés ci-dessous."
+  msr_mailer:
+    send_cc_money_email:
+      subject: "Votre commande de Crédits du CGEC (CC)"
+      preheader: "MakerRepo - Votre achat de CC est confirmé"
+      # %{site_link} = link to makerepo.com
+      why_received_html: "Vous avez reçu ce courriel parce que vous avez acheté des CC pour votre compte %{site_link}."
+      hello: "Bonjour,"
+      # %{site_link} = link to MakerRepo
+      bought_html: "Vous avez acheté des Crédits du CGEC (CC) sur %{site_link}!"
+      # %{cc} = number of CCs bought
+      amount_html: "Nombre de CC : <b>%{cc} CC</b>."
+      # %{link} = the claim link, text from link_text
+      link_html: "Vous pouvez les ajouter à votre compte MakerRepo en suivant ce %{link}."
+      link_text: "lien"
+      # %{url} = the claim address, shown as text
+      copy_link: "Si le lien ne fonctionne pas, copiez le lien suivant : %{url}"
+      button: "Échanger mes CC"
+    sign_up_attempt:
+      subject: "Quelqu'un a tenté de s'inscrire avec votre courriel"
+      hello: "Bonjour %{name},"
+      body: "Quelqu'un a tenté de créer un compte MakerRepo avec cette adresse courriel, mais elle a déjà un compte. Aucun nouveau compte n'a été créé."
+      if_you: "Si c'était vous, connectez-vous à votre compte existant. Si vous avez oublié votre mot de passe, vous pouvez le réinitialiser."
+      if_not: "Si ce n'était pas vous, vous pouvez ignorer ce courriel : votre compte n'a pas changé."
+      sign_in: "Se connecter"
+      reset_password: "Réinitialiser mon mot de passe"
+      why_received: "Vous avez reçu ce courriel parce qu'une inscription a été tentée avec votre adresse courriel."

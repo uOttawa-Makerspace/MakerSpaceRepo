@@ -41,9 +41,8 @@ RSpec.describe "users.deleted" do
       training_id = cert.training_session.training_id
       user.soft_delete!
       expect(Certification.highest_certifications(user.id)).to eq([cert])
-      expect(Certification.certification_highest_level(training_id, user.id)).to eq(cert)
-      expect(ProficientProject.training_status(training_id, user.id)).to eq(cert.level)
-      expect(ApplicationController.helpers.training_status(training_id, user.id)).to be_present
+      expect(user.certified_level(training_id)).to eq(cert.level)
+      expect(ApplicationController.helpers.training_status(training_id, user)).to include(cert.level)
     end
 
     it "their lab sessions and certifications still reach the user, and join to it" do
@@ -66,6 +65,21 @@ RSpec.describe "users.deleted" do
       create(:certification, :basic_training, user_id: user.id)
       expect { user.destroy }.to raise_error(ActiveRecord::InvalidForeignKey)
       expect(Certification.where(user_id: user.id)).to exist
+    end
+
+    it "keeps the printer sessions of a soft-deleted user, and restore keeps them" do
+      session = create(:printer_session, :um3_session, user: user)
+      user.soft_delete!
+      expect(PrinterSession.where(user_id: user.id)).to contain_exactly(session)
+      user.restore!
+      expect(User.find(user.id).printer_sessions).to contain_exactly(session)
+    end
+
+    it "a hard delete of a user is refused while printer sessions point at it, and the sessions are kept" do
+      session = create(:printer_session, :um3_session, user: user)
+      expect { user.destroy }.to raise_error(ActiveRecord::InvalidForeignKey, /printer_sessions/)
+      expect(PrinterSession.where(user_id: user.id)).to contain_exactly(session)
+      expect(User.unscoped.exists?(user.id)).to be(true)
     end
 
     it "a certification still reaches its demoting staff member after that account is deleted" do

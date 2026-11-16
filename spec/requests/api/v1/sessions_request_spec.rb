@@ -67,7 +67,8 @@ RSpec.describe "/api/v1/session", type: :request do
     it "401s a wrong password and counts the attempt" do
       login(pw: "wrong")
       expect(response).to have_http_status(:unauthorized)
-      expect(error).to eq("code" => "invalid_credentials", "message" => "Invalid login or password")
+      expect(error.except("reference")).to eq("code" => "invalid_credentials", "message" => "Invalid login or password")
+      expect(error["reference"]).to eq(response.headers["X-Request-Id"].first(8)).and match(/\A\h{8}\z/)
       expect(user.reload.auth_attempts).to eq(1)
     end
 

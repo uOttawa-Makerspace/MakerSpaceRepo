@@ -96,11 +96,11 @@
                     <% end %>
                   </td>
                   <td><p><%= order.created_at.strftime('%Y/%m/%d') %></p></td>
-                  <td><p><%= order.subtotal %></p></td>
+                  <td><p><%= order.in_progress? ? "Open" : order.subtotal %></p></td>
                   <td><p><%= order.order_status.name %></p></td>
                   <td><p><%= order.total %></p></td>
                   <td>
-                    <%= button_to 'Delete', order, method: :delete, data: { confirm: 'Are you sure? This will give back the CC points used to purchase this order.' }, class: 'btn btn-danger' %>
+                    <%= button_to 'Delete', order, method: :delete, **confirmation_options(t('confirmations.orders.delete')), class: 'btn btn-danger' %>
                   </td>
                 </tr>
               <% end %>

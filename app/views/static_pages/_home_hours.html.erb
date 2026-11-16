@@ -11,14 +11,14 @@
 
         <h3 class="text-center mt-4"><%= t('home.welcome.hour_header') %></h3>
 
-        <div id="calendar" class="styled-calendar"></div>
+        <div data-controller="hours-calendar" data-hours-calendar-feed-url-value="<%= open_hours_path %>">
+            <%= render 'static_pages/hours_calendar', calendars: @hours_calendars %>
 
-        <div class="styled-calendar mt-3 d-flex flex-wrap justify-content-between align-items-center">
-            <%= link_to t('home.welcome.view_hours'), hours_path, class: 'fc-button' %>
+            <div class="styled-calendar mt-3 d-flex flex-wrap justify-content-between align-items-center">
+                <%= link_to t('home.welcome.view_hours'), hours_path, class: 'fc-button' %>
 
-            <div id="filters" class='d-flex flex-wrap gap-3'></div>
+                <div id="filters" class='d-flex flex-wrap gap-3'><%= render 'static_pages/hours_filters', calendars: @hours_calendars %></div>
+            </div>
         </div>
     </div>
 </div>
-
-<%= vite_javascript_tag 'fullcalendar_setup_homepage' %>

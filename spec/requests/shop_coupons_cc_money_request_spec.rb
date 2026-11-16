@@ -49,7 +49,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       it "shows the empty state when the user has none" do
         shop_log_in!(user)
         get discount_codes_path
-        expect(response.body).to include("You don't have any coupons.")
+        expect(response.body).to include("You don&#39;t have any coupons.")
       end
 
       it "gives staff and admin the same own-codes-only view" do
@@ -73,16 +73,33 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         shop_log_in!(user)
         get new_discount_code_path
         expect(response).to have_http_status(:ok)
-        expect(response.body.scan("Are you sure you want to buy the coupon").size).to eq(2)
+        expect(response.body.scan("Buy the coupon for").size).to eq(2)
         expect(response.body).to include("$5 off our MakerStore")
         expect(response.body).to include("$10 off our MakerStore")
         expect(response.body).not_to include("$99 off")
       end
 
+      it "keeps each coupon's price and Redeem button outside its title heading" do
+        create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 50)
+        shop_log_in!(user)
+        get new_discount_code_path
+        card = Nokogiri::HTML5(response.body).at_css(".card-body")
+        expect(card.at_css("h5.card-title").text.strip).to eq("$5 off our MakerStore")
+        expect(card.css("h5.card-title p, h5.card-title form")).to be_empty
+      end
+
+      it "is written in French when the locale is fr" do
+        create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 50)
+        shop_log_in!(user)
+        get new_discount_code_path(locale: "fr")
+        expect(response.body).to include("Échangez vos CC!", "Prix du coupon: 50 CC")
+        expect(response.body).not_to include("Coupon price")
+      end
+
       it "shows the sold-out message when nothing is unclaimed" do
         shop_log_in!(user)
         get new_discount_code_path
-        expect(response.body).to include("we don't have any coupons to offer")
+        expect(response.body).to include("there are no coupons available right now")
       end
     end
 
@@ -120,8 +137,15 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         coupon = create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
         expect { post discount_codes_path, params: { dollar_cost: 5, cc_cost: 40 } }.not_to change(CcMoney, :count)
         expect(response).to redirect_to(root_path)
-        expect(flash[:alert]).to eq("Not enough CC points")
+        expect(flash[:alert]).to eq("Not enough CCs.")
         expect(coupon.reload.user_id).to be_nil
+      end
+
+      it "says so in French when the locale is fr" do
+        credit_cc!(user, 39)
+        create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
+        post discount_codes_path, params: { dollar_cost: 5, cc_cost: 40, locale: "fr" }
+        expect(flash[:alert]).to eq("Pas assez de CC.")
       end
 
       it "a refusal is decided on the ledger balance, not the stale cache, and writes nothing" do
@@ -129,7 +153,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         user.update_column(:wallet, 1000)
         create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
         post discount_codes_path, params: { dollar_cost: 5, cc_cost: 40 }
-        expect(flash[:alert]).to eq("Not enough CC points")
+        expect(flash[:alert]).to eq("Not enough CCs.")
         expect(user.reload.wallet).to eq(1000)
       end
 
@@ -295,7 +319,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
           post coupon_codes_path, params: { coupon_code: { code: "NEG", cc_cost: -5, dollar_cost: 3 } }
         end.not_to change(CouponCode, :count)
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
+        expect(response.body).to include("Cc cost must be a number of CCs (0 or more)")
 
         patch coupon_code_path(coupon), params: { coupon_code: { cc_cost: -1 } }
         expect(response).to have_http_status(:unprocessable_content)
@@ -310,21 +334,34 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       it "refuses a coupon without a price" do
         expect { post coupon_codes_path, params: { coupon_code: { code: "" } } }.not_to change(CouponCode, :count)
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
+        expect(response.body).to include("Cc cost must be a number of CCs (0 or more)")
+      end
+
+      it "refuses a code that is already in use (422, nothing saved)" do
+        create(:coupon_code, :unclaimed, code: "TAKEN-1")
+        expect { post coupon_codes_path, params: { coupon_code: { code: "TAKEN-1", cc_cost: 5, dollar_cost: 3 } } }
+          .not_to change(CouponCode, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
+      it "refuses a coupon without a positive dollar value" do
+        expect { post coupon_codes_path, params: { coupon_code: { code: "ZERO", cc_cost: 5, dollar_cost: 0 } } }
+          .not_to change(CouponCode, :count)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it "refuses a non-numeric price on create with the same message" do
         expect { post coupon_codes_path, params: { coupon_code: { code: "X", cc_cost: "abc", dollar_cost: 3 } } }
           .not_to change(CouponCode, :count)
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
+        expect(response.body).to include("Cc cost must be a number of CCs (0 or more)")
       end
 
       it "refuses a fractional price on create with the same message (not truncated to 2)" do
         expect { post coupon_codes_path, params: { coupon_code: { code: "FRAC", cc_cost: "2.9", dollar_cost: 3 } } }
           .not_to change(CouponCode, :count)
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
+        expect(response.body).to include("Cc cost must be a number of CCs (0 or more)")
       end
 
       it "renders the admin form again with the error and still creates a priced coupon afterwards" do
@@ -359,7 +396,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         claimed = create(:coupon_code, :claimed, user: other)
         expect { delete coupon_code_path(claimed) }.not_to change(CouponCode, :count)
         expect(response).to redirect_to(coupon_codes_path)
-        expect(flash[:alert]).to eq("A user has already claimed this coupon with CC points, so it cannot be deleted")
+        expect(flash[:alert]).to eq("A user has already claimed this coupon with CCs, so it cannot be deleted")
         expect(claimed.reload.user).to eq(other)
       end
 
@@ -374,18 +411,31 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
 
   describe "CcMoneysController" do
     let(:verifier) { Rails.application.message_verifier(:cc) }
-    let!(:unlinked) { CcMoney.create!(cc: 20, linked: false) }
-    let(:token) { verifier.generate(unlinked.id) }
+    let!(:unlinked) { CcMoney.create!(cc: 20, linked: false, purchaser_email: user.email) }
+    include ActiveSupport::Testing::TimeHelpers
 
-    describe "GET /cc_moneys" do
+    let(:token) { unlinked.claim_token }
+    let(:legacy_token) { verifier.generate(unlinked.id) }
+    let(:no_purchaser_message) { I18n.t("errors.shop.cc_money.not_purchaser") }
+    let(:invalid_message) { "This link is not valid. Open the link from your email again, or contact uottawa.makerepo@gmail.com." }
+
+    describe "GET /rewards" do
       it "is public: guests see the explainer and a sign-in prompt, with no balance card" do
         get cc_moneys_path
         expect(response).to have_http_status(:ok)
-        expect(response.body).to include("What Are CC Points?")
+        expect(response.body).to include("What Are CEED Credits?")
         expect(response.body).not_to include("Your CC Balance")
-        expect(response.body).not_to include("Redeem Points")
+        expect(response.body).not_to include(%(href="#{new_discount_code_path}" class="btn btn-primary mt-2"))
         expect(response.body).to include("Ready to Start Earning?")
         expect(response.body).to include(%(href="#{login_path}"))
+      end
+
+      it "is written in French when the locale is fr, with no points wording in either language" do
+        get cc_moneys_path(locale: "fr")
+        expect(response.body).to include("Que sont les Crédits du CGEC?", "Prêt à commencer à gagner?")
+        expect(response.body).not_to include("What Are CEED Credits?")
+        get cc_moneys_path
+        expect(response.body).not_to match(/points/i)
       end
 
       it "shows signed-in users their ledger balance (not the stale cache) and last 10 activities, without locking or writing" do
@@ -398,7 +448,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         ActiveSupport::Notifications.unsubscribe(sub)
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("Your CC Balance")
-        expect(response.body).to match(/30\s*<small/)
+        expect(Nokogiri::HTML5(response.body).at_css(".card h2.text-primary").text.strip).to eq("30")
         expect(sqls.grep(/FOR (NO KEY )?UPDATE/)).to be_empty
         expect(sqls.grep(/\AUPDATE "users"/).grep(/wallet/)).to be_empty
         expect(user.reload.wallet).to eq(0) # the cache is not written by a page view
@@ -413,20 +463,97 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       end
     end
 
-    describe "GET /cc_moneys/link_cc_to_user" do
+    describe "the old /cc_moneys address" do
+      it "sends bookmarks of the page to /rewards for good" do
+        get "/cc_moneys"
+        expect(response).to have_http_status(:moved_permanently)
+        expect(response).to redirect_to("/rewards")
+        get "/rewards"
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "keeps the query string, so a claim link from an old mail still reaches its confirm page" do
+        get "/cc_moneys?from=shopify_invoice"
+        expect(response).to redirect_to("/rewards?from=shopify_invoice")
+        get "/cc_moneys/link_cc_to_user", params: { token: token }
+        expect(response).to redirect_to("/rewards/link_cc_to_user?token=#{CGI.escape(token)}")
+      end
+
+      it "keeps an encoded segment encoded in the target" do
+        get "/cc_moneys/a%20b"
+        expect(response).to have_http_status(:moved_permanently)
+        expect(response.headers["Location"]).to end_with("/rewards/a%20b")
+      end
+
+      it "answers a line break in a segment with a redirect or a 404, never an error, and sets no extra header" do
+        get "/cc_moneys/x%0d%0aSet-Cookie:%20a=b"
+        expect(response.status).to be_in([301, 404])
+        expect(response.headers["Location"].to_s).not_to match(/[\r\n]/)
+        expect(response.headers["Set-Cookie"].to_s).not_to include("a=b")
+      end
+
+      it "names the new path in every route helper" do
+        expect([cc_moneys_path, link_cc_to_user_cc_moneys_path, redeem_cc_moneys_path])
+          .to eq(["/rewards", "/rewards/link_cc_to_user", "/rewards/redeem"])
+      end
+    end
+
+    describe "GET /rewards/link_cc_to_user" do
       it "redirects guests to login with the token preserved in back_to" do
         get link_cc_to_user_cc_moneys_path, params: { token: token }
         expect(response).to have_http_status(:found)
         expect(response.location).to include("/login")
       end
 
-      it "renders the email form for a valid, unlinked token" do
+      it "renders the confirmation form for the purchaser, with no email field" do
         shop_log_in!(user)
         get link_cc_to_user_cc_moneys_path, params: { token: token }
         expect(response).to have_http_status(:ok)
-        expect(response.body).to include("Link CC to an user")
+        expect(response.body).to include("Add CCs to your account", "You can only add these CCs once", user.email)
         expect(response.body).to match(%r{<form[^>]*action="#{redeem_cc_moneys_path}"[^>]*method="post"})
         expect(response.body).to include(token)
+        expect(response.body).not_to include('type="email"')
+      end
+
+      it "renders the confirmation form in French when the locale is fr, with no points wording" do
+        shop_log_in!(user)
+        get link_cc_to_user_cc_moneys_path, params: { token: token, locale: "fr" }
+        expect(response.body).to include("Ajouter des CC à votre compte", 'value="Ajouter les CC"', "Annuler")
+        expect(response.body).not_to match(/points/i)
+      end
+
+      it "refuses a signed-in user who is not the purchaser" do
+        shop_log_in!(other)
+        get link_cc_to_user_cc_moneys_path, params: { token: token }
+        expect(response).to redirect_to(cc_moneys_path)
+        expect(flash[:alert]).to eq(no_purchaser_message)
+      end
+
+      it "refuses an expired token" do
+        stale = token
+        travel_to(CcMoney::CLAIM_TOKEN_LIFETIME.from_now + 1.minute) do
+          shop_log_in!(user)
+          get link_cc_to_user_cc_moneys_path, params: { token: stale }
+        end
+        expect(response).to redirect_to(cc_moneys_path)
+        expect(flash[:alert]).to eq(invalid_message)
+      end
+
+      it "refuses a token superseded by a resend and accepts the newer one" do
+        old = token
+        unlinked.send_claim_email_to(user.email, by: create(:user, :admin))
+        fresh = unlinked.claim_token
+        shop_log_in!(user)
+        get link_cc_to_user_cc_moneys_path, params: { token: old }
+        expect(flash[:alert]).to eq(invalid_message)
+        get link_cc_to_user_cc_moneys_path, params: { token: fresh }
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "still accepts a token issued before claim links carried a generation, for the purchaser of an unresent row" do
+        shop_log_in!(user)
+        get link_cc_to_user_cc_moneys_path, params: { token: legacy_token }
+        expect(response).to have_http_status(:ok)
       end
 
       it "redirects with the 'already added' alert when the token was used" do
@@ -434,16 +561,17 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         shop_log_in!(user)
         get link_cc_to_user_cc_moneys_path, params: { token: token }
         expect(response).to redirect_to(cc_moneys_path)
-        expect(flash[:alert]).to eq("The CC Money has already been added to an account")
+        expect(flash[:alert]).to eq("These CCs have already been added to an account")
       end
 
       it "redirects with the generic alert for a tampered or missing token" do
         shop_log_in!(user)
         get link_cc_to_user_cc_moneys_path, params: { token: "garbage" }
         expect(response).to redirect_to(cc_moneys_path)
-        expect(flash[:alert]).to start_with("Something went wrong.")
+        expect(flash[:alert]).to eq("This link is not valid. Open the link from your email again, or contact uottawa.makerepo@gmail.com.")
         get link_cc_to_user_cc_moneys_path
         expect(response).to redirect_to(cc_moneys_path)
+        expect(flash[:alert]).to eq("This link is not valid. Open the link from your email again, or contact uottawa.makerepo@gmail.com.")
       end
 
       it "redirects with the generic alert for a validly signed token whose cc_money row no longer exists" do
@@ -452,80 +580,185 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         get link_cc_to_user_cc_moneys_path, params: { token: stale }
         # a missing row gets the same alert as an invalid token instead of a NoMethodError 500
         expect(response).to redirect_to(cc_moneys_path)
-        expect(flash[:alert]).to start_with("Something went wrong.")
+        expect(flash[:alert]).to eq("That CC purchase no longer exists. If you think this is a mistake, contact uottawa.makerepo@gmail.com.")
       end
     end
 
-    describe "POST /cc_moneys/redeem" do
+    describe "POST /rewards/redeem" do
       it "does not link on a plain GET (the mailed link only opens the confirm page)" do
         shop_log_in!(user)
-        get "/cc_moneys/redeem", params: { token: token, user: { email: user.email } }
+        get "/rewards/redeem", params: { token: token }
         expect(unlinked.reload.linked).to be(false)
         expect(user.cc_moneys.sum(:cc)).to eq(0)
       end
 
       it "redirects guests to login and changes nothing" do
-        post redeem_cc_moneys_path, params: { token: token, user: { email: user.email } }
+        post redeem_cc_moneys_path, params: { token: token }
         expect(response.location).to include("/login")
         expect(unlinked.reload.linked).to be(false)
       end
 
-      it "links the points to the user whose email is submitted" do
+      it "credits the signed-in purchaser" do
         shop_log_in!(user)
-        post redeem_cc_moneys_path, params: { token: token, user: { email: user.email } }
+        post redeem_cc_moneys_path, params: { token: token }
         expect(response).to redirect_to(cc_moneys_path)
-        expect(flash[:notice]).to eq("The CC Money has been added to #{user.name}")
+        expect(flash[:notice]).to eq("The CCs have been added to #{user.name}")
         expect(unlinked.reload.user_id).to eq(user.id)
         expect(unlinked.linked).to be(true)
         expect(user.cc_moneys.sum(:cc)).to eq(20)
       end
 
-      it "lets a signed-in user credit the points to ANY account by typing its email" do
+      it "says so in French when the locale is fr" do
+        shop_log_in!(user)
+        post redeem_cc_moneys_path, params: { token: token, locale: "fr" }
+        expect(flash[:notice]).to eq("Les CC ont été ajoutés au compte de #{user.name}")
+      end
+
+      it "credits only the signed-in account, whatever email is submitted" do
         shop_log_in!(user)
         post redeem_cc_moneys_path, params: { token: token, user: { email: other.email } }
-        # crediting the typed email is deliberate (guest purchasers credit their account by email); no behavior change. redeem is POST only; the mailed link opens link_cc_to_user (a GET confirm page with the POST form)
-        expect(flash[:notice]).to eq("The CC Money has been added to #{other.name}")
-        expect(unlinked.reload.user_id).to eq(other.id)
+        expect(unlinked.reload.user_id).to eq(user.id)
+        expect(other.cc_moneys.sum(:cc)).to eq(0)
+      end
+
+      it "matches the purchase email regardless of letter case" do
+        unlinked.update!(purchaser_email: user.email.upcase)
+        expect(unlinked.reload.purchaser_email).to eq(user.email)
+        shop_log_in!(user)
+        post redeem_cc_moneys_path, params: { token: token }
+        expect(unlinked.reload.user_id).to eq(user.id)
+      end
+
+      it "refuses a signed-in user who is not the purchaser and changes nothing" do
+        shop_log_in!(other)
+        post redeem_cc_moneys_path, params: { token: token }
+        expect(response).to redirect_to(cc_moneys_path)
+        expect(flash[:alert]).to eq(no_purchaser_message)
+        expect(unlinked.reload.linked).to be(false)
+        expect(unlinked.user_id).to be_nil
+        expect(other.cc_moneys.sum(:cc)).to eq(0)
+      end
+
+      it "refuses a row with no recorded purchaser and changes nothing" do
+        unlinked.update!(purchaser_email: nil)
+        shop_log_in!(user)
+        post redeem_cc_moneys_path, params: { token: token }
+        expect(flash[:alert]).to eq(no_purchaser_message)
+        expect(unlinked.reload.linked).to be(false)
+      end
+
+      it "refuses an expired token and changes nothing" do
+        stale = token
+        travel_to(CcMoney::CLAIM_TOKEN_LIFETIME.from_now + 1.minute) do
+          shop_log_in!(user)
+          post redeem_cc_moneys_path, params: { token: stale }
+        end
+        expect(flash[:alert]).to eq(invalid_message)
+        expect(unlinked.reload.linked).to be(false)
+      end
+
+      it "refuses a token superseded by a resend and changes nothing" do
+        old = token
+        unlinked.send_claim_email_to(user.email, by: create(:user, :admin))
+        shop_log_in!(user)
+        post redeem_cc_moneys_path, params: { token: old }
+        expect(flash[:alert]).to eq(invalid_message)
+        expect(unlinked.reload.linked).to be(false)
+      end
+
+      it "redeems a legacy token for the purchaser of an unresent row" do
+        shop_log_in!(user)
+        post redeem_cc_moneys_path, params: { token: legacy_token }
+        expect(unlinked.reload.user_id).to eq(user.id)
+      end
+
+      it "refuses a legacy token once the row was resent" do
+        legacy = legacy_token
+        unlinked.send_claim_email_to(user.email, by: create(:user, :admin))
+        shop_log_in!(user)
+        post redeem_cc_moneys_path, params: { token: legacy }
+        expect(flash[:alert]).to eq(invalid_message)
+        expect(unlinked.reload.linked).to be(false)
       end
 
       it "is single-use: a second redeem alerts and keeps the first owner" do
         shop_log_in!(user)
-        post redeem_cc_moneys_path, params: { token: token, user: { email: user.email } }
-        post redeem_cc_moneys_path, params: { token: token, user: { email: other.email } }
-        expect(flash[:alert]).to eq("The CC Money has already been added to an account")
+        post redeem_cc_moneys_path, params: { token: token }
+        post redeem_cc_moneys_path, params: { token: token }
+        expect(flash[:alert]).to eq("These CCs have already been added to an account")
         expect(unlinked.reload.user_id).to eq(user.id)
       end
 
-      it "unknown email: misleading 'already added' alert, points stay unlinked" do
+      it "does not take over a row another claim linked after this request read it" do
         shop_log_in!(user)
-        post redeem_cc_moneys_path, params: { token: token, user: { email: "nobody@example.com" } }
-        expect(response).to redirect_to(cc_moneys_path)
-        # keep the existing alert for an unknown email (user decision: crediting a typed email is intended); no behavior change
-        expect(flash[:alert]).to eq("The CC Money has already been added to an account")
+        stale = CcMoney.find(unlinked.id)
+        CcMoney.where(id: unlinked.id).update_all(user_id: other.id, linked: true)
+        allow(CcMoney).to receive(:find_by_id).and_return(stale)
+        expect { post redeem_cc_moneys_path, params: { token: token } }
+          .not_to change { CcMoney.where(user_id: user.id).count }
+        expect(flash[:alert]).to eq("These CCs have already been added to an account")
+        expect(unlinked.reload.user_id).to eq(other.id)
+      end
+
+      it "refuses a link replaced by a resend between loading the row and redeeming, and credits nothing" do
+        shop_log_in!(user)
+        stale = CcMoney.find(unlinked.id)
+        CcMoney.where(id: unlinked.id).update_all(claim_token_generation: 1)
+        allow(CcMoney).to receive(:find_by_id).and_return(stale)
+        expect { post redeem_cc_moneys_path, params: { token: token } }
+          .not_to change { CcMoney.where(user_id: user.id).count }
+        expect(flash[:alert]).to eq(invalid_message)
         expect(unlinked.reload.linked).to be(false)
+        expect(user.cc_moneys.sum(:cc)).to eq(0)
+      end
+
+      it "treats a token that is not a string like an invalid one, on the page and on redeem" do
+        shop_log_in!(user)
+        get link_cc_to_user_cc_moneys_path, params: { token: { a: 1 } }
+        expect(response).to redirect_to(cc_moneys_path)
+        expect(flash[:alert]).to eq(invalid_message)
+        post redeem_cc_moneys_path, params: { token: ["x"] }
+        expect(response).to redirect_to(cc_moneys_path)
+        expect(flash[:alert]).to eq(invalid_message)
+        expect(unlinked.reload.linked).to be(false)
+      end
+
+      it "names the cause in French" do
+        shop_log_in!(user)
+        post redeem_cc_moneys_path, params: { token: "bad", locale: "fr" }
+        expect(flash[:alert]).to start_with("Ce lien n'est pas valide.")
+      end
+
+      it "says when the link could not be saved, with the validation messages" do
+        shop_log_in!(user)
+        allow_any_instance_of(CcMoney).to receive(:update) do |cc|
+          cc.errors.add(:base, "Ledger is closed")
+          false
+        end
+        post redeem_cc_moneys_path, params: { token: token }
+        expect(flash[:alert]).to eq("The CCs could not be added to that account: Ledger is closed")
+        expect(flash[:notice]).to be_nil
       end
 
       it "redirects with the generic alert for a validly signed token whose cc_money row no longer exists" do
         stale = verifier.generate(999_999_999)
         shop_log_in!(user)
-        post redeem_cc_moneys_path, params: { token: stale, user: { email: user.email } }
+        post redeem_cc_moneys_path, params: { token: stale }
         # same alert as an invalid token instead of a NoMethodError 500
         expect(response).to redirect_to(cc_moneys_path)
-        expect(flash[:alert]).to start_with("Something went wrong.")
+        expect(flash[:alert]).to eq("That CC purchase no longer exists. If you think this is a mistake, contact uottawa.makerepo@gmail.com.")
         expect(user.cc_moneys.sum(:cc)).to eq(0)
       end
 
-      it "tampered or garbage token gets the generic alert (no 500) and missing user param is a 302 to root" do
+      it "tampered, garbage or missing token gets the generic alert (no 500)" do
         shop_log_in!(user)
         # redeem used verifier.verify (InvalidSignature 500); verified returns nil, handled like a missing row
-        post redeem_cc_moneys_path, params: { token: "bad", user: { email: user.email } }
+        post redeem_cc_moneys_path, params: { token: "bad" }
         expect(response).to redirect_to(cc_moneys_path)
-        expect(flash[:alert]).to start_with("Something went wrong.")
-        post redeem_cc_moneys_path, params: { user: { email: user.email } }
+        expect(flash[:alert]).to eq("This link is not valid. Open the link from your email again, or contact uottawa.makerepo@gmail.com.")
+        post redeem_cc_moneys_path
         expect(response).to redirect_to(cc_moneys_path)
-        expect(flash[:alert]).to start_with("Something went wrong.")
-        post redeem_cc_moneys_path, params: { token: token }
-        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("This link is not valid. Open the link from your email again, or contact uottawa.makerepo@gmail.com.")
         expect(unlinked.reload.linked).to be(false)
       end
     end

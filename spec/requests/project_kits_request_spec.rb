@@ -85,7 +85,7 @@ RSpec.describe "Project kits (HTTP contract)", type: :request do
           expect do
             post project_kits_path, params: { project_kit: { user_id: recipient.id, proficient_project_id: "" } }
           end.not_to change(ProjectKit, :count)
-          expect(flash[:alert]).to eq("There was an error creating the kit")
+          expect(flash[:alert]).to eq("The kit was not created. Proficient project This field is required.")
           expect(ActionMailer::Base.deliveries).to be_empty
         end
 
@@ -97,13 +97,13 @@ RSpec.describe "Project kits (HTTP contract)", type: :request do
           end.to change(ProjectKit, :count).by(3)
         end
 
-        it "500s on a nonexistent project id: validation passes on presence, the FK constraint raises" do
+        it "alerts and sends no mail for a project id that does not exist" do
           ActionMailer::Base.deliveries.clear
           expect do
             post project_kits_path, params: { project_kit: { user_id: recipient.id, proficient_project_id: 0 } }
           end.not_to change(ProjectKit, :count)
-          # ProjectKit validates presence, not existence, of the project; the DB FK error surfaces as a 500
-          expect(response).to have_http_status(:internal_server_error)
+          expect(response).to redirect_to(project_kits_path)
+          expect(flash[:alert]).to eq("The kit was not created. Proficient project This field is required.")
           expect(ActionMailer::Base.deliveries).to be_empty
         end
 

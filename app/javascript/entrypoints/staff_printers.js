@@ -1,28 +1,27 @@
 import TomSelect from "tom-select";
+import { tomSelectOptions } from "../src/page_locale.js";
 
 document.addEventListener("turbo:load", function () {
-  const all_selects = [
-    "#ultimaker2p",
-    "#ultimaker3",
-    "#replicator2",
-    "#dremel",
-  ];
-  for (let i = 0; i < all_selects.length; i++) {
-    try {
-      new TomSelect(all_selects[i], {});
-    } catch (e) {} // nothing to catch O_O
-  }
-
   // For "Send Print Failed Emails" form
-  try {
-    let printerAssigns = {};
-    fetch("/printers/last_user_assigned_to_printer")
-      .then((response) => response.json())
-      .then((json) => (printerAssigns = json));
-    //let printerAssigns = await response.json()
-    console.log(printerAssigns);
+  const printerSelect = document.querySelector("#printerNumberSelect");
+  if (!printerSelect) return;
 
-    new TomSelect("#printerNumberSelect", {
+  let printerAssigns = {};
+  fetch("/printers/last_user_assigned_to_printer", {
+    headers: { Accept: "application/json" },
+  })
+    .then((response) => {
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    })
+    .then((json) => (printerAssigns = json))
+    .catch((error) =>
+      console.error("Could not load the last user of each printer", error),
+    );
+
+  new TomSelect(
+    "#printerNumberSelect",
+    tomSelectOptions(document, {
       items: [], // To clear default value
       onChange: function (printerId) {
         let userSelect = document.querySelector(
@@ -45,8 +44,6 @@ document.addEventListener("turbo:load", function () {
           userSelect.setValue(printerAssigns[printerId].username);
         }
       },
-    });
-  } catch (e) {
-    console.log(e);
-  }
+    }),
+  );
 });

@@ -8,7 +8,12 @@ class JobTaskQuote < ApplicationRecord
   validates :service_price, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :service_quantity, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
 
-  def total_task_price
-    price + (service_quantity * service_price) + job_task_quote_options.sum(:price)
+  # The price quoted for the option, or nil when none was. Reads the quote's options already loaded when they are.
+  def price_for_option(job_option_id)
+    job_task_quote_options.detect { |quote_option| quote_option.job_option_id == job_option_id }&.price
+  end
+
+  def service_total
+    (service_quantity || 0) * (service_price || 0)
   end
 end

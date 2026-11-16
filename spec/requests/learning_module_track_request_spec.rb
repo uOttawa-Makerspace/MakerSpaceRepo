@@ -59,6 +59,19 @@ RSpec.describe "Learning module tracks", type: :request do
       expect(response.body).to include("Modules finished : 1 / 2")
       expect(response.body).to include("Todo one")
     end
+
+    it "shows a badge with the training and level for each of the user's certifications" do
+      signed = sign_in_as(:regular)
+      { "Beginner" => "Badge training one", "Advanced" => "Badge training two" }.each do |level, name|
+        training = create(:training, name_en: name)
+        session = create(:training_session, training: training, level: level)
+        create(:certification, user: signed, training: training, training_session: session)
+      end
+      get learning_module_track_index_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Badge training one").and include("Badge training two")
+      expect(response.body).to include("bronze").and include("golden")
+    end
   end
 
   describe "POST /learning_module_track/start" do
@@ -122,6 +135,15 @@ RSpec.describe "Learning module tracks", type: :request do
       expect(response).to redirect_to(learning_area_path(learning_module.id))
       expect(flash[:notice]).to eq("You have successfully completed the learning module !")
       expect(track.reload.status).to eq("completed")
+    end
+
+    it "refuses with an alert, recording nothing, for an unknown or missing module id" do
+      [0, nil].each do |id|
+        expect { post completed_learning_module_track_index_path(learning_module_id: id) }
+          .not_to change(LearningModuleTrack, :count)
+        expect(response).to redirect_to(learning_area_index_path)
+        expect(flash[:alert]).to be_present
+      end
     end
 
     it "is idempotent on an already completed track" do

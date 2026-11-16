@@ -2,68 +2,68 @@
   <%= form_with(url: admin_training_sessions_path, method: :get, local: true, class: 'row g-3 align-items-end') do %>
     <!-- Date Range Filter -->
     <div class="col-md-2">
-      <%= label_tag :date_range, 'Filter by Date Range:', class: 'form-label' %>
+      <%= label_tag :date_range, t('admin_area.training_sessions.date_range'), class: 'form-label' %>
       <%= select_tag :date_range, options_for_select([
-                                                       ['30 days ago', '30_days'],
-                                                       ['90 days ago', '90_days'],
-                                                       ['1 year ago', '1_year'],
+                                                       [t('admin_area.training_sessions.ranges.30_days'), '30_days'],
+                                                       [t('admin_area.training_sessions.ranges.90_days'), '90_days'],
+                                                       [t('admin_area.training_sessions.ranges.1_year'), '1_year'],
                                                        ['2024', '2024'],
                                                        ['2023', '2023'],
                                                        ['2022', '2022'],
                                                        ['2021', '2021'],
                                                        ['2020', '2020'],
-                                                       ['All', 'all']
+                                                       [t('admin_area.training_sessions.all'), 'all']
                                                      ], selected: params[:date_range] || '30_days'), class: 'form-select' %>
     </div>
 
     <!-- Custom Date Range Filter -->
     <div class="col-md-2">
-      <%= label_tag :start_date, 'Start Date:', class: 'form-label' %>
+      <%= label_tag :start_date, t('admin_area.training_sessions.start_date'), class: 'form-label' %>
       <%= date_field_tag :start_date, params[:start_date], class: 'form-control' %>
     </div>
     <div class="col-md-2">
-      <%= label_tag :end_date, 'End Date:', class: 'form-label' %>
+      <%= label_tag :end_date, t('admin_area.training_sessions.end_date'), class: 'form-label' %>
       <%= date_field_tag :end_date, params[:end_date], class: 'form-control' %>
     </div>
 
     <!-- Training Dropdown -->
     <div class="col-md-2">
-      <%= label_tag :training, 'Training:', class: 'form-label' %>
-      <%= select_tag :training, options_from_collection_for_select(Training.order(:name_en), :id, :name_en, params[:training]), include_blank: 'All', class: 'form-select' %>
+      <%= label_tag :training, t('admin_area.training_sessions.training_label'), class: 'form-label' %>
+      <%= select_tag :training, options_from_collection_for_select(Training.order(:name_en), :id, :name_en, params[:training]), include_blank: t('admin_area.training_sessions.all'), class: 'form-select' %>
     </div>
     <!-- Trainer Search -->
     <div class="col-md-2">
-      <%= label_tag :trainers, 'Trainers:', class: 'form-label' %>
-      <%= select_tag :trainers, options_from_collection_for_select(@trainers, :id, :name, params[:trainers]), { id: 'trainers', class: 'form-select', prompt: 'All' } %>
+      <%= label_tag :trainers, t('admin_area.training_sessions.trainers_label'), class: 'form-label' %>
+      <%= select_tag :trainers, options_from_collection_for_select(@trainers, :id, :name, params[:trainers]), { id: 'trainers', class: 'form-select', prompt: t('admin_area.training_sessions.all') } %>
     </div>
 
 
     <!-- Course Search -->
     <div class="col-md-2">
-    <%= label_tag :course_names, 'CourseName:', class: 'form-label' %>
+    <%= label_tag :course_names, t('admin_area.training_sessions.course_label'), class: 'form-label' %>
     <%= select_tag :course_names,
                    options_from_collection_for_select(@course_names, :id, :name, params[:course_names]),
-                   include_blank: 'All',
+                   include_blank: t('admin_area.training_sessions.all'),
                    class: 'form-select' %>
   </div>
   
 
     <!-- Status Checkbox -->
     <div class="col-md-2">
-      <%= label_tag :status, 'Status:', class: 'form-label' %>
+      <%= label_tag :status, t('admin_area.training_sessions.status_label'), class: 'form-label' %>
       <div class="form-check">
         <%= check_box_tag :status, 'completed', params[:status] == 'completed', class: 'form-check-input' %>
-        <%= label_tag :status, 'Completed', class: 'form-check-label' %>
+        <%= label_tag :status, t('admin_area.training_sessions.completed'), class: 'form-check-label' %>
       </div>
       <div class="form-check">
         <%= check_box_tag :status, 'not_completed', params[:status] == 'not_completed', class: 'form-check-input' %>
-        <%= label_tag :status, 'Not Completed', class: 'form-check-label' %>
+        <%= label_tag :status, t('admin_area.training_sessions.not_completed'), class: 'form-check-label' %>
       </div>
     </div>
 
     <!-- Filter Button -->
     <div class="col-md-2">
-      <%= submit_tag 'Filter', class: 'btn btn-primary w-100' %>
+      <%= submit_tag t('admin_area.training_sessions.filter'), class: 'btn btn-primary w-100' %>
     </div>
   <% end %>
 </div>
@@ -71,20 +71,20 @@
   <table class="table table-striped text-center mt-3">
     <thead class="table-primary">
     <tr>
-      <th>Date <span onclick="sortTable('sessions-table', 0, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Training <span onclick="sortTable('sessions-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Trainer <span onclick="sortTable('sessions-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Course <span onclick="sortTable('sessions-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Status <span onclick="sortTable('sessions-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Users <span onclick="sortTable('sessions-table', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th class="action-header">Action</th>
+      <th><%= t('admin_area.training_sessions.columns.date') %> <span onclick="sortTable('sessions-table', 0, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_area.training_sessions.columns.training') %> <span onclick="sortTable('sessions-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_area.training_sessions.columns.trainer') %> <span onclick="sortTable('sessions-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_area.training_sessions.columns.course') %> <span onclick="sortTable('sessions-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_area.training_sessions.columns.status') %> <span onclick="sortTable('sessions-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_area.training_sessions.columns.users') %> <span onclick="sortTable('sessions-table', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th class="action-header"><%= t('admin_area.training_sessions.columns.action') %></th>
     </tr>
     </thead>
     <tbody>
     <% @sessions.each do |sesh| %>
       <tr>
         <td>
-          <%= sesh.created_at.to_formatted_s :long %>
+          <%= l(sesh.created_at, format: :admin_date_time) %>
         </td>
         <td><%= sesh.training.localized_name %></td>
         <td>
@@ -93,12 +93,12 @@
         <td><%= sesh.course %></td>
         <td>
           <% if sesh.completed? %>
-            COMPLETED
+            <%= t('admin_area.training_sessions.status_completed') %>
           <% else %>
-            NOT COMPLETED
+            <%= t('admin_area.training_sessions.status_not_completed') %>
           <% end %>
         </td>
-        <td>
+        <td data-sort-as="<%= sesh.users.length %>">
           <div class="inline-block">
             <%= sesh.users.length %>
             <div class="inline-block">
@@ -111,9 +111,9 @@
           </div>
         </td>
         <td>
-          <%= link_to 'Visit', staff_training_session_url(sesh), class: 'btn btn-link' %>
-          <%= link_to 'Download', training_report_staff_training_session_path(id: sesh.id, format: 'xlsx'), action: :training_report, class: 'btn btn-link' %>
-          <%= button_to 'Destroy', { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class: 'btn btn-danger' %>
+          <%= link_to t('admin_area.training_sessions.visit'), staff_training_session_url(sesh), class: 'btn btn-link' %>
+          <%= link_to t('admin_area.training_sessions.download'), training_report_staff_training_session_path(id: sesh.id, format: 'xlsx'), action: :training_report, class: 'btn btn-link' %>
+          <%= button_to t('admin_area.training_sessions.destroy'), { action: :destroy, id: sesh.id }, method: :delete, **confirmation_options(t('confirm_delete.training_session')), class: 'btn btn-danger' %>
         </td>
       </tr>
     <% end %>
@@ -122,7 +122,7 @@
 
   <div class="mt-4 text-center">
     <% if @pagy.count > 0 %>
-      <small class="text-muted">Displaying <b><%= @pagy.from %></b> - <b><%= @pagy.to %></b> of <b><%= @pagy.count %></b></small>
+      <small class="text-muted"><%= t('admin_area.training_sessions.displaying_html', from: @pagy.from, to: @pagy.to, total: @pagy.count) %></small>
     <% end %>
     <%== @pagy.series_nav(:bootstrap) if @pagy.pages > 1 %>
   </div>

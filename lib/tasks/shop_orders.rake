@@ -20,4 +20,11 @@ namespace :shop_orders do
       puts "order #{order.provider_ref} reset to received; the dispatcher will queue it"
     end
   end
+
+  desc "List applied orders that had a part refused (such as a payment for a membership that was not pending): rake shop_orders:refused"
+  task refused: :environment do
+    orders = ProcessedOrder.refused.order(:applied_at)
+    puts "no refused orders" if orders.empty?
+    orders.each { |o| puts "#{o.provider_ref} (#{o.order_name}) applied #{o.applied_at&.iso8601}: #{o.last_error}" }
+  end
 end

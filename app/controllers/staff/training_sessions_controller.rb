@@ -2,9 +2,12 @@
 
 class Staff::TrainingSessionsController < StaffDashboardController
   layout "staff_area"
+  skip_before_action :require_space
+  before_action :require_space, only: :new
   before_action :current_training_session, except: %i[new create index]
   before_action :changed_params, only: [:update]
   before_action :verify_ownership, except: %i[new create index]
+  before_action :refuse_locked_changes, only: [:update]
   before_action :set_courses_and_levels, only: %i[new show]
 
   def index
@@ -47,7 +50,10 @@ class Staff::TrainingSessionsController < StaffDashboardController
     @new_training_session = TrainingSession.new(default_params)
     course_name = CourseName.find_by(name: @new_training_session.course)
     @new_training_session.course_name = course_name if course_name.present?
-    if @new_training_session.save
+    return refuse_creation(I18n.t("errors.staff.training_sessions.instructor_not_assignable")) unless @new_training_session.instructor_assignable_by?(@user)
+    return refuse_creation(I18n.t("errors.staff.training_sessions.space_not_assigned")) unless @new_training_session.space_workable_by?(@user)
+
+    if @new_training_session.open_by(@user)
       respond_to do |format|
         format.html do
           redirect_to staff_training_session_path(@new_training_session.id)
@@ -57,15 +63,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
         end
       end
     else
-      respond_to do |format|
-        format.html do
-          redirect_back(
-            fallback_location: root_path,
-            alert: "Something went wrong. Please try again."
-          )
-        end
-        format.json { render json: { created: false } }
-      end
+      refuse_creation(validation_message(@new_training_session, "errors.staff.training_sessions.not_created"))
     end
   end
 
@@ -78,40 +76,18 @@ class Staff::TrainingSessionsController < StaffDashboardController
       redirect_back(fallback_location: root_path) and return
     end
 
-    @current_training_session.update(changed_params)
-
-    if params["dropped_users"].present?
-      @current_training_session.users -=
-        User.where(username: params["dropped_users"])
-      User
-        .where(username: params["dropped_users"])
-        .each do |user|
-          cert =
-            user.certifications.find_by(
-              training_session_id: @current_training_session.id
-            )
-          next if cert.blank?
-
-          next if cert.destroy
-          flash[
-            :alert
-          ] = "Error deleting #{user.username}'s #{@current_training_session.training.name_en} certification."
-        end
-    end
-
-    @current_training_session.users +=
-      User.where(username: params["added_users"]) if params[
-      "added_users"
-    ].present?
-    @current_training_session.users = @current_training_session.users.uniq
-
-    course_name = CourseName.find_by(name: @current_training_session.course)
-    @current_training_session.course_name = course_name if course_name.present?
-
-    if @current_training_session.save
+    result =
+      @current_training_session.update_roster(
+        changed_params,
+        added: Array(params["added_users"]),
+        dropped: Array(params["dropped_users"]),
+        by: @user
+      )
+    if result.saved?
       flash[:notice] = "Training session updated succesfully"
+      flash_certification_failure(result.failed_certifications.last)
     else
-      flash[:alert] = "Something went wrong, please try again"
+      flash[:alert] = validation_message(@current_training_session, "errors.staff.training_sessions.not_updated")
     end
     redirect_back(fallback_location: root_path)
   end
@@ -144,10 +120,10 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   def revoke_certification
     cert = @current_training_session.certifications.find(params[:cert_id])
-    if cert.destroy
-      flash[:notice] = "Deleted Successfully"
+    if cert.deactivate(@user)
+      flash[:notice] = "Revoked Successfully"
     else
-      flash[:alert] = "Something went wrong, try refreshing"
+      flash[:alert] = validation_message(cert, "errors.staff.training_sessions.certification_not_revoked")
     end
     redirect_to user_path(cert.user.username)
   end
@@ -157,7 +133,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
       flash[:notice] = "Deleted Successfully"
       redirect_to staff_dashboard_index_path
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = validation_message(@current_training_session, "errors.staff.training_sessions.not_deleted")
       redirect_back(fallback_location: root_path)
     end
   end
@@ -175,13 +151,18 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   private
 
-  # The React app always sends user_id. Only an admin may pick another instructor;
-  # for everyone else the instructor is the current staff user.
+  def refuse_creation(message)
+    respond_to do |format|
+      format.html { redirect_back(fallback_location: root_path, alert: message) }
+      format.json { render json: { created: false, error: message, reference: error_reference } }
+    end
+  end
+
+  # The instructor is the user named by the form (the React app always sends one), or the current user.
+  # `TrainingSession#instructor_assignable_by?` decides whether the current user may name them.
   def default_params
-    instructor_id =
-      @user.admin? && params[:user_id].present? ? params[:user_id] : current_user.id
     {
-      user_id: instructor_id,
+      user_id: params[:user_id].presence || current_user.id,
       training_id: params[:training_id],
       course: params[:course],
       space_id: params[:training_session][:space_id],
@@ -211,8 +192,22 @@ class Staff::TrainingSessionsController < StaffDashboardController
       .reject { |_, v| v.blank? }
   end
 
+  def flash_certification_failure(user)
+    return if user.blank?
+
+    flash[:alert] = "Error removing #{user.username}'s #{@current_training_session.training.name_en} certification."
+  end
+
+  def refuse_locked_changes
+    return unless @current_training_session.locked_change?(changed_params)
+
+    flash[:alert] = I18n.t("errors.staff.training_sessions.locked_once_awarded")
+    redirect_back(fallback_location: root_path)
+  end
+
   def verify_ownership
-    return if @user.admin? || @current_training_session.user == @user
+    return if @current_training_session.editable_by?(@user)
+
     flash[:alert] = "Can't access training session"
     redirect_to new_staff_training_session_path
   end
