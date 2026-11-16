@@ -54,7 +54,7 @@ RSpec.describe "Journey: locker rental", type: :system do
       expect(page).to have_text("Staff Actions")
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Send to Checkout')]]") do
         select "JA-1", from: "locker_rental_locker_id_checkout"
-        accept_confirm { click_button "Send to Checkout" }
+        accept_confirm_click "Send to Checkout"
       end
       expect_flash("Locker rental updated")
       expect(page).to have_text("Awaiting Payment").or have_text("Await payment").or have_text(I18n.t("lockers.state.await_payment"))
@@ -105,7 +105,7 @@ RSpec.describe "Journey: locker rental", type: :system do
       visit locker_rental_path(rental)
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Move Locker')]]") do
         select "JB-2", from: "locker_rental_locker_id_assign"
-        accept_confirm { click_button "Move Locker" }
+        accept_confirm_click "Move Locker"
       end
       expect_flash("Locker rental updated")
     end
@@ -131,7 +131,7 @@ RSpec.describe "Journey: locker rental", type: :system do
         select "JA-1", from: "locker_rental_locker_id_assign"
         # the "Indefinite" box starts unticked and the end date is proposed
         expect(page).to have_unchecked_field("Indefinite")
-        accept_confirm { click_button "Assign Now" }
+        accept_confirm_click "Assign Now"
       end
       expect_flash("Locker rental updated")
       expect(page).to have_text("Move Locker")
@@ -154,7 +154,7 @@ RSpec.describe "Journey: locker rental", type: :system do
     as_actor(:staff) do
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Move Locker')]]") do
         select "JB-2", from: "locker_rental_locker_id_assign"
-        accept_confirm { click_button "Move Locker" }
+        accept_confirm_click "Move Locker"
       end
       expect_flash("Locker rental updated")
     end
@@ -194,7 +194,7 @@ RSpec.describe "Journey: locker rental", type: :system do
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Assign Now')]]") do
         select "JA-1", from: "locker_rental_locker_id_assign"
         check "Indefinite"
-        accept_confirm { click_button "Assign Now" }
+        accept_confirm_click "Assign Now"
       end
       expect_flash("Locker rental updated")
     end
