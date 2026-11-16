@@ -85,7 +85,7 @@ main[tabindex="-1"]:focus {
 // counts as readable only as large text (3:1, WCAG 1.4.3). Large text is bold
 // and at least 14pt (1.167rem), so the text drawn on the orange is bold and that
 // size. This covers buttons, badges, pills, and the light-theme navbar links (the
-// main navbar stays collapsed until 1600px, where the 14pt links fit).
+// main navbar shows some items as icons from 1200px to 1600px so the 14pt links fit).
 :root:not([data-bs-theme="dark"]) .navbar:not(.navbar-staff) {
   .nav-link,
   .btn.btn-link {
