@@ -675,10 +675,10 @@ RSpec.describe User, type: :model do
       expect(staff.staff_spaces.pluck(:space_id)).to contain_exactly(kept.id, added.id)
     end
 
-    it "clears the saved space when it is a removed one" do
+    it "keeps the saved space even when it is a removed one, since staff work in any space" do
       staff.update_columns(space_id: dropped.id)
       staff.assign_spaces!([kept.id])
-      expect(staff.reload.space_id).to be_nil
+      expect(staff.reload.space_id).to eq(dropped.id)
     end
 
     it "keeps a saved space that stays assigned" do

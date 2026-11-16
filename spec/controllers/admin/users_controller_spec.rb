@@ -211,7 +211,7 @@ RSpec.describe Admin::UsersController, type: :controller do
     end
 
     context "removing a space from a staff member" do
-      it "clears it as their saved space too, and leaves a kept saved space alone" do
+      it "removes the assignment and keeps every saved space (staff work in any space)" do
         removed_from = create :user, :with_staff_spaces, :staff
         kept_in = create :user, :with_staff_spaces, :staff
         removed_space, kept_space = [removed_from, kept_in].map { |u| u.staff_spaces.first.space_id }
@@ -220,7 +220,7 @@ RSpec.describe Admin::UsersController, type: :controller do
         patch :set_role,
               params: { spaces: { removed_from.id => [], kept_in.id => [kept_space] } },
               as: :json
-        expect(removed_from.reload.space_id).to be_nil
+        expect(removed_from.reload.space_id).to eq removed_space
         expect(removed_from.staff_spaces).not_to exist
         expect(kept_in.reload.space_id).to eq kept_space
       end
