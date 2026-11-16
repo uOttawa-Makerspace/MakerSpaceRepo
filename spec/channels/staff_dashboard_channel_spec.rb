@@ -81,11 +81,10 @@ RSpec.describe StaffDashboardChannel do
       expect(subscription).to have_stream_from("space_event_#{space.id}")
     end
 
-    it "rejects staff who are not assigned to the space, even when it is their saved space" do
-      loner = create(:user, :staff)
-      loner.update_columns(space_id: space.id)
-      subscribe_as(loner, space.id)
-      expect(subscription).to be_rejected
+    it "streams any space's events to staff who are not assigned to it" do
+      subscribe_as(create(:user, :staff), space.id)
+      expect(subscription).to be_confirmed
+      expect(subscription).to have_stream_from("space_event_#{space.id}")
     end
 
     it "rejects an unknown or missing space, and a regular user" do

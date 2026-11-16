@@ -617,14 +617,14 @@ RSpec.describe User, type: :model do
     let(:elsewhere) { create(:space) }
     let(:staff) { create(:user, :staff).tap { |u| StaffSpace.create!(user: u, space: assigned) } }
 
-    it "lets staff work in the spaces they are assigned to and no other" do
+    it "lets staff work in any space, whatever spaces they are assigned to" do
       expect(staff.can_work_in?(assigned)).to be(true)
-      expect(staff.can_work_in?(elsewhere)).to be(false)
+      expect(staff.can_work_in?(elsewhere)).to be(true)
+      expect(create(:user, :staff).can_work_in?(elsewhere)).to be(true)
     end
 
-    it "does not let a saved space alone count: staff must still be assigned to it" do
-      staff.update_columns(space_id: elsewhere.id)
-      expect(staff.can_work_in?(elsewhere)).to be(false)
+    it "lets a regular user with no assignments work in no space" do
+      expect(create(:user, :regular_user).can_work_in?(elsewhere)).to be(false)
     end
 
     it "lets an admin with no assignments work in any space" do
@@ -643,15 +643,19 @@ RSpec.describe User, type: :model do
       expect(staff.current_space).to eq(second_space)
     end
 
-    it "is the lowest-id assigned space when none is saved, or the saved one is not assigned" do
-      [second_space, first_space].each { |s| StaffSpace.create!(user: staff, space: s) }
-      expect(staff.current_space).to eq(first_space)
-      staff.update_columns(space_id: create(:space).id)
-      expect(staff.current_space).to eq(first_space)
+    it "is the saved space even when the staff member is not assigned to it" do
+      saved = create(:space)
+      staff.update_columns(space_id: saved.id)
+      expect(staff.current_space).to eq(saved)
     end
 
-    it "is nil for staff with no assignments, even with a saved space" do
-      staff.update_columns(space_id: first_space.id)
+    it "is the lowest-id space for staff with no saved space, assigned or not" do
+      expect(staff.current_space).to eq(Space.order(:id).first)
+    end
+
+    it "is nil when no space exists" do
+      Space.where(id: [first_space.id, second_space.id]).delete_all
+      expect(Space.none?).to be(true)
       expect(staff.current_space).to be_nil
     end
 

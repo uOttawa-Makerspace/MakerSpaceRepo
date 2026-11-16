@@ -31,12 +31,11 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
     expect(error["code"]).to eq("forbidden")
   end
 
-  it "403s staff for a space they are not assigned to, even when it is their saved space, and lists it for an admin" do
+  it "lists a space's shifts for staff who are not assigned to it, and for an admin" do
     create(:event, space: other_space, event_type: "shift", title: "Shift", start_time: t0, end_time: t0 + 1.hour)
-    staff.update_columns(space_id: other_space.id)
     shifts(window, id: other_space.id)
-    expect(response).to have_http_status(:forbidden)
-    expect(error).to include("code" => "space_not_assigned", "message" => "You are not assigned to that space")
+    expect(response).to have_http_status(:ok)
+    expect(body.size).to eq(1)
     shifts(window, id: other_space.id, as: admin)
     expect(response).to have_http_status(:ok)
     expect(body.size).to eq(1)

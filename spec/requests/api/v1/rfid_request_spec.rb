@@ -50,12 +50,12 @@ RSpec.describe "/api/v1 RFID", type: :request do
       expect(Time.iso8601(body.first["tapped_at"])).to be_within(1.second).of(newer_a.updated_at)
     end
 
-    it "lists every space's unlinked cards for an admin, and none for staff with no assignment" do
+    it "lists every space's unlinked cards for an admin, and the saved space's for staff with no assignment" do
       api_get "/api/v1/rfid_cards", as: admin, params: { linked: "false" }
       expect(body.map { |c| c["card_number"] }).to match_array([newer_a, card_a, card_b].map(&:card_number))
-      staff.update_columns(space_id: space_a.id)
+      staff.update_columns(space_id: space_b.id)
       api_get "/api/v1/rfid_cards", as: staff, params: { linked: "false" }
-      expect(body).to eq([])
+      expect(body.map { |c| c["card_number"] }).to eq([card_b.card_number])
     end
 
     it "caps the list at 5" do
@@ -198,11 +198,12 @@ RSpec.describe "/api/v1 RFID", type: :request do
         expect(Rfid.find_by(card_number: "A" * 64).user_id).to eq(owner.id)
       end
 
-      it "does not list the card among the unlinked taps (it has no reader)" do
+      it "lists the card among the unlinked taps of the staff member's space once unlinked (re-homed to its reader)" do
         api_send :put, "/api/v1/users/#{owner.id}/rfid", { card_number: "04A1B2C3D4E5F6" }, as: staff
+        expect(Rfid.find_by(card_number: "04A1B2C3D4E5F6").mac_address).to be_nil
         api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff
         api_get "/api/v1/rfid_cards", as: staff, params: { linked: "false" }
-        expect(body.map { |c| c["card_number"] }).not_to include("04A1B2C3D4E5F6")
+        expect(body.map { |c| c["card_number"] }).to include("04A1B2C3D4E5F6")
       end
     end
 
@@ -241,23 +242,18 @@ RSpec.describe "/api/v1 RFID", type: :request do
       end
     end
 
-    it "keeps the card's mac when the staff member has no assigned space" do
+    it "re-homes to the lowest-id space's reader when the staff member has no saved space" do
       staff.update_columns(space_id: nil)
       api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff
-      expect(card.reload.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+      lowest = PiReader.where(space: Space.order(:id).first).order(:id).first
+      expect(card.reload.mac_address).to eq(lowest.pi_mac_address)
     end
 
-    it "keeps the card's mac when the staff member has only a saved space they are not assigned to" do
-      staff.update_columns(space_id: space_a.id)
-      api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff
-      expect(card.reload.mac_address).to eq("aa:aa:aa:aa:aa:aa")
-    end
-
-    it "re-homes to the assigned space's reader, not a stale saved space's" do
+    it "re-homes to the saved space's reader, whatever space the staff member is assigned to" do
       StaffSpace.create!(user: staff, space: space_b)
       staff.update_columns(space_id: space_a.id)
       api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff
-      expect(card.reload.mac_address).to eq(reader_b.pi_mac_address)
+      expect(card.reload.mac_address).to eq(reader_a.pi_mac_address)
     end
 
     it "re-homes to the lowest-id reader of the space" do
@@ -323,14 +319,10 @@ RSpec.describe "/api/v1 RFID", type: :request do
       end.not_to change { [LabSession.count, Rfid.count, TapBoxLog.count] }
     end
 
-    it "403s staff tapping in a space they are not assigned to, writing nothing" do
+    it "lets staff tap someone in in a space they are not assigned to" do
       other = { card_number: card.card_number, space_id: space_b.id }
-      expect { tap(other) }.not_to change { [LabSession.count, Rfid.count, TapBoxLog.count] }
-      expect(response).to have_http_status(:forbidden)
-      expect(error).to include("code" => "space_not_assigned", "message" => "You are not assigned to that space")
-      staff.update_columns(space_id: space_b.id)
-      expect { tap(other) }.not_to change(LabSession, :count)
-      expect(response).to have_http_status(:forbidden)
+      expect { tap(other) }.to change { LabSession.where(space: space_b).count }.by(1)
+      expect(response).to have_http_status(:ok)
     end
 
     it "signs the card's owner in with exactly {success: 'RFID sign in'} (staff and admin), then out" do

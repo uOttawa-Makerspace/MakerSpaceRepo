@@ -21,9 +21,9 @@ Space objects are always exactly `{ "id": 3, "name": "Makerspace" }`: no keycode
 
 ## GET /api/v1/me/space
 
-The caller's current space: their saved space (`users.space_id`) when they may work in it, else the first space they may work in (the lowest id; for an admin, the first space). A staff member assigned to no space, and an admin when no space exists, get no space.
+The caller's current space: their saved space (`users.space_id`), else the lowest-id space. Staff and admins may work in any space, whatever spaces they are assigned to. Only when no space exists is there no current space.
 
-200: `{ "id": 3, "name": "Makerspace" }`, or `{ "space": null }` when the caller may work in no space. A client shows a "no assigned spaces" state for it: `GET /api/v1/spaces` still lists every space, but the caller may not use them.
+200: `{ "id": 3, "name": "Makerspace" }`, or `{ "space": null }` when no space exists.
 
 | Status    | `error.code`                    | When                 |
 | --------- | ------------------------------- | -------------------- |
@@ -31,14 +31,13 @@ The caller's current space: their saved space (`users.space_id`) when they may w
 
 ## PUT /api/v1/me/space
 
-Request: `{ "space_id": 3 }` (an integer, or a numeric string). Sets the caller's current space, as `PUT /staff_dashboard/change_space` does (the user's `updated_at` is stamped; their stored profile is not re-validated, so a profile that fails a newer validation can still switch space). Staff may switch only to a space they are assigned to; admins to any space (the same rule as the dashboard). A saved space they are no longer assigned to is refused too. `GET /api/v1/spaces` still lists every space.
+Request: `{ "space_id": 3 }` (an integer, or a numeric string). Sets the caller's current space, as `PUT /staff_dashboard/change_space` does (the user's `updated_at` is stamped; their stored profile is not re-validated, so a profile that fails a newer validation can still switch space). Staff and admins may switch to any space (the same rule as the dashboard). `GET /api/v1/spaces` still lists every space.
 
 200: `{ "id": 3, "name": "Makerspace" }`
 
 | Status    | `error.code`                    | When                                                                                                                                      |
 | --------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | 401 / 403 | `unauthenticated` / `forbidden` | No token / not staff                                                                                                                      |
-| 403       | `space_not_assigned`            | Staff (non-admin) named a space they are not assigned to; `message` is "You are not assigned to that space" and the current space is kept |
 | 404       | `not_found`                     | No such space (legacy: 500)                                                                                                               |
 | 422       | `parameter_missing`             | `space_id` absent or null                                                                                                                 |
 | 422       | `validation_failed`             | `space_id` is not an integer or numeric string (`fields.space_id`)                                                                        |

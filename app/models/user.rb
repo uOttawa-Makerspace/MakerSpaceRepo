@@ -1200,15 +1200,14 @@ class User < ApplicationRecord
     staff_spaces.exists?
   end
 
-  # The spaces this user may switch the staff dashboard to: every space for an admin, otherwise only the
-  # spaces they are assigned to.
+  # The spaces this user may switch the staff dashboard to: every space for staff and admins, whatever spaces they
+  # are assigned to (assignments set calendar colours and shift lists, not where staff may work).
   def workable_spaces
-    admin? ? Space.all : Space.where(id: staff_spaces.select(:space_id))
+    staff? ? Space.all : Space.where(id: staff_spaces.select(:space_id))
   end
 
   # Whether this user may work in the space (switch to it, sign people in and out, open training sessions there):
-  # an admin in any space, otherwise only a space they are assigned to. The saved space (users.space_id) alone does
-  # not count. The staff dashboard, /api/v1, the kiosk and the shifts feed all ask this.
+  # staff and admins in any space. The staff dashboard, /api/v1, the kiosk and the shifts feed all ask this.
   def can_work_in?(space)
     workable_spaces.exists?(space.id)
   end
