@@ -40,13 +40,6 @@ Capybara.register_driver :headless_chrome do |app|
   options.add_argument("--disable-gpu")
   options.add_argument("--disable-dev-shm-usage")
   options.add_argument("--window-size=#{SYSTEM_WINDOW_SIZE.join(',')}")
-  # Bootstrap gives the page `scroll-behavior: smooth`, which also animates the
-  # scroll chromedriver makes to bring an element into view before a click. The
-  # click then races the animation: chromedriver waits on it, scrolls again,
-  # and the page can still be moving when the press lands, so the click hits
-  # whatever slid under the pointer and is lost without an error. Scrolling
-  # instantly keeps every click where chromedriver aimed it.
-  options.add_argument("--disable-smooth-scrolling")
   # Hermetic browser: WebMock only guards Ruby HTTP, Chrome would otherwise
   # reach the real internet (Cloudflare Turnstile, CDNs, fonts). Everything
   # except the local Capybara server fails DNS, so results do not depend on
