@@ -15,9 +15,9 @@ $utilities: (
 
 @import "../stylesheets/shared/variables";
 
-// One breakpoint above Bootstrap's xxl. The main navbar stays collapsed below it:
-// its links are large text (bold, 14pt) on the orange, and the longest link set (a
-// signed-in admin, in French) needs about 1560px, so it expands only from 1600px.
+// One breakpoint above Bootstrap's xxl. The main navbar expands from xl (1200px);
+// below xxxl it uses tighter padding and shows its theme, language, username and CC items as
+// icons so the large-text (bold, 14pt) links fit on one line.
 $grid-breakpoints: (
   xs: 0,
   sm: 576px,

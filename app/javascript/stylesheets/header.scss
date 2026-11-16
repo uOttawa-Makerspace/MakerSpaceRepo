@@ -182,16 +182,29 @@
     }
   }
 
-  // Collapsed drawer styles. The staff navbars collapse below 1200px, the main
-  // navbar below 1600px (see $grid-breakpoints in application.scss).
-  &.navbar-staff {
-    @media (max-width: 1199.98px) {
-      @include collapsed-drawer;
+  // Collapsed drawer styles for tablets and mobile (< 1200px)
+  @media (max-width: 1199.98px) {
+    @include collapsed-drawer;
+  }
+
+  // From 1200px to 1600px (the xxxl breakpoint in application.scss) the expanded
+  // main navbar shows the theme, language, username and CC items as icons. Their labels
+  // stay in the page for screen readers.
+  @media (min-width: 1200px) and (max-width: 1599.98px) {
+    .navbar-compact-label {
+      @include visually-hidden;
     }
   }
-  &:not(.navbar-staff) {
-    @media (max-width: 1599.98px) {
-      @include collapsed-drawer;
+
+  // From 1600px the username is shown, cut short so a long one cannot push the
+  // bar onto a second line.
+  @media (min-width: 1600px) {
+    .navbar-username {
+      display: inline-block;
+      max-width: 8rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: bottom;
     }
   }
 
