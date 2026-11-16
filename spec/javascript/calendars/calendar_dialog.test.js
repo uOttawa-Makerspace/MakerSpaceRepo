@@ -1,33 +1,80 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const hide = vi.fn();
-const getInstance = vi.fn();
-vi.mock("bootstrap", () => ({ Modal: { getInstance } }));
+import { Modal } from "bootstrap";
 
 const { closeSaved } =
   await import("../../../app/javascript/src/calendar_dialog.js");
 const { rangeSource } =
   await import("../../../app/javascript/src/range_source.js");
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+  document.body.replaceChildren();
+});
+
+// A Bootstrap dialog that fades in and out; under fake timers its transitions
+// end only when the test runs the timers.
+function fadingDialog() {
+  const dialog = document.createElement("div");
+  dialog.className = "modal fade";
+  dialog.innerHTML = '<div class="modal-dialog"></div>';
+  document.body.append(dialog);
+  return dialog;
+}
+
+function openDialog(dialog) {
+  Modal.getOrCreateInstance(dialog, { backdrop: false }).show();
+  vi.runAllTimers();
+}
 
 describe("closeSaved", () => {
-  it("is marked saved while the dialog hides, and not afterwards", () => {
-    const dialog = document.createElement("div");
+  it("closes an open dialog, marked saved while it hides and not afterwards", () => {
+    vi.useFakeTimers();
+    const dialog = fadingDialog();
+    openDialog(dialog);
     let markedWhileHiding;
-    hide.mockImplementation(() => (markedWhileHiding = dialog.dataset.saved));
-    getInstance.mockReturnValue({ hide });
+    dialog.addEventListener(
+      "hide.bs.modal",
+      () => (markedWhileHiding = dialog.dataset.saved),
+    );
 
     closeSaved(dialog);
+    vi.runAllTimers();
 
-    expect(getInstance).toHaveBeenCalledWith(dialog);
     expect(markedWhileHiding).toBe("true");
     expect(dialog.dataset.saved).toBeUndefined();
+    expect(dialog.classList.contains("show")).toBe(false);
+  });
+
+  it("closes a dialog saved while it is still opening, once it has opened", () => {
+    vi.useFakeTimers();
+    const dialog = fadingDialog();
+    Modal.getOrCreateInstance(dialog, { backdrop: false }).show();
+    expect(dialog.classList.contains("show")).toBe(true);
+
+    closeSaved(dialog);
+    vi.runAllTimers();
+
+    expect(dialog.classList.contains("show")).toBe(false);
+    expect(dialog.style.display).toBe("none");
+  });
+
+  it("leaves a dialog closed before the answer came closed when it opens again", () => {
+    vi.useFakeTimers();
+    const dialog = fadingDialog();
+    openDialog(dialog);
+    Modal.getInstance(dialog).hide();
+    vi.runAllTimers();
+
+    closeSaved(dialog);
+    openDialog(dialog);
+
+    expect(dialog.classList.contains("show")).toBe(true);
   });
 
   it("does nothing for a dialog that was never opened", () => {
-    getInstance.mockReturnValue(null);
     expect(() => closeSaved(document.createElement("div"))).not.toThrow();
   });
 });
