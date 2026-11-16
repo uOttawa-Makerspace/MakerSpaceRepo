@@ -178,23 +178,14 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       expect(card.mac_address).not_to eq(reader_b.pi_mac_address)
     end
 
-    it "re-homes to the assigned space's reader, not a stale saved space's" do
+    it "re-homes to the saved space's reader, whatever space the staff member is assigned to" do
       StaffSpace.where(user: staff).destroy_all
       StaffSpace.create!(user: staff, space: space_b)
       staff.update_columns(space_id: space_a.id)
 
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
 
-      expect(card.reload.mac_address).to eq(reader_b.pi_mac_address)
-    end
-
-    it "keeps the card's mac_address when the staff member is assigned to no space, even with a saved space" do
-      StaffSpace.where(user: staff).destroy_all
-
-      put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
-
-      expect(card.reload.user_id).to be_nil
-      expect(card.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+      expect(card.reload.mac_address).to eq(reader_a.pi_mac_address)
     end
 
     it "re-homes for an admin to the reader of the space they work in" do
@@ -205,14 +196,15 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       expect(card.reload.mac_address).to eq(reader_b.pi_mac_address)
     end
 
-    it "keeps the card's mac_address when the staff member has no saved space and no assignment" do
+    it "re-homes to the lowest-id space's reader when the staff member has no saved space and no assignment" do
       StaffSpace.where(user: staff).destroy_all
       staff.update_columns(space_id: nil)
 
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
 
       expect(card.reload.user_id).to be_nil
-      expect(card.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+      lowest = PiReader.where(space: Space.order(:id).first).order(:id).first
+      expect(card.mac_address).to eq(lowest.pi_mac_address)
     end
 
     it "keeps the mac when the staff member's assigned space has no reader" do

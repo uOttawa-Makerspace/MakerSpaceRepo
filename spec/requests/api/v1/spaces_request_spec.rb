@@ -68,18 +68,18 @@ RSpec.describe "/api/v1 spaces and /api/v1/me/space", type: :request do
       expect(body.keys).to eq(%w[id name])
     end
 
-    it "answers { space: null } for staff with no assignment and no saved space" do
+    it "falls back to the first space for staff with no assignment and no saved space" do
       api_get "/api/v1/me/space", as: create(:user, :staff)
       expect(response).to have_http_status(:ok)
-      expect(body).to eq("space" => nil)
+      expect(body["id"]).to eq(Space.order(:id).first.id)
     end
 
-    it "answers { space: null } for staff whose saved space is not one they are assigned to" do
+    it "answers the saved space for staff who are not assigned to it" do
       loner = create(:user, :staff)
       loner.update_columns(space_id: unassigned_space.id)
       api_get "/api/v1/me/space", as: loner
       expect(response).to have_http_status(:ok)
-      expect(body).to eq("space" => nil)
+      expect(body["id"]).to eq(unassigned_space.id)
     end
 
     it "answers { space: null } when no space exists at all" do
@@ -113,27 +113,11 @@ RSpec.describe "/api/v1 spaces and /api/v1/me/space", type: :request do
       expect(body["id"]).to eq(space_a.id)
     end
 
-    it "403s staff switching to a space they are not assigned to, and leaves them where they were" do
-      staff.update_columns(space_id: space_a.id)
-      api_send :put, "/api/v1/me/space", { space_id: unassigned_space.id }, as: staff
-      expect(response).to have_http_status(:forbidden)
-      expect(error).to include("code" => "space_not_assigned", "message" => "You are not assigned to that space")
-      expect(staff.reload.space_id).to eq(space_a.id)
-    end
-
-    it "403s staff with no assignments, even for the first space the dashboard falls back to" do
+    it "lets staff switch to a space they are not assigned to" do
       loner = create(:user, :staff)
-      api_send :put, "/api/v1/me/space", { space_id: Space.first.id }, as: loner
-      expect(response).to have_http_status(:forbidden)
-      expect(error["code"]).to eq("space_not_assigned")
-      expect(loner.reload.space_id).to be_nil
-    end
-
-    it "403s staff naming a saved space they are no longer assigned to" do
-      staff.update_columns(space_id: unassigned_space.id)
-      api_send :put, "/api/v1/me/space", { space_id: unassigned_space.id }, as: staff
-      expect(response).to have_http_status(:forbidden)
-      expect(error["code"]).to eq("space_not_assigned")
+      api_send :put, "/api/v1/me/space", { space_id: unassigned_space.id }, as: loner
+      expect(response).to have_http_status(:ok)
+      expect(loner.reload.space_id).to eq(unassigned_space.id)
     end
 
     it "lets an admin with no assignments switch to any space" do

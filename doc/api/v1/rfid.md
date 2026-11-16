@@ -4,7 +4,7 @@ Student-card taps, linking cards to users, and the phone NFC tap. Replaces `GET 
 
 ## GET /api/v1/rfid_cards?linked=false
 
-Unlinked cards that were tapped on a reader of a space the caller may work in (the spaces they are assigned to; every space for an admin; none for staff with no assignment), most recently tapped first, at most 5: the set `get_unset_rfids` returns. Only `linked=false` is supported.
+Unlinked cards that were tapped on a reader of the caller's current space (`GET /me/space`; every space for an admin), most recently tapped first, at most 5: the set `get_unset_rfids` returns. Only `linked=false` is supported.
 
 200:
 
@@ -39,7 +39,7 @@ Refused with 422 and nothing changed (legacy did both silently):
 
 ## DELETE /api/v1/users/:id/rfid
 
-Unlinks the user's card. The card is re-homed so it shows up in the caller's unlinked list (`GET /rfid_cards?linked=false`): its `mac_address` becomes the lowest-id reader of the caller's current space (`GET /me/space`: their saved space when they are assigned to it, else the first space they are assigned to; any space for an admin), a space that list covers. It is kept unchanged when the caller has no such space, or that space has no reader. `PUT /staff_dashboard/unlink_rfid` uses the same rule (`Rfid.unlink_from_user!`).
+Unlinks the user's card. The card is re-homed so it shows up in the caller's unlinked list (`GET /rfid_cards?linked=false`): its `mac_address` becomes the lowest-id reader of the caller's current space (`GET /me/space`: their saved space, else the lowest-id space), a space that list covers. It is kept unchanged when the caller has no such space, or that space has no reader. `PUT /staff_dashboard/unlink_rfid` uses the same rule (`Rfid.unlink_from_user!`).
 
 204, empty body. A user with no card is a no-op 204 (legacy: 500 for an unknown card number).
 
@@ -59,7 +59,6 @@ Rate limit: 60 taps a minute per staff user and 600 a minute per IP, then 429 (a
 | Status    | `error.code`                    | When                                                                                                                                                                                                      |
 | --------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 401 / 403 | `unauthenticated` / `forbidden` | No token / not staff                                                                                                                                                                                      |
-| 403       | `space_not_assigned`            | Staff (non-admin) named a space they are not assigned to (admins may tap in any space); `message` is "You are not assigned to that space"; nothing is signed in or logged                                 |
 | 404       | `not_found`                     | Unknown space                                                                                                                                                                                             |
 | 422       | `parameter_missing`             | `card_number` or `space_id` absent                                                                                                                                                                        |
 | 422       | `validation_failed`             | `card_number` not a string, `space_id` not an integer                                                                                                                                                     |

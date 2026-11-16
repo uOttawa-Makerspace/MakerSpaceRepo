@@ -21,14 +21,14 @@ RSpec.describe "Staff training sessions", type: :request do
       training_session: { space_id: space.id }, training_session_users: [student.id] }.merge(overrides)
   end
 
-  describe "new form with no space to work in" do
-    it "says the staff member has no assigned spaces, even with a stale saved space" do
+  describe "new form for staff not assigned to any space" do
+    it "shows the form for their saved space" do
       loner = create(:user, :staff)
       loner.update_columns(space_id: space.id)
       log_in!(loner)
       get new_staff_training_session_path
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include(I18n.t("common.no_assigned_spaces"))
+      expect(response.body).not_to include(I18n.t("common.no_assigned_spaces"))
     end
   end
 
@@ -165,16 +165,11 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(JSON.parse(response.body)).to match("created" => false, "error" => message, "reference" => be_a(String))
       end
 
-      it "refuses staff opening a session in a space they are not assigned to, with a message, creating nothing" do
+      it "lets staff open a session in a space they are not assigned to" do
         elsewhere = create(:space)
         training.spaces << elsewhere
-        message = "You are not assigned to this space."
         expect { post staff_training_sessions_path, params: create_params(training_session: { space_id: elsewhere.id }) }
-          .not_to change(TrainingSession, :count)
-        expect(response).to redirect_to(root_path)
-        expect(flash[:alert]).to eq(message)
-        post staff_training_sessions_path(format: :json), params: create_params(training_session: { space_id: elsewhere.id })
-        expect(JSON.parse(response.body)).to match("created" => false, "error" => message, "reference" => be_a(String))
+          .to change { TrainingSession.where(space: elsewhere).count }.by(1)
       end
 
       it "refuses staff naming an instructor that is not a user at all" do
