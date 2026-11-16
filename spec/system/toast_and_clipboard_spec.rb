@@ -43,7 +43,7 @@ RSpec.describe "Toasts and copy buttons", type: :system do
       JS
       page.execute_script("window.setSpace()")
 
-      expect(page).to have_css("#toast-container .toast.show", text: "Could not change space")
+      expect(page).to have_css("#toast-container .toast.show", text: I18n.t("errors.generic.request_failed"))
       find("#toast-container .toast.show .btn-close").click
       expect(page).to have_no_css("#toast-container .toast")
     end
@@ -76,7 +76,7 @@ RSpec.describe "Toasts and copy buttons", type: :system do
       find(".clipboard-btn", text: "Copy").click
 
       expect(clipboard_writes).to eq(["SAVE-1234"])
-      expect(page).to have_css(".popover", text: "Copied !")
+      expect(page).to have_css(".popover", text: "Copied!")
     end
   end
 
@@ -94,6 +94,46 @@ RSpec.describe "Toasts and copy buttons", type: :system do
 
       expect(clipboard_writes.size).to eq(1)
       expect(clipboard_writes.first).to include("vol-one@example.com")
+    end
+  end
+
+  describe "copy button when the browser refuses the copy" do
+    let(:user) { create(:user, :volunteer_with_dev_program) }
+    let!(:coupon) { create(:coupon_code, :claimed, user: user, code: "SAVE-1234") }
+
+    before { log_in_as(user, to: discount_codes_path) }
+
+    it "shows a toast that the text could not be copied" do
+      page.execute_script(<<~JS)
+        Object.defineProperty(navigator, "clipboard", {
+          configurable: true,
+          value: { writeText: () => Promise.reject(new Error("denied")) },
+        });
+      JS
+      find(".clipboard-btn", text: "Copy").click
+
+      expect(page).to have_css("#toast-container .toast.text-bg-danger.show", text: I18n.t("errors.generic.copy_failed"))
+    end
+  end
+
+  describe "demoting a certification when the request fails" do
+    let(:admin) { create(:user, :admin) }
+
+    before do
+      create(:certification, :basic_training, user: admin)
+      log_in_as(admin, to: user_path(admin.username))
+    end
+
+    it "shows a toast with the generic text instead of staying silent", skip_bullet: true do
+      page.execute_script(<<~JS)
+        window.fetch = () => Promise.resolve(new Response("<html></html>", { status: 500, headers: { "X-Request-Id": "0123456789abcdef" } }));
+      JS
+      page.execute_script("document.querySelector('.demote-button').click()")
+
+      expect(page).to have_css(
+        "#toast-container .toast.text-bg-danger.show",
+        text: "#{I18n.t("errors.generic.request_failed")} [01234567]"
+      )
     end
   end
 end

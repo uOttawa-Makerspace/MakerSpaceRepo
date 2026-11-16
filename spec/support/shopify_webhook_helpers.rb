@@ -39,6 +39,11 @@ module ShopifyWebhookHelpers
     post orders_fulfilled_custom_webhooks_path, params: body, headers: shopify_webhook_headers(body, secret: secret)
   end
 
+  def signed_orders_cancelled(params = {}, secret: shopify_webhook_secret)
+    body = params.to_json
+    post orders_cancelled_custom_webhooks_path, params: body, headers: shopify_webhook_headers(body, secret: secret)
+  end
+
   def unsigned_orders_paid(params = {}, hmac: nil)
     body = params.to_json
     headers = { "CONTENT_TYPE" => "application/json" }

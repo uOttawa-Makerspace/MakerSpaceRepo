@@ -29,7 +29,7 @@ RSpec.describe PiReader, type: :model do
       expect(PiReader.tap_identifier("a" * 64)).to eq("a" * 64)
     end
 
-    it "is nil for a missing, non-string, over-long or control-character identifier" do
+    it "is nil for a missing, non-string or over-long identifier, or one with a space, control or invisible character" do
       [nil, "  ", { a: 1 }, ["aa"], "a" * 65, "aa:bb\tcc", "aa\u0000bb", "ab\u001b12",
        "aa\u202Ebb", "aa\u200Bbb", "aa\u00A0bb", "aa bb", "aa\u2028bb"].each do |bad|
         expect(PiReader.tap_identifier(bad)).to be_nil
@@ -44,6 +44,15 @@ RSpec.describe PiReader, type: :model do
       %W[aa\u202Ebb aa\u200Bbb aa\u00A0bb].push("aa bb").each { |bad| expect(PiReader.new(pi_mac_address: bad)).not_to be_valid }
       expect(PiReader.new(pi_mac_address: "ab12")).to be_valid
       expect(PiReader.new(pi_mac_address: "a" * 64)).to be_valid
+    end
+
+    it "accepts an identifier padded with spaces, tabs or newlines and stores it without the padding" do
+      expect(PiReader.tap_identifier("\tAB12 \n")).to eq("ab12")
+
+      reader = PiReader.new(pi_mac_address: " \tAB-12\r\n")
+      expect(reader).to be_valid
+      reader.save!
+      expect(reader.reload.pi_mac_address).to eq("ab:12")
     end
 
     it "rejects writing a bad identifier to an existing row but never re-judges a stored one on another edit" do
@@ -108,6 +117,29 @@ RSpec.describe PiReader, type: :model do
       it "returns nil for a blank, unknown or non-string mac" do
         create(:pi_reader)
         expect([PiReader.find_by_mac(nil), PiReader.find_by_mac("  "), PiReader.find_by_mac("de:ad:be:ef:00:01"), PiReader.find_by_mac({ a: 1 })]).to all(be_nil)
+      end
+    end
+
+    describe ".readers_by_mac" do
+      it "gives each identifier the reader find_by_mac returns, in one query" do
+        legacy = create(:pi_reader, space: nil)
+        legacy.update_column(:pi_mac_address, "AA:BB:CC:DD:EE:FF")
+        registered = create(:pi_reader, pi_mac_address: "x")
+        registered.update_column(:pi_mac_address, "aa-bb-cc-dd-ee-ff")
+        other = create(:pi_reader)
+        other.update_column(:pi_mac_address, "11:22:33:44:55:66")
+        raws = ["aa:bb:cc:dd:ee:ff", " 11-22-33-44-55-66 ", "de:ad:be:ef:00:01", nil, "  "]
+
+        found = nil
+        queries = count_queries { found = PiReader.readers_by_mac(raws) }
+
+        expect(found).to eq("aa:bb:cc:dd:ee:ff" => registered, " 11-22-33-44-55-66 " => other)
+        expect(found).to eq(raws.index_with { |raw| PiReader.find_by_mac(raw) }.compact)
+        expect(queries).to be <= 2
+      end
+
+      it "is empty without a query when no identifier is usable" do
+        expect(count_queries { expect(PiReader.readers_by_mac([nil, " ", { a: 1 }])).to eq({}) }).to eq(0)
       end
     end
   end

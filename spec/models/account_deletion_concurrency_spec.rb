@@ -23,14 +23,6 @@ RSpec.describe User, ".delete_account! under concurrency", type: :model do
     User.unscoped.where(id: [admin.id, first.id, second.id]).delete_all
   end
 
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
-    end
-  end
-
   def blocked_backends
     ActiveRecord::Base.connection.select_value(
       "SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND datname = current_database()"
@@ -59,10 +51,10 @@ RSpec.describe User, ".delete_account! under concurrency", type: :model do
 
     one = in_thread do
       one_thread = Thread.current
-      User.delete_account!(User.find(first.id))
+      User.delete_account!(User.find(first.id), actor: admin)
     end
     ThreadPause.await(paused)
-    two = in_thread { User.delete_account!(stale_copy) }
+    two = in_thread { User.delete_account!(stale_copy, actor: admin) }
     deadline = Time.current + 5
     Thread.pass until blocked_backends.positive? || !two.alive? || Time.current > deadline
     resume << true

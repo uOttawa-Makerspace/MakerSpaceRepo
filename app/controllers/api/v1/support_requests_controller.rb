@@ -3,14 +3,19 @@
 module Api
   module V1
     # Help form for the React app (replaces the old PUT /send_email). Public or signed in.
-    # Same persistence and mail path as HelpController: a Help record (which opens the GitHub
-    # issue, text defanged) and MsrMailer.issue_email (signed in: to the account, bcc the MakerRepo
-    # team) or MsrMailer.issue_email_to_team (anonymous: team only, reporter in Reply-To).
+    # Same path as HelpController: the request saves a Help record and queues HelpFilingJob, which
+    # mails MsrMailer.issue_email_copy_to_team plus issue_email (signed in: one mail to the MakerRepo
+    # team, one to the account) or MsrMailer.issue_email_to_team (anonymous: team only, reporter in
+    # Reply-To) and opens the GitHub issue (text defanged). It answers 202 once the record is saved,
+    # also when the job cannot be queued (Help#queue_filing reports it and the sweep queues it again).
     # No Turnstile (the React app cannot render it): the rate limits below are the
     # protection. A signed-in caller's name and email always come from the account.
     # Contract: doc/api/v1/support_requests.md.
     class SupportRequestsController < BaseController
-      MAX = { name: 200, email: 254, subject: 200, comments: 5000, app_version: 50 }.freeze
+      skip_authorization only: :create, reason: "Public by contract: anyone may send a support request (rate limited)"
+
+      # Raw lengths of the posted values (the model counts comments as plain text).
+      MAX = Help::MAX_LENGTH.merge(subject: 200, comments: 5000, app_version: 50).freeze
 
       rate_limit to: 5, within: 1.minute, only: :create, scope: "api-support", name: "ip-minute",
                  by: -> { request.remote_ip }, with: :rate_limited
@@ -23,35 +28,21 @@ module Api
 
       def create
         attrs = support_params
-        help = Help.new(attrs.slice(:subject, :comments))
-        help.defang_github_text = true
-        help.name = current_user&.name || attrs[:name]
-        help.email = current_user&.email || attrs[:email]
-
-        errors = length_errors(attrs)
-        help.valid?
-        errors = help.errors.to_hash.merge(errors) { |_k, a, b| a | b }
-        errors.delete(:base)
+        fields = attrs.slice(:name, :email, :subject, :comments).merge(app_version: attrs[:app_version].presence)
+        help = Help.compose(fields, user: current_user, source: Help::APP)
+        errors = request_errors(help, attrs)
         return render_error(:validation_failed, "Validation failed", status: :unprocessable_content, fields: errors) if errors.any?
 
-        if help.save
-          version = attrs[:app_version].presence
-          text = help.comments.to_plain_text
-          if current_user
-            MsrMailer.issue_email(help.name, help.email, help.subject, text, nil, version).deliver_later
-          else
-            # Anonymous: never mail the caller-supplied address (mail relay). Team only, reporter in Reply-To.
-            MsrMailer.issue_email_to_team(help.name, help.email, help.subject, text, version).deliver_later
-          end
-          render json: { status: "accepted" }, status: :accepted
-        else
-          # The GitHub issue could not be opened: nothing was saved or sent.
-          render_error(:service_unavailable, "Could not submit the request, please try again later",
-                       status: :service_unavailable)
-        end
+        help.submit
+        render json: { status: "accepted" }, status: :accepted
       end
 
       private
+
+      def request_errors(help, attrs)
+        help.valid?
+        help.errors.to_hash.merge(length_errors(attrs)) { |_k, a, b| a | b }
+      end
 
       # Unknown fields are ignored. Non-string values are rejected as blank/invalid by the checks.
       def support_params

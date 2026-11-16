@@ -7,7 +7,8 @@ RSpec.describe "/api/v1 foundation", type: :request do
     get "/api/v1/nope/at/all"
     expect(response).to have_http_status(:not_found)
     expect(response.media_type).to eq("application/json")
-    expect(response.parsed_body).to eq("error" => { "code" => "not_found", "message" => "Not found" })
+    expect(response.parsed_body["error"]).to include("code" => "not_found", "message" => "Not found")
+    expect(response.parsed_body.dig("error", "reference")).to eq(response.headers["X-Request-Id"].first(8))
     expect(response.headers["Set-Cookie"]).to be_nil
   end
 
@@ -40,7 +41,8 @@ RSpec.describe "/api/v1 JSON 500", type: :request do
     expect(Rails.error).to receive(:report).with(an_instance_of(RuntimeError), hash_including(handled: true))
     get "/api/v1/session", headers: { "Authorization" => "Bearer x" }
     expect(response).to have_http_status(:internal_server_error)
-    expect(response.parsed_body).to eq("error" => { "code" => "internal_error", "message" => "Something went wrong" })
+    expect(response.parsed_body["error"]).to include("code" => "internal_error", "message" => "Something went wrong")
+    expect(response.parsed_body.dig("error", "reference")).to match(/\A\h{8}\z/)
     expect(response.body).not_to include("boom")
   end
 

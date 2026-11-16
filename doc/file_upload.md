@@ -35,7 +35,7 @@ The plugin depends on an file input element and a preview div element. `file_upl
 
 `data-file-upload-helper` marks the element for pickup by the plugin on document load (on `turbo:load`, to be specific).
 
-`data-file-upload-preview-selector` specifies the selector to find the preview pane. This can be any `querySelector` compatible string. Only one preview pane can be attached to the input element. The first matching element will be used. I recommend using a data attribute to imply it's uniqueness.
+`data-file-upload-preview-selector` specifies the selector to find the preview pane. This can be any `querySelector` compatible string. Only one preview pane can be attached to the input element. The first matching element will be used. I recommend using a data attribute to imply it's uniqueness. When no element matches, the helper logs a warning and leaves the input as a plain file field: it keeps its `name`, so the chosen files are still submitted with the form.
 
 `data-file-upload-limit` (optional) limits the number of files allowed by the input file. Any files selected that go over the limit will silently be ignored. If you're allowing multiple file uploads then I recommend you set `multiple` as well. By default no limit is enforced.
 

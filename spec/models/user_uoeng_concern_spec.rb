@@ -154,10 +154,202 @@ RSpec.describe User::UoengConcern, type: :model do
       end
     end
 
-    it "logs a student-id mismatch but still evaluates the details" do
-      stub_api(body: { "student_number" => "999999999", "student_this_semester" => true, "faculty" => "GENIE" })
-      expect(eng.validate_uoeng_membership).to be_a(Membership)
-      expect(logs.map(&:event_type)).to include(TapBoxLog::WARNING)
+    describe "when the student number in the answer differs from the one on the account" do
+      # The answer shape uOEng sends: the number is `emplid`, an integer.
+      let(:other_student) do
+        { "emplid" => 999_999_999, "first_name" => "Ann", "last_name" => "B", "email_addr" => "ann@example.test",
+          "student_this_semester" => true, "fulltime" => true, "faculty" => "GENIE", "program_level" => "undergraduate",
+          "program_options" => [""], "courses_enrolled" => [] }
+      end
+
+      before { stub_api(body: other_student) }
+
+      it "grants no faculty membership and answers :mismatch" do
+        expect(eng.validate_uoeng_membership).to eq(:mismatch)
+        expect(eng.memberships).to be_empty
+      end
+
+      it "keeps an existing faculty membership as it is" do
+        m = paid_faculty_membership(eng)
+        expect(eng.validate_uoeng_membership).to eq(:mismatch)
+        expect(m.reload.status).to eq("paid")
+      end
+
+      it "keeps the typed student number" do
+        eng.validate_uoeng_membership
+        expect(eng.reload.student_id).to eq("300000001")
+      end
+
+      it "writes a warning row for staff saying the grant was withheld" do
+        eng.validate_uoeng_membership
+        row = logs.find { |l| l.details&.dig("reason") == "student_id_mismatch" }
+        expect(row.event_type).to eq(TapBoxLog::WARNING)
+        expect(row.user).to eq(eng)
+        expect(row.details).to include("faculty_membership" => "not granted")
+        expect(row.details["suggestion"]).to include("No faculty membership was granted")
+      end
+
+      it "also blocks when the answer sends the number as student_number" do
+        stub_api(body: genie.merge("student_number" => "999999999"))
+        expect(eng.validate_uoeng_membership).to eq(:mismatch)
+        expect(eng.memberships).to be_empty
+      end
+    end
+
+    describe "when the student number in the answer matches the one on the account" do
+      it "grants the membership and writes no mismatch row, for an integer emplid" do
+        stub_api(body: genie.merge("emplid" => 300_000_001))
+        expect(eng.validate_uoeng_membership).to be_a(Membership)
+        expect(logs.map { |l| l.details&.dig("reason") }).not_to include("student_id_mismatch")
+      end
+
+      {
+        ["012345678", 12_345_678] => true,
+        ["012345678", "012345678"] => true,
+        ["123456789", 123_456_780] => false,
+        ["A12345", "a12345"] => false,
+        ["A12345", "A12345"] => true
+      }.each do |(typed, sent), granted|
+        it "#{granted ? 'grants' : 'withholds'} the membership for typed #{typed.inspect} and answer #{sent.inspect}" do
+          eng.update_column(:student_id, typed)
+          stub_api(body: genie.merge("emplid" => sent))
+          expect(eng.validate_uoeng_membership).to(granted ? be_a(Membership) : eq(:mismatch))
+        end
+      end
+
+      it "grants the membership for a student_number string" do
+        stub_api(body: genie.merge("student_number" => "300000001"))
+        expect(eng.validate_uoeng_membership).to be_a(Membership)
+      end
+
+      it "grants the membership when the answer carries no student number" do
+        stub_api(body: genie)
+        expect(eng.validate_uoeng_membership).to be_a(Membership)
+      end
+    end
+
+    describe "the uOEng record after a check" do
+      let(:record) do
+        { "emplid" => 300_000_001, "student_this_semester" => true, "fulltime" => false, "faculty" => "GENIE",
+          "program" => "CEG", "program_description" => "Computer Engineering", "program_level" => "graduate",
+          "legal_status" => "International", "sex" => "F", "courses_enrolled" => [] }
+      end
+      let(:profile_fields) { %w[faculty program identity year_of_study student_id] }
+
+      before { travel_to Time.zone.local(2026, 11, 13, 10, 0) }
+
+      it "records each field from the answer, mapped where the app knows the code" do
+        stub_api(body: record)
+        eng.validate_uoeng_membership
+
+        expect(eng.reload.uoeng_profile).to have_attributes(
+          emplid: "300000001", faculty_code: "GENIE", faculty: "Engineering", program_code: "CEG", level: "grad",
+          full_time: false, current_semester: true, source: "student_number", checked_at: Time.current
+        )
+      end
+
+      it "keeps an unknown faculty as a code with no faculty, and an unknown level as blank" do
+        stub_api(body: record.merge("faculty" => "ARTS", "program_level" => "doctoral"))
+        eng.validate_uoeng_membership
+
+        expect(eng.reload.uoeng_profile).to have_attributes(faculty_code: "ARTS", faculty: nil, level: nil)
+      end
+
+      it "records the student number sent as student_number" do
+        stub_api(body: record.except("emplid").merge("student_number" => "300000001"))
+        eng.validate_uoeng_membership
+
+        expect(eng.reload.uoeng_profile.emplid).to eq("300000001")
+      end
+
+      it "updates the same row on a second check" do
+        stub_api(body: record)
+        eng.validate_uoeng_membership
+        first = eng.reload.uoeng_profile
+        travel 1.day
+        stub_api(body: record.merge("program" => "SEG", "fulltime" => true, "program_level" => "undergraduate"))
+        eng.validate_uoeng_membership
+
+        expect(UoengProfile.where(user: eng).count).to eq(1)
+        expect(eng.reload.uoeng_profile).to have_attributes(
+          id: first.id, program_code: "SEG", full_time: true, level: "undergrad", checked_at: Time.current, created_at: first.created_at
+        )
+      end
+
+      it "keeps the faculty, program, identity, year and student number the user entered" do
+        eng.update!(identity: "international_undergrad")
+        stub_api(body: record.merge("faculty" => "GENIE", "program_level" => "graduate"))
+
+        expect { eng.validate_uoeng_membership }.not_to(change { eng.reload.attributes.slice(*profile_fields) })
+        expect(eng.identity).to eq("international_undergrad")
+      end
+
+      it "records an email lookup, leaving the user's blank student number blank" do
+        outsider = create(:user, :regular_user, identity: "community_member", email: "ann@uottawa.ca", student_id: nil)
+        stub_api(email_url, body: record)
+        outsider.validate_uoeng_membership
+
+        expect(outsider.reload.student_id).to be_blank
+        expect(outsider.uoeng_profile).to have_attributes(source: "email", emplid: "300000001")
+      end
+
+      it "writes nothing when the student number does not match" do
+        stub_api(body: record.merge("emplid" => 999_999_999))
+
+        expect { eng.validate_uoeng_membership }.not_to change(UoengProfile, :count)
+      end
+
+      it "keeps the previous record when the answer does not match" do
+        stub_api(body: record)
+        eng.validate_uoeng_membership
+        stub_api(body: record.merge("emplid" => 999_999_999, "program" => "SEG"))
+
+        expect { eng.validate_uoeng_membership }.not_to(change { eng.reload.uoeng_profile.attributes })
+      end
+
+      {
+        "unavailable" => -> { stub_request(:get, id_url).to_timeout },
+        "unknown (a 404 answer)" => -> { stub_api(status: 404, body: {}) },
+        "unknown (an answer of the wrong shape)" => -> { stub_api(body: { "faculty" => 7 }) }
+      }.each do |kind, stub|
+        it "writes nothing when the service is #{kind}" do
+          instance_exec(&stub)
+
+          expect { eng.validate_uoeng_membership }.not_to change(UoengProfile, :count)
+        end
+      end
+
+      it "writes nothing when the user cannot be looked up" do
+        outsider = create(:user, :regular_user, identity: "community_member", email: "a@example.test", student_id: nil)
+
+        expect { outsider.validate_uoeng_membership }.not_to change(UoengProfile, :count)
+      end
+
+      context "when writing the record fails" do
+        before { allow(UoengProfile).to receive(:upsert).and_raise(ActiveRecord::StatementInvalid, "write failed") }
+
+        it "raises after the faculty membership is granted" do
+          stub_api(body: record)
+
+          expect { eng.validate_uoeng_membership }.to raise_error(ActiveRecord::StatementInvalid)
+          expect(eng.memberships.active.where(membership_tier: tier).count).to eq(1)
+        end
+
+        it "raises after an ineligible user's faculty membership is revoked" do
+          membership = paid_faculty_membership(art)
+          stub_api(body: not_engineering)
+
+          expect { art.validate_uoeng_membership }.to raise_error(ActiveRecord::StatementInvalid)
+          expect(membership.reload.status).to eq("revoked")
+        end
+      end
+
+      it "records nothing about sex or legal status" do
+        stub_api(body: record)
+        eng.validate_uoeng_membership
+
+        expect(eng.reload.uoeng_profile.attributes.values.map(&:to_s)).not_to include("International", "F")
+      end
     end
 
     it "logs a name mismatch" do
@@ -166,8 +358,32 @@ RSpec.describe User::UoengConcern, type: :model do
       expect(logs.map(&:event_type)).to include(TapBoxLog::WARNING)
     end
 
+    it "logs no name mismatch when the account name holds the uOEng first name" do
+      eng.update_columns(name: "Ann Tester")
+      stub_api(body: { "first_name" => "Ann", "last_name" => "B", "student_this_semester" => true, "faculty" => "GENIE" })
+      eng.validate_uoeng_membership
+      expect(logs.map { |l| l.details&.dig("reason") }).not_to include("name_mismatch")
+    end
+
+    it "stores only the differing field in the student-id mismatch row" do
+      stub_api(body: { "emplid" => 999_999_999, "student_this_semester" => true, "faculty" => "GENIE" })
+      eng.validate_uoeng_membership
+      row = logs.find { |l| l.details&.dig("reason") == "student_id_mismatch" }
+      expect(row.details).to include("differing_field" => "student number")
+      expect(row.message + row.details.to_json).not_to include("999999999", eng.student_id)
+    end
+
+    it "stores only the differing field in the name mismatch row" do
+      stub_api(body: { "first_name" => "Zzyzx", "last_name" => "Q", "student_this_semester" => true, "faculty" => "GENIE" })
+      eng.validate_uoeng_membership
+      row = logs.find { |l| l.details&.dig("reason") == "name_mismatch" }
+      expect(row.details).to include("differing_field" => "name")
+      expect(row.message + row.details.to_json).not_to include("Zzyzx", eng.name)
+    end
+
     describe "when the upstream cannot give an answer" do
       let!(:membership) { paid_faculty_membership(eng) }
+      transient = ["a timeout", "a refused connection", "a 500 answer"]
 
       {
         "a timeout" => -> { stub_request(:get, id_url).to_timeout },
@@ -185,10 +401,10 @@ RSpec.describe User::UoengConcern, type: :model do
         "a wrong-typed first_name" => -> { stub_api(body: genie.merge("first_name" => ["Ann"])) },
         "a wrong-typed last_name" => -> { stub_api(body: genie.merge("last_name" => 5)) }
       }.each do |failure, arrange|
-        it "keeps the stored membership and reports the result as unknown on #{failure}" do
+        it "keeps the stored membership and reports the result as #{transient.include?(failure) ? "unavailable" : "unknown"} on #{failure}" do
           instance_exec(&arrange)
 
-          expect(eng.validate_uoeng_membership).to eq(:unknown)
+          expect(eng.validate_uoeng_membership).to eq(transient.include?(failure) ? :unavailable : :unknown)
 
           expect(membership.reload.status).to eq("paid")
           expect(Membership.where(user: eng).count).to eq(1)
@@ -196,9 +412,86 @@ RSpec.describe User::UoengConcern, type: :model do
         end
       end
 
+      describe "the error log row" do
+        let(:full_answer) do
+          {
+            "emplid" => "300000001", "first_name" => "Ann", "last_name" => "Tester", "email_addr" => "ann@example.test",
+            "correspondence_lang" => "ENG", "legal_status" => "Canadian", "sex" => "F", "student_this_semester" => true,
+            "fulltime" => true, "faculty" => "GENIE", "program_level" => "Undergraduate", "program" => "Software",
+            "program_description" => "BASc", "program_options" => [], "academic_unit" => "Engineering",
+            "courses_enrolled" => ["GNG1103"]
+          }
+        end
+
+        def error_details
+          logs.find { |row| row.event_type == TapBoxLog::ERROR }.details
+        end
+
+        it "after an HTTP error holds the status and shape, never the personal fields" do
+          stub_api(status: 503, body: full_answer)
+          eng.validate_uoeng_membership
+
+          details = error_details
+          expect(details).to include("reason" => "uoeng_http_error", "http_status" => 503)
+          expect(details["response"]).to include("keys" => full_answer.keys, "values" => full_answer.slice("student_this_semester", "faculty"))
+          expect(details["response"]["body_size"]).to eq(full_answer.to_json.bytesize)
+          expect(details.to_json).not_to match(/Canadian|Tester|ann@example|"F"|BASc/)
+          expect(details["response"]["values"]).not_to have_key("courses_enrolled")
+          expect(details.to_json).not_to include("GNG1103")
+        end
+
+        it "after an answer of the wrong shape holds the same summary" do
+          stub_api(body: full_answer.merge("faculty" => { "name" => "Ann Tester" }))
+          eng.validate_uoeng_membership
+
+          details = error_details
+          expect(details["reason"]).to eq("uoeng_bad_json")
+          expect(details["response"]["values"]["faculty"]).to eq("Hash")
+          expect(details.to_json).not_to match(/Canadian|Tester|ann@example|BASc/)
+        end
+
+        it "after a body that is not JSON holds only its size and content type" do
+          page = "<html>Ann Tester, F, Canadian</html>"
+          stub_request(:get, id_url).to_return(status: 502, body: page, headers: { "Content-Type" => "text/html" })
+          eng.validate_uoeng_membership
+
+          expect(error_details["response"]).to eq("body_size" => page.bytesize, "content_type" => "text/html")
+          expect(error_details.to_json).not_to match(/Tester|Canadian/)
+        end
+
+        it "after a malformed body holds no text of the body, in the row or in the reported error" do
+          stub_api(body: '{"first_name":"Jane","email_addr":"jane.doe@example.test" oops')
+          reported = []
+          allow(Rails.error).to receive(:report) { |error, **| reported << error }
+          eng.validate_uoeng_membership
+
+          details = error_details
+          expect(details).to include("reason" => "uoeng_bad_json", "exception_class" => "JSON::ParserError", "error" => "could not be read as JSON")
+          expect(details.to_json).not_to match(/Jane|jane\.doe|email_addr/)
+          expect(reported.map(&:message).join).not_to match(/Jane|jane\.doe|email_addr/)
+          expect(reported.size).to eq(1)
+        end
+
+        it "after an answer of the wrong shape names the reason without body text" do
+          stub_api(body: full_answer.merge("faculty" => 7))
+          eng.validate_uoeng_membership
+
+          expect(error_details).to include("exception_class" => "User::UoengConcern::UnexpectedShape", "error" => "unexpected answer shape")
+        end
+
+        it "is still shown by the staff console row" do
+          stub_api(status: 503, body: full_answer)
+          eng.validate_uoeng_membership
+          html = ApplicationController.render(partial: "staff/tap_box_console/log_row", locals: { log: logs.find { |r| r.event_type == TapBoxLog::ERROR } })
+
+          expect(html).to include("uoeng_http_error", "http_status=", "student_this_semester")
+          expect(html).not_to include("Canadian")
+        end
+      end
+
       it "does not create a membership for a user without one" do
         stub_request(:get, id_url).to_timeout
-        expect(art.validate_uoeng_membership).to eq(:unknown)
+        expect(art.validate_uoeng_membership).to eq(:unavailable)
         expect(art.memberships).to be_empty
       end
 
@@ -210,10 +503,37 @@ RSpec.describe User::UoengConcern, type: :model do
 
       it "answers normally again once the upstream recovers" do
         stub_request(:get, id_url).to_timeout.then.to_return(status: 200, body: not_engineering.to_json)
-        expect(eng.validate_uoeng_membership).to eq(:unknown)
+        expect(eng.validate_uoeng_membership).to eq(:unavailable)
         expect(eng.validate_uoeng_membership).to be_nil
         expect(membership.reload.status).to eq("revoked")
       end
+    end
+  end
+
+  describe "shown faculty" do
+    def uoeng_record(user, faculty_code, faculty)
+      UoengProfile.create!(user: user, faculty_code: faculty_code, faculty: faculty, source: "email", checked_at: Time.current)
+    end
+
+    let!(:verified) { art.tap { |user| uoeng_record(user, "GENIE", "Engineering") } }
+    let!(:unmapped) { create(:user, :regular_user, faculty: "Science").tap { |user| uoeng_record(user, "XYZ", nil) } }
+    let!(:blank) { create(:user, :regular_user, faculty: "Arts").tap { |user| uoeng_record(user, "GENIE", "") } }
+    let!(:unchecked) { eng }
+    let(:users) { User.where(id: [verified, unmapped, blank, unchecked].map(&:id)) }
+
+    it "is the uOEng faculty when the record has one, otherwise the user's own" do
+      expect([verified, unmapped, blank, unchecked].map { |user| User.find(user.id).shown_faculty })
+        .to eq(%w[Engineering Science Arts Engineering])
+    end
+
+    it ".with_shown_faculty reads the same faculty in the one query, without loading the uOEng record" do
+      loaded = users.with_shown_faculty.order(:id).to_a
+      expect(loaded.map(&:shown_faculty)).to eq(users.order(:id).map { |user| user.reload.shown_faculty })
+      expect(loaded.map { |user| user.association(:uoeng_profile).loaded? }).to all(be(false))
+    end
+
+    it ".count_by_shown_faculty counts every user once, under the shown faculty" do
+      expect(users.count_by_shown_faculty).to eq("Engineering" => 2, "Science" => 1, "Arts" => 1)
     end
   end
 end

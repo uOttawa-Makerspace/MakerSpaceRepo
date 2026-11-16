@@ -1,16 +1,15 @@
 import DataTable from "datatables.net-bs5";
 import { Modal } from "bootstrap";
 import { staffDashboardChannelConnection } from "../channels/staff_dashboard_channel";
+import { dataTableOptions } from "../src/page_locale.js";
+import { oncePerElement } from "../src/on_page.js";
 
 let notifyModal = null;
 let modalClicked = false;
 let autoHideTimer = null;
 
-function setupModal() {
-  const modalEl = document.getElementById("signinModal");
-  if (!modalEl) return null;
-
-  notifyModal = Modal.getOrCreateInstance(modalEl);
+// The popup's listeners, bound once per popup element however often it is shown.
+const bindModalListeners = oncePerElement((modalEl) => {
   const progressBar = document.getElementById("outer-progress-bar");
 
   modalEl.addEventListener("click", () => {
@@ -21,7 +20,14 @@ function setupModal() {
   modalEl.addEventListener("hidden.bs.modal", () => {
     if (progressBar) progressBar.classList.remove("fading-progress-bar");
   });
+});
 
+function setupModal() {
+  const modalEl = document.getElementById("signinModal");
+  if (!modalEl) return null;
+
+  notifyModal = Modal.getOrCreateInstance(modalEl);
+  bindModalListeners(modalEl);
   return notifyModal;
 }
 
@@ -101,13 +107,16 @@ function userTapIn(user) {
 
   const certContainer = document.getElementById("sign-in-certifications");
   if (certContainer && Array.isArray(user.certification)) {
-    const certBadges = user.certification
-      .map(
-        (name) =>
-          `<span class="badge text-bg-light text-black-50">${name}</span>`,
-      )
-      .join(" ");
-    certContainer.innerHTML = `<span class="fs-4">${certBadges}</span>`;
+    const wrapper = document.createElement("span");
+    wrapper.className = "fs-4";
+    user.certification.forEach((name, index) => {
+      if (index > 0) wrapper.append(" ");
+      const badge = document.createElement("span");
+      badge.className = "badge text-bg-light text-black-50";
+      badge.textContent = name;
+      wrapper.append(badge);
+    });
+    certContainer.replaceChildren(wrapper);
   }
 
   const tableEl = document.querySelector("#signed-in-table");
@@ -156,7 +165,7 @@ document.addEventListener("turbo:before-stream-render", (event) => {
     originalRender(streamElement);
 
     tables.forEach((t) => {
-      new DataTable(t);
+      new DataTable(t, dataTableOptions(t));
     });
   };
 });

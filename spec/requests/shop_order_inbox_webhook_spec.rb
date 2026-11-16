@@ -177,6 +177,77 @@ RSpec.describe "Shopify order webhooks (inbox)", type: :request do
     end
   end
 
+  describe "orders/cancelled" do
+    let(:cancelled) do
+      { id: 9030, name: "#9030", financial_status: "voided", cancelled_at: "2026-11-15T10:00:00-05:00",
+        cancel_reason: "customer", tags: [LockerRental.draft_order_operating_tag] }
+    end
+
+    it "answers 200 with an empty body, stores a locker order as its own unit (ref '<id>/cancelled') and queues the job" do
+      signed_orders_cancelled(cancelled)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to be_blank
+      expect(stored("9030/cancelled")).to have_attributes(topic: "orders/cancelled", status: "received", order_name: "#9030")
+      expect(stored("9030/cancelled").payload).to include("id" => 9030, "financial_status" => "voided")
+      expect(queued_ids).to eq([stored("9030/cancelled").id])
+    end
+
+    it "stores a duplicate delivery once and queues nothing more" do
+      signed_orders_cancelled(cancelled)
+      signed_orders_cancelled(cancelled)
+      expect(response).to have_http_status(:ok)
+      expect(ProcessedOrder.pluck(:provider_ref)).to eq(["9030/cancelled"])
+      expect(queued_ids).to eq([stored("9030/cancelled").id])
+    end
+
+    it "does not collide with the paid and fulfilled units of the same order" do
+      signed_orders_fulfilled(cancelled.merge(financial_status: "pending"))
+      signed_orders_cancelled(cancelled)
+      expect(ProcessedOrder.order(:id).pluck(:provider_ref, :topic))
+        .to eq([["9030/fulfilled", "orders/fulfilled"], ["9030/cancelled", "orders/cancelled"]])
+    end
+
+    it "stores a cancelled membership, CC Money and job order too, each as its own unit" do
+      signed_orders_cancelled(membership_order(id: 9031))
+      signed_orders_cancelled({ id: 9032, line_items: [{ product_id: cc_product_id, quantity: 1 }] })
+      signed_orders_cancelled({ id: 9033, tags: [job_order_tag] })
+      expect(response).to have_http_status(:ok)
+      expect(ProcessedOrder.order(:id).pluck(:provider_ref, :topic))
+        .to eq([%w[9031/cancelled orders/cancelled], %w[9032/cancelled orders/cancelled], %w[9033/cancelled orders/cancelled]])
+    end
+
+    it "stores nothing for a cancelled order that names no tracked product" do
+      signed_orders_cancelled({ id: 9034, line_items: [{ product_id: 1, quantity: 1 }] })
+      signed_orders_cancelled({ id: 9035, tags: ["makerepo_locker"] })
+      expect(response).to have_http_status(:ok)
+      expect(ProcessedOrder.count).to eq(0)
+    end
+
+    it "stores nothing and reports a locker order without an id" do
+      reported = []
+      allow(Rails.error).to receive(:report) { |e, **| reported << e.class }
+      signed_orders_cancelled(cancelled.except(:id))
+      expect(response).to have_http_status(:ok)
+      expect([ProcessedOrder.count, reported]).to eq([0, [CustomWebhooksController::OrderWithoutId]])
+    end
+
+    it "rejects an unsigned or wrongly signed request (401) and stores nothing" do
+      body = cancelled.to_json
+      post orders_cancelled_custom_webhooks_path, params: body, headers: { "CONTENT_TYPE" => "application/json" }
+      expect(response).to have_http_status(:unauthorized)
+      signed_orders_cancelled(cancelled, secret: "wrong")
+      expect(response).to have_http_status(:unauthorized)
+      expect(ProcessedOrder.count).to eq(0)
+    end
+
+    it "refuses every request (503) and stores nothing when no webhook secret is configured" do
+      allow(ShopifyApp.configuration).to receive(:secret).and_return(nil)
+      signed_orders_cancelled(cancelled, secret: "test_secret")
+      expect(response).to have_http_status(:service_unavailable)
+      expect(ProcessedOrder.count).to eq(0)
+    end
+  end
+
   # --------------------------------------------------------- HMAC verification
   # ShopifyApp::WebhookVerification: X-Shopify-Hmac-Sha256 must equal
   # Base64(HMAC-SHA256(ShopifyApp.configuration.secret, raw body)); otherwise 401
@@ -259,6 +330,18 @@ RSpec.describe "Shopify order webhooks (inbox)", type: :request do
           expect(reported.size).to eq(2)
         end
         expect(Airbrake).to have_received(:notify).with(an_instance_of(ShopifyWebhookSecret::MissingSecret)).twice
+      end
+
+      it "still reports to Rails.error and refuses (503) when Airbrake is not configured" do
+        allow(Rails.error).to receive(:report)
+        allow(Airbrake).to receive(:configured?).and_return(false)
+        allow(Airbrake).to receive(:notify)
+
+        signed_orders_paid(forged, secret: "test_secret")
+
+        expect(response).to have_http_status(:service_unavailable)
+        expect(Rails.error).to have_received(:report).with(an_instance_of(ShopifyWebhookSecret::MissingSecret), any_args)
+        expect(Airbrake).not_to have_received(:notify)
       end
 
       it "also refuses an unsigned request (503) and a blank secret" do

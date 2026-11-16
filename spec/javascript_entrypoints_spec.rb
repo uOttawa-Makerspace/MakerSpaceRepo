@@ -11,14 +11,14 @@ require "spec_helper"
 # - a view names it in a vite_javascript_tag
 # - a layout loads the entrypoint named after the request's controller_name
 # - another script imports it
-# A Stimulus controller is referenced when a view uses its identifier in
+# A Stimulus controller is referenced when a view or helper uses its identifier in
 # data-controller, or a script looks it up by identifier.
 RSpec.describe "JavaScript entrypoints and controllers" do
   root = File.expand_path("..", __dir__)
   js = File.join(root, "app/javascript")
   read = ->(path) { File.read(path, encoding: "UTF-8", invalid: :replace) }
 
-  views = Dir[File.join(root, "app/views/**/*")].select { |f| File.file?(f) }.map(&read).join("\n")
+  views = Dir[File.join(root, "app/{views,helpers}/**/*")].select { |f| File.file?(f) }.map(&read).join("\n")
   scripts = Dir[File.join(js, "**/*.{js,ts}")].to_h { |f| [f, read.call(f)] }
   controller_names = Dir[File.join(root, "app/controllers/**/*_controller.rb")].map { |f| File.basename(f, "_controller.rb") }
   explicit = views.scan(/vite_(?:javascript|typescript)_tag\s*\(?\s*['"]([\w\/.-]+)['"]/).flatten.map { |n| n.delete_suffix(".js") }

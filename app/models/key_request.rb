@@ -6,17 +6,32 @@ class KeyRequest < ApplicationRecord
   display_user_for :user, :supervisor
 
   enum :user_status, %i[student professor staff], prefix: true
-  enum :status, %i[in_progress waiting_for_approval approved], prefix: true
+  # New statuses are appended: the stored integers 0 to 2 must not change.
+  enum :status, %i[in_progress waiting_for_approval approved denied], prefix: true
 
-  # The owner may change a request only while it is still being filled in.
+  MAX_DENIAL_REASON_LENGTH = 1000
+
+  validates :denial_reason, length: { maximum: MAX_DENIAL_REASON_LENGTH }
+
+  # The owner may change a request while it is being filled in, or after an admin denied it.
   def editable_by_owner?
-    status_in_progress?
+    status_in_progress? || status_denied?
   end
 
-  # Only a request still being filled in can be submitted. A request already
-  # waiting or approved is left as it is.
+  # Submits a request that is being filled in, or resubmits a denied one for approval. The denial
+  # reason is cleared only when the resubmission is saved. A request already waiting or approved
+  # is left as it is.
   def submit
-    status_in_progress? && update(status: :waiting_for_approval)
+    editable_by_owner? && update(status: :waiting_for_approval, denial_reason: nil)
+  end
+
+  # An admin's refusal of a waiting request, with the reason they typed (kept until resubmission).
+  # The request is locked and re-read first, so of two simultaneous denials only one changes the
+  # row and returns true.
+  def deny(reason)
+    with_lock do
+      status_waiting_for_approval? && update(status: :denied, denial_reason: reason.to_s.strip.presence)
+    end
   end
 
   NUMBER_OF_QUESTIONS = 14
@@ -63,7 +78,7 @@ class KeyRequest < ApplicationRecord
               accept: true,
               message: :rules_not_accepted
             },
-            unless: :status_in_progress?
+            unless: :editable_by_owner?
 
   (1..KeyRequest::NUMBER_OF_QUESTIONS).each do |i|
     validates "question_#{i}".to_sym,
@@ -71,6 +86,6 @@ class KeyRequest < ApplicationRecord
                 message: :question_required,
                 question_number: i
               },
-              unless: :status_in_progress?
+              unless: :editable_by_owner?
   end
 end

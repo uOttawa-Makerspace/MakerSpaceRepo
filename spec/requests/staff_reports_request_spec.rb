@@ -33,6 +33,7 @@ RSpec.describe "Staff xlsx reports", type: :request do
     %i[staff admin].each do |role|
       it "sends the present-users workbook to #{role} (staff's own space, else the first space)" do
         user = c18_sign_in(role)
+        StaffSpace.create!(user: user, space: space) if role == :staff
         user.update!(space: space)
         get "/staff_dashboard/present_users_report.xlsx"
         expect(response).to have_http_status(:ok)
@@ -45,9 +46,33 @@ RSpec.describe "Staff xlsx reports", type: :request do
       end
     end
 
+    context "on a server in another time zone" do
+      include ActiveSupport::Testing::TimeHelpers
+
+      around do |example|
+        server_zone = ENV.fetch("TZ", nil)
+        ENV["TZ"] = "Asia/Tokyo"
+        example.run
+      ensure
+        ENV["TZ"] = server_zone
+      end
+
+      it "names the file with the current date and time in Toronto" do
+        user = c18_sign_in(:staff)
+        StaffSpace.create!(user: user, space: space)
+        user.update!(space: space)
+        # 03:30 UTC on March 11 is still 23:30 on March 10 in Toronto
+        travel_to(Time.utc(2026, 3, 11, 3, 30)) { get "/staff_dashboard/present_users_report.xlsx" }
+        expect(response.headers["Content-Disposition"]).to include(
+          %(filename="Staff Report Space_2026-03-10_23h30_present_users_report.xlsx")
+        )
+      end
+    end
+
     it "serves only xlsx: the .html variant is a 406 even for staff" do
       # both report actions serve only .xlsx (the dead format.html branch was removed), so the html request answers 406
-      c18_sign_in(:staff)
+      user = c18_sign_in(:staff)
+      StaffSpace.create!(user: user, space: space)
       get "/staff_dashboard/present_users_report"
       expect(response).to have_http_status(:not_acceptable)
     end

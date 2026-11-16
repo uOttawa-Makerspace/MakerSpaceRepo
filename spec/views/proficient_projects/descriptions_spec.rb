@@ -6,10 +6,8 @@ require "rails_helper"
 # (Rails' default sanitize allowlist, as used across the app's views).
 RSpec.describe "Proficient project description rendering", type: :view do
   def render_preview(description)
-    stub_template "action_view/test_case/test/_proficient_project_row.html.erb" => ""
-    project = build_stubbed(:proficient_project, description: description)
-    render partial: "proficient_projects/preview",
-           locals: { proficient_project: project, order_item: nil, user_order_items: nil }
+    assign(:proficient_project, create(:proficient_project, description: description))
+    render template: "proficient_projects/proficient_project_modal"
     rendered
   end
 

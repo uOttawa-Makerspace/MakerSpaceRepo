@@ -2,6 +2,7 @@
 
 class StaticPagesController < SessionsController
   include TurnstileHelper
+  include CalendarWindowed
 
   before_action :current_user, except: [:reset_password]
   before_action :no_container, except: :about
@@ -12,73 +13,16 @@ class StaticPagesController < SessionsController
     @user_tracks = []
     @volunteer_program_shadowing_scheduled = []
     @volunteer_program_your_tasks = []
+    @hours_calendars = StaffNeededCalendar.open_hours
 
-    # User-specific data (Only run when a user is signed in)
-    user = current_user || @user
-    if user
-      @volunteer_program_shadowing_scheduled = shadowing_shift_entries(user)
+    # The member cards are shown only to a signed-in user (a guest is User.new), so
+    # their queries run only then.
+    load_member_sections(current_user) if signed_in?
 
-      @volunteer_program_your_tasks =
-        user
-          .volunteer_task_joins
-          .active
-          .joins(:volunteer_task)
-          .where(volunteer_tasks: { status: 'open' })
-          .order(updated_at: :desc)
-          .limit(5)
-          .pluck('volunteer_tasks.title', :volunteer_task_id)
-
-      @user_skills =
-        Certification
-          .where(user_id: user.id)
-          .joins(training_session: :training)
-          .limit(5)
-          .pluck('trainings.name_en', 'training_sessions.level')
-
-      # Cached total tracks count
-      total_tracks = Rails.cache.fetch('LearningModuleTotalTracks', expires_in: 1.hour) do
-        LearningModule.unscope(:order).joins(:training).group('trainings.name_en').count
-      end
-
-      @user_tracks =
-        user
-          .learning_module_tracks
-          .includes(learning_module: :training)
-          .group_by { |x| x.learning_module.training.name_en }
-          .transform_values { |x| x.map(&:status).tally }
-          .map do |key, value|
-            [key, "#{value['Completed'] || 0}/#{total_tracks[key] || 0}"]
-          end
-    end
-
-    # Cached Recent Repositories
-    @recent_projects =
-      Rails.cache.fetch('StaticPagesRecentRepos', expires_in: 10.minutes) do
-        Repository
-          .public_repos
-          .order(created_at: :desc)
-          .includes(photos: { image_attachment: [blob: { variant_records: :blob }] })
-          .limit(15)
-          .to_a
-      end
-
-    # Cached Contact Info
-    @contact_info =
-      Rails.cache.fetch('StaticPagesContactInfo', expires_in: 30.minutes) do
-        ContactInfo.where(show_hours: true).order(name: :asc).to_a
-      end
-
-    # Cached Workshops (SimpliEvents)
-    @workshops =
-      Rails.cache.fetch('SimpliEventsRecentEvents', expires_in: 15.minutes, race_condition_ttl: 15.seconds) do
-        fetch_simpli_events
-      end
-
-    # Cached MakerStore Links
-    @makerstore_links =
-      Rails.cache.fetch('ShopifyMakerstoreLinks', expires_in: 1.hour, race_condition_ttl: 15.seconds) do
-        home_makerstore_links
-      end
+    @recent_projects = cached_recent_projects
+    @contact_info = cached_contact_info
+    @workshops = cached_workshops
+    @makerstore_links = cached_makerstore_links
   end
 
   def about; end
@@ -91,8 +35,12 @@ class StaticPagesController < SessionsController
 
   def hours
     @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
+    @hours_calendars = StaffNeededCalendar.open_hours
     respond_to do |format|
-      format.html { render :hours }
+      format.html do
+        @contact_info = @contact_info.includes(:opening_hours)
+        render :hours
+      end
       format.json do
         render json: @contact_info.as_json(
           include: :opening_hours,
@@ -102,16 +50,12 @@ class StaticPagesController < SessionsController
     end
   end
 
+  # The opening hours of the spaces: the occurrences in the range the calendar shows (CalendarWindow), or in the
+  # current week when no range is given.
   def open_hours
-    calendars = StaffNeededCalendar.where(role: "open_hours").includes(:space)
-    all_calendars = calendars.flat_map do |calendar_record|
-      helpers.parse_ics_calendar(
-        calendar_record.calendar_url,
-        name: calendar_record.space&.name || calendar_record.name.presence || "Unnamed Calendar",
-        color: calendar_record.color,
-      )
-    end
-    render json: all_calendars
+    window = CalendarWindow.from_params(params)
+    window = CalendarWindow.week_of(Time.current) if window == CalendarWindow::ALL
+    render json: StaffNeededCalendar.open_hours.flat_map { |calendar| calendar.feed_sources(window, name: calendar.hours_name) }
   end
 
   def calendar; end
@@ -121,11 +65,10 @@ class StaticPagesController < SessionsController
 
   def join_team_program
     if signed_in?
-      if current_user.programs.exists?(program_type: Program::TEAMS)
-        flash[:alert] = 'You are already part of the Teams Program.'
-      else
-        current_user.programs.create(program_type: Program::TEAMS)
+      if Program.join(current_user, Program::TEAMS)
         flash[:notice] = 'You have successfully joined the Teams Program! See below for more information.'
+      else
+        flash[:alert] = 'You are already part of the Teams Program.'
       end
     else
       flash[:alert] = 'You need to sign in to join the Teams Program.'
@@ -135,8 +78,11 @@ class StaticPagesController < SessionsController
 
   RESET_PASSWORD_NOTICE = 'A reset link email has been sent to the email if the account exists.'
 
-  rate_limit to: 30, within: 1.hour, only: :reset_password, name: 'reset-ip',
-             by: -> { request.remote_ip }, with: -> { reset_password_response }
+  # Per client IP. UsersController#reset_password_confirmation has the same limit (its own count) and the
+  # same answer when throttled.
+  RESET_PASSWORD_RATE_LIMIT = { to: 30, within: 1.hour, name: 'reset-ip', by: -> { request.remote_ip } }.freeze
+
+  rate_limit(**RESET_PASSWORD_RATE_LIMIT, only: :reset_password, with: -> { reset_password_response })
 
   def reset_password
     unless verify_turnstile
@@ -168,10 +114,86 @@ class StaticPagesController < SessionsController
 
   private
 
+  def load_member_sections(user)
+    @volunteer_program_shadowing_scheduled = shadowing_shift_entries(user)
+    @volunteer_program_your_tasks = open_task_entries(user)
+    @user_skills = skill_entries(user)
+    @user_tracks = track_progress_entries(user)
+  end
+
+  def open_task_entries(user)
+    user
+      .volunteer_task_joins
+      .joined
+      .joins(:volunteer_task)
+      .where(volunteer_tasks: { status: 'open' })
+      .order(updated_at: :desc)
+      .limit(5)
+      .pluck('volunteer_tasks.title', :volunteer_task_id)
+  end
+
+  def skill_entries(user)
+    Certification
+      .where(user_id: user.id)
+      .joins(training_session: :training)
+      .limit(5)
+      .pluck('trainings.name_en', 'training_sessions.level')
+  end
+
+  # [training name, "completed/total"] per training the user has a track in.
+  def track_progress_entries(user)
+    total_tracks = cached_total_tracks
+    user
+      .learning_module_tracks
+      .includes(learning_module: :training)
+      .group_by { |x| x.learning_module.training.name_en }
+      .map { |key, tracks| [key, "#{tracks.count(&:completed?)}/#{total_tracks[key] || 0}"] }
+  end
+
+  # Cached total tracks count
+  def cached_total_tracks
+    Rails.cache.fetch('LearningModuleTotalTracks', expires_in: 1.hour) do
+      LearningModule.unscope(:order).joins(:training).group('trainings.name_en').count
+    end
+  end
+
+  # Cached Recent Repositories
+  def cached_recent_projects
+    Rails.cache.fetch('StaticPagesRecentRepos', expires_in: 10.minutes) do
+      Repository
+        .public_repos
+        .with_card_data
+        .order(created_at: :desc)
+        .limit(15)
+        .to_a
+    end
+  end
+
+  # Cached Contact Info
+  def cached_contact_info
+    Rails.cache.fetch('StaticPagesContactInfo', expires_in: 30.minutes) do
+      ContactInfo.where(show_hours: true).order(name: :asc).to_a
+    end
+  end
+
+  # Cached Workshops (SimpliEvents)
+  def cached_workshops
+    Rails.cache.fetch('SimpliEventsRecentEvents', expires_in: 15.minutes, race_condition_ttl: 15.seconds) do
+      fetch_simpli_events
+    end
+  end
+
+  # Cached MakerStore Links
+  def cached_makerstore_links
+    Rails.cache.fetch('ShopifyMakerstoreLinks', expires_in: 1.hour, race_condition_ttl: 15.seconds) do
+      home_makerstore_links
+    end
+  end
+
   # [space name or nil, "Monday 10:00 - 13:00"] per shadowing shift; a shift
-  # without a space has no name.
+  # without a space has no name, and a stored shift missing a time is left out.
   def shadowing_shift_entries(user)
-    user.shadowing_hours.includes(:space).map do |hours|
+    user.shadowing_hours.complete.includes(:space).map do |hours|
       end_time = hours.end_time.strftime('%H:%M')
       formatted_time = "#{I18n.l hours.start_time, format: '%A %H:%M'} - #{end_time}"
       [hours.space&.name, formatted_time]
@@ -183,8 +205,6 @@ class StaticPagesController < SessionsController
     flash.now[:notice] = RESET_PASSWORD_NOTICE
     render :forgot_password
   end
-
-  MAKERSTORE_SHOP = 'uottawa-makerspace.myshopify.com'
 
   def fetch_simpli_events
     uri = URI('https://simpli.events/api/organizer/44d09ce5-5999-4bd9-82eb-8a9772963223')
@@ -208,48 +228,14 @@ class StaticPagesController < SessionsController
     []
   end
 
+  # The homepage store links: the makerspace store's first collections (Payments::ShopifyCatalog).
   def home_makerstore_links
-    # Always the makerspace's own store, with only the access token (as before ShopifyContext
-    # existed): no dependency on credentials shop_name/api_key/api_version. ensure_setup! only
-    # primes Context.api_version for the client; it never raises and its result is ignored,
-    # so an incomplete config behaves as it always did (boot priming, or the client's default).
-    access_token = (Rails.application.credentials[Rails.env.to_sym] || {}).dig(:shopify, :password)
-    return [] if access_token.blank?
-
-    # to_s: sorbet type-checks access_token as String, and a YAML token of only digits parses as an Integer.
-    access_token = access_token.to_s
-
-    ShopifyContext.ensure_setup!
-    sess = ShopifyAPI::Auth::Session.new(shop: MAKERSTORE_SHOP, access_token: access_token)
-    client = ShopifyAPI::Clients::Graphql::Admin.new(session: sess)
-
-    query = <<~QUERY
-      query {
-        collections(first: 8) {
-          nodes {
-            id
-            handle
-            description
-            title
-            image {
-              url
-            }
-          }
-        }
+    Payments::ShopifyCatalog.makerstore_collections.map do |node|
+      {
+        'title' => node['title'],
+        'url' => "https://makerstore.ca/collections/#{node['handle']}",
+        'image' => node.dig('image', 'url')
       }
-    QUERY
-
-    items = client.query(query: query)
-    if items.code == 200
-      items.body.dig('data', 'collections', 'nodes')&.map do |node|
-        {
-          'title' => node['title'],
-          'url' => "https://makerstore.ca/collections/#{node['handle']}",
-          'image' => node.dig('image', 'url')
-        }
-      end || []
-    else
-      []
     end
   rescue StandardError => e
     # Class only: a sorbet TypeError (or an HTTP error) message can echo the access token.

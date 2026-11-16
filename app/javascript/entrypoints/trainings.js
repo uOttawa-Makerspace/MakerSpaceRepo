@@ -1,36 +1,22 @@
-import TomSelect from "tom-select";
-import DataTable from "datatables.net-bs5";
+import { onEveryPageLoad } from "../src/on_page.js";
+import { pageTable } from "../src/page_table.js";
+import { tomSelectFor } from "../src/tom_select.js";
 
-document.addEventListener("turbo:load", () => {
-  if (document.querySelector("#training_list_of_skills_en")) {
-    new TomSelect("#training_list_of_skills_en", {
-      sortField: "text",
-      create: true,
-      plugins: {
-        remove_button: {
-          title: "Remove skill",
-        },
-      },
-      persist: false,
-    });
-  }
-});
+// The skill pickers of the training form, in English and in French; each
+// select names its remove button (data-remove-title).
+function skillPicker(id) {
+  const select = /** @type {HTMLSelectElement} */ (document.getElementById(id));
+  if (!select) return;
+  tomSelectFor(select, {
+    sortField: "text",
+    create: true,
+    plugins: ["remove_button"],
+    persist: false,
+  });
+}
 
-document.addEventListener("turbo:load", () => {
-  if (document.querySelector("#training_list_of_skills_fr")) {
-    new TomSelect("#training_list_of_skills_fr", {
-      sortField: "text",
-      create: true,
-      plugins: {
-        remove_button: {
-          title: "Remove skill",
-        },
-      },
-      persist: false,
-    });
-  }
-});
-
-document.addEventListener("turbo:load", () => {
-  new DataTable("#trainings-table");
+onEveryPageLoad(() => {
+  skillPicker("training_list_of_skills_en");
+  skillPicker("training_list_of_skills_fr");
+  pageTable(document.getElementById("trainings-table"));
 });

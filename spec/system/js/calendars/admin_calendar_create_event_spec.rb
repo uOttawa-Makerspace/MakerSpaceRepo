@@ -4,9 +4,9 @@ require "rails_helper"
 
 # The "Add Event" modal of the admin calendar (calendar_helper.js
 # addEventClick / eventCreate, manage_calendar_events.js). The week shown is
-# Sun 2027-03-14 .. Sat 2027-03-20. The browser reads and writes the modal's
-# datetime-local fields in its own time zone, so expected instants are computed
-# by the browser (browser_utc), not assumed.
+# Sun 2027-03-14 .. Sat 2027-03-20. The modal reads and writes its
+# datetime-local fields in Toronto wall-clock time, like the calendar, whatever
+# the zone of the browser.
 
 RSpec.describe "Admin calendar: creating events", type: :system do
   include ActiveSupport::Testing::TimeHelpers
@@ -22,18 +22,32 @@ RSpec.describe "Admin calendar: creating events", type: :system do
 
   around { |ex| travel_to(Time.zone.local(2027, 3, 16, 12)) { ex.run } }
 
+  # The event modal asks the server to rank the staff (staff_conflicts); this refuses every such request.
+  def fail_staff_ranking
+    @refuse_ranking_script = page.driver.browser.execute_cdp(
+      "Page.addScriptToEvaluateOnNewDocument",
+      source: <<~JS
+        (() => {
+          const originalFetch = window.fetch;
+          window.fetch = (url, ...rest) =>
+            String(url).includes("/admin/calendar/staff_conflicts")
+              ? Promise.resolve(new Response(null, { status: 500 }))
+              : originalFetch(url, ...rest);
+        })();
+      JS
+    )["identifier"]
+  end
+
+  after do
+    next unless @refuse_ranking_script
+
+    page.driver.browser.execute_cdp("Page.removeScriptToEvaluateOnNewDocument", identifier: @refuse_ranking_script)
+  end
+
   def open_admin_calendar
     log_in_as(admin, to: admin_calendar_index_path, local_storage: { fullCalendarDefaultDateAdmin: CalendarJsHelpers::WEEK_MIDDAY })
     expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
     wait_for_admin_calendar_scripts
-  end
-
-  # The page that could not load its staff data never becomes ready, so only
-  # the calendar and the error alert are awaited.
-  def open_admin_calendar_without_ready_wait
-    log_in_as(admin, to: admin_calendar_index_path, local_storage: { fullCalendarDefaultDateAdmin: CalendarJsHelpers::WEEK_MIDDAY })
-    expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
-    expect(page).to have_css("#staff_load_error:not(.d-none)")
   end
 
   # Drags down a Thursday slot; the block runs while the button is still held.
@@ -49,10 +63,9 @@ RSpec.describe "Admin calendar: creating events", type: :system do
   end
 
   def open_add_modal
-    page.execute_script("document.getElementById('eventModal').addEventListener('shown.bs.modal', function (e) { e.target.dataset.shown = '1'; })")
     click_button "+ Add Event"
     # shown (not just opening): a modal still fading in ignores a close request
-    expect(page).to have_css("#eventModal[data-shown]")
+    expect(page).to have_css("#eventModal[data-shown='true']")
   end
 
   # The calendar scripts stay registered after Turbo leaves the page (the admin
@@ -83,48 +96,26 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     expect(page).to have_button("+ Add Event", disabled: false)
   end
 
-  it "tells the admin and keeps Add Event disabled when the staff availability cannot be loaded", js: true, js_errors: :allow, skip_bullet: true do
-    allow_any_instance_of(Admin::CalendarController).to receive(:utc_unavailabilities_json) { |controller| controller.head :internal_server_error }
-    log_in_as(admin, to: admin_calendar_index_path)
-
-    expect(page).to have_css("#staff_load_error[role='alert']", text: "staff availability could not be loaded")
-    expect(page).to have_button("+ Add Event", disabled: true)
-    expect(page).to have_no_css("#eventModal[data-ready]", visible: :all)
+  def open_staff_options
+    find("#staff_select_container .ts-control").click
+    find("#staff_select_container .ts-dropdown")
   end
 
-  context "when the staff availability cannot be loaded" do
-    before do
-      allow_any_instance_of(Admin::CalendarController).to receive(:utc_unavailabilities_json) { |controller| controller.head :internal_server_error }
-      create(:event, space: space, title: "Open lab", event_type: "other", draft: false,
-                     start_time: Time.utc(2027, 3, 16, 14), end_time: Time.utc(2027, 3, 16, 15))
-      open_admin_calendar_without_ready_wait
-    end
+  it "tells the admin and still lists the staff when the staff availability cannot be loaded", js: true, js_errors: :allow, skip_bullet: true do
+    fail_staff_ranking
+    open_admin_calendar
+    open_add_modal
 
-    it "does not open the modal when an event is clicked", js: true, js_errors: :allow, skip_bullet: true do
-      page.find(".fc-timegrid-event", text: "Open lab", visible: :all).click
-
-      expect(page).to have_css("#staff_load_error[role='alert']")
-      expect(page).to have_no_css("#eventModal.show", visible: :all)
-      expect(page).to have_css("#eventModalLabel", text: "Add Event", visible: :all)
-    end
-
-    it "ignores a dragged range: no modal, an untouched form and no lingering highlight", js: true, js_errors: :allow, skip_bullet: true do
-      drag_a_range do
-        # mid-drag: FullCalendar is tracking the selection, so the drag does reach it
-        expect(page).to have_css(".fc-highlight")
-      end
-
-      expect(page).to have_no_css(".fc-highlight")
-      expect(page).to have_no_css("#eventModal.show", visible: :all)
-      expect(find("#start_time_field", visible: :all).value).to eq("")
-    end
+    expect(page).to have_css("#staff_load_error[role='alert']", text: "staff availability could not be loaded")
+    expect(open_staff_options).to have_css(".option", text: "Wanda Worker")
+    expect(page).to have_button("+ Add Event", disabled: false)
   end
 
   it "opens the modal with the dragged start time once the page is ready", js: true, skip_bullet: true do
     open_admin_calendar
     drag_a_range
 
-    expect(page).to have_css("#eventModal.show")
+    expect(page).to have_css("#eventModal[data-shown='true']")
     expect(field_value("start_time_field")).to start_with("2027-03-18T")
   end
 
@@ -153,13 +144,15 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     find("#title", visible: :all).execute_script("this.value = 'Planning chat'")
     click_button "Save Draft"
 
-    expect(page).to have_text("Event created successfully.")
+    expect_flash("Event created successfully.")
+    expect_saved_in_place
+    expect(page).to have_css(".fc-timegrid-event", text: "Planning chat", visible: :all)
     event = Event.find_by!(title: "Planning chat")
     expect(event.event_type).to eq("meeting")
     expect(event.draft).to be(true)
     expect(event.space_id).to eq(space.id)
-    expect(event.start_time).to eq(browser_utc("2027-03-17T10:00"))
-    expect(event.end_time).to eq(browser_utc("2027-03-17T11:30"))
+    expect(event.start_time).to eq(toronto_utc("2027-03-17T10:00"))
+    expect(event.end_time).to eq(toronto_utc("2027-03-17T11:30"))
     expect(event.recurrence_rule).to be_nil
     expect(event.users).to contain_exactly(worker)
   end
@@ -172,7 +165,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     select "Other", from: "event_type_select"
     click_button "Save Draft"
 
-    expect(page).to have_text("Event created successfully.")
+    expect_flash("Event created successfully.")
     expect(Event.where(event_type: "other").pluck(:title)).to eq(["Other"])
   end
 
@@ -185,7 +178,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     find("#title", visible: :all).execute_script("this.value = 'Soldering for Wanda Worker, Ada Admin'")
     click_button "Save Draft"
 
-    expect(page).to have_text("Event created successfully.")
+    expect_flash("Event created successfully.")
     expect(Event.where(event_type: "other").pluck(:title)).to eq(["Other"])
   end
 
@@ -198,7 +191,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     find("#title", visible: :all).execute_script("this.value = 'Soldering for Wanda'")
     click_button "Save Draft"
 
-    expect(page).to have_text("Event created successfully.")
+    expect_flash("Event created successfully.")
     expect(Event.where(event_type: "other").pluck(:title)).to eq(["Soldering for Wanda"])
   end
 
@@ -242,10 +235,10 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     select "Other", from: "event_type_select"
     click_button "Save Draft"
 
-    expect(page).to have_text("Event created successfully.")
+    expect_flash("Event created successfully.")
     event = Event.find_by!(event_type: "other")
-    expect(event.start_time).to eq(browser_utc("2027-03-17T00:00"))
-    expect(event.end_time).to eq(browser_utc("2027-03-18T00:00"))
+    expect(event.start_time).to eq(toronto_utc("2027-03-17T00:00"))
+    expect(event.end_time).to eq(toronto_utc("2027-03-18T00:00"))
   end
 
   it "shows the training fields only for the training type", js: true, skip_bullet: true do
@@ -305,9 +298,9 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     check "day_FR"
     click_button "Save Draft"
 
-    expect(page).to have_text("Event created successfully.")
+    expect_flash("Event created successfully.")
     event = Event.find_by!(event_type: "shift")
-    expect(event.recurrence_rule).to include("FREQ=WEEKLY")
+    expect(event.recurrence_rule).to start_with("DTSTART;TZID=America/Toronto:20270317T100000\nRRULE:FREQ=WEEKLY")
     expect(event.recurrence_rule).to match(/BYDAY=(WE,FR|FR,WE)/)
     expect(event.recurrence_rule).not_to include("UNTIL")
   end
@@ -322,11 +315,31 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     find("#recurrence_until").set(Date.new(2027, 3, 25))
     click_button "Save Draft"
 
-    expect(page).to have_text("Event created successfully.")
+    expect_flash("Event created successfully.")
     rule = Event.find_by!(event_type: "other").recurrence_rule
     expect(rule).to include("FREQ=DAILY")
     until_time = Time.strptime(rule[/UNTIL=(\d{8}T\d{6}Z)/, 1], "%Y%m%dT%H%M%SZ").utc
-    expect(until_time).to eq(browser_utc("2027-03-25T23:59:59"))
+    expect(until_time).to eq(toronto_utc("2027-03-25T23:59:59"))
+  end
+
+  describe "with the browser clock in Tokyo", browser_zone: "Asia/Tokyo" do
+    it "saves the typed times and the end date in Toronto time", js: true, skip_bullet: true do
+      open_admin_calendar
+      open_add_modal
+      fill_datetime("start_time_field", "2027-03-17T10:00")
+      fill_datetime("end_time_field", "2027-03-17T11:00")
+      select "Other", from: "event_type_select"
+      select "Daily", from: "recurrence_frequency"
+      find("#recurrence_until").set(Date.new(2027, 3, 25))
+      click_button "Save Draft"
+
+      expect_flash("Event created successfully.")
+      event = Event.find_by!(event_type: "other")
+      expect(event.start_time).to eq(Time.zone.local(2027, 3, 17, 10))
+      expect(event.end_time).to eq(Time.zone.local(2027, 3, 17, 11))
+      expect(event.recurrence_rule).to include("UNTIL=20270326T035959Z")
+      expect(event.recurrence_rule).to start_with("DTSTART;TZID=America/Toronto:20270317T100000\n")
+    end
   end
 
   it "shows a new draft with a pencil mark after saving", js: true, skip_bullet: true do
@@ -337,8 +350,36 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     select "Meeting", from: "event_type_select"
     click_button "Save Draft"
 
-    expect(page).to have_text("Event created successfully.")
+    expect_flash("Event created successfully.")
     expect(page).to have_css(".fc-timegrid-event", text: "✎ Meeting", visible: :all)
+  end
+
+  it "keeps the dialog open with what was typed and the alert when the server refuses the save", js: true, skip_bullet: true do
+    open_admin_calendar
+    open_add_modal
+    fill_datetime("start_time_field", "2027-03-17T10:00")
+    fill_datetime("end_time_field", "2027-03-17T11:00")
+    select "Meeting", from: "event_type_select"
+    open_custom_values
+    fill_in "title", with: "Planning chat"
+    select "Weekly", from: "recurrence_frequency"
+    uncheck "day_WE"
+    click_button "Save Draft"
+
+    expect(page).to have_css("#eventModal.show #calendar_dialog_alert", text: "Failed to create event")
+    expect(page).to have_no_css("#flash", text: "Failed to create event")
+    expect(find("#title", visible: :all).value).to eq("Planning chat")
+    expect(field_value("start_time_field")).to eq("2027-03-17T10:00")
+    expect(page).to have_select("recurrence_frequency", selected: "Weekly")
+    expect(page.evaluate_script("window.sameDocument")).to be(true)
+    expect(Event.count).to eq(0)
+
+    check "day_WE"
+    click_button "Save Draft"
+
+    expect_flash("Event created successfully.")
+    expect_saved_in_place
+    expect(Event.find_by!(title: "Planning chat").recurrence_rule).to include("BYDAY=WE")
   end
 
   it "asks before closing the modal and keeps it open when the answer is no", js: true, skip_bullet: true do
@@ -350,7 +391,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
       click_button "Cancel"
     end
 
-    expect(page).to have_css("#eventModal.show")
+    expect(page).to have_css("#eventModal[data-shown='true']")
     expect(field_value("start_time_field")).to eq("2027-03-17T10:00")
   end
 
@@ -372,17 +413,16 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     expect(Event.count).to eq(0)
   end
 
-  describe "staff unavailable at the chosen time" do
+  describe "staff unavailable at the chosen time", browser_zone: "America/Toronto" do
     let(:slot_start) { "2027-03-17T17:30" }
     let(:slot_end) { "2027-03-17T18:00" }
 
-    # The unavailability is placed around the slot as the browser reads it, so
-    # the examples hold in any browser time zone. The page is loaded first
-    # (the browser has to compute the instants) and loaded again afterwards.
+    # The server ranks the staff for the modal's Toronto wall-clock times. The page is
+    # loaded first and loaded again afterwards.
     def unavailability_around_slot(rule_for: nil)
       log_in_as(admin, to: root_path)
-      from = browser_utc(slot_start) - 1.hour
-      to = browser_utc(slot_end) + 1.hour
+      from = toronto_utc(slot_start) - 1.hour
+      to = toronto_utc(slot_end) + 1.hour
       attrs = { user: worker, title: "Class", start_time: from, end_time: to }
       if rule_for
         day = %w[SU MO TU WE TH FR SA][(from - 7.days).wday]
@@ -393,16 +433,25 @@ RSpec.describe "Admin calendar: creating events", type: :system do
       create(:staff_unavailability, **attrs)
     end
 
-    def start_modal_with_slot
+    # The calendar draws itself and scrolls the page to it as it starts, so
+    # "+ Add Event" is clicked only once the calendar is drawn and the modal is
+    # ready: a click aimed before that scroll lands below the button.
+    def open_add_modal_on_week
       show_week_of_march_14("fullCalendarDefaultDateAdmin", admin_calendar_index_path)
       expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
       wait_for_admin_calendar_scripts
       open_add_modal
+    end
+
+    def start_modal_with_slot
+      open_add_modal_on_week
       fill_datetime("start_time_field", slot_start)
       fill_datetime("end_time_field", slot_end)
     end
 
+    # The list is read once it shows the server's answer for the times in the form.
     def staff_options
+      expect(page).to have_css("#staff_select[data-ranked]", visible: :all)
       find("#staff_select + .ts-wrapper .ts-control").click
       page.all(".ts-dropdown .option").map(&:text)
     end
@@ -420,8 +469,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
 
     it "marks nobody when the slot is clear of the unavailability", js: true, skip_bullet: true do
       unavailability_around_slot
-      show_week_of_march_14("fullCalendarDefaultDateAdmin", admin_calendar_index_path)
-      open_add_modal
+      open_add_modal_on_week
       fill_datetime("start_time_field", "2027-03-19T09:00")
       fill_datetime("end_time_field", "2027-03-19T10:00")
 
@@ -443,14 +491,13 @@ RSpec.describe "Admin calendar: creating events", type: :system do
       expect(staff_options.last).to include("(Unavailable")
     end
 
-    # Two repeating rules are compared only over the four weeks after today, so a
-    # slot further ahead than that (this one is in March 2027) is never marked.
-    it "does not mark a staff member when two repeating rules only meet more than four weeks from today", js: true, skip_bullet: true do
+    # Two repeating rules are compared over the four weeks after the slot.
+    it "marks a staff member when two repeating rules meet within four weeks of the slot", js: true, skip_bullet: true do
       unavailability_around_slot(rule_for: "FREQ=WEEKLY;BYDAY=<day>")
       start_modal_with_slot
       select "Daily", from: "recurrence_frequency"
 
-      expect(staff_options.join).not_to include("Unavailable")
+      expect(staff_options.last).to include("(Unavailable")
     end
   end
 end

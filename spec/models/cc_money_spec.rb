@@ -42,6 +42,95 @@ RSpec.describe CcMoney, type: :model do
     expect { CcMoney.create! }.not_to raise_error
   end
 
+  describe "#link_to" do
+    let(:first_user) { create(:user, :regular_user) }
+    let(:second_user) { create(:user, :regular_user) }
+
+    it "gives an unlinked row to the user once and keeps that owner on a repeat or a second claim" do
+      row = CcMoney.create!(cc: 10, linked: false)
+      stale = CcMoney.find(row.id)
+      expect(row.link_to(first_user)).to eq(:linked)
+      expect(stale.link_to(second_user)).to eq(:already_linked)
+      expect(stale.linked?).to be(true)
+      expect(row.link_to(first_user)).to eq(:already_linked)
+      expect(row.reload.user_id).to eq(first_user.id)
+      expect(CcMoney.where(user_id: [first_user.id, second_user.id]).sum(:cc)).to eq(10)
+    end
+  end
+
+  describe "claim tokens" do
+    include ActiveSupport::Testing::TimeHelpers
+
+    let(:buyer) { create(:user, :regular_user) }
+    let(:admin) { create(:user, :admin) }
+    let(:row) { CcMoney.create!(cc: 10, linked: false, purchaser_email: buyer.email) }
+
+    it "names the row, and stops working after the named lifetime" do
+      expect(CcMoney::CLAIM_TOKEN_LIFETIME).to eq(30.days)
+      token = row.claim_token
+      expect(CcMoney.for_claim_token(token)).to eq(row)
+      travel_to(30.days.from_now - 1.minute) { expect(CcMoney.for_claim_token(token)).to eq(row) }
+      travel_to(30.days.from_now + 1.minute) { expect(CcMoney.for_claim_token(token)).to be_nil }
+    end
+
+    it "reads a token signed with the id alone as generation 0 and rejects garbage, other purposes and non-strings" do
+      verifier = Rails.application.message_verifier(:cc)
+      expect(CcMoney.for_claim_token(verifier.generate(row.id))).to eq(row)
+      expect(CcMoney.for_claim_token(verifier.generate("not an id"))).to be_nil
+      expect(CcMoney.for_claim_token(verifier.generate([row.id, 0], purpose: :other))).to be_nil
+      expect([CcMoney.for_claim_token("garbage"), CcMoney.for_claim_token(nil), CcMoney.for_claim_token(1),
+              CcMoney.for_claim_token(["x"])]).to all(be_nil)
+    end
+
+    it "raises RecordNotFound for a valid token whose row is gone" do
+      token = row.claim_token
+      CcMoney.where(id: row.id).delete_all
+      expect { CcMoney.for_claim_token(token) }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+
+    it "#send_claim_email_to supersedes older tokens and keeps the stored address" do
+      old = row.claim_token
+      expect(row.send_claim_email_to("other@example.com", by: admin)).to eq(:email_mismatch)
+      expect(CcMoney.for_claim_token(old)).to eq(row)
+      expect(row.send_claim_email_to(buyer.email.upcase, by: admin)).to eq(:sent)
+      expect(row.reload.claim_token_generation).to eq(1)
+      expect(row.purchaser_email).to eq(buyer.email)
+      expect(CcMoney.for_claim_token(old)).to be_nil
+      expect(CcMoney.for_claim_token(row.claim_token)).to eq(row)
+      expect(row.current_claim_generation?(0)).to be(false)
+      expect(row.current_claim_generation?(1)).to be(true)
+    end
+
+    it "#send_claim_email_to records the address of a row that has none and refuses a bad address" do
+      bare = CcMoney.create!(cc: 5, linked: false)
+      expect(bare.send_claim_email_to("not-an-address", by: admin)).to eq(:email_invalid)
+      expect(bare.reload.purchaser_email).to be_nil
+      expect(bare.send_claim_email_to(" Buyer@Example.com ", by: admin)).to eq(:sent)
+      expect(bare.reload.purchaser_email).to eq("buyer@example.com")
+    end
+
+    it "#send_claim_email_to refuses a row claimed meanwhile, even through a stale copy" do
+      stale = CcMoney.find(row.id)
+      row.link_to(buyer)
+      expect(stale.send_claim_email_to(buyer.email, by: admin)).to eq(:already_linked)
+      expect(row.reload.claim_token_generation).to eq(0)
+    end
+
+    it "#claimable_by? is true for the unclaimed row's purchaser only, comparing normalised emails" do
+      expect(row.claimable_by?(buyer)).to be(true)
+      expect(row.claimable_by?(create(:user, :regular_user))).to be(false)
+      expect(CcMoney.create!(cc: 1, linked: false).claimable_by?(buyer)).to be(false)
+      expect(CcMoney.create!(cc: 1, linked: true, purchaser_email: buyer.email).claimable_by?(buyer)).to be(false)
+    end
+
+    it "#link_to refuses a copy loaded before a resend raised the generation" do
+      copy = CcMoney.find(row.id)
+      row.send_claim_email_to(buyer.email, by: admin)
+      expect(copy.link_to(buyer)).to eq(:superseded)
+      expect(row.reload.linked).to be(false)
+    end
+  end
+
   describe ".debit! (the one wallet-debit operation)" do
     # A joinable caller transaction (the fixture transaction is not one).
     def in_caller_transaction(&block)
@@ -147,7 +236,7 @@ RSpec.describe CcMoney, type: :model do
     it "debit_all! refuses to run outside a caller transaction" do
       CcMoney.create!(user: user, cc: 30)
       expect { CcMoney.debit_all!(user, [[1, {}]]) }
-        .to raise_error(ArgumentError, "CcMoney.debit! must run inside the caller's transaction")
+        .to raise_error(ArgumentError, "CcMoney.debit_all! must run inside the caller's transaction")
       expect(user.cc_moneys.pluck(:cc)).to eq([30])
     end
 
@@ -174,6 +263,38 @@ RSpec.describe CcMoney, type: :model do
       task = create(:volunteer_task)
       row = CcMoney.create_cc_money_from_approval(task.id, user.id, 8)
       expect([row.cc, row.user_id, row.volunteer_task_id, row.linked]).to eq([8, user.id, task.id, true])
+    end
+
+    it "pays a task to a user only once: a second award writes nothing and returns nil" do
+      task = create(:volunteer_task)
+      CcMoney.create_cc_money_from_approval(task.id, user.id, 8)
+
+      expect { expect(CcMoney.create_cc_money_from_approval(task.id, user.id, 8)).to be_nil }.not_to change(CcMoney, :count)
+      expect(CcMoney.where(user_id: user.id, volunteer_task_id: task.id).sum(:cc)).to eq(8)
+    end
+
+    it "still pays the same task to another user and the same user another task" do
+      task = create(:volunteer_task)
+      CcMoney.create_cc_money_from_approval(task.id, user.id, 8)
+
+      expect(CcMoney.create_cc_money_from_approval(task.id, create(:user).id, 8)).to be_persisted
+      expect(CcMoney.create_cc_money_from_approval(create(:volunteer_task).id, user.id, 8)).to be_persisted
+    end
+  end
+
+  describe "the task award index" do
+    let(:task) { create(:volunteer_task) }
+
+    it "ignores rows that are not task awards, and rows flagged as old double awards" do
+      create(:cc_money, user: user, volunteer_task: task)
+      expect { 2.times { CcMoney.create!(user: user, cc: 5) } }.not_to raise_error
+      expect { CcMoney.create!(user: user, volunteer_task: task, cc: 10, legacy_duplicate: true) }.not_to raise_error
+      expect(user.get_total_cc).to eq(10 + 5 + 5 + 10)
+    end
+
+    it "refuses a second unflagged award for the same user and task" do
+      create(:cc_money, user: user, volunteer_task: task)
+      expect { CcMoney.create!(user: user, volunteer_task: task, cc: 10) }.to raise_error(ActiveRecord::RecordNotUnique)
     end
   end
 
@@ -220,5 +341,119 @@ RSpec.describe Order, ".checkout! transaction boundary", type: :model do
       expect { Order.checkout!(order, user) }.to raise_error(ArgumentError, "Order.checkout! must run as its own transaction")
     end
     expect(order.reload.order_status.name).to eq("In progress")
+  end
+end
+
+RSpec.describe CcMoney, "#correct_purchase_email", type: :model do
+  include ActiveSupport::Testing::TimeHelpers
+
+  let(:admin) { create(:user, :admin) }
+  let(:buyer) { create(:user, :regular_user) }
+  let(:row) { CcMoney.create!(cc: 10, linked: false, purchaser_email: "typo@example.com") }
+
+  it "writes the normalised address, revokes the old links and records who changed what" do
+    old_token = row.claim_token
+    freeze_time do
+      expect(row.correct_purchase_email("  Right@Example.COM ", by: admin)).to eq(:corrected)
+      row.reload
+      expect(row.purchaser_email).to eq("right@example.com")
+      expect(row.claim_token_generation).to eq(1)
+      correction = row.email_corrections.sole
+      expect(correction).to have_attributes(admin: admin, old_email: "typo@example.com", new_email: "right@example.com",
+                                            created_at: Time.current)
+    end
+    expect(CcMoney.for_claim_token(old_token)).to be_nil
+    expect(CcMoney.for_claim_token(row.claim_token)).to eq(row)
+  end
+
+  it "lets the account with the corrected email claim it and not the one with the old email" do
+    row.correct_purchase_email(buyer.email, by: admin)
+    expect(row.claimable_by?(buyer)).to be(true)
+    expect(row.claimable_by?(create(:user, :regular_user, email: "typo@example.com"))).to be(false)
+  end
+
+  it "records an address for a legacy row that has none, with no old address" do
+    bare = CcMoney.create!(cc: 5, linked: false)
+    expect(bare.correct_purchase_email("new@example.com", by: admin)).to eq(:corrected)
+    expect(bare.email_corrections.sole.old_email).to be_nil
+  end
+
+  it "refuses a claimed row, even through a stale copy, and writes nothing" do
+    stale = CcMoney.find(row.id)
+    row.link_to(buyer)
+    expect(stale.correct_purchase_email("right@example.com", by: admin)).to eq(:already_linked)
+    expect(row.reload.purchaser_email).to eq("typo@example.com")
+    expect(row.claim_token_generation).to eq(0)
+    expect(row.email_corrections).to be_empty
+  end
+
+  it "refuses an invalid address and an unchanged one, writing nothing" do
+    expect(row.correct_purchase_email("not-an-address", by: admin)).to eq(:email_invalid)
+    expect(row.correct_purchase_email("", by: admin)).to eq(:email_invalid)
+    expect(row.correct_purchase_email(nil, by: admin)).to eq(:email_invalid)
+    expect(row.correct_purchase_email(" TYPO@example.com ", by: admin)).to eq(:email_unchanged)
+    expect(row.reload.claim_token_generation).to eq(0)
+    expect(row.email_corrections).to be_empty
+  end
+
+  it "keeps its record: a saved correction cannot be changed or removed" do
+    row.correct_purchase_email("right@example.com", by: admin)
+    correction = row.email_corrections.sole
+    expect { correction.update!(new_email: "x@example.com") }.to raise_error(ActiveRecord::ReadOnlyRecord)
+    expect { correction.destroy }.to raise_error(ActiveRecord::ReadOnlyRecord)
+    expect(row.destroy).to be(false)
+    expect(CcMoneyEmailCorrection.count).to eq(1)
+  end
+
+  it "keeps accounts with corrections from being hard-deleted, so no record is lost" do
+    row.correct_purchase_email("right@example.com", by: admin)
+    expect { admin.destroy }.to raise_error(ActiveRecord::InvalidForeignKey)
+    expect(CcMoneyEmailCorrection.count).to eq(1)
+    expect(User.unscoped.exists?(admin.id)).to be(true)
+  end
+
+  it "makes a link mailed before the correction and held by a stale copy refuse to claim" do
+    stale = CcMoney.for_claim_token(row.claim_token)
+    row.correct_purchase_email(buyer.email, by: admin)
+    expect(stale.link_to(buyer)).to eq(:superseded)
+    expect(row.reload).to be_unclaimed
+  end
+end
+
+RSpec.describe CcMoney, "#send_claim_email_to record", type: :model do
+  include ActiveSupport::Testing::TimeHelpers
+
+  let(:admin) { create(:user, :admin) }
+  let(:buyer) { create(:user, :regular_user) }
+  let(:row) { CcMoney.create!(cc: 10, linked: false, purchaser_email: buyer.email) }
+
+  it "records who resent the claim email, when and to which address, once per resend" do
+    freeze_time do
+      expect(row.send_claim_email_to(buyer.email.upcase, by: admin)).to eq(:sent)
+      expect(row.claim_email_resends.sole)
+        .to have_attributes(admin: admin, email: buyer.email.upcase, created_at: Time.current)
+    end
+    row.send_claim_email_to(buyer.email, by: admin)
+    expect(row.claim_email_resends.count).to eq(2)
+    expect(row.reload.latest_claim_email_resend.email).to eq(buyer.email)
+  end
+
+  it "records nothing when the resend is refused" do
+    expect(row.send_claim_email_to("other@example.com", by: admin)).to eq(:email_mismatch)
+    expect(row.send_claim_email_to("not-an-address", by: admin)).to eq(:email_invalid)
+    stale = CcMoney.find(row.id)
+    row.link_to(buyer)
+    expect(stale.send_claim_email_to(buyer.email, by: admin)).to eq(:already_linked)
+    expect(CcMoneyClaimEmailResend.count).to eq(0)
+  end
+
+  it "keeps its record: a saved resend cannot be changed or removed, nor its row or admin deleted" do
+    row.send_claim_email_to(buyer.email, by: admin)
+    resend = row.claim_email_resends.sole
+    expect { resend.update!(email: "x@example.com") }.to raise_error(ActiveRecord::ReadOnlyRecord)
+    expect { resend.destroy }.to raise_error(ActiveRecord::ReadOnlyRecord)
+    expect(row.destroy).to be(false)
+    expect { admin.destroy }.to raise_error(ActiveRecord::InvalidForeignKey)
+    expect(CcMoneyClaimEmailResend.count).to eq(1)
   end
 end

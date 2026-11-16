@@ -2,7 +2,7 @@
   <%= form_for([:admin, @job_service]) do |f| %>
     <% if @job_service.errors.any? %>
       <div id="error_explanation">
-        <h2><%= pluralize(@job_service.errors.count, 'error') %> prohibited this service from being saved:</h2>
+        <h2><%= t('admin_pages.job_settings.service_errors_heading', count: @job_service.errors.count) %></h2>
 
         <ul>
           <% @job_service.errors.full_messages.each do |message| %>
@@ -14,26 +14,26 @@
 
     <div class="text-center">
       <div class="col-lg-6 text-center mx-auto mb-3">
-        <%= f.label :name, 'Name of the Service' %>
+        <%= f.label :name, t('admin_pages.job_settings.service_name') %>
         <%= f.text_field :name, class: 'form-control', required: true %>
       </div>
 
       <div class="form-group col-lg-6 mx-auto mb-3">
-        <%= f.label :description, 'Description' %>
+        <%= f.label :description, t('admin_pages.common.description') %>
         <%= f.text_area :description, class: 'form-control' %>
       </div>
       <div class="form-group col-lg-6 mx-auto mb-3">
-        <%= f.label :job_service_group_id, 'Job Service Group' %>
+        <%= f.label :job_service_group_id, t('admin_pages.job_settings.job_service_group') %>
         <%= f.select :job_service_group_id, options_from_collection_for_select(JobServiceGroup.all, :id, :name, @job_service.job_service_group_id.presence || ''), {}, class: 'form-control form-select' %>
       </div>
 
       <div class="col-lg-6 text-center mx-auto mb-3">
-        <%= f.label :unit, 'Unit (g, cm3, h ...)' %>
+        <%= f.label :unit, t('admin_pages.job_settings.unit') %>
         <%= f.text_field :unit, class: 'form-control', required: true %>
       </div>
 
       <div class="col-lg-6 text-center mx-auto mb-3">
-        <%= f.label :internal_price, 'Internal Price per unit' %>
+        <%= f.label :internal_price, t('admin_pages.job_settings.internal_price') %>
         <div class="input-group mb-3">
           <div class="input-group-prepend">
             <span class="input-group-text">$</span>
@@ -43,7 +43,7 @@
       </div>
 
       <div class="col-lg-6 text-center mx-auto mb-3">
-        <%= f.label :external_price, 'External Price per unit' %>
+        <%= f.label :external_price, t('admin_pages.job_settings.external_price') %>
         <div class="input-group mb-3">
           <div class="input-group-prepend">
             <span class="input-group-text">$</span>
@@ -52,17 +52,17 @@
         </div>
       </div>
 
-      <div class="mb-3">
-        <%= f.label :required, 'Required? (ex: Onyx for MarkForged)', required: true %>
+      <div class="mb-3" role="radiogroup" aria-labelledby="job_service_required_label">
+        <span id="job_service_required_label" class="d-inline-block"><%= t('admin_pages.job_settings.required') %></span>
 
         <div class="form-check form-check-inline">
           <%= f.radio_button :required, false, class: 'form-check-input' %>
-          <%= f.label :required, 'No', class: 'form-check-label', value: false %>
+          <%= f.label :required, t('admin_pages.common.no'), class: 'form-check-label', value: false %>
         </div>
 
         <div class="form-check form-check-inline">
           <%= f.radio_button :required, true, class: 'form-check-input' %>
-          <%= f.label :required, 'Yes', class: 'form-check-label', value: true %>
+          <%= f.label :required, t('admin_pages.common.yes'), class: 'form-check-label', value: true %>
         </div>
       </div>
 

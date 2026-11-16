@@ -16,23 +16,21 @@ class Admin::TrainingsController < AdminAreaController
 
   def new
     @training = Training.new
-    @skills_en = @training.list_of_skills_en&.split(',')
-    @skills_fr = @training.list_of_skills_fr&.split(',')
+    assign_selected_skills
   end
 
   def edit
     @training = Training.find(params[:id])
-    @skills_en = @training.list_of_skills_en&.split(',')
-    @skills_fr = @training.list_of_skills_fr&.split(',')
+    assign_selected_skills
   end
 
   def create
     @training = Training.new(training_params)
     if @training.save
-      flash[:notice] = "Training added successfully!"
+      flash[:notice] = t("admin_area.trainings.flash.created")
       redirect_to admin_trainings_path
     else
-      flash[:alert] = "Input is invalid"
+      flash[:alert] = t("admin_area.input_invalid")
       render :new, status: :unprocessable_content
     end
   end
@@ -40,10 +38,10 @@ class Admin::TrainingsController < AdminAreaController
   def update
     @training = Training.find(params[:id])
     if @training.update(training_params)
-      flash[:notice] = "Training updated successfully"
+      flash[:notice] = t("admin_area.trainings.flash.updated")
       redirect_to admin_trainings_path
     else      
-      flash[:alert] = "Input is invalid"
+      flash[:alert] = t("admin_area.input_invalid")
       render :edit, status: :unprocessable_content
     end
     
@@ -51,9 +49,7 @@ class Admin::TrainingsController < AdminAreaController
 
   def destroy
     @changed_training = Training.find(params["id"])
-    flash[
-      :notice
-    ] = "Training removed successfully" if @changed_training.destroy
+    flash_write(@changed_training, "trainings.not_deleted", t("admin_area.trainings.flash.deleted"), destroy: true) { @changed_training.destroy }
     redirect_to admin_trainings_path
   end
 
@@ -91,12 +87,15 @@ class Admin::TrainingsController < AdminAreaController
     value.nil? || (value.is_a?(Array) && value.all?(String))
   end
 
-  # Stored as one comma separated string, without blanks or padding. A list
-  # that is absent or null in the request is left as it is.
+  # Each list is handed to the model as one comma separated string; the model strips the names and
+  # drops blanks. A list that is absent or null in the request is left as it is.
   def skill_lists
-    SKILL_LIST_KEYS.select { |key| !params[:training][key].nil? }.to_h do |key|
-      [key, params[:training][key].map(&:strip).compact_blank.join(",")]
-    end
+    SKILL_LIST_KEYS.select { |key| !params[:training][key].nil? }.to_h { |key| [key, params[:training][key].join(",")] }
+  end
+
+  def assign_selected_skills
+    @skills_en = Training.split_skills(@training.list_of_skills_en)
+    @skills_fr = Training.split_skills(@training.list_of_skills_fr)
   end
 
   def set_spaces

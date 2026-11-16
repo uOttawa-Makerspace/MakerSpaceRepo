@@ -49,6 +49,13 @@ RSpec.describe ExamQuestion, type: :model do
       expect { ExamQuestion.create_exam_questions(exam.id, training.id, 3, "Beginner") }.to change { exam.exam_questions.count }.by(1)
     end
 
+    it "returns how many questions it added" do
+      training.questions << create(:question, level: "Beginner")
+      training.questions << create(:question, level: "Beginner")
+      expect(ExamQuestion.create_exam_questions(exam.id, training.id, 3, "Beginner")).to eq(2)
+      expect(ExamQuestion.create_exam_questions(exam.id, training.id, 1, "Beginner")).to eq(1)
+    end
+
     # quick_random_records raises RangeError on an empty pool
     it "raises RangeError when the training has no question at that level" do
       expect { ExamQuestion.create_exam_questions(exam.id, training.id, 3, "Beginner") }.to raise_error(RangeError)

@@ -45,11 +45,35 @@ RSpec.describe CdelReportGenerator do
     expect(row[-2..]).to eq([nil, nil])
   end
 
+  it "reads Date arguments as whole days in Toronto and keeps a mailer's month window as given" do
+    # 21:00 on Feb 28 in Toronto is March 1 in UTC; 23:30 on March 31 is April 1
+    early = create(:user, :student, created_at: Time.zone.local(2026, 2, 28, 21))
+    late = create(:user, :student, created_at: Time.zone.local(2026, 3, 31, 23, 30))
+    names = ->(report) { CSV.parse(report[:data]).drop(1).map { |r| r[1] } }
+    expect(names.call(described_class.generate_new_users_report(from, to))).to eq([late.name])
+    month = Time.zone.local(2026, 3, 1)
+    expect(names.call(described_class.generate_new_users_report(month, month.end_of_month))).to eq([late.name])
+    expect(names.call(described_class.generate_new_users_report(from - 1, to))).to eq([early.name, late.name])
+  end
+
   it "new_users filename uses to_date, the others use the raw argument in the name" do
     expect(described_class.generate_new_users_report(from.to_datetime, to.to_datetime)[:filename])
       .to eq("CEED_new_users_dump-2026-03-01-2026-03-31.csv")
     expect(described_class.generate_visitors_report(from.to_datetime, to.to_datetime)[:filename])
       .to start_with("CEED_visitors_dump-2026-03-01T00:00:00")
+  end
+
+  it "writes a text field that starts like a formula with a leading quote, and leaves other fields as they are" do
+    user = create(:user, :student, created_at: march_10)
+    user.update_columns(name: '=HYPERLINK("http://example.test","x")', how_heard_about_us: "+1+1",
+                        use: "-2", program: "@SUM(1)", email: "plain@example.test")
+    header, row = CSV.parse(described_class.generate_new_users_report(from, to)[:data])
+    field = header.zip(row).to_h
+    expect(field.values_at("users.name", "users.how_heard_about_us", "users.use", "users.program"))
+      .to eq(["'=HYPERLINK(\"http://example.test\",\"x\")", "'+1+1", "'-2", "'@SUM(1)"])
+    expect(field.values_at("users.id", "users.email", "users.confirmed"))
+      .to eq([user.id.to_s, "plain@example.test", user.confirmed.to_s])
+    expect(field["users.created_at"]).to eq(user.created_at.to_s)
   end
 
   it "keeps the visits, certifications and sign-up of a soft-deleted user in the reports" do

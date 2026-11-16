@@ -40,6 +40,11 @@ RSpec.describe QuickAccessLinksController, type: :controller do
         expect(flash[:alert]).to include("cannot point to a user")
       end
 
+      it "opens the refusal in French for a French request" do
+        post :create, params: { name: "Bad", path: "/no/such/route/at/all/xyz", locale: "fr" }
+        expect(flash[:alert]).to start_with("Lien d'accès rapide non créé,")
+      end
+
       it "should reject duplicate links" do
         post :create, params: attributes_for(:quick_access_link, :root)
         expect(response).to have_http_status :success

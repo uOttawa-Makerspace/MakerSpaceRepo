@@ -60,8 +60,13 @@ FactoryBot.define do
       role { "admin" }
     end
 
+    # Staff work only in the spaces they are assigned to, so a staff user created with a space is assigned to it.
     trait :staff do
       role { "staff" }
+
+      after(:create) do |user|
+        StaffSpace.find_or_create_by!(user: user, space_id: user.space_id) if user.space_id
+      end
     end
 
     trait :volunteer do

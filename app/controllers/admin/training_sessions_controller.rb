@@ -37,36 +37,21 @@ class Admin::TrainingSessionsController < AdminAreaController
 
     @sessions = @sessions.by_status(params[:status]) if params[:status].present?
 
-    if params[:search].present?
-      @sessions = @sessions.filter_by_attribute(params[:search])
-    end
-
     #pagination
     @pagy, @sessions =
       pagy(@sessions.preload(:training, :user, :certifications, :users), limit: 20)
-
-    respond_to do |format|
-      format.js
-      format.html
-    end
   end
 
   def update
-    if @training_session.update(training_session_params)
-      flash[:notice] = "Updated Successfully"
-      redirect_back(fallback_location: root_path)
-    else
-      flash[:alert] = "Something went wrong"
-      redirect_back(fallback_location: root_path)
+    flash_write(@training_session, "training_sessions.not_updated", t("admin_area.training_sessions.flash.updated")) do
+      @training_session.assign_attributes(training_session_params)
+      @training_session.save(context: :session_edit)
     end
+    redirect_back(fallback_location: root_path)
   end
 
   def destroy
-    if @training_session.destroy
-      flash[:notice] = "Deleted Successfully"
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    flash_write(@training_session, "training_sessions.not_deleted", t("admin_area.training_sessions.flash.deleted"), destroy: true) { @training_session.destroy }
     redirect_back(fallback_location: root_path)
   end
 

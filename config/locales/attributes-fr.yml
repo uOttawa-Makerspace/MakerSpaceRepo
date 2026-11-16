@@ -39,6 +39,7 @@ fr:
         expires_at: Expiration
       learning_module:
         title: Titre
+        shortcut_name: Lien abrégé
       proficient_project:
         title: Titre
       repository:
@@ -114,6 +115,7 @@ fr:
         question_12: Question 12
         question_13: Question 13
         question_14: Question 14
+        denial_reason: Motif du refus
         user: Utilisateur
         supervisor: Superviseur
         space: Espace
@@ -144,9 +146,13 @@ fr:
         training_id: Formation
         recurrence_rule: Règle de récurrence
       coupon_code:
-        cc_cost: Coût en points CC
+        cc_cost: Coût en CC
+        code: Code
+        dollar_cost: Valeur en dollars
       question:
+        description: Description
         images: Images
+        level: Niveau
       order_item:
         files: Fichiers
         proficient_project: Projet
@@ -157,6 +163,8 @@ fr:
         email: Courriel
         subject: Sujet
         comments: Commentaires
+        source: Origine
+        app_version: Version de l'application
       chat_message:
         job_order: Commande
         sender: Expéditeur

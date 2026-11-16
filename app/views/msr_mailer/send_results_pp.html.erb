@@ -1,30 +1,26 @@
 <% content_for :preheader do %>
-  MakerRepo - Proficient Project Results
+  <%= t(".preheader") %>
 <% end %>
 
 <% content_for :team_name do %>
-  The MakerRepo Team
+  <%= t("layouts.mailer.makerrepo_team") %>
 <% end %>
 
 <% content_for :why_received do %>
-  You have received this email because you submitted a proficient project for evaluation on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+  <%= t(".why_received") %> <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
 <% end %>
 
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.name %>,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t("msr_mailer.account.hello", name: @user.name) %></p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  We have received the results for the proficient project (<%= @pp.title %>).
-  <%= if @result == 'Failed'
-        sanitize('We regret to inform you that your proficient project has <b>failed</b>')
-      else
-        sanitize("We're excited to inform you that your proficient project has <b>passed</b>")
-      end %>.
-  You can see your progress <%= link_to 'here', skills_development_programs_url, style: 'color: #e55426ff; text-decoration: underline;' %>.
+  <%= t(".received", project: @pp.title) %>
+  <%= @result == 'Failed' ? t(".failed_html") : t(".passed_html") %>.
+  <%= t(".progress_html", link: link_to(t(".here"), skills_development_programs_url, style: 'color: #e55426ff; text-decoration: underline;')) %>.
   <br>
   <br>
 </p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  <b>Admin Comments:</b> 
-  <%= @oi.admin_comments == '' ? 'None' : sanitize(@oi.admin_comments) %>
+  <b><%= t(".admin_comments") %></b> 
+  <%= @oi.admin_comments == '' ? t(".none") : sanitize(@oi.admin_comments) %>
 </p>
 <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
   <tbody>
@@ -34,7 +30,7 @@
           <tbody>
             <tr>
               <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; border-radius: 5px; text-align: center; background-color: #e55426ff;" valign="top" align="center" bgcolor="#e55426ff">
-                <a href="<%= skills_development_programs_url %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;">See my progress</a>
+                <a href="<%= skills_development_programs_url %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;"><%= t(".button") %></a>
               </td>
             </tr>
           </tbody>

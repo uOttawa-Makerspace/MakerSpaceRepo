@@ -16,7 +16,7 @@ RSpec.describe User, "#bump_token_version! compare-and-set under concurrency" do
   end
 
   def in_other_connection(&block)
-    Thread.new { ActiveRecord::Base.connection_pool.with_connection(&block) }.value
+    race_thread(&block).value
   end
 
   DEADLINE = 10 # seconds: a missing thread fails the example instead of hanging it
@@ -43,13 +43,11 @@ RSpec.describe User, "#bump_token_version! compare-and-set under concurrency" do
     version = user.token_version
     barrier = Queue.new
     threads = Array.new(6) do
-      Thread.new do
-        ActiveRecord::Base.connection_pool.with_connection do
-          candidate = User.find(user.id)
-          barrier << true
-          wait_until_all_arrived(barrier, 6)
-          candidate.bump_token_version!(from_version: version)
-        end
+      race_thread do
+        candidate = User.find(user.id)
+        barrier << true
+        wait_until_all_arrived(barrier, 6)
+        candidate.bump_token_version!(from_version: version)
       end
     end
     results = threads.map(&:value)
@@ -105,14 +103,12 @@ RSpec.describe User, "#bump_token_version! compare-and-set under concurrency" do
     version = user.token_version
     barrier = Queue.new
     threads = Array.new(2) do
-      Thread.new do
-        ActiveRecord::Base.connection_pool.with_connection do
-          candidate = User.find(user.id)
-          barrier << true
-          wait_until_all_arrived(barrier, 2)
-          candidate.soft_delete!
-          true
-        end
+      race_thread do
+        candidate = User.find(user.id)
+        barrier << true
+        wait_until_all_arrived(barrier, 2)
+        candidate.soft_delete!
+        true
       end
     end
     expect(threads.map(&:value)).to eq([true, true])

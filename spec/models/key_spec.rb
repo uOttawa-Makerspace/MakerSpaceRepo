@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe Key, type: :model do
+  include ActiveSupport::Testing::TimeHelpers
+
   describe "Association" do
     context "belongs_to" do
       it { should belong_to(:user).without_validating_presence }
@@ -165,9 +167,23 @@ RSpec.describe Key, type: :model do
 
     it "revoke! returns the key and closes the open transaction together" do
       key.assign_to!(holder, attrs, 0)
-      key.revoke!
+      travel_to(Time.zone.parse("2026-11-10 12:00:00 -05:00")) { key.revoke! }
       expect(key.reload).to have_attributes(status: "inventory", user_id: nil)
-      expect(key.key_transactions.last).to have_attributes(return_date: Date.today, deposit_return_date: Time.zone.today)
+      expect(key.key_transactions.last).to have_attributes(
+        return_date: Date.new(2026, 11, 10),
+        deposit_return_date: Date.new(2026, 11, 10)
+      )
+    end
+
+    it "revoke! records the local date when UTC has already rolled over to the next day" do
+      key.assign_to!(holder, attrs, 0)
+      travel_to(Time.zone.parse("2026-11-10 21:00:00 -05:00")) do
+        key.revoke!
+      end
+      expect(key.key_transactions.last).to have_attributes(
+        return_date: Date.new(2026, 11, 10),
+        deposit_return_date: Date.new(2026, 11, 10)
+      )
     end
 
     it "revoke! refuses a held key with no open transaction and changes nothing" do

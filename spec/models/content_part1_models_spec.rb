@@ -24,11 +24,12 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect(Repository.unscoped.where(deleted: true).count).to eq(1)
     end
 
-    it "a comment's repository association resolves to nil once the repository is soft-deleted" do
+    it "a comment's, like's and photo's repository is still found once the repository is soft-deleted" do
       comment = create(:comment, repository: repo)
+      like = create(:like, repository: repo)
+      photo = repo.photos.first
       repo.update_columns(deleted: true)
-      # belongs_to goes through the default scope; code that derefs comment.repository (CommentsController#destroy) breaks
-      expect(comment.reload.repository).to be_nil
+      expect([comment, like, photo].map { |row| row.reload.repository }).to all(eq(repo))
       expect(Comment.count).to eq(1)
     end
 
@@ -38,10 +39,10 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect([Photo.count, Like.count]).to eq([1, 1])
     end
 
-    it "a make's parent resolves to nil once the original is soft-deleted" do
+    it "a make's parent is still found once the original is soft-deleted" do
       child = create(:repository, owner: owner, title: "Child", make_id: repo.id)
       repo.update_columns(deleted: true)
-      expect(child.reload.parent).to be_nil
+      expect(child.reload.parent).to eq(repo)
     end
 
     describe "slug" do
@@ -68,17 +69,17 @@ RSpec.describe "Content models (part 1 characterization)" do
       it "requires at least one photo" do
         r = Repository.new(owner: owner, title: "No pics", share_type: "public")
         expect(r).not_to be_valid
-        expect(r.errors[:photos]).to include("Must have between 1 and 5 photos")
+        expect(r.errors[:photos]).to include("Must have between 1 and 10 photos")
       end
 
-      it "allows up to 10 photos although the message says 5" do
+      it "allows up to 10 photos and no more" do
         r = build(:repository, owner: owner, title: "Many")
         9.times { r.photos.build(image: FilesTestHelper.png) }
         expect(r).to be_valid
         r.photos.build(image: FilesTestHelper.png)
         r.photos.build(image: FilesTestHelper.png)
-        # limit is 10, message and comment say 5
         expect(r).not_to be_valid
+        expect(r.errors[:photos]).to include("Must have between 1 and 10 photos")
       end
 
       it "rejects a non-image photo on create" do
@@ -141,27 +142,44 @@ RSpec.describe "Content models (part 1 characterization)" do
     end
 
     describe "zip cache" do
-      it "zip_path is tmp/repository_zips/makerepo_<id>.zip and clear_zip_cache removes it after update and destroy" do
+      it "zip_path is tmp/repository_zips/makerepo_<id>.zip and clear_zip_cache removes it" do
         FileUtils.mkdir_p(File.dirname(repo.zip_path))
         FileUtils.touch(repo.zip_path)
-        repo.update!(description: "changed")
-        expect(File.exist?(repo.zip_path)).to be(false)
-        FileUtils.touch(repo.zip_path)
-        repo.destroy
+        repo.clear_zip_cache
         expect(File.exist?(repo.zip_path)).to be(false)
       end
 
-      it "a missing cache file is not an error" do
+      it "is not cleared by saving or destroying the record itself" do
+        FileUtils.mkdir_p(File.dirname(repo.zip_path))
+        FileUtils.touch(repo.zip_path)
+        repo.update!(description: "changed")
+        repo.destroy
+        expect(File.exist?(repo.zip_path)).to be(true)
+      ensure
+        FileUtils.rm_f(repo.zip_path)
+      end
+
+      it "a missing cache file is not an error and is not reported" do
+        expect(Rails.error).not_to receive(:report)
+        expect { repo.clear_zip_cache }.not_to raise_error
+      end
+
+      it "reports a cache file that cannot be deleted" do
+        FileUtils.mkdir_p(File.dirname(repo.zip_path))
+        FileUtils.touch(repo.zip_path)
+        allow(File).to receive(:delete).with(repo.zip_path).and_raise(Errno::EACCES)
+        expect(Rails.error).to receive(:report)
+          .with(instance_of(Errno::EACCES), hash_including(handled: true, severity: :warning, context: hash_including(repository_id: repo.id)))
         expect { repo.clear_zip_cache }.not_to raise_error
       end
     end
 
-    it "destroy lowers every member's reputation by 25 (can go negative) and removes dependents" do
+    it "destroy removes dependents and leaves the members' reputation alone (hide! is what takes it back)" do
       member = create(:user, reputation: 10)
       repo.users << member
       create(:comment, repository: repo)
       repo.destroy
-      expect(member.reload.reputation).to eq(-15)
+      expect(member.reload.reputation).to eq(10)
       expect(Comment.count).to eq(0)
     end
 
@@ -295,24 +313,25 @@ RSpec.describe "Content models (part 1 characterization)" do
   describe Upvote do
     let(:comment) { create(:comment) }
 
-    it "counts down for a downvote and flips by 2 on update" do
-      up = Upvote.create!(user: owner, comment: comment, downvote: true)
+    it "counts down for a downvote and flips by 2 when switched" do
+      Upvote.cast(owner, comment, true)
       expect(comment.reload.upvote).to eq(-1)
-      up.update!(downvote: false)
+      Upvote.switch(owner, comment, false)
       expect(comment.reload.upvote).to eq(1)
     end
 
-    it "does not validate that the comment exists (optional belongs_to, then the callback raises)" do
-      expect { Upvote.create!(user: owner, comment_id: 0) }.to raise_error(NoMethodError)
+    it "does not validate that the comment exists (optional belongs_to); the foreign key refuses the row" do
+      expect { Upvote.create!(user: owner, comment_id: 0) }.to raise_error(ActiveRecord::InvalidForeignKey)
     end
   end
 
   describe Like do
-    it "counters follow create and destroy" do
+    it "counters follow give and take back" do
       repo = create(:repository, owner: owner)
-      like = Like.create!(user: create(:user), repository: repo)
+      fan = create(:user)
+      Like.give(repo, fan)
       expect(repo.reload.like).to eq(1)
-      like.destroy
+      Like.take_back(repo, fan)
       expect(repo.reload.like).to eq(0)
     end
   end
@@ -322,9 +341,9 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect(create(:proficient_project, title: "hELLO WORLD").title).to eq("Hello world")
     end
 
-    it "title uniqueness is case-sensitive on the raw value, run before capitalize" do
+    it "title uniqueness ignores letter case" do
       create(:proficient_project, title: "Widget")
-      expect(build(:proficient_project, title: "widget")).to be_valid
+      expect(build(:proficient_project, title: "widget")).not_to be_valid
       expect(build(:proficient_project, title: "Widget")).not_to be_valid
     end
 
@@ -339,12 +358,6 @@ RSpec.describe "Content models (part 1 characterization)" do
 
     it "filter_by_attribute with an unknown attribute returns the class unchanged" do
       expect(ProficientProject.filter_by_attribute("zzz", "x")).to eq(ProficientProject)
-    end
-
-    it "training_status is the highest certification level the user holds for the training, defaulting to Beginner" do
-      training = create(:training)
-      user = create(:user)
-      expect(ProficientProject.training_status(training.id, user.id)).to eq("Beginner")
     end
 
     it "deleting a project cascades to its requirements and to the requirements that name it as required" do
@@ -423,9 +436,10 @@ RSpec.describe "Content models (part 1 characterization)" do
   end
 
   describe ProjectKit do
-    it "requires user and proficient_project_id (not existence)" do
+    it "requires a user and an existing proficient project" do
       expect(ProjectKit.new).not_to be_valid
-      expect(ProjectKit.new(user: owner, proficient_project_id: 0)).to be_valid
+      expect(ProjectKit.new(user: owner, proficient_project_id: 0)).not_to be_valid
+      expect(ProjectKit.new(user: owner, proficient_project: create(:proficient_project))).to be_valid
     end
 
     it "delivered defaults to falsey" do
@@ -450,7 +464,19 @@ RSpec.describe "Content models (part 1 characterization)" do
     end
 
     it "is valid with no file at all (validator only runs when attached)" do
-      expect(Video.new).to be_valid
+      expect(build(:video, proficient_project: create(:proficient_project))).to be_valid
+    end
+
+    it "needs exactly one of a project or a learning module" do
+      expect(Video.new).not_to be_valid
+      expect(build(:video, proficient_project: create(:proficient_project), learning_module: create(:learning_module))).not_to be_valid
+      expect(build(:video, proficient_project: nil, learning_module: create(:learning_module))).to be_valid
+    end
+
+    it "lets an existing video with no parent be edited for other fields" do
+      video = create(:video, proficient_project: create(:proficient_project))
+      video.update_columns(proficient_project_id: nil)
+      expect(video.reload.update(processed: true)).to be(true)
     end
   end
 end

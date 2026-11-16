@@ -3,11 +3,22 @@
 namespace :bookings do
   desc "Copy each booking's status from its old status row into booking_status_id where the two differ " \
        "(the status row wins; the old table is never changed). Records each change in " \
-       "booking_status_reconciliations and prints it."
+       "booking_status_reconciliations and prints it. Needs DEPLOYED_AT (ISO time the new release started " \
+       "serving): a booking with a status that the new release changed after that time is skipped and listed."
   task reconcile_statuses: :environment do
-    # After the status column exists, every writer sets the column and the old status row together, so the
-    # two can differ only because code from before the column wrote the status row alone: the row is newer.
-    # The record rows are written by the same statement as the update.
+    # Code from before the column wrote only the old status row, and the new release writes only the column
+    # and sets the booking's updated_at on every status change. So a booking with a status whose updated_at is
+    # later than the deploy was changed by the new release and is never overwritten; a booking with no status
+    # is always copied. The record rows are written by the same statement as the update.
+    deployed_at = begin
+      raw = ENV["DEPLOYED_AT"].to_s
+      raise ArgumentError, "no zone" unless raw.match?(/(Z|[+-]\d{2}:?\d{2})\z/i)
+
+      Time.iso8601(raw).utc
+    rescue ArgumentError
+      abort "Set DEPLOYED_AT to an ISO 8601 time with a zone (Z or an offset) for when the new release was created, e.g. DEPLOYED_AT=2026-11-15T14:30:00Z"
+    end
+    after_deploy = SubSpaceBooking.connection.quote(deployed_at)
     changed = SubSpaceBooking.connection.select_rows(<<~SQL.squish)
       WITH todo AS (
         SELECT b.id, b.booking_status_id AS was_id, s.booking_status_id AS now_id
@@ -15,6 +26,7 @@ namespace :bookings do
         JOIN sub_space_booking_statuses s
           ON s.id = b.sub_space_booking_status_id AND s.sub_space_booking_id = b.id
         WHERE s.booking_status_id IS NOT NULL AND b.booking_status_id IS DISTINCT FROM s.booking_status_id
+          AND (b.booking_status_id IS NULL OR b.updated_at <= #{after_deploy})
       ), recorded AS (
         INSERT INTO booking_status_reconciliations (sub_space_booking_id, was_booking_status_id, now_booking_status_id, created_at)
         SELECT id, was_id, now_id, now() FROM todo ORDER BY id RETURNING sub_space_booking_id
@@ -25,6 +37,15 @@ namespace :bookings do
       JOIN updated USING (id) JOIN recorded ON recorded.sub_space_booking_id = todo.id ORDER BY todo.id
     SQL
     changed.each { |id, was, now| puts "booking #{id}: booking_status_id #{was.inspect} -> #{now}" }
+    skipped = SubSpaceBooking.connection.select_values(<<~SQL.squish)
+      SELECT b.id FROM sub_space_bookings b
+      JOIN sub_space_booking_statuses s
+        ON s.id = b.sub_space_booking_status_id AND s.sub_space_booking_id = b.id
+      WHERE b.booking_status_id IS NOT NULL AND s.booking_status_id IS DISTINCT FROM b.booking_status_id
+        AND b.updated_at > #{after_deploy}
+      ORDER BY b.id
+    SQL
+    puts "#{skipped.size} booking(s) skipped, changed by the new release after the deploy (ids: #{skipped.join(', ')})" if skipped.any?
     unmatched = SubSpaceBooking.where(booking_status_id: nil).pluck(:id)
     puts "#{changed.size} booking(s) changed"
     puts "#{unmatched.size} booking(s) still without a status (ids: #{unmatched.join(', ')})" if unmatched.any?

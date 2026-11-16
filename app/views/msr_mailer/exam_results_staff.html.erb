@@ -1,22 +1,22 @@
 <% content_for :preheader do %>
-  Makerepo - Exam completed
+  <%= t(".preheader") %>
 <% end %>
 
 <% content_for :team_name do %>
-  The MakerRepo Team
+  <%= t("layouts.mailer.makerrepo_team") %>
 <% end %>
 
 <% content_for :why_received do %>
-  You have received this email because you were responsible of a training session with an exam on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+  <%= t(".why_received") %> <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
 <% end %>
 
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.name %>,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t("msr_mailer.account.hello", name: @staff.name) %></p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  You are receiving this email because you were the responsible staff for the
-  <b><%= @training_session.training.localized_name %> at uOttawa (<%= @training_session.created_at.strftime('%b %e %Y') %>)</b> </br>
-  <%= @user.name.titleize %> finished the exam and his/her score was <%= @exam.score %>. Hence, He/she <%= @exam.status %> the exam. <br />
+  <%= t(".responsible") %>
+  <b><%= t(".session", training: @training_session.training.localized_name, date: l(@training_session.created_at, format: :exam_session_mail)) %></b> </br>
+  <%= t(".result.#{@exam.status}", default: :"msr_mailer.exam_results_staff.result.other", name: @user.name.titleize, score: @exam.score, status: @exam.status) %> <br />
   <% unless @exam.status == "passed" %>
-    If this is his/her first try, he/she will be able to try one more time. <br />
+    <%= t(".retry") %> <br />
   <% end %>
-  No more actions are needed.
+  <%= t(".no_action") %>
 </p>

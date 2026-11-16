@@ -57,8 +57,8 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect(vol_deliveries).to be_empty
     end
 
-    it "does not count inactive joins toward capacity" do
-      create(:volunteer_task_join, :not_active, volunteer_task: task)
+    it "does not count ended joins toward capacity" do
+      %i[completed left not_active].each { |trait| create(:volunteer_task_join, trait, volunteer_task: task) }
       vol_login!(volunteer)
       expect { join!(join_params) }.to change(VolunteerTaskJoin, :count).by(1)
     end
@@ -69,12 +69,33 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect { join!(join_params) }.to change(VolunteerTaskJoin, :count).by(1)
     end
 
-    # no uniqueness on (user, task): the same volunteer joins repeatedly when capacity allows
-    it "allows the same volunteer to join twice on a multi-seat task, with two rounds of email" do
+    it "refuses a second join of the same volunteer on a multi-seat task, with a message and no email" do
       big = create(:volunteer_task, joins: 3)
       vol_login!(volunteer)
-      expect { 2.times { join!(join_params(task_id: big.id)) } }.to change(VolunteerTaskJoin, :count).by(2)
-      expect(vol_deliveries.size).to eq(4)
+      join!(join_params(task_id: big.id))
+      ActionMailer::Base.deliveries.clear
+      expect { join!(join_params(task_id: big.id)) }.not_to change(VolunteerTaskJoin, :count)
+      expect(flash[:alert]).to eq("User is already on this task")
+      expect(vol_deliveries).to be_empty
+    end
+
+    it "gives the same refusal when the database catches a second join the validation missed" do
+      big = create(:volunteer_task, joins: 3)
+      create(:volunteer_task_join, volunteer_task: big, user: volunteer, state: "joined", user_type: "Volunteer")
+      allow_any_instance_of(VolunteerTaskJoin).to receive(:valid?).and_return(true)
+      vol_login!(volunteer)
+      ActionMailer::Base.deliveries.clear
+      expect { join!(join_params(task_id: big.id)) }.not_to change(VolunteerTaskJoin, :count)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("User is already on this task")
+      expect(vol_deliveries).to be_empty
+    end
+
+    it "lets a volunteer who left the task join it again" do
+      big = create(:volunteer_task, joins: 3)
+      create(:volunteer_task_join, :left, volunteer_task: big, user: volunteer)
+      vol_login!(volunteer)
+      expect { join!(join_params(task_id: big.id)) }.to change(VolunteerTaskJoin, :count).by(1)
     end
 
     # capacity only counts user_type "Volunteer" (users.role), so a program member whose role is regular_user is stored as "Regular_user" and never consumes a seat
@@ -145,7 +166,7 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       vol_login!(volunteer)
       post volunteer_task_joins_path, params: {}
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to match(/param is missing/)
+      expect(flash[:alert]).to match(/The form is missing required information/)
     end
 
     it "redirects a guest to login, nothing persisted" do
@@ -177,12 +198,13 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
     let!(:join) { create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer) }
     let(:remove_params) { { volunteer_task_join: { user_id: volunteer.id, volunteer_task_id: task.id } } }
 
-    it "lets the volunteer leave: marks the join inactive, notice, redirect back, no email" do
+    it "lets the volunteer leave: marks the join left, notice, redirect back, no email" do
       vol_login!(volunteer)
       expect do
         perform_enqueued_jobs { post remove_volunteer_task_joins_path, params: remove_params, headers: { "HTTP_REFERER" => volunteer_task_url(task) } }
       end.not_to change(VolunteerTaskJoin, :count)
-      expect(join.reload.active).to be(false)
+      expect(join.reload).to have_attributes(active: false, state: "left", state_changed_by_id: volunteer.id)
+      expect(join.state_changed_at).to be_within(1.minute).of(Time.current)
       expect(response).to redirect_to(volunteer_task_url(task))
       expect(flash[:notice]).to eq("User was removed from the Volunteer Task")
       expect(vol_deliveries).to be_empty
@@ -193,7 +215,7 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       post remove_volunteer_task_joins_path, params: remove_params
       vol_login!(other_volunteer)
       post volunteer_task_joins_path, params: join_params
-      expect(task.volunteer_task_joins.active.pluck(:user_id)).to eq([other_volunteer.id])
+      expect(task.volunteer_task_joins.joined.pluck(:user_id)).to eq([other_volunteer.id])
       expect(task.volunteer_task_joins.pluck(:user_id)).to contain_exactly(volunteer.id, other_volunteer.id)
     end
 
@@ -214,9 +236,11 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect(response).to redirect_to(login_path)
     end
 
-    it "lets staff remove anyone" do
-      vol_login!(create(:user, :staff))
+    it "lets staff remove anyone, recording who removed them" do
+      staff = create(:user, :staff)
+      vol_login!(staff)
       expect { post remove_volunteer_task_joins_path, params: remove_params }.to change { join.reload.active }.to(false)
+      expect(join).to have_attributes(state: "removed", state_changed_by_id: staff.id)
       expect(flash[:notice]).to eq("User was removed from the Volunteer Task")
     end
 
@@ -225,17 +249,16 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect { post remove_volunteer_task_joins_path, params: remove_params }.to change { join.reload.active }.to(false)
     end
 
-    it "marks every active join of the user inactive and leaves other rows alone" do
-      second = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
-      old = create(:volunteer_task_join, :not_active, volunteer_task: task, user: volunteer)
+    it "ends the joined row of the user and leaves other rows alone" do
+      old = create(:volunteer_task_join, :completed, volunteer_task: task, user: volunteer)
       other = create(:volunteer_task_join, :active, volunteer_task: task, user: other_volunteer)
       vol_login!(volunteer)
       expect { post remove_volunteer_task_joins_path, params: remove_params }.not_to change(VolunteerTaskJoin, :count)
-      expect([join, second, old, other].map { |j| j.reload.active }).to eq([false, false, false, true])
+      expect([join, old, other].map { |j| j.reload.state }).to eq(%w[left completed joined])
     end
 
-    it "refuses a user with no active join and changes nothing" do
-      join.update!(active: false)
+    it "refuses a user with no joined row and changes nothing" do
+      join.finish!(:completed, by: volunteer)
       vol_login!(volunteer)
       expect { post remove_volunteer_task_joins_path, params: remove_params }.not_to change { join.reload.updated_at }
       expect(flash[:alert]).to eq("The user to remove is not on this task.")
@@ -245,7 +268,7 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
     it "refuses removing the creator when nobody else is joined, and hands the task over once someone is" do
       creator = create(:user, :staff)
       task.update!(user: creator)
-      join.update!(active: false)
+      join.finish!(:left, by: volunteer)
       creator_join = create(:volunteer_task_join, :active_not_volunteer, volunteer_task: task, user: creator)
       vol_login!(creator)
       params = { volunteer_task_join: { user_id: creator.id, volunteer_task_id: task.id } }
@@ -253,7 +276,7 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("There must be at least one staff member assigned to this task.")
       expect([creator_join.reload.active, task.reload.user_id]).to eq([true, creator.id])
 
-      join.update!(active: true)
+      join.update!(active: true, state: "joined")
       post remove_volunteer_task_joins_path, params: params
       expect([creator_join.reload.active, task.reload.user_id]).to eq([false, volunteer.id])
     end

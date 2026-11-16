@@ -1,0 +1,2 @@
+<%= turbo_stream.update "flash", partial: "layouts/flash" %>
+<%= turbo_stream.append "flash", tag.span(data: { controller: "calendar-saved", calendar_saved_admin_calendar_outlet: "#admin_calendar", calendar_saved_unavailabilities_calendar_outlet: "#unavailabilities_calendar" }) %>

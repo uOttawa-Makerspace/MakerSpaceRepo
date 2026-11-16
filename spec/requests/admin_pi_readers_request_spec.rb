@@ -211,6 +211,32 @@ RSpec.describe "Admin pi readers", type: :request do
     expect(response.body).to include("Tapped at #{space.name}")
   end
 
+  it "looks the readers of the staff unlinked-cards menu up in one query however many cards it lists" do
+    sign_in_as(:staff)
+    create_list(:pi_reader, 5, space: space).each { |reader| create(:rfid, user: nil, mac_address: reader.pi_mac_address) }
+    queries = selects_on("pi_readers") { get user_path(create(:user, :regular_user).username) }
+    expect(response.body.scan("Tapped at #{space.name}").size).to eq(5)
+    expect(queries.size).to eq(1)
+  end
+
+  it "labels an unlinked card whose reader has no space or no registration as unknown" do
+    sign_in_as(:staff)
+    spaceless = create(:pi_reader, space: nil)
+    create(:rfid, user: nil, mac_address: spaceless.pi_mac_address)
+    create(:rfid, user: nil, mac_address: "de:ad:be:ef:00:01")
+    get user_path(create(:user, :regular_user).username)
+    expect(response.body.scan("Tapped at unknown").size).to eq(2)
+  end
+
+  it "lists the cards on the admin user edit page with their reader's location in one reader query" do
+    sign_in_as(:admin)
+    readers = create_list(:pi_reader, 3, space: space)
+    readers.each { |reader| create(:rfid, user: nil, mac_address: reader.pi_mac_address) }
+    queries = selects_on("pi_readers") { get edit_admin_user_path(create(:user, :regular_user)) }
+    expect(response.body).to include(readers.first.pi_location, readers.last.pi_location)
+    expect(queries.size).to eq(1)
+  end
+
   it "shows the register-reader form on the space edit page for an admin" do
     sign_in_as(:admin)
     get edit_admin_space_path(space)

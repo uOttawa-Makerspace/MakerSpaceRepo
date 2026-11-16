@@ -24,14 +24,6 @@ RSpec.describe "Coupon claim race", type: :request do
     User.unscoped.where(id: ids).delete_all
   end
 
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
-    end
-  end
-
   def blocked_backends
     ActiveRecord::Base.connection.select_value(
       "SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND datname = current_database()"
@@ -135,7 +127,7 @@ RSpec.describe "Coupon claim race", type: :request do
     expect(user_a.reload.wallet).to eq(10)
 
     expect(session_one.flash[:notice]).to eq("Discount Code created")
-    expect(session_two.flash[:alert]).to eq("Not enough CC points")
+    expect(session_two.flash[:alert]).to eq("Not enough CCs.")
   end
 
   it "two users, two coupons: the second waits for the first's coupon, then takes the next one" do

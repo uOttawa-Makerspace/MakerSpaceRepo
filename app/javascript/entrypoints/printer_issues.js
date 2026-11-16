@@ -1,25 +1,17 @@
-function testSummaryDuplicates(event) {
-  let summaryInput = document.querySelector("#printer_issue_summary");
-  let printer = document.querySelector("#printer_issue_printer").value;
-  if (issueSummary[printer] == undefined) return;
-  Object.keys(issueSummary[printer]).some((issue) => {
-    if (summaryInput.value.toLowerCase().includes(issue.toLowerCase())) {
-      document
-        .getElementById("printer_issue_summary")
-        .classList.add("is-invalid");
-      return true;
-    } else {
-      document
-        .getElementById("printer_issue_summary")
-        .classList.remove("is-invalid");
-    }
-  });
+const summaryInput = document.querySelector("#printer_issue_summary");
+const printerSelect = document.querySelector("#printer_issue_printer_id");
+
+function testSummaryDuplicates() {
+  const known = issueSummary[printerSelect.value];
+  if (known === undefined) return;
+  const text = summaryInput.value.toLowerCase();
+  const duplicate = Object.keys(known).some((issue) =>
+    text.includes(issue.toLowerCase()),
+  );
+  summaryInput.classList.toggle("is-invalid", duplicate);
 }
 
-if (typeof issueSummary != "undefined") {
-  let summaryInput = document.querySelector("#printer_issue_summary");
+if (typeof issueSummary != "undefined" && summaryInput && printerSelect) {
   summaryInput.addEventListener("input", testSummaryDuplicates);
-  document
-    .querySelector("#printer_issue_printer")
-    .addEventListener("input", testSummaryDuplicates);
+  printerSelect.addEventListener("input", testSummaryDuplicates);
 }

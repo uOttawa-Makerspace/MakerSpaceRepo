@@ -308,6 +308,19 @@ RSpec.describe "Static pages", type: :request do
       expect(recent).not_to include(priv)
     end
 
+    it "renders a card with the owner and photo for each of several recent repositories" do
+      repos = create_list(:repository, 3)
+      get root_path
+      expect(response).to have_http_status(:ok)
+      page = Nokogiri::HTML(response.body)
+      repos.each do |repo|
+        card = page.css("a.card").find { |node| node.text.include?(repo.title) }
+        expect(card).to be_present
+        expect(card.text).to include(repo.owner.username)
+        expect(card.at_css("img")["src"]).to include("active_storage")
+      end
+    end
+
     it "lists contact infos flagged show_hours (name order)" do
       create(:contact_info, name: "Zeta Lab", show_hours: true)
       create(:contact_info, name: "Alpha Lab", show_hours: true)
@@ -328,9 +341,9 @@ RSpec.describe "Static pages", type: :request do
       user.programs.create!(program_type: Program::VOLUNTEER)
       space = create(:space, name: "Task Lab")
       open_task = create(:volunteer_task, space: space, title: "Sweep the workshop floor")
-      closed_task = create(:volunteer_task, space: space, title: "Archived chore", status: "closed")
+      closed_task = create(:volunteer_task, space: space, title: "Archived chore", status: "completed")
       [open_task, closed_task].each do |task|
-        create(:volunteer_task_join, volunteer_task: task, user: user, active: true, user_type: "Volunteer")
+        create(:volunteer_task_join, :active, volunteer_task: task, user: user, user_type: "Volunteer")
       end
 
       get root_path
@@ -344,7 +357,7 @@ RSpec.describe "Static pages", type: :request do
       user = sign_in_as(:regular)
       user.programs.create!(program_type: Program::VOLUNTEER)
       task = create(:volunteer_task, space: nil, title: "Remote paperwork")
-      create(:volunteer_task_join, volunteer_task: task, user: user, active: true, user_type: "Volunteer")
+      create(:volunteer_task_join, :active, volunteer_task: task, user: user, user_type: "Volunteer")
 
       get root_path
 
@@ -369,17 +382,44 @@ RSpec.describe "Static pages", type: :request do
       expect(response.body.scan("list-header").size).to eq(1)
     end
 
+    it "leaves out a stored shadowing shift that has no start or end time" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      start_time = Time.zone.parse("2030-01-07 10:00")
+      create(:shadowing_hour, user: user, start_time: start_time, end_time: start_time + 3.hours)
+      create(:shadowing_hour, user: user).update_column(:end_time, nil)
+      create(:shadowing_hour, user: user).update_column(:start_time, nil)
+      create(:shadowing_hour, user: user).update_columns(start_time: nil, end_time: nil)
+
+      get root_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body.scan("10:00 - 13:00").size).to eq(1)
+    end
+
+    it "leaves out a task whose joins have all ended, however many rows there are" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      task = create(:volunteer_task, space: create(:space), title: "Twice ended chore")
+      create(:volunteer_task_join, :left, volunteer_task: task, user: user, user_type: "Volunteer")
+      create(:volunteer_task_join, :not_active, volunteer_task: task, user: user, user_type: "Volunteer")
+
+      get root_path
+
+      expect(response.body).not_to include("Twice ended chore")
+    end
+
     it "leaves out inactive joins and shows at most five tasks, newest first" do
       user = sign_in_as(:regular)
       user.programs.create!(program_type: Program::VOLUNTEER)
       space = create(:space)
       6.times do |i|
         task = create(:volunteer_task, space: space, title: "Chore number #{i}")
-        create(:volunteer_task_join, volunteer_task: task, user: user, active: true, user_type: "Volunteer",
+        create(:volunteer_task_join, :active, volunteer_task: task, user: user, user_type: "Volunteer",
                                      updated_at: i.hours.ago)
       end
       dropped = create(:volunteer_task, space: space, title: "Dropped chore")
-      create(:volunteer_task_join, volunteer_task: dropped, user: user, active: false, user_type: "Volunteer")
+      create(:volunteer_task_join, :not_active, volunteer_task: dropped, user: user, user_type: "Volunteer")
 
       get root_path
 
@@ -425,18 +465,95 @@ RSpec.describe "Static pages", type: :request do
       expect(controller.instance_variable_get(:@user_skills)).to eq([[session.training.name_en, session.level]])
     end
 
+    it "a guest gets empty member sections and neither program card" do
+      get root_path
+      %i[@user_skills @user_tracks @volunteer_program_shadowing_scheduled @volunteer_program_your_tasks].each do |ivar|
+        expect(controller.instance_variable_get(ivar)).to eq([])
+      end
+      expect(controller.instance_variable_get(:@hours_calendars)).not_to be_nil
+      expect(response.body).not_to include(I18n.t("home.volunteer_program.no_shifts_scheduled"))
+      expect(response.body).not_to include(I18n.t("home.development_program.no_devs"))
+      expect(response.body).not_to include('id="home-skills"')
+    end
+
+    it "shows a guest the public cards only" do
+      get root_path
+      headings = Nokogiri::HTML(response.body).css("h2").map { |h| h.text.squish }
+      expect(headings).to eq(["Shortcuts", "General Resources", "Welcome to MakerRepo", "Explore", "Makerstore",
+                              "Want to know when our next big event is happening?", "Workshops this week"])
+      expect(response.body).not_to include('id="home-userinfo"', 'id="home-skills"', I18n.t("home.badges.header"))
+    end
+
+    it "runs no member queries for a guest" do
+      sqls = selects_on("certifications", "learning_modules", "learning_module_tracks", "volunteer_task_joins",
+                        "shadowing_hours") { get root_path }
+      expect(response).to have_http_status(:ok)
+      expect(sqls).to be_empty
+    end
+
+    it "a signed-in member outside both programs sees the skills card but neither program card" do
+      sign_in_as(:regular)
+      get root_path
+      expect(response.body).to include('id="home-skills"', I18n.t("home.skills.no_skills"))
+      expect(response.body).not_to include(I18n.t("home.volunteer_program.no_shifts_scheduled"))
+      expect(response.body).not_to include(I18n.t("home.development_program.no_devs"))
+    end
+
+    it "lists at most five certifications as skills" do
+      user = sign_in_as(:regular)
+      6.times { create(:certification, user: user) }
+      get root_path
+      expect(controller.instance_variable_get(:@user_skills).size).to eq(5)
+      expect(response.body).not_to include(I18n.t("home.skills.no_skills"))
+    end
+
+    it "a volunteer with no shifts or tasks sees the empty volunteer card" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      get root_path
+      expect(response.body).to include(I18n.t("home.volunteer_program.no_shifts_scheduled"),
+                                        I18n.t("home.volunteer_program.no_tasks_assigned"))
+      expect(response.body).not_to include(I18n.t("home.development_program.no_devs"))
+    end
+
+    it "a development-program member with no tracks sees the empty development card" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::DEV_PROGRAM)
+      get root_path
+      expect(response.body).to include(I18n.t("home.development_program.no_devs"))
+      expect(response.body).not_to include(I18n.t("home.volunteer_program.no_shifts_scheduled"))
+    end
+
+    it "shows each training's completed tracks against every module of that training" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::DEV_PROGRAM)
+      training = create(:training, name_en: "Laser Cutting Basics")
+      modules = create_list(:learning_module, 3, training: training)
+      create(:learning_module_track, :completed, user: user, learning_module: modules[0])
+      create(:learning_module_track, user: user, learning_module: modules[1])
+      other = create(:learning_module, training: create(:training, name_en: "Soldering Basics"))
+      create(:learning_module_track, user: user, learning_module: other)
+
+      get root_path
+
+      expect(controller.instance_variable_get(:@user_tracks))
+        .to contain_exactly(["Laser Cutting Basics", "1/3"], ["Soldering Basics", "0/1"])
+      expect(response.body).to include("Laser Cutting Basics", "1/3")
+      expect(response.body).not_to include(I18n.t("home.development_program.no_devs"))
+    end
+
     it "locale param switches the page language and sticks in the session" do
       get root_path, params: { locale: "fr" }
       expect(response).to have_http_status(:ok)
-      expect(session[:locale]).to eq(:fr)
+      expect(session[:locale].to_s).to eq("fr")
       get root_path
-      expect(session[:locale]).to eq(:fr)
+      expect(session[:locale].to_s).to eq("fr")
     end
 
     it "ignores an unsupported locale param: default locale, bad value not stored" do
       get root_path, params: { locale: "xx" }
       expect(response).to have_http_status(:ok)
-      expect(session[:locale]).to eq(I18n.default_locale)
+      expect(session[:locale]).to be_nil
     end
 
     it "does not 500 on an unsupported locale already in the session" do
@@ -485,6 +602,73 @@ RSpec.describe "Static pages", type: :request do
     end
   end
 
+  describe "GET /hours (saved opening hours)" do
+    let!(:contact) { create(:contact_info, name: "Main Lab", show_hours: true) }
+
+    before do
+      contact.opening_hours.create!(
+        target_en: "Student hours", target_fr: "Horaires etudiants", closed_all_week: :open,
+        monday_closed_all_day: :open, monday_opening: "09:00", monday_closing: "17:30",
+        tuesday_closed_all_day: :closed, wednesday_closed_all_day: :hidden,
+        notes_en: "<div>Bring your card</div>", notes_fr: "<div>Apportez votre carte</div>"
+      )
+    end
+
+    it "shows each saved period as a table of days with times, closed days and notes" do
+      get hours_path
+
+      page = Nokogiri::HTML(response.body)
+      table = page.at_css("#opening-hours table")
+      expect(table.at_css("caption").text).to include("Student hours")
+      expect(page.at_css("#opening-hours").text).to include("Main Lab")
+      expect(table.css("th[scope=col]").map { |th| th.text.strip }).to eq(%w[Day Hours])
+      rows = table.css("tbody tr").to_h { |tr| [tr.at_css("th").text.strip, tr.at_css("td").text.strip] }
+      expect(rows["Monday"]).to eq("09:00 - 17:30")
+      expect(rows["Tuesday"]).to eq("CLOSED")
+      expect(rows).not_to have_key("Wednesday")
+      expect(page.at_css("#opening-hours").text).to include("Bring your card")
+    end
+
+    it "shows a day with only one time saved by that time alone" do
+      contact.opening_hours.create!(target_en: "Partial", target_fr: "Partiel", closed_all_week: :open,
+                                    thursday_closed_all_day: :open, thursday_opening: "10:00",
+                                    friday_closed_all_day: :open, friday_closing: "16:00")
+
+      get hours_path
+
+      rows = Nokogiri::HTML(response.body).css("#opening-hours section").last.css("tbody tr")
+      expect(rows.to_h { |tr| [tr.at_css("th").text.strip, tr.at_css("td").text.strip] }).to eq(
+        "Thursday" => "From 10:00", "Friday" => "Until 16:00"
+      )
+    end
+
+    it "shows the French text when the locale is French" do
+      get hours_path, params: { locale: "fr" }
+
+      expect(response.body).to include("Horaires etudiants", "Lundi", "Apportez votre carte")
+    end
+
+    it "says a period closed all week is closed and lists no days" do
+      contact.opening_hours.create!(target_en: "Summer", target_fr: "Ete", closed_all_week: :closed)
+
+      get hours_path
+
+      summer = Nokogiri::HTML(response.body).css("#opening-hours section").find { |node| node.text.include?("Summer") }
+      expect(summer.text).to include("CLOSED")
+      expect(summer.css("table")).to be_empty
+    end
+
+    it "leaves out periods hidden for the week and contacts not flagged to show hours" do
+      contact.opening_hours.create!(target_en: "Secret", target_fr: "Secret", closed_all_week: :hidden)
+      other = create(:contact_info, name: "Other Lab", show_hours: false)
+      other.opening_hours.create!(target_en: "Other hours", target_fr: "Autres", closed_all_week: :open)
+
+      get hours_path
+
+      expect(response.body).not_to include("Secret", "Other hours")
+    end
+  end
+
   describe "GET /hours.json" do
     it "is an empty list while no contact info is flagged show_hours" do
       create(:contact_info, name: "Unlisted", show_hours: false)
@@ -529,19 +713,18 @@ RSpec.describe "Static pages", type: :request do
       expect(json.first["events"]).to eq([])
     end
 
-    # Happy path: what production serves to the homepage / hours FullCalendar
-    # (app/javascript/entrypoints/fullcalendar_setup_homepage.js). Time is frozen
-    # because parse_ics_calendar drops NON-recurring events (and modified instances)
-    # that ended > 2 months ago; recurring series are never dropped.
-    # Date#to_time inside safe_to_time uses the PROCESS time zone, so the examples
-    # pin TZ explicitly. Most pin UTC process-zone behaviour; the production host's
-    # TZ is UNVERIFIED (staging Docker sets none).
-    # One example also pins America/Toronto so both host configurations are characterized.
+    # Happy path: what production serves to the opening-hours calendar of the home and hours pages
+    # (app/javascript/controllers/hours_calendar_controller.js): the occurrences of each calendar in the range the
+    # calendar asks for, as Toronto times with their offset. Time is frozen because events (and modified instances)
+    # that ended more than 2 months ago, and series whose last occurrence was, are left out. The examples run under
+    # a UTC process zone (the Docker image sets no TZ); one example also runs under America/Toronto.
     describe "happy path with a Google-style ICS feed" do
       let(:feed_url) { "https://calendar.example.test/feed.ics" }
       let(:ics) { File.binread(Rails.root.join("spec/fixtures/files/open_hours_google.ics")) }
       let(:source_id) { Digest::MD5.hexdigest(feed_url) }
       let(:process_tz) { "UTC" }
+      # The two weeks around the 2026-11-01 clock change.
+      let(:range) { { start: "2026-10-25", end: "2026-11-08" } }
 
       around do |example|
         original_tz = ENV["TZ"]
@@ -551,8 +734,8 @@ RSpec.describe "Static pages", type: :request do
         ENV["TZ"] = original_tz
       end
 
-      def fetch_sources
-        get open_hours_path
+      def fetch_sources(params = range)
+        get open_hours_path, params: params
         expect(response).to have_http_status(:ok)
         expect(response.media_type).to eq("application/json")
         JSON.parse(response.body)
@@ -561,6 +744,9 @@ RSpec.describe "Static pages", type: :request do
       def event_named(source, id)
         source["events"].find { |e| e["id"] == id }
       end
+
+      # The id of the weekly series' occurrence at a Toronto wall time.
+      def weekly_at(*wall) = "weekly-1@google.com@#{RecurrenceRule::ZONE.local(*wall).to_i}"
 
       context "with one space calendar and an explicit color" do
         let!(:space) { create(:space, name: "Makerspace") }
@@ -573,140 +759,101 @@ RSpec.describe "Static pages", type: :request do
           stub_request(:get, feed_url).to_return(status: 200, body: ics)
         end
 
-        it "returns one event source keyed by the MD5 of the feed URL, carrying the stored color and 5 events" do
+        it "returns one event source keyed by the MD5 of the feed URL, carrying the stored color and the occurrences" do
           expect(sources.size).to eq(1)
-          # the source has only id/color/events. There is NO source-level "name"; the JS reads the
-          # name from events[0].extendedProps.name, so a source with zero events gets no filter checkbox.
           expect(source.keys).to eq(%w[id color events])
           expect(source["id"]).to eq(source_id)
           expect(source["color"]).to eq("#112233")
           expect(source["events"].map { |e| e["id"] }).to eq(
-            ["oneoff-1@google.com", "allday-1@google.com", "weekly-1@google.com",
-             "weekly-1@google.com_1793628000", "old-series-1@google.com"]
+            ["oneoff-1@google.com", "allday-1@google.com", weekly_at(2026, 10, 26, 9), weekly_at(2026, 11, 4, 9),
+             "weekly-1@google.com_1793628000"]
           )
           expect(source["events"].map { |e| e.dig("extendedProps", "name") }.uniq).to eq(["Makerspace"])
           expect(source["events"].map { |e| e["groupId"] }.uniq).to eq([source_id])
         end
 
-        it "emits a one-off timed event as Toronto wall-clock strings without offset" do
+        it "sends the current week when no range is given" do
+          expect(fetch_sources({})).to eq(fetch_sources(start: "2026-10-25", end: "2026-11-01"))
+          expect(fetch_sources({}).first["events"].map { |e| e["id"] })
+            .to eq(["oneoff-1@google.com", "allday-1@google.com", weekly_at(2026, 10, 26, 9)])
+        end
+
+        it "emits a one-off timed event as Toronto time with its offset" do
           expect(event_named(source, "oneoff-1@google.com")).to eq(
             "id" => "oneoff-1@google.com",
             "groupId" => source_id,
             "title" => "Special Tour",
-            "extendedProps" => { "name" => "Makerspace", "description" => "Guest tour" },
+            "extendedProps" => { "name" => "Makerspace", "description" => "Guest tour", "occurrenceStart" => "2026-10-29T14:00:00Z" },
             "allDay" => false,
             "display" => "auto",
-            "start" => "2026-10-29T10:00:00",
-            "end" => "2026-10-29T12:00:00"
+            "start" => "2026-10-29T10:00:00-04:00",
+            "end" => "2026-10-29T12:00:00-04:00"
           )
         end
 
-        # DTSTART;VALUE=DATE:20261030 (a single all-day Oct 30) is emitted as a timed
-        # window 2026-10-29T20:00 -> 2026-10-30T20:00. Date#to_time is midnight in the PROCESS zone
-        # (UTC here), then converted to Toronto (-4h), so it lands on the previous evening.
-        # The calendar expects "2026-10-30" / "2026-10-31" (or midnight Toronto). With allDay: true
-        # FullCalendar keeps only the date part, so the closure shows on Oct 29, one day early.
-        it "emits an all-day event with allDay true but a shifted, timed start/end under a UTC process zone" do
-          expect(event_named(source, "allday-1@google.com")).to eq(
-            "id" => "allday-1@google.com",
-            "groupId" => source_id,
-            "title" => "Closed for Maintenance",
-            "extendedProps" => { "name" => "Makerspace", "description" => "" },
-            "allDay" => true,
-            "display" => "auto",
-            "start" => "2026-10-29T20:00:00",
-            "end" => "2026-10-30T20:00:00"
+        # DTSTART;VALUE=DATE:20261030 is the calendar date Oct 30 in Toronto, whatever the process zone.
+        it "emits an all-day event on its own dates under a UTC process zone" do
+          expect(event_named(source, "allday-1@google.com")).to include(
+            "title" => "Closed for Maintenance", "allDay" => true, "start" => "2026-10-30", "end" => "2026-10-31"
           )
         end
 
         context "when the process zone is America/Toronto" do
           let(:process_tz) { "America/Toronto" }
 
-          # Same feed, different host TZ: the all-day event is correct only in this configuration.
-          it "emits the all-day event at Toronto midnight (the date the calendar intends)" do
+          it "emits the same all-day event" do
             event = event_named(source, "allday-1@google.com")
-            expect(event).to include("allDay" => true, "start" => "2026-10-30T00:00:00", "end" => "2026-10-31T00:00:00")
+            expect(event).to include("allDay" => true, "start" => "2026-10-30", "end" => "2026-10-31")
           end
         end
 
-        it "emits the weekly recurring event as a multi-line rrule string, a duration in ms, and exdates" do
-          expect(event_named(source, "weekly-1@google.com")).to eq(
-            "id" => "weekly-1@google.com",
+        it "emits each occurrence of the weekly series in the range, without a repeat rule" do
+          expect(event_named(source, weekly_at(2026, 10, 26, 9))).to eq(
+            "id" => weekly_at(2026, 10, 26, 9),
             "groupId" => source_id,
             "title" => "Open Hours",
             # DESCRIPTION is folded in the feed (CRLF + space, RFC 5545 3.1) and "\," is an escaped comma
             "extendedProps" => {
               "name" => "Makerspace",
-              "description" => "Regular hours - open to all members, bring your membership card and wear closed-toe shoes on the shop floor."
+              "description" => "Regular hours - open to all members, bring your membership card and wear closed-toe shoes on the shop floor.",
+              "occurrenceStart" => "2026-10-26T13:00:00Z"
             },
             "allDay" => false,
             "display" => "auto",
-            "start" => "2026-10-26T09:00:00",
-            "end" => "2026-10-26T17:00:00",
-            # rrule is a newline-joined STRING (DTSTART/RRULE/EXDATE lines), not an
-            # object; it relies on @fullcalendar/rrule parsing it. DTSTART/EXDATE are Toronto wall-clock with
-            # no TZID/Z while UNTIL stays UTC ("Z"), so the two are in different frames of reference.
-            "rrule" => "DTSTART:20261026T090000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20261221T235959Z\n" \
-                       "EXDATE:20261028T090000\nEXDATE:20261102T090000",
-            "duration" => 28_800_000
+            "start" => "2026-10-26T09:00:00-04:00",
+            "end" => "2026-10-26T17:00:00-04:00"
           )
+          expect(source["events"]).to all(satisfy { |e| !e.key?("rrule") && !e.key?("duration") })
         end
 
-        it "suppresses the overridden slot in the series via EXDATE and emits the override exactly once" do
-          rrule = event_named(source, "weekly-1@google.com")["rrule"]
-          # Removing the RECURRENCE-ID -> EXDATE conversion drops this line and the series would
-          # render a second 09:00 event on 2026-11-02 next to the override.
-          expect(rrule.split("\n")).to include("EXDATE:20261102T090000")
+        it "leaves out the exception date and the overridden slot, and emits the override exactly once" do
+          starts = source["events"].select { |e| e["title"] == "Open Hours" }.map { |e| e["start"] }
+          expect(starts).to eq(%w[2026-10-26T09:00:00-04:00 2026-11-04T09:00:00-05:00])
           override_id = "weekly-1@google.com_1793628000"
           expect(source["events"].count { |e| e["id"] == override_id }).to eq(1)
           # The id suffix 1793628000 is the RECURRENCE-ID epoch: 2026-11-02T14:00:00Z == 09:00 EST (the original slot).
-          # Override is its own event: no rrule/duration/display keys.
-          expect(event_named(source, override_id)).to eq(
-            "id" => override_id,
-            "groupId" => source_id,
+          expect(event_named(source, override_id)).to include(
             "title" => "Open Hours (late start)",
-            "extendedProps" => { "name" => "Makerspace", "description" => "Late start" },
-            "allDay" => false,
-            "start" => "2026-11-02T13:00:00",
-            "end" => "2026-11-02T17:00:00"
+            "extendedProps" => { "name" => "Makerspace", "description" => "Late start", "occurrenceStart" => "2026-11-02T18:00:00Z" },
+            "start" => "2026-11-02T13:00:00-05:00",
+            "end" => "2026-11-02T17:00:00-05:00"
           )
         end
 
         it "keeps Toronto wall-clock on both sides of the 2026-11-01 DST change (EDT then EST)" do
-          series = event_named(source, "weekly-1@google.com")
-          override = event_named(source, "weekly-1@google.com_1793628000")
-          # October (EDT, UTC-4): 09:00 local == 13:00Z; the emitted strings are local wall-clock
-          expect(series["start"]).to eq("2026-10-26T09:00:00")
-          expect(series["end"]).to eq("2026-10-26T17:00:00")
-          expect(series["rrule"].split("\n").first).to eq("DTSTART:20261026T090000")
-          # November (EST, UTC-5): 13:00 local == 18:00Z
-          expect(override["start"]).to eq("2026-11-02T13:00:00")
-          expect(override["end"]).to eq("2026-11-02T17:00:00")
-          expect(series["rrule"].split("\n")).to include("EXDATE:20261102T090000")
-        end
-
-        it "emits every timed event's start/end as offset-free Toronto wall-clock (no Z, no +hh:mm)" do
           timed = source["events"].reject { |e| e["allDay"] }
-          expect(timed).not_to be_empty
-          expect(timed.flat_map { |e| [e["start"], e["end"]] }).to all(match(/\A\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\z/))
+          expect(timed.flat_map { |e| [e["start"], e["end"]] }).to all(match(/\A\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d-0[45]:00\z/))
+          expect(event_named(source, weekly_at(2026, 11, 4, 9)).values_at("start", "end"))
+            .to eq(%w[2026-11-04T09:00:00-05:00 2026-11-04T17:00:00-05:00])
         end
 
         it "drops non-recurring events that ended more than 2 months ago" do
-          expect(event_named(source, "old-oneoff-1@google.com")).to be_nil
-          expect(source["events"].map { |e| e["title"] }).not_to include("Old Workshop")
+          expect(fetch_sources(start: "2026-06-07", end: "2026-06-14").first["events"].map { |e| e["title"] }).not_to include("Old Workshop")
         end
 
-        it "drops a modified instance that ended more than 2 months ago, but keeps its recurring parent" do
-          # old override (RECURRENCE-ID 2026-06-08) is absent; the parent series is still emitted (it has an rrule)
-          # and still EXDATEs the overridden slot.
-          expect(source["events"].map { |e| e["title"] }).not_to include("Spring Hours (late start)")
-          expect(source["events"].map { |e| e["id"] }.select { |id| id.start_with?("old-series-1@google.com_") }).to eq([])
-          # a series whose UNTIL ended four months ago is still emitted (rrule, EXDATEs), so the
-          # payload grows as feeds age. A fix that drops ended series should flip this expectation.
-          parent = event_named(source, "old-series-1@google.com")
-          expect(parent["rrule"]).to eq(
-            "DTSTART:20260601T090000\nRRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20260629T235959Z\nEXDATE:20260608T090000"
-          )
+        it "drops a series that ended more than 2 months ago together with its old modified instance" do
+          titles = fetch_sources(start: "2026-06-01", end: "2026-06-30").first["events"].map { |e| e["title"] }
+          expect(titles).to eq([])
         end
       end
 
@@ -822,13 +969,16 @@ RSpec.describe "Static pages", type: :request do
     it "emails the report to the support inbox for a signed-in user (via POST)" do
       user = sign_in_as(:regular)
       deliveries.clear
-      post report_repository_path(repo), headers: { "HTTP_REFERER" => "http://www.example.com/back" }
+      perform_enqueued_jobs do
+        post report_repository_path(repo), headers: { "HTTP_REFERER" => "http://www.example.com/back" }
+      end
       expect(response).to redirect_to("http://www.example.com/back")
       expect(flash[:alert]).to eq("Repository has been reported")
       expect(deliveries.size).to eq(1)
       expect(deliveries.last.to).to eq(["uottawa.makerepo@gmail.com"])
       expect(deliveries.last.subject).to eq("Repository #{repo.title} reported")
-      expect(deliveries.last.from).to eq([user.email])
+      expect(deliveries.last.from).to eq(["ceedinfo@makerepo.com"])
+      expect(deliveries.last.reply_to).to eq([user.email])
     end
 
     it "redirects to root when there is no referer" do
@@ -849,13 +999,44 @@ RSpec.describe "Static pages", type: :request do
     it "renders the report as a confirm-guarded POST button on the repository page" do
       sign_in_as(:regular)
       get repository_path(repo.user_username, repo)
-      expect(response.body).to match(%r{<form[^>]*data-turbo-confirm=[^>]*action="/report_repository/#{repo.id}"|<form[^>]*action="/report_repository/#{repo.id}"[^>]*data-turbo-confirm=})
+      form = Nokogiri::HTML5(response.body).at_css(%(form[action="/report_repository/#{repo.id}"]))
+      expect(form.at_css("button[disabled][data-controller='confirmation']")["data-confirmation-message-value"]).to be_present
     end
 
     it "raises RecordNotFound for an unknown repository (signed in)" do
       sign_in_as(:regular)
       post report_repository_path(repository_id: 0)
       expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe "recently opened list on the homepage" do
+    it "shows only links that are paths on this site and renders the page for a tampered cookie" do
+      sign_in_as(:regular)
+      cookie = {
+        "/someone/12" => "Good one",
+        "//evil.example/x" => "Protocol relative",
+        "javascript:alert(1)" => "Script link",
+        "https://evil.example/" => "Absolute link",
+        "/\\evil.example" => "Backslash",
+        "/\t/evil.example" => "Tab",
+        "/someone/13" => ["not", "a title"]
+      }
+      cookies[:recently_viewed] = JSON.generate(cookie)
+      get root_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('<a href="/someone/12">').and include("Good one")
+      %w[evil.example javascript:alert Protocol Script Absolute Backslash].each { |text| expect(response.body).not_to include(text) }
+      expect(response.body).not_to include("Tab</a>")
+    end
+
+    it "says nothing was opened when the cookie holds no usable link" do
+      sign_in_as(:regular)
+      cookies[:recently_viewed] = '{"javascript:alert(1)":"x"}'
+      get root_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("javascript:alert")
+      expect(response.body).to include(I18n.t("home.shortcuts.no_recently_opened"))
     end
   end
 end

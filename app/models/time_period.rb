@@ -10,8 +10,8 @@ class TimePeriod < ApplicationRecord
     tp =
       TimePeriod.where(
         "start_date <= ? AND end_date >= ?",
-        Date.today,
-        Date.today
+        Date.current,
+        Date.current
       )
 
     time_period = nil

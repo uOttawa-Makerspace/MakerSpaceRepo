@@ -17,12 +17,12 @@ class FaqsController < SessionsController
   def create
     @faq = Faq.new(faq_params)
     if @faq.save
-      flash[:notice] = "Created FAQ successfully"
+      flash.now[:notice] = "Created FAQ successfully"
       # make way for new faq
       @faq = Faq.new
       render :new
     else
-      flash[:alert] = "Created FAQ successfully"
+      flash.now[:alert] = validation_message(@faq, "errors.faqs.not_created")
       render :new, status: :unprocessable_content
     end
   end

@@ -9,7 +9,7 @@ class JobOrderMailerPreview < ActionMailer::Preview
 
   def send_job_quote
     job_order = JobOrder.last || create_job_order_with_statuses
-    JobOrderMailer.send_job_quote(JobOrder.find(454).id)
+    JobOrderMailer.send_job_quote(job_order.id)
   end
 
   def send_job_quote_reminder
@@ -35,6 +35,11 @@ class JobOrderMailerPreview < ActionMailer::Preview
   def send_job_completed_with_default_message
     job_order = JobOrder.last || create_job_order_with_files
     JobOrderMailer.send_job_completed(job_order.id, nil)
+  end
+
+  def payment_succeeded_with_message
+    job_order = JobOrder.last || create_job_order_with_files
+    JobOrderMailer.payment_succeeded(job_order.id, "Your items are ready for pickup at the front desk.")
   end
 
   def payment_succeeded

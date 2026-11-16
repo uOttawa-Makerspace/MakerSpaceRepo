@@ -23,7 +23,7 @@ module StaffDashboardHelper
   private
 
   def visit_text(visit)
-    "#{time_ago_in_words(visit.sign_out_time)} ago at #{space_names[visit.space_id]}" if visit
+    t("staff_dashboard.visit", time: time_ago_in_words(visit.sign_out_time), space: space_names[visit.space_id]) if visit
   end
 
   # Space names by id: the rows name spaces other than the one on screen.

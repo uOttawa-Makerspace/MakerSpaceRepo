@@ -31,14 +31,14 @@ Instructions for anyone, human or AI agent, changing this repository. MakerRepo 
 - **No side effects in model callbacks**, including `after_commit`. Mail, job enqueues, HTTP calls and writes to other models are called explicitly by the controller, job, webhook or rake task that owns the operation, after its transaction commits. Callbacks may only normalise the record's own attributes.
 - **Complexity may not go up.** No method may newly exceed a cyclomatic complexity of 7, and a method already above it may not grow (RuboCop `Metrics/CyclomaticComplexity`, ESLint `complexity`). Extract well-named private methods instead.
 - **Coverage may not go down**, for lines or branches, in Ruby or JavaScript. New branches need specs that take them.
-- Authorization: Pundit policies, with policy methods delegating to model predicates (for example `rental.editable_by?(user)`).
+- **Authorization lives on the model.** A rule is a positive predicate on the model (for example `rental.editable_by?(user)`), and the controller checks it, through a concern named for the capability when several controllers share it. No Pundit and no policy classes.
 - Style follows the 37signals conventions (rich models, concerns named for a capability, REST resources for state changes, positive naming), except where this file says otherwise.
 - Repeated UI is built as ViewComponents (`app/components/`), each with its Stimulus controller and scoped CSS beside it; one-off markup stays a partial. New JavaScript is Stimulus controllers that touch only their own element: nothing on `window`, no document-wide queries.
 - Do not change the request or response contract of `/api/v1` (documented in `doc/api/v1/`) or the endpoints used by the staff app and Design Day without coordinating with those front ends.
 
 ## Tests
 
-- Run the whole suite in parallel: `bundle exec rake parallel:setup` once, then `bin/parallel_rspec`. CI runs `CI=1 COVERAGE=1 bin/parallel_rspec`.
+- Run the whole suite in parallel: `bundle exec rake parallel:setup` once, then `bin/parallel_rspec`. CI runs `CI=1 COVERAGE=1 bin/parallel_rspec` split into three shards (`SPEC_SHARD=1/3` to `3/3`) and merges their coverage; see `doc/maintenance.md`.
 - Run targeted specs with `bundle exec rspec <paths>`.
 - JavaScript: `yarn test:js`, `yarn lint:js`, `yarn typecheck:js`. ERB: `bin/erb-lint`.
 - Security checks CI also runs: `bundle exec brakeman -w2`, `bundle exec bundle-audit check --update`, `bundle exec ruby-audit check`.

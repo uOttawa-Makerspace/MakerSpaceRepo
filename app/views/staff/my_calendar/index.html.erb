@@ -1,11 +1,13 @@
 <% provide(:title, 'My Work Calendar') %>
-<%= vite_javascript_tag 'my_calendar' %>
 
 <div class="my-4">
     <h1>My Work Schedule</h1>
     <p>Your assigned shifts, trainings, meetings, etc. are shown below. <%= link_to "View and manage your unavailabilities here", "/staff/unavailabilities", data: { turbo: true } %>.</p>
 </div>
 
+<% if @space_id.blank? %>
+    <p class="alert alert-info">You are not assigned to any space yet, so there is no calendar to show. Ask an admin to assign you to a space.</p>
+<% else %>
 <div class="mt-4">
     <%= form_tag staff_dashboard_change_space_path, method: :put do %>
         <div class="input-group mb-3">
@@ -16,12 +18,14 @@
     <% end %>
 </div>
 
-<div id="calendar_container">
-    <div id="calendar"></div>
-</div>
+<div data-controller="my-calendar" data-my-calendar-feed-url-value="<%= json_staff_my_calendar_index_path(@space_id) %>">
+    <div id="calendar_container" data-my-calendar-target="container">
+        <div id="calendar" data-my-calendar-target="calendar" <%= tag.attributes(data: calendar_texts_data) %>></div>
+    </div>
 
-<div id="spinner_container">
-    <div id='spinner' class="spinner-border" role="status"></div>
+    <div id="spinner_container" data-my-calendar-target="spinner">
+        <div id='spinner' class="spinner-border" role="status"></div>
+    </div>
 </div>
 
 <style>
@@ -58,3 +62,4 @@
         text-align: center;
     }
 </style>
+<% end %>

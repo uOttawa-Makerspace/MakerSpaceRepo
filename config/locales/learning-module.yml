@@ -1,16 +1,218 @@
 en:
   learning_area:
     no_training: Other modules
+    title: "Learning Area"
+    edit: "Edit"
+    levels:
+      general: "General"
+      beginner: "Beginner"
+      intermediate: "Intermediate"
+      advanced: "Advanced"
+    scorm_statuses:
+      pending: "Pending"
+      processing: "Processing"
+      ready: "Ready"
+      failed: "Failed"
+    index:
+      heading: "Learning Modules"
+      lead: "Track your progress across all training areas"
+      new_module: "New learning module"
+      completed_count: "%{done} of %{total} completed"
+      top: "Top"
+      subskills: "Subskills"
+      reorder: "Re-order"
+    content:
+      ready_to_start: "Ready to start?"
+      not_begun: "You haven't begun this module yet."
+      start: "Start Module"
+      in_progress: "In Progress"
+      mark_when_done: "Mark this module as complete when you're done."
+      mark_completed: "Mark Completed"
+      completed: "You've completed this module — great work!"
+      project_files: "Project Files"
+      file_size_kb: "%{size} KB"
+    scorm:
+      copy_permalink: "Copy permalink"
+      fullscreen: "Fullscreen"
+      javascript_needed: "You need to have javascript enabled to view this learning module!"
+      open_elsewhere: "Module is open in another tab. Close it to resume here."
+      loading: "Loading..."
+      processing_heading: "SCORM package is processing"
+      processing_text: "We are extracting the course files and preparing the media player. This page will automatically update once it's ready."
+    scorm_problem:
+      failed: "SCORM Extraction Failed"
+      stalled: "SCORM Extraction Stalled"
+      valid_package_html: "Please make sure the upload is a valid SCORM 1.2 or 2004 <code>.zip</code> file containing an <code>imsmanifest.xml</code>."
+      retry: "Retry extraction"
+      unavailable: "This module is not available yet. Please check back later."
+      not_processed: "The package could not be processed."
+      not_finished: "Extraction did not finish. The background worker may not be running."
+    new:
+      title: "New Learning Module"
+    edit_page:
+      title: "Edit Learning Module"
+      scorm_status_html: "SCORM package status: <strong>%{status}</strong>"
+    subskill:
+      back: "Back"
+    form:
+      title: "Title"
+      title_placeholder: "Title of the learning module…"
+      description_placeholder: "Description of the learning module…"
+      wiki_hint_html: "You can input a <code>wiki.makerepo.com</code> link and the page will be displayed."
+      shortcut: "Shortcut permanent link to this learning module"
+      shortcut_hint: "Only letters, numbers, and underscores"
+      subskill: "Subskill (optional)"
+      subskill_blank: "Select or type a new subskill..."
+      subskill_hint: "Learning modules with the same subskill become merged together and accessible under a subskill page"
+      scorm_toggle: "SCORM package"
+      scorm_toggle_hint_html: "Enable if uploading a SCORM <code>.zip</code> file instead of regular project files."
+      project_files: "Project Files"
+      videos: "Videos"
+      file_size_mb: "%{size} MB"
+      gallery: "Gallery"
+      drag_drop: "Drag & Drop files here"
+      scorm_package: "SCORM Package (.zip)"
+      download_current_html: "Download current scorm package: %{link}"
+      scorm_upload_hint_html: "Upload a valid SCORM <code>.zip</code> package."
+      save: "Save Changes"
+      create: "Create Learning Module"
+      saving: "Saving (Please wait)..."
+      large_upload_hint: "Uploading large SCORM zip files may take a minute. Please do not close or refresh this page."
+    flash:
+      created: "Learning Module has been successfully created."
+      deleted: "Learning Module has been successfully deleted."
+      updated: "Learning module successfully updated."
+      retry_queued: "SCORM extraction has been queued again."
+      retry_refused: "SCORM extraction is not retryable right now."
+      reordered: "Successfully reordered the learning modules!"
   learning_module_track:
     status:
       not_started: Not started
       in_progress: In progress
       completed: Completed
+    status_label: "Status: %{status}"
+    level_short:
+      beginner: "Beg"
+      intermediate: "Int"
+      advanced: "Adv"
+      master: "Master"
+    index:
+      skills: "Skills"
+      no_trainings: "No trainings for this skill"
+      modules_finished: "Modules finished : %{done} / %{total}"
+      next_modules: "Next modules to complete :"
+      no_certification: "None"
+    flash:
+      not_found: "That learning module could not be found."
+      started: "You have successfully started the learning module !"
+      completed: "You have successfully completed the learning module !"
+      own_completion: "This learning module records its own completion."
 fr:
   learning_area:
     no_training: Autres modules
+    title: "Zone d'apprentissage"
+    edit: "Modifier"
+    levels:
+      general: "Général"
+      beginner: "Débutant"
+      intermediate: "Intermédiaire"
+      advanced: "Avancé"
+    scorm_statuses:
+      pending: "En attente"
+      processing: "En traitement"
+      ready: "Prêt"
+      failed: "Échec"
+    index:
+      heading: "Modules d'apprentissage"
+      lead: "Suivez votre progression dans tous les domaines de formation"
+      new_module: "Nouveau module d'apprentissage"
+      completed_count: "%{done} sur %{total} terminé(s)"
+      top: "Haut de page"
+      subskills: "Sous-compétences"
+      reorder: "Réordonner"
+    content:
+      ready_to_start: "Prêt à commencer?"
+      not_begun: "Vous n'avez pas encore commencé ce module."
+      start: "Commencer le module"
+      in_progress: "En cours"
+      mark_when_done: "Marquez ce module comme terminé lorsque vous aurez fini."
+      mark_completed: "Marquer comme terminé"
+      completed: "Vous avez terminé ce module — beau travail!"
+      project_files: "Fichiers du projet"
+      file_size_kb: "%{size} Ko"
+    scorm:
+      copy_permalink: "Copier le lien permanent"
+      fullscreen: "Plein écran"
+      javascript_needed: "Vous devez activer JavaScript pour voir ce module d'apprentissage!"
+      open_elsewhere: "Le module est ouvert dans un autre onglet. Fermez-le pour continuer ici."
+      loading: "Chargement..."
+      processing_heading: "Le paquet SCORM est en traitement"
+      processing_text: "Nous extrayons les fichiers du cours et préparons le lecteur multimédia. Cette page se mettra à jour automatiquement dès qu'il sera prêt."
+    scorm_problem:
+      failed: "L'extraction SCORM a échoué"
+      stalled: "L'extraction SCORM est bloquée"
+      valid_package_html: "Assurez-vous que le fichier téléversé est un fichier <code>.zip</code> SCORM 1.2 ou 2004 valide contenant un fichier <code>imsmanifest.xml</code>."
+      retry: "Relancer l'extraction"
+      unavailable: "Ce module n'est pas encore disponible. Veuillez revenir plus tard."
+      not_processed: "Le paquet n'a pas pu être traité."
+      not_finished: "L'extraction ne s'est pas terminée. Le processus d'arrière-plan n'est peut-être pas en marche."
+    new:
+      title: "Nouveau module d'apprentissage"
+    edit_page:
+      title: "Modifier le module d'apprentissage"
+      scorm_status_html: "Statut du paquet SCORM : <strong>%{status}</strong>"
+    subskill:
+      back: "Retour"
+    form:
+      title: "Titre"
+      title_placeholder: "Titre du module d'apprentissage…"
+      description_placeholder: "Description du module d'apprentissage…"
+      wiki_hint_html: "Vous pouvez entrer un lien <code>wiki.makerepo.com</code> et la page sera affichée."
+      shortcut: "Lien permanent abrégé vers ce module d'apprentissage"
+      shortcut_hint: "Lettres, chiffres et traits de soulignement seulement"
+      subskill: "Sous-compétence (facultatif)"
+      subskill_blank: "Choisissez ou entrez une nouvelle sous-compétence..."
+      subskill_hint: "Les modules d'apprentissage ayant la même sous-compétence sont regroupés et accessibles sur une page de sous-compétence"
+      scorm_toggle: "Paquet SCORM"
+      scorm_toggle_hint_html: "Activez cette option pour téléverser un fichier <code>.zip</code> SCORM au lieu de fichiers de projet ordinaires."
+      project_files: "Fichiers du projet"
+      videos: "Vidéos"
+      file_size_mb: "%{size} Mo"
+      gallery: "Galerie"
+      drag_drop: "Glissez-déposez les fichiers ici"
+      scorm_package: "Paquet SCORM (.zip)"
+      download_current_html: "Télécharger le paquet SCORM actuel : %{link}"
+      scorm_upload_hint_html: "Téléversez un paquet <code>.zip</code> SCORM valide."
+      save: "Enregistrer les modifications"
+      create: "Créer le module d'apprentissage"
+      saving: "Enregistrement (veuillez patienter)..."
+      large_upload_hint: "Le téléversement de gros fichiers zip SCORM peut prendre une minute. Veuillez ne pas fermer ni actualiser cette page."
+    flash:
+      created: "Le module d'apprentissage a été créé."
+      deleted: "Le module d'apprentissage a été supprimé."
+      updated: "Le module d'apprentissage a été modifié."
+      retry_queued: "L'extraction SCORM a été remise en file d'attente."
+      retry_refused: "L'extraction SCORM ne peut pas être relancée pour le moment."
+      reordered: "Les modules d'apprentissage ont été réordonnés!"
   learning_module_track:
     status:
       not_started: Non commencé
       in_progress: En cours
       completed: Complète
+    status_label: "Statut : %{status}"
+    level_short:
+      beginner: "Déb"
+      intermediate: "Int"
+      advanced: "Ava"
+      master: "Maître"
+    index:
+      skills: "Compétences"
+      no_trainings: "Aucune formation pour cette compétence"
+      modules_finished: "Modules terminés : %{done} / %{total}"
+      next_modules: "Prochains modules à terminer :"
+      no_certification: "Aucune"
+    flash:
+      not_found: "Ce module d'apprentissage est introuvable."
+      started: "Vous avez commencé le module d'apprentissage!"
+      completed: "Vous avez terminé le module d'apprentissage!"
+      own_completion: "Ce module d'apprentissage indique lui-même quand il est terminé."

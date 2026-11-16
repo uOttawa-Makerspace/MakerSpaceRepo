@@ -1,122 +1,105 @@
-import TomSelect from "tom-select";
-import DataTable from "datatables.net-bs5";
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
-document.addEventListener("turbo:load", () => {
-  [...document.getElementsByClassName("pp-status-button")].forEach(
-    function (element) {
-      if (element.innerHTML === "Revoked") {
-        element.classList.add("btn-danger");
-      } else if (element.innerHTML === "Awarded") {
-        element.classList.add("btn-success");
-      } else {
-        element.classList.add("btn-warning");
-      }
-    },
-  );
-  if (document.getElementById("training_requirements")) {
-    if (!document.getElementById("training_requirements").tomselect) {
-      new TomSelect("#training_requirements", {
-        plugins: ["remove_button"],
-        maxItems: null,
-      });
-    }
+import { bindInputRows } from "../src/input_rows.js";
+import { oncePerElement, onEveryPageLoad } from "../src/on_page.js";
+import { pageTable } from "../src/page_table.js";
+// Colours each status button by its status.
+function colourStatusButton(element) {
+  if (element.innerHTML === "Revoked") {
+    element.classList.add("btn-danger");
+  } else if (element.innerHTML === "Awarded") {
+    element.classList.add("btn-success");
+  } else {
+    element.classList.add("btn-warning");
   }
-  let form =
-    document.getElementById("new_proficient_project") ||
-    document.getElementsByClassName("edit_proficient_project")[0];
-  if (form) {
-    form.addEventListener("submit", (e) => {
-      let images = document.getElementById("images_");
-      let image_feedback = document.createElement("div");
-      image_feedback.classList.add("text-center");
-      let uploaded_images =
-        document.getElementsByClassName("image-item").length;
-      let total_images = uploaded_images + images.files.length;
-      if (total_images < 1) {
-        e.preventDefault();
-        e.stopPropagation();
-        document.getElementById("files_").focus();
-        if (!images.parentElement.querySelector(".invalid-feedback")) {
-          images.classList.add("is-invalid");
-          image_feedback.classList.add("invalid-feedback");
-          if (total_images < 1) {
-            image_feedback.innerHTML = "Please upload at least one image";
-            images.parentElement.appendChild(image_feedback);
-          }
+}
+
+// The project form is not sent without at least one image, uploaded before or
+// chosen now.
+const bindImageCheck = oncePerElement((form) => {
+  form.addEventListener("submit", (e) => {
+    let images = document.getElementById("images_");
+    let image_feedback = document.createElement("div");
+    image_feedback.classList.add("text-center");
+    let uploaded_images = document.getElementsByClassName("image-item").length;
+    let total_images = uploaded_images + images.files.length;
+    if (total_images < 1) {
+      e.preventDefault();
+      e.stopPropagation();
+      document.getElementById("files_").focus();
+      if (!images.parentElement.querySelector(".invalid-feedback")) {
+        images.classList.add("is-invalid");
+        image_feedback.classList.add("invalid-feedback");
+        if (total_images < 1) {
+          image_feedback.innerHTML = "Please upload at least one image";
+          images.parentElement.appendChild(image_feedback);
         }
       }
-    });
-  }
-  [...document.getElementsByClassName("file-remove")].forEach((el) => {
-    el.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      document.getElementById("deletefiles").value += el.id + ",";
-      el.parentElement.parentElement.remove();
-    });
+    }
   });
-  [...document.getElementsByClassName("image-remove")].forEach((el) => {
-    el.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      document.getElementById("deleteimages").value += el.id + ",";
-      el.parentElement.remove();
-    });
-  });
-  if (document.getElementById("new-file-input")) {
-    let cloneButton = document.getElementById("new-file-input");
-    cloneButton.addEventListener("click", () => {
-      let parent = cloneButton.parentElement;
-      let clone = parent.cloneNode(true);
-      clone.removeAttribute("id");
-      clone.children[0].value = null;
-      clone.children[1].className = "btn btn-danger";
-      clone.children[1].children[0].className = "fa fa-trash";
-      clone.children[1].addEventListener("click", (el) => {
-        el.target.closest(".input-group").remove();
-      });
-      parent.parentElement.appendChild(clone);
-    });
-  }
-  if (document.getElementById("new-photo-input")) {
-    let cloneButton = document.getElementById("new-photo-input");
-    cloneButton.addEventListener("click", () => {
-      let parent = cloneButton.parentElement;
-      let clone = parent.cloneNode(true);
-      clone.removeAttribute("id");
-      clone.children[0].value = null;
-      clone.children[1].className = "btn btn-danger";
-      clone.children[1].children[0].className = "fa fa-trash";
-      clone.children[1].addEventListener("click", (el) => {
-        el.target.closest(".input-group").remove();
-      });
-      parent.parentElement.appendChild(clone);
-    });
-  }
 });
 
-document.addEventListener("turbo:load", () => {
-  [...document.getElementsByClassName("tr-delete-button")].forEach((btn) =>
-    btn.addEventListener("click", (el) => {
-      el.target.closest("button").parentNode.remove();
-    }),
+// A saved file's remove link marks it for deletion and takes it off the list.
+const bindFileRemove = oncePerElement((el) => {
+  el.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById("deletefiles").value += el.id + ",";
+    el.parentElement.parentElement.remove();
+  });
+});
+
+// A saved image's remove link marks it for deletion and takes it off the list.
+const bindImageRemove = oncePerElement((el) => {
+  el.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById("deleteimages").value += el.id + ",";
+    el.parentElement.remove();
+  });
+});
+
+onEveryPageLoad(() => {
+  [...document.getElementsByClassName("pp-status-button")].forEach(
+    colourStatusButton,
   );
-
-  let newTr = document.getElementById("new-tr");
-  if (newTr) {
-    newTr.addEventListener("click", () => {
-      const clone = document.getElementById("new-link-input").cloneNode(true);
-      document.getElementById("link-container").append(clone);
-      clone.removeAttribute("id");
-      clone.querySelectorAll("input").forEach((input) => {
-        input.value = "";
-      });
-      clone.querySelector("button").addEventListener("click", (el) => {
-        el.target.closest("button").parentNode.remove();
-      });
-      clone.style.visibility = "visible";
-    });
-  }
+  bindImageCheck(
+    document.getElementById("new_proficient_project") ||
+      document.getElementsByClassName("edit_proficient_project")[0],
+  );
+  [...document.getElementsByClassName("file-remove")].forEach(bindFileRemove);
+  [...document.getElementsByClassName("image-remove")].forEach(bindImageRemove);
+  bindInputRows(document.getElementById("new-file-input"));
+  bindInputRows(document.getElementById("new-photo-input"));
 });
 
-new DataTable("#prof-proj-requests");
+// The delete buttons of the training requirement rows, listened to on the
+// rows' parent, so the rows of a page Turbo restores from its cache can be
+// deleted too.
+const bindRequirementDelete = oncePerElement((rows) =>
+  rows.addEventListener("click", (event) => {
+    const remove = event.target.closest(".tr-delete-button");
+    if (remove && rows.contains(remove)) remove.parentNode.remove();
+  }),
+);
+
+// The new requirement button adds an empty copy of the requirement row.
+const bindNewRequirement = oncePerElement((newTr) => {
+  newTr.addEventListener("click", () => {
+    const clone = document.getElementById("new-link-input").cloneNode(true);
+    document.getElementById("link-container").append(clone);
+    clone.removeAttribute("id");
+    clone.querySelectorAll("input").forEach((input) => {
+      input.value = "";
+    });
+    clone.style.visibility = "visible";
+  });
+});
+
+onEveryPageLoad(() => {
+  bindRequirementDelete(document.getElementById("link-container"));
+  bindNewRequirement(document.getElementById("new-tr"));
+});
+
+onEveryPageLoad(() => {
+  pageTable(document.getElementById("prof-proj-requests"));
+});

@@ -1,15 +1,13 @@
 require "rails_helper"
 
 RSpec.describe CustomWebhooksController, type: :controller do
-  # Order matters: the secret guard (503) and the header guard (401) must run before the gem's
-  # HMAC check, which raises on a missing header. Declared at load time, not per request.
-  it "runs the secret guard, then the header guard, then the gem's HMAC check, as plain (unconditional) callbacks" do
-    callbacks = described_class._process_action_callbacks.select { |c| c.kind == :before }
-    names = callbacks.map(&:filter) & %i[require_webhook_secret! require_hmac_header! verify_request]
-    expect(names).to eq(%i[require_webhook_secret! require_hmac_header! verify_request])
-    guards = callbacks.select { |c| %i[require_webhook_secret! require_hmac_header!].include?(c.filter) }
-    expect(guards.map { |c| c.instance_variable_get(:@if) }).to all(be_empty)
-    expect(guards.map { |c| c.instance_variable_get(:@unless) }).to all(be_empty)
+  # One check runs before every action (the secret, then the header, then the signature, in the Payments adapter).
+  # Declared at load time, not per request.
+  it "verifies every webhook with one plain (unconditional) callback" do
+    callbacks = described_class._process_action_callbacks.select { |c| c.kind == :before && c.filter == :verify_webhook! }
+    expect(callbacks.size).to eq(1)
+    expect(callbacks.map { |c| c.instance_variable_get(:@if) }).to all(be_empty)
+    expect(callbacks.map { |c| c.instance_variable_get(:@unless) }).to all(be_empty)
   end
 
   describe "POST /orders_paid" do

@@ -74,17 +74,20 @@ RSpec.describe BadgesController, "#show for a soft-deleted earner", type: :contr
   end
 
   it "is not found for a guest" do
-    expect { get :show, params: { id: badge.id } }.to raise_error(ActiveRecord::RecordNotFound)
+    get :show, params: { id: badge.id }
+    expect(response).to have_http_status(:not_found)
   end
 
   it "is not found for a regular user" do
     sign_in_as(create(:user))
-    expect { get :show, params: { id: badge.id } }.to raise_error(ActiveRecord::RecordNotFound)
+    get :show, params: { id: badge.id }
+    expect(response).to have_http_status(:not_found)
   end
 
   it "is not found for staff" do
     sign_in_as(create(:user, :staff))
-    expect { get :show, params: { id: badge.id } }.to raise_error(ActiveRecord::RecordNotFound)
+    get :show, params: { id: badge.id }
+    expect(response).to have_http_status(:not_found)
   end
 
   it "is shown to an admin" do

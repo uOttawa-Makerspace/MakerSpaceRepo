@@ -7,9 +7,10 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarSubSpaceBooking">
       <ul class="navbar-nav me-auto align-items-xl-center">
+        <% subspaces_by_space = SubSpace.order(:name).group_by(&:space_id) %>
         <% Space.all.order(:name).each do |space| %>
-          <% subspaces = SubSpace.where(space_id: space.id).order(:name) %>
-          <% if subspaces.length > 0 %>
+          <% subspaces = subspaces_by_space.fetch(space.id, []) %>
+          <% if subspaces.any? %>
             <% if subspaces.length == 1 %>
               <li class="nav-item">
                 <%= link_to(subspaces.last.name, sub_space_booking_index_path(room: subspaces.last.id), class: 'nav-link px-xl-1 px-xxl-2 text-nowrap') %>

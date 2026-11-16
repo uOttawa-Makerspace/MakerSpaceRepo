@@ -10,26 +10,13 @@ class JobOrderMessage < ApplicationRecord
     )
   end
 
-  # Generate formatted message for job id
+  # The message with the order id and quoted balance filled in; the stored text is left as it is.
   def retrieve_message(job_id)
-    print_id = "[PRINT_ID]"
-    quote_balance = "[QUOTED_BALANCE]"
+    job_order = JobOrder.find(job_id)
 
-    if JobOrder.find(job_id).present?
-      job_order = JobOrder.find(job_id)
-      new_message = message
-      new_message.gsub!(print_id, job_order.id.to_s)
-      new_message.gsub!(
-        quote_balance,
-        ActiveSupport::NumberHelper.number_to_currency(
-          job_order.total_price
-        ).to_s
-      )
-
-      new_message
-    else
-      message
-    end
+    message
+      .gsub("[PRINT_ID]", job_order.id.to_s)
+      .gsub("[QUOTED_BALANCE]", ActiveSupport::NumberHelper.number_to_currency(job_order.total_price).to_s)
   end
 
   # Generated formatted message for printer

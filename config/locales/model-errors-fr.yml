@@ -4,6 +4,12 @@ fr:
   activerecord:
     errors:
       models:
+        project_proposal:
+          attributes:
+            base:
+              semester_incomplete: "Choisissez à la fois une saison et une année, ou aucune des deux."
+        proficient_project_session:
+          holds_certification: "Cette séance détient une certification et ne peut donc pas être supprimée."
         key_request:
           attributes:
             user:
@@ -34,7 +40,8 @@ fr:
         coupon_code:
           attributes:
             cc_cost:
-              invalid_cc_cost: "doit être un nombre de points CC (0 ou plus)"
+              invalid_cc_cost: "doit être un nombre de CC (0 ou plus)"
+          claimed_cannot_delete: "Un utilisateur a déjà réclamé ce coupon avec des CC, il ne peut donc pas être supprimé"
         program:
           attributes:
             user:
@@ -58,11 +65,16 @@ fr:
               inclusion: "Un niveau est requis."
         space:
           attributes:
+            base:
+              popular_hours_not_created: "L'espace n'a pas pu être créé, car ses heures d'affluence n'ont pas pu être enregistrées. Réessayez."
             name:
               blank: "Un nom est requis pour l'espace"
               taken: "Cet espace existe déjà"
         sub_space:
           attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Ce sous-espace a des réservations et ne peut pas être supprimé."
             name:
               blank: "Un nom est requis pour l'espace"
         require_training:
@@ -70,18 +82,63 @@ fr:
             training_id:
               blank: "Une formation doit être sélectionnée"
         training_session:
+          locked_once_awarded: "La formation, le niveau et le formateur ne peuvent plus être modifiés une fois que la séance a délivré des certifications."
           attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Cette séance de formation a délivré des certifications ou a des examens, elle ne peut donc pas être supprimée."
             training:
               blank: "Un sujet de formation est requis"
+              not_offered_in_space: "n'est pas offerte dans cet espace"
             user:
               blank: "Un formateur est requis"
               must_be_staff: "doit faire partie du personnel"
             level:
               blank: "Un niveau est requis"
+              not_allowed: "doit être l'un de : %{levels}"
+            course:
+              too_long: "doit être une chaîne d'au plus 255 caractères"
+        membership_tier:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Ce niveau d'adhésion a des adhésions et ne peut pas être supprimé."
+        training:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Cette formation a des séances ou des projets et ne peut pas être supprimée."
+        printer_type:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Ce type d'imprimante a des imprimantes et ne peut pas être supprimé."
+        printer:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Cette imprimante a des séances ou des problèmes signalés et ne peut pas être retirée."
+        locker_size:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Cette taille de casier a des casiers et ne peut pas être supprimée."
+        booking_status:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Ce statut de réservation est utilisé par des réservations et ne peut pas être supprimé."
+        sub_space_booking_status:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Cette entrée de statut est encore utilisée par une réservation et ne peut pas être supprimée."
         project_requirement:
           attributes:
             proficient_project_id:
               taken: "Ce projet est déjà un préalable"
+            required_project:
+              circular: "ne peut pas dépendre de lui-même, directement ou par d'autres projets requis"
         time_period:
           attributes:
             end_date:
@@ -94,6 +151,8 @@ fr:
           attributes:
             base:
               one_correct_answer: "Une question doit avoir exactement une bonne réponse"
+              answer_text_required: "Chaque réponse doit avoir une description"
+              two_answers_required: "Une question doit avoir au moins deux réponses"
         staff_unavailability:
           attributes:
             start_time:
@@ -125,7 +184,7 @@ fr:
             rented_by:
               request_under_review: "a déjà une demande en attente de révision"
             state:
-              cancelled_cannot_change: "ne peut pas passer de « Terminée » à un autre état, sauf pour revenir à « Attendre le paiement » ou pour passer à « Actif » par le personnel"
+              cancelled_cannot_change: "ne peut pas passer de « Terminée » à un autre état, sauf pour revenir à « En attente de paiement » ou pour passer à « Actif » par le personnel"
         order_item:
           attributes:
             proficient_project:
@@ -144,14 +203,37 @@ fr:
           attributes:
             expires_at:
               after_family_cap: "ne doit pas dépasser la limite de la famille de jetons"
-        help:
-          attributes:
-            base:
-              issue_submission_failed: "Erreur interne lors de la soumission du problème."
         volunteer_task:
           attributes:
             photos:
               too_many: "ne peut pas dépasser 5 photos"
+          awarded_cannot_delete: "Cette tâche a des heures approuvées ou des CC attribués et ne peut pas être supprimée."
+          edit_refused:
+            training_missing: "Une formation requise n'existe pas."
+            no_successor: "Au moins un membre du personnel doit être assigné à cette tâche."
+            add_not_found:
+              staff: "Le membre du personnel à ajouter est introuvable."
+              volunteer: "Le bénévole à ajouter est introuvable."
+            remove_not_on_task:
+              staff: "Le membre du personnel à retirer n'est pas sur cette tâche."
+              volunteer: "Le bénévole à retirer n'est pas sur cette tâche."
+              user: "L'utilisateur à retirer n'est pas sur cette tâche."
+        volunteer_hour:
+          attributes:
+            date_of_task:
+              in_the_future: "ne peut pas être dans le futur"
+        user_booking_approval:
+          already_pending: "Cette demande est déjà en attente."
+          already_approved: "Cette demande a déjà été approuvée."
+          already_declined: "Cette demande a déjà été refusée."
+          already_revoked: "Cette demande a déjà été révoquée."
+          account_deleted: "Le compte qui a envoyé cette demande a été supprimé."
+          already_has_access: "Vous avez déjà accès aux réservations."
+          already_requested: "Vous avez déjà demandé l'accès."
+        volunteer_task_join:
+          attributes:
+            user_id:
+              taken: "est déjà sur cette tâche"
         learning_module:
           attributes:
             title:
@@ -159,23 +241,39 @@ fr:
               taken: "Ce titre existe déjà"
         proficient_project:
           attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Ce projet a des séances et ne peut pas être supprimé."
             title:
               blank: "Un titre est requis."
               taken: "Ce titre existe déjà"
+        photo:
+          attributes:
+            image:
+              too_large: "dépasse %{max_size}"
+          unreadable: "%{filename} n'a pas pu être lu comme une image. Vérifiez qu'il s'agit d'un fichier image valide et réessayez."
         repository:
           attributes:
+            base:
+              not_hidden: "Il est déjà restauré."
+              owner_deleted: "Le compte du propriétaire est supprimé. Restaurez le compte pour récupérer ses dépôts."
             title:
               blank: "Le titre du projet est requis."
               taken: "Le titre du projet est déjà utilisé."
             password:
               blank: "Un mot de passe est requis pour les projets privés"
             photos:
-              too_long: "Doit avoir entre 1 et 5 photos"
-              too_short: "Doit avoir entre 1 et 5 photos"
+              too_long: "Doit avoir entre 1 et 10 photos"
+              too_short: "Doit avoir entre 1 et 10 photos"
         user:
           attributes:
+            base:
+              restrict_dependent_destroy:
+                has_one: "Cet utilisateur a une carte RFID et ne peut pas être supprimé."
             name:
               special_html_characters: "ne doit pas contenir de caractères HTML spéciaux"
+            identity:
+              needs_uottawa_proof: "ne peut être une identité d'étudiant, de professeur ou d'employé de uOttawa qu'avec une adresse courriel @uottawa.ca confirmée. Veuillez choisir une autre identité ou contacter le personnel du Makerspace."
             student_id:
               wrong_digit_count: "doit contenir entre 7 et 12 chiffres"
             url:

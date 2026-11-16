@@ -1,26 +1,26 @@
 <div class="pt-3">
-    <h1 class="text-center">Design day 1 slated for <%= @design_day.day %></h1>
+    <h1 class="text-center"><%= t('admin_pages.design_days.slated_for', day: @design_day.day) %></h1>
     <hr />
     <%= form_with model: @design_day do |f| %>
         <div class="input-group mb-3">
-            <%= f.label :day, "Design days start at:", class: 'input-group-text' %>
+            <%= f.label :day, t('admin_pages.design_days.starts_at'), class: 'input-group-text' %>
             <%= f.date_field :day, class: 'form-control', required: true %>
         </div>
         <div class="input-group">
-            <%= f.label :sheet_key, "Google sheets ID (or url)", class: 'input-group-text' %>
+            <%= f.label :sheet_key, t('admin_pages.design_days.sheet_id'), class: 'input-group-text' %>
             <%= f.text_field :sheet_key, class: 'form-control' %>
             <div class="input-group-text">
                 <i class="fa-solid fa-check text-success" id="sheet_key_verified_icon"></i>
                 <i class="fa-solid fa-question text-warning" id="sheet_key_maybe_icon" hidden></i>
                 <i class="fa-solid fa-xmark text-danger" id="sheet_key_error_icon" hidden></i>
             </div>
-            <%= f.button "Convert URL to ID", class: 'btn btn-outline-success', id: 'verifyDesignDaySheet' %>
+            <%= f.button t('admin_pages.design_days.convert'), class: 'btn btn-outline-success', id: 'verifyDesignDaySheet' %>
         </div>
 
         <div class="form-text ms-3">
-            Current sheet url is <a id="sheet_key_preview_url" href="https://docs.google.com/spreadsheets/d/<%= @design_day.sheet_key %>">https://docs.google.com/spreadsheets/d/<%= @design_day.sheet_key %></a>
+            <%= t('admin_pages.design_days.current_url') %> <a id="sheet_key_preview_url" href="https://docs.google.com/spreadsheets/d/<%= @design_day.sheet_key %>"><%= "https://docs.google.com/spreadsheets/d/#{@design_day.sheet_key}" %></a>
             <br />
-            <span id="sheet_key_may_be_invalid" hidden="true">Current key doesn't seem valid.</span>
+            <span id="sheet_key_may_be_invalid" hidden="true"><%= t('admin_pages.design_days.invalid_key') %></span>
         </div>
         <hr />
 
@@ -28,32 +28,32 @@
         <div class="d-flex justify-content-start gap-2 mb-3">
             <% %w[1 2].each do |day| %>
                 <button class="btn <%= day == @selected_day ? 'btn-primary' : 'btn-outline-primary' %>" type="button" id="designDay<%= day %>Button" aria-pressed="<%= day == @selected_day %>" data-design-day-select="<%= day %>">
-                    Design day <%= day %>
+                    <%= t('admin_pages.design_days.day_button', day: day) %>
                 </button>
             <% end %>
         </div>
 
         <div>
-            <h2 class="text-center">Floorplans</h2>
+            <h2 class="text-center"><%= t('admin_pages.design_days.floorplans') %></h2>
             <div class="d-flex flex-column align-items-center">
                 <div class="form-check form-switch mb-3 align-self-center <%= 'd-none' unless @selected_day == '1' %>" data-day-section="1">
                     <%= f.check_box :show_floorplans, class: 'form-check-input' %>
-                    <%= f.label :show_floorplans, 'Show floorplans for Design day 1', class: 'form-check-label' %>
+                    <%= f.label :show_floorplans, t('admin_pages.design_days.show_floorplans_for_day', day: 1), class: 'form-check-label' %>
                 </div>
                 <div class="form-check form-switch mb-3 align-self-center <%= 'd-none' unless @selected_day == '2' %>" data-day-section="2">
                     <%= f.check_box :show_floorplans_day2, class: 'form-check-input' %>
-                    <%= f.label :show_floorplans_day2, 'Show floorplans for Design day 2', class: 'form-check-label' %>
+                    <%= f.label :show_floorplans_day2, t('admin_pages.design_days.show_floorplans_for_day', day: 2), class: 'form-check-label' %>
                 </div>
             </div>
             <div class="text-center">
-                <button class="btn btn-success mb-3" data-floorplan-add><i class="fa-solid fa-plus"></i> Add a floorplan</button>
+                <button class="btn btn-success mb-3" data-floorplan-add><i class="fa-solid fa-plus"></i> <%= t('admin_pages.design_days.add_floorplan') %></button>
             </div>
 
             <div>
-                <h2 class="text-center">Floorplans currently on display for Design day <span data-selected-day-label><%= @selected_day %></span></h2>
+                <h2 class="text-center"><%= t('admin_pages.design_days.floorplans_on_display_html', day: tag.span(@selected_day, data: { selected_day_label: '' })) %></h2>
                     <div>
                         <% floorplan_day_of = ->(image) { image.blob.metadata['floorplan_day'].presence || '1' } %>
-                        <p class="text-center" data-floorplan-empty <%= 'hidden' if @design_day.floorplans.any? { |image| floorplan_day_of.call(image) == @selected_day } %>>No floorplans attached for this day...</p>
+                        <p class="text-center" data-floorplan-empty <%= 'hidden' if @design_day.floorplans.any? { |image| floorplan_day_of.call(image) == @selected_day } %>><%= t('admin_pages.design_days.no_floorplans') %></p>
                         <% @design_day.floorplans.each do |image| %>
                             <% floorplan_day = floorplan_day_of.call(image) %>
                             <div class="d-flex align-items-center gap-2 mb-3 <%= 'd-none' unless floorplan_day == @selected_day %>" data-floorplan-day="<%= floorplan_day %>">

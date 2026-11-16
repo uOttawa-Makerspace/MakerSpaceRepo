@@ -44,7 +44,7 @@ RSpec.describe ProjectRequirementsController, type: :controller do
           post :create, params: { id: pp.id, required_project_id: required_pp }
         }.to change(ProjectRequirement, :count).by(0)
         expect(response).to redirect_to proficient_project_path(pp.id)
-        expect(flash[:alert]).to eq("Something went wrong. Try again.")
+        expect(flash[:alert]).to eq("The required project was not added. Proficient project This project is already a pre-requisite")
       end
     end
   end

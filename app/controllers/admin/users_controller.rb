@@ -22,13 +22,11 @@ class Admin::UsersController < AdminAreaController
 
   SEARCHABLE_FILTERS = %w[Name Email Username].freeze
 
-  ASSIGNABLE_ROLES = %w[admin staff regular_user volunteer].freeze
-
   LAST_SIGN_IN_SQL = "(SELECT MAX(lab_sessions.sign_in_time) FROM lab_sessions WHERE lab_sessions.user_id = users.id)"
 
   def index
     unless valid_sort_params?
-      redirect_to admin_users_path, alert: "Invalid parameters!"
+      redirect_to admin_users_path, alert: I18n.t("admin.users.invalid_parameters")
       return
     end
 
@@ -38,18 +36,20 @@ class Admin::UsersController < AdminAreaController
     when "new_users", nil
       load_new_users
     else
-      redirect_to admin_users_path, alert: "Invalid parameters!"
+      redirect_to admin_users_path, alert: I18n.t("admin.users.invalid_parameters")
     end
   end
 
   def search
     unless valid_sort_params?
-      redirect_to admin_users_path, alert: "Invalid parameters!"
+      redirect_to admin_users_path, alert: I18n.t("admin.users.invalid_parameters")
       return
     end
 
     unless params[:q].present?
-      redirect_back(fallback_location: root_path, alert: "Invalid parameters!")
+      @query = ""
+      @users = User.none
+      flash.now[:alert] = I18n.t("admin.users.search_query_missing")
       return
     end
 
@@ -82,7 +82,7 @@ class Admin::UsersController < AdminAreaController
     end
 
     if saved
-      redirect_to edit_admin_user_path(@edit_admin_user), notice: "User information updated"
+      redirect_to edit_admin_user_path(@edit_admin_user), notice: t("admin_area.users.flash.updated")
     else
       # the rollback restored the card rows, not the loaded association
       @edit_admin_user.association(:rfid).reset
@@ -102,16 +102,16 @@ class Admin::UsersController < AdminAreaController
 
     if new_email.blank? || confirm_new_email.blank?
       redirect_to edit_admin_user_path(@edit_admin_user),
-                  alert: "There was a problem with the email, please try sending the email again."
+                  alert: t("admin_area.users.flash.email_blank")
     elsif new_email != confirm_new_email
       redirect_to edit_admin_user_path(@edit_admin_user),
-                  alert: "This confirmation email isn't matching the new email"
+                  alert: t("admin_area.users.flash.email_mismatch")
     elsif (shape_error = User.email_shape_error(new_email))
       redirect_to edit_admin_user_path(@edit_admin_user), alert: shape_error
     # LOWER(email) matches legacy mixed-case rows and uses index_users_on_lowercase_email
     elsif User.unscoped.where("LOWER(email) = ?", new_email).where.not(id: @edit_admin_user.id).exists?
       redirect_to edit_admin_user_path(@edit_admin_user),
-                  alert: "This email is already used by a MakerRepo Account."
+                  alert: t("admin_area.users.flash.email_taken")
     else
       # The same link as the user's own change: it only works for that user, signed in, within 24 hours.
       MsrMailer.email_confirmation_email(
@@ -121,37 +121,40 @@ class Admin::UsersController < AdminAreaController
       ).deliver_now
 
       redirect_to edit_admin_user_path(@edit_admin_user),
-                  notice: "A confirmation email has been sent to the new email"
+                  notice: t("admin_area.users.flash.email_sent")
     end
   end
 
   def delete_repository
-    Repository.find(params[:id]).destroy
-    redirect_to root_path, notice: "Repository Deleted!"
+    Repository.find(params[:id]).hide!(by: current_user)
+    redirect_to root_path, notice: t("admin_area.users.flash.repository_deleted")
   end
 
   def delete_user
     unless @user.admin? && @user.authenticate_password(submitted_current_password)
-      redirect_to user_path(User.find(params[:id]).username), alert: "Invalid password!"
+      redirect_to user_path(User.find(params[:id]).username), alert: t("admin_area.users.flash.invalid_password")
       return
     end
     RateLimitCounter.reset(@user.reauth_attempts_key)
 
     delete_user = User.find(params[:id])
     begin
-      User.delete_account!(delete_user)
+      User.delete_account!(delete_user, actor: @user)
     rescue User::LastAdminError => e
       redirect_to user_path(delete_user.username), alert: e.message
       return
+    rescue User::NotAdminError
+      redirect_to user_path(delete_user.username), alert: t("admin_area.users.flash.only_admins_delete")
+      return
     end
 
-    redirect_to root_path, notice: "User flagged as deleted"
+    redirect_to root_path, notice: t("admin_area.users.flash.flagged_deleted")
   end
 
   def restore_user
     restore_user = User.unscoped.find(params[:id])
     User.restore_account!(restore_user)
-    redirect_to user_path(restore_user.username), notice: "User restored!"
+    redirect_to user_path(restore_user.username), notice: t("admin_area.users.flash.restored")
   end
 
   def toggle_lock_user
@@ -163,7 +166,7 @@ class Admin::UsersController < AdminAreaController
       return
     end
     redirect_to user_path(user_to_toggle.username),
-                notice: "User #{user_to_toggle.locked ? 'locked' : 'unlocked'}!"
+                notice: t(user_to_toggle.locked ? "admin_area.users.flash.locked" : "admin_area.users.flash.unlocked")
   end
 
   def set_role
@@ -183,7 +186,6 @@ class Admin::UsersController < AdminAreaController
     respond_to do |format|
       format.html { redirect_back(fallback_location: root_path) }
       format.json { head :ok }
-      format.js { render layout: false }
       format.all { redirect_back(fallback_location: root_path) }
     end
   end
@@ -194,7 +196,7 @@ class Admin::UsersController < AdminAreaController
     @volunteers = User.joins(:programs)
                       .where(programs: { program_type: Program::VOLUNTEER })
                       .order(Arel.sql("lower(name) ASC"))
-    @roles = ASSIGNABLE_ROLES
+    @roles = User::ASSIGNABLE_ROLES
     @space_list = Space.all
 
     @admin_spaces = build_user_spaces_hash(@admins)
@@ -205,14 +207,14 @@ class Admin::UsersController < AdminAreaController
     user = User.find(params[:id])
     
     unless params[:rename].present?
-      redirect_to user_path(user.username), alert: "No username provided"
+      redirect_to user_path(user.username), alert: t("admin_area.users.flash.no_username")
       return
     end
 
     if user.update(username: params[:rename])
-      flash[:notice] = "User renamed successfully"
+      flash[:notice] = t("admin_area.users.flash.renamed")
     else
-      flash[:alert] = "Username invalid: #{user.errors.full_messages.join(', ')}"
+      flash[:alert] = validation_message(user, "failed_saves.username")
     end
     
     redirect_to user_path(user.reload.username)
@@ -233,7 +235,7 @@ class Admin::UsersController < AdminAreaController
   def require_admin
     return if @user&.admin?
     
-    redirect_to root_path, alert: "You do not have permission to do that!"
+    redirect_to root_path, alert: t("admin_area.users.flash.no_permission")
   end
 
   # ============================================
@@ -264,7 +266,7 @@ class Admin::UsersController < AdminAreaController
   def valid_role_update_params?
     params[:role].present? && 
       params[:user_ids].is_a?(Array) && 
-      ASSIGNABLE_ROLES.include?(params[:role])
+      User::ASSIGNABLE_ROLES.include?(params[:role])
   end
 
   # ============================================
@@ -294,8 +296,10 @@ class Admin::UsersController < AdminAreaController
     @users_temp = LabSession.joins(:user).where("sign_out_time > ?", Time.zone.now)
     
     if params[:location].present?
-      @users_temp = @users_temp.joins(sanitized_pi_readers_join)
-                               .where("LOWER(pi_readers.pi_location) = LOWER(?)", params[:location])
+      @users_temp = @users_temp.where(
+        "EXISTS (SELECT 1 FROM pi_readers WHERE pi_readers.pi_mac_address = lab_sessions.mac_address " \
+        "AND LOWER(pi_readers.pi_location) = LOWER(?))", params[:location]
+      )
     end
 
     if (order_clause = safe_order_clause)
@@ -330,11 +334,6 @@ class Admin::UsersController < AdminAreaController
 
     ordering = Arel.sql(LAST_SIGN_IN_SQL).public_send(direction)
     scope.order(direction == :asc ? ordering.nulls_first : ordering.nulls_last, id: direction)
-  end
-
-  # SECURITY FIX: Safe join without user input in SQL string
-  def sanitized_pi_readers_join
-    "INNER JOIN pi_readers ON lab_sessions.pi_mac_address = pi_readers.mac_address"
   end
 
   # ============================================
@@ -424,7 +423,7 @@ class Admin::UsersController < AdminAreaController
   # ============================================
 
   def update_user_roles
-    # ASSIGNABLE_ROLES and the integer ids were validated by valid_role_update_params?;
+    # User::ASSIGNABLE_ROLES and the integer ids were validated by valid_role_update_params?;
     # the last-admin guard, transaction and audit log live in User.change_roles!.
     User.change_roles!(params[:user_ids], params[:role], actor: @user)
   end
@@ -434,23 +433,15 @@ class Admin::UsersController < AdminAreaController
       user = User.find_by(id: user_id)
       next unless user&.staff?
 
-      space_list = Array(space_ids).map(&:to_i).reject(&:zero?)
-      
-      # Create new staff spaces
-      space_list.each do |space_id|
-        StaffSpace.find_or_create_by(space_id: space_id, user: user)
-      end
-      
-      # Remove spaces not in the list
-      user.staff_spaces.where.not(space_id: space_list).destroy_all
+      user.assign_spaces!(Array(space_ids).map(&:to_i).reject(&:zero?))
     end
     
-    flash[:notice] = "Successfully changed spaces for the user(s)."
+    flash[:notice] = t("admin_area.users.flash.spaces_changed")
   end
 
+  # The ids of the spaces each user is assigned to, keyed by user id; one query however many users.
   def build_user_spaces_hash(users)
-    users.each_with_object({}) do |user, hash|
-      hash[user.id] = user.staff_spaces.pluck(:space_id)
-    end
+    space_ids = StaffSpace.where(user_id: users.map(&:id)).pluck(:user_id, :space_id).group_by(&:first)
+    users.to_h { |user| [user.id, space_ids.fetch(user.id, []).map(&:last)] }
   end
 end

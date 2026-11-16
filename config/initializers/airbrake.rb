@@ -11,9 +11,10 @@
 # https://github.com/airbrake/airbrake-ruby#configuration
 # Keys whose values must never reach Airbrake (params, headers, session): passwords,
 # Authorization / Bearer headers, and every token field, including the /api/v1
-# refresh_token / access_token bodies and the X-Refresh-Token header. A named setting
-# so a spec can pin it (the configure block below only runs with credentials).
-Rails.application.config.x.airbrake_blocklist_keys = [/password/i, /authorization/i, /token/i, /refresh/i].freeze
+# refresh_token / access_token bodies, the X-Refresh-Token header and the
+# X-Shopify-Hmac-Sha256 webhook signature header. A named setting so a spec can pin
+# it (the configure block below only runs with credentials).
+Rails.application.config.x.airbrake_blocklist_keys = [/password/i, /authorization/i, /token/i, /refresh/i, /hmac/i].freeze
 
 project_id = Rails.application.credentials.dig(Rails.env.to_sym, :airbrake, :project_id)
 project_key = Rails.application.credentials.dig(Rails.env.to_sym, :airbrake, :project_key)

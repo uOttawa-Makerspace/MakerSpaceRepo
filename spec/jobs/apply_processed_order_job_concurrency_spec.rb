@@ -50,14 +50,6 @@ RSpec.describe ApplyProcessedOrderJob, "under concurrency", type: :job do
     end
   end
 
-  def in_thread(&block)
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
-    rescue StandardError => e
-      e
-    end
-  end
-
   def pause_first_credit_then_fail
     first_in = Queue.new
     resume = Queue.new
@@ -195,7 +187,7 @@ RSpec.describe ApplyProcessedOrderJob, "under concurrency", type: :job do
     end
 
     after do
-      LockerPayment.where(locker_rental_id: rental.id).delete_all
+      delete_locker_payment_records([rental.id])
       LockerRental.where(id: rental.id).delete_all
       ProcessedOrder.where(id: locker_stored.id).delete_all
       locker = Locker.find_by(id: rental.locker_id)

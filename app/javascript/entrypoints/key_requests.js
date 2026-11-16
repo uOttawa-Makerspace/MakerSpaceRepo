@@ -1,8 +1,11 @@
-import TomSelect from "tom-select";
+import { onEveryPageLoad } from "../src/on_page.js";
+import { tomSelectFor } from "../src/tom_select.js";
 
-let supervisorSelect = document.getElementById("supervisor-select");
-if (supervisorSelect && !supervisorSelect.tomselect) {
-  new TomSelect("#supervisor-select", {
+// The supervisor and department lists of the key request form and wizard.
+function nameSearch(id) {
+  const select = document.getElementById(id);
+  if (!select) return;
+  tomSelectFor(select, {
     searchField: ["name"],
     valueField: "id",
     labelField: "name",
@@ -11,23 +14,7 @@ if (supervisorSelect && !supervisorSelect.tomselect) {
   });
 }
 
-let spaceSelect = document.getElementById("space-select");
-if (spaceSelect && !spaceSelect.tomselect) {
-  new TomSelect("#space-select", {
-    searchField: ["name"],
-    valueField: "id",
-    labelField: "name",
-    maxOptions: null,
-    searchOnKeyUp: true,
-  });
-}
-
-let deleteFiles = document.getElementById("delete_files");
-[...document.getElementsByClassName("file-remove")].forEach((el) => {
-  el.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    deleteFiles.value += el.id + ",";
-    el.parentElement.parentElement.remove();
-  });
+onEveryPageLoad(() => {
+  nameSearch("supervisor-select");
+  nameSearch("space-select");
 });

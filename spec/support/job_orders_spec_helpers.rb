@@ -12,6 +12,11 @@
 # referenced by name in the views/controller but never resolved through a
 # constant, so no stubbing is needed for them).
 module JobOrderSpecHelpers
+  # The reference the last response quoted (the first characters of its request id).
+  def error_reference
+    response.request.request_id.to_s.first(8)
+  end
+
   include ActiveSupport::Testing::TimeHelpers
 
   JOB_STATUS_NAMES = JobStatus::STATUS_NAMES

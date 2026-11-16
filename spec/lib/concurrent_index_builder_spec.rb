@@ -123,6 +123,17 @@ RSpec.describe ConcurrentIndexBuilder do
       expect { build(%i[val num]) }.to mismatch
     end
 
+    it "raises for nulls not distinct, naming it" do
+      conn.execute("DELETE FROM cib_scratch")
+      conn.add_index :cib_scratch, :val, name: index, unique: true, nulls_not_distinct: true
+      expect { build(:val, unique: true) }.to mismatch(/exists as unique btree \(val\) nulls not distinct, not the requested/)
+    end
+
+    it "lists every extra in a fixed order" do
+      conn.add_index :cib_scratch, :val, name: index, where: "val > 0", include: :txt, order: { val: :desc }
+      expect { build }.to mismatch(/btree \(val\) where \(val > 0\) include \(txt\) order desc, not the requested/)
+    end
+
     it "raises for another access method" do
       conn.execute("CREATE INDEX #{index} ON cib_scratch USING hash (val)")
       expect { build }.to mismatch(/hash/)

@@ -104,6 +104,16 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(SubSpaceBooking.where(name: "N")).to be_empty
     end
 
+    it "gives the page's booking messages in the page's language" do
+      log_in!(create(:user, :regular_user, booking_approval: true))
+
+      titles = %w[en fr].map do |locale|
+        get sub_space_booking_index_path(locale: locale)
+        Capybara.string(response.body).find("#booking_toast", visible: :all)["data-partly-done-title"]
+      end
+      expect(titles).to eq(["Booking partly done", "Réservation en partie faite"])
+    end
+
     it "lets an unapproved user still hit the bookings feed + request access" do
       user = create(:user, :regular_user, booking_approval: false)
       log_in!(user)
@@ -220,6 +230,41 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
           ["DurationHour You cannot book #{capped.name} for more than 4 hours."]
       )
       expect(SubSpaceBooking.where(name: "TooLong")).to be_empty
+    end
+
+    it "refuses a booking longer than maximum_booking_duration in French" do
+      capped = create(:sub_space, space: space, maximum_booking_duration: 4)
+      post sub_space_booking_index_path(locale: "fr"), as: :json,
+           params: { sub_space_booking: {
+             sub_space_id: capped.id, start_time: "2027-03-03 10:00",
+             end_time: "2027-03-03 15:00", name: "TooLong", description: "D"
+           } }
+      expect(response.status).to eq(422)
+      expect(response.parsed_body).to eq(
+        "errors" =>
+          ["DurationHour Vous ne pouvez pas réserver #{capped.name} pour plus de 4 heures."]
+      )
+    end
+
+    it "refuses a booking over maximum_booking_hours_per_week in French" do
+      travel_to(Time.zone.local(2027, 3, 10, 12, 0)) do
+        log_in!(user)
+        capped = create(:sub_space, space: space, maximum_booking_hours_per_week: 2)
+        existing = 4.hours.ago.to_datetime
+        create(:sub_space_booking, sub_space: capped, user: user,
+               name: "Earlier", start_time: existing, end_time: existing + 4.hours)
+        post sub_space_booking_index_path(locale: "fr"), as: :json,
+             params: { sub_space_booking: {
+               sub_space_id: capped.id, start_time: "2027-03-10 13:00",
+               end_time: "2027-03-10 14:00", name: "OverWeek", description: "D"
+             } }
+        expect(response.status).to eq(422)
+        expect(response.parsed_body).to eq(
+          "errors" =>
+            ["DurationWeek Vous ne pouvez pas réserver #{capped.name} pour plus de 2 heures par semaine."]
+        )
+        expect(SubSpaceBooking.where(name: "OverWeek")).to be_empty
+      end
     end
 
     it "lets an admin book longer than maximum_booking_duration" do
@@ -386,6 +431,22 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
         expect(SubSpaceBooking.exists?(name: "Taker")).to be(true)
       end
 
+      # The code before the message stays as is: the booking page splits it off.
+      it "words the taken slot in French and keeps the TimeSlot code" do
+        create(:sub_space_booking, sub_space: subspace, user: user,
+                                   start_time: Time.zone.parse("2027-03-03 09:00"),
+                                   end_time: Time.zone.parse("2027-03-03 12:00"),
+                                   name: "Taker", blocking: true)
+        post sub_space_booking_index_path(locale: "fr"), as: :json,
+             params: { sub_space_booking: {
+               sub_space_id: subspace.id, start_time: "2027-03-03 10:00",
+               end_time: "2027-03-03 11:00", name: "Fresh", description: "Desc"
+             } }
+        expect(response.status).to eq(422)
+        expect(response.parsed_body).to eq("errors" => ["TimeSlot Cette plage horaire est déjà réservée."])
+        expect(SubSpaceBooking.where(name: "Fresh")).to be_empty
+      end
+
       # Both bookings are compared as the zoned
       # instants they are stored as, so they collide.
       it "catches an overlap between two controller-created bookings" do
@@ -418,7 +479,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
 
     before { log_in!(user) }
 
-    it "rejects recurring without end/frequency with a string error" do
+    it "rejects recurring without end/frequency and names what is missing" do
       post sub_space_booking_index_path, as: :json,
            params: { sub_space_booking: {
              sub_space_id: subspace.id, start_time: "2027-02-03 10:00",
@@ -427,7 +488,18 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
            } }
       expect(response.status).to eq(422)
       expect(response.parsed_body)
-        .to eq("errors" => "Invalid recurring parameters")
+        .to eq("errors" => ["Recurring #{I18n.t("errors.bookings.recurring_invalid")}"])
+    end
+
+    it "names the missing repeat details in French too, and as an alert for an HTML request" do
+      post sub_space_booking_index_path(locale: "fr"), as: :json, headers: { "Accept" => "text/html" },
+           params: { sub_space_booking: {
+             sub_space_id: subspace.id, start_time: "2027-02-03 10:00",
+             end_time: "2027-02-03 11:00", name: "R", description: "D",
+             recurring: true
+           } }
+      expect(flash[:alert]).to eq(I18n.t("errors.bookings.recurring_invalid", locale: :fr))
+      expect(flash[:alert]).to include("fréquence")
     end
 
     it "creates a weekly series; recurring_end is date-INCLUSIVE (loop-while < start)" do
@@ -650,6 +722,49 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
     it "answers an empty list without a room param" do
       expect(feed(room: nil)).to be_empty
     end
+
+    # A booking keeps blocking the room when it has no owner (a calendar import
+    # from someone without an account) or when its owner's account was deleted.
+    context "when the booking has no owner or a deleted owner" do
+      let!(:ownerless) do
+        feed_booking(name: "Imported", description: "D", public: false).tap do |booking|
+          booking.update_columns(user_id: nil)
+        end
+      end
+      let!(:orphaned) do
+        feed_booking(name: "Left", description: "D", public: false,
+                     start_time: DateTime.parse("2027-04-03 12:00"),
+                     end_time: DateTime.parse("2027-04-03 13:00"))
+      end
+
+      before { owner.update_columns(deleted: true) }
+
+      it "lists both to a regular viewer like any other booking" do
+        expect(feed).to eq([
+          { "id" => "booking_#{ownerless.id}_#{subspace.id}", "title" => "Space Booked",
+            "start" => "2027-04-03T06:00:00.000-04:00", "end" => "2027-04-03T07:00:00.000-04:00",
+            "color" => "#497979", "viewable" => false },
+          { "id" => "booking_#{orphaned.id}_#{subspace.id}", "title" => "Space Booked",
+            "start" => "2027-04-03T08:00:00.000-04:00", "end" => "2027-04-03T09:00:00.000-04:00",
+            "color" => "#497979", "viewable" => false }
+        ])
+      end
+
+      it "shows admins no owner for the ownerless one and the deleted account for the other" do
+        live_owner = create(:user, :regular_user, booking_approval: true)
+        feed_booking(name: "Live", description: "D", public: false, user: live_owner,
+                     start_time: DateTime.parse("2027-04-03 14:00"), end_time: DateTime.parse("2027-04-03 15:00"))
+        titles = feed(user: admin_viewer).map { |event| event["title"] }
+        expect(titles).to eq(["Imported - D", "Left - D - #{owner.name} (deleted account)",
+                              "Live - D - #{live_owner.name}"])
+      end
+
+      it "keeps the Space Blocked title and colour for a blocking one" do
+        ownerless.update_columns(blocking: true)
+        event = feed(user: admin_viewer).first
+        expect(event).to include("title" => "Space Blocked", "color" => "#ABABABFF")
+      end
+    end
   end
 
   # ---------------------------------------------------------- edit + update
@@ -715,6 +830,24 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       booking = owned_booking
       get edit_path(booking)
       expect(response).to have_http_status(:ok)
+    end
+
+    it "answers a JSON update without leaving a notice for the next page" do
+      log_in!(owner)
+      booking = owned_booking
+      patch update_path(booking), as: :json, params: {
+        sub_space_booking: {
+          start_time: "2027-03-03 12:00", end_time: "2027-03-03 13:00",
+          name: "Moved", description: "D"
+        }
+      }
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to eq("status" => "ok")
+      expect(booking.reload.name).to eq("Moved")
+
+      get sub_space_booking_index_path
+      expect(flash[:notice]).to be_nil
+      expect(response.body).not_to include("Successfully updated booking")
     end
 
     it "non-owners can't reach update either" do
@@ -833,6 +966,22 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       )
     end
 
+    it "titles the pending series buttons in the page's language" do
+      log_in!(create(:user, :admin, booking_approval: true))
+      owner = create(:user, :regular_user, booking_approval: true)
+      recurring = RecurringBooking.create!
+      booking_by(owner, recurring_booking: recurring)
+      booking_by(owner, recurring_booking: recurring,
+                        start_time: DateTime.parse("2027-04-10 10:00"), end_time: DateTime.parse("2027-04-10 11:00"))
+
+      titles = %w[en fr].map do |locale|
+        get sub_space_booking_index_path(locale: locale)
+        Capybara.string(response.body).all("#pendingBody .btn-group [title]", visible: :all).map { |b| b["title"] }
+      end
+      expect(titles).to eq([["Approve All", "Select Specific", "Reject All"],
+                            ["Tout approuver", "Choisir les dates", "Tout refuser"]])
+    end
+
     it "user gate on approve/decline" do
       log_in!(create(:user, :regular_user, booking_approval: true))
       booking = booking_by(create(:user, :regular_user, booking_approval: true))
@@ -888,6 +1037,89 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(status_name(booking)).to eq("Declined")
     end
 
+    it "approve mails the owner once and not again when the booking was approved meanwhile" do
+      staff = create(:user, :staff, booking_approval: true)
+      log_in!(staff)
+      booking = booking_by(create(:user, :regular_user, booking_approval: true))
+      # another request approves the row after this one has loaded it
+      allow(SubSpaceBooking).to receive(:find).and_wrap_original do |original, *args|
+        loaded = original.call(*args)
+        SubSpaceBooking.where(id: loaded.id).update_all(booking_status_id: @approved_status.id)
+        loaded
+      end
+
+      perform_enqueued_jobs do
+        put sub_space_booking_approve_path(sub_space_booking_id: booking.id)
+      end
+
+      expect(flash[:alert]).to eq("Booking for #{subspace.name} is no longer pending.")
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(booking.reload.approved_by_id).to be_nil
+    end
+
+    it "approve delivers the approved mail to the owner" do
+      log_in!(create(:user, :staff, booking_approval: true))
+      owner = create(:user, :regular_user, booking_approval: true)
+      booking = booking_by(owner)
+      perform_enqueued_jobs do
+        put sub_space_booking_approve_path(sub_space_booking_id: booking.id)
+      end
+      expect(ActionMailer::Base.deliveries.map(&:to)).to eq([[owner.email]])
+    end
+
+    it "the admin panel offers only the actions each booking can take" do
+      log_in!(create(:user, :admin, booking_approval: true))
+      owner = create(:user, :regular_user, booking_approval: true)
+      approved = booking_by(owner, name: "ApprovedOne")
+      approved.change_status!(@approved_status)
+      declined = booking_by(owner, name: "DeclinedOne")
+      declined.change_status!(@declined_status)
+
+      get sub_space_booking_index_path
+      page = Capybara.string(response.body)
+
+      expect(page).not_to have_css("#approved-accordion form[action='#{sub_space_booking_decline_path(sub_space_booking_id: approved.id)}']", visible: :all)
+      expect(page).not_to have_css("#declined-accordion form[action='#{sub_space_booking_approve_path(sub_space_booking_id: declined.id)}']", visible: :all)
+      expect(page).to have_css("#approved-accordion", text: "ApprovedOne", visible: :all)
+      expect(page).to have_css("#declined-accordion", text: "DeclinedOne", visible: :all)
+    end
+
+    it "the admin panel lists bookings that have no owner, such as imported calendar events" do
+      log_in!(create(:user, :admin, booking_approval: true))
+      owner = create(:user, :regular_user, booking_approval: true)
+      booking_by(owner, name: "OwnedOne")
+      past = { start_time: DateTime.parse("2020-04-03 10:00"), end_time: DateTime.parse("2020-04-03 11:00") }
+      { "pending" => @pending_status, "approved" => @approved_status, "declined" => @declined_status }.each do |label, status|
+        booking_by(nil, name: "Ownerless #{label}").change_status!(status)
+        booking_by(nil, name: "Old ownerless #{label}", **past).change_status!(status)
+      end
+
+      get sub_space_booking_index_path
+      expect(response).to have_http_status(:ok)
+      page = Capybara.string(response.body)
+
+      %w[pending approved declined].each do |label|
+        expect(page).to have_css("tr", text: "Ownerless #{label}", visible: :all)
+        expect(page).to have_css("tr", text: "Old ownerless #{label}", visible: :all)
+      end
+      expect(page.find("tr", text: "OwnedOne", visible: :all))
+        .to have_link(owner.name, href: user_path(owner.username), visible: :all)
+    end
+
+    it "My Bookings shows each booking's own status" do
+      owner = create(:user, :regular_user, booking_approval: true)
+      log_in!(owner)
+      booking_by(owner, name: "WaitingOne")
+      booking_by(owner, name: "YesOne").change_status!(@approved_status)
+      booking_by(owner, name: "NoOne").change_status!(@declined_status)
+
+      get sub_space_booking_index_path
+      page = Capybara.string(response.body)
+      badge = ->(name) { page.find("tr", text: name, visible: :all).find(".badge.text-bg-warning, .badge.text-bg-success, .badge.text-bg-danger", visible: :all).text }
+
+      expect([badge.call("WaitingOne"), badge.call("YesOne"), badge.call("NoOne")]).to eq(%w[Pending Approved Declined])
+    end
+
     it "publish needs admin; admin toggles public/private" do
       log_in!(create(:user, :regular_user, booking_approval: true))
       booking = booking_by(create(:user, :regular_user, booking_approval: true),
@@ -928,8 +1160,17 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       b = booking_by(create(:user, :regular_user, booking_approval: true))
       put bulk_approve_decline_sub_space_booking_index_path,
           params: { sub_space_booking_ids: [b.id], bulk_status: "wibble" }
-      expect(flash[:alert]).to eq("Failed to bulk update booking status.")
+      expect(flash[:alert]).to eq(I18n.t("errors.bookings.bulk_status_invalid"))
       expect(status_name(b)).to eq("Pending")
+    end
+
+    it "bulk_approve_decline names the missing choice in French" do
+      log_in!(create(:user, :staff))
+      b = booking_by(create(:user, :regular_user, booking_approval: true))
+      put bulk_approve_decline_sub_space_booking_index_path(locale: "fr"),
+          params: { sub_space_booking_ids: [b.id], bulk_status: "wibble" }
+      expect(flash[:alert]).to eq(I18n.t("errors.bookings.bulk_status_invalid", locale: :fr))
+      expect(flash[:alert]).to include("Approuver")
     end
   end
 
@@ -941,10 +1182,10 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
 
     def booking_for(user, **attrs)
       set_booking_status!(
-        create(:sub_space_booking,
-               { sub_space: subspace, user: user,
-                 start_time: DateTime.parse("2027-04-03 10:00"),
-                 end_time: DateTime.parse("2027-04-03 11:00") }.merge(attrs)),
+        create(:sub_space_booking, :with_old_status_row,
+               **{ sub_space: subspace, user: user,
+                   start_time: DateTime.parse("2027-04-03 10:00"),
+                   end_time: DateTime.parse("2027-04-03 11:00") }.merge(attrs)),
         @approved_status
       )
     end
@@ -954,6 +1195,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       log_in!(owner)
       booking = booking_for(owner)
       status_id = booking.sub_space_booking_status_id
+      expect(status_id).to be_present
 
       delete sub_space_booking_delete_path(booking.id)
       expect(response).to redirect_to(
@@ -963,6 +1205,18 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
         .to(eq("Booking for #{subspace.name} deleted successfully."))
       expect(SubSpaceBooking.find_by(id: booking.id)).to be_nil
       expect(SubSpaceBookingStatus.find_by(id: status_id)).to be_nil
+    end
+
+    it "owner delete works for a booking with no old status row" do
+      owner = create(:user, :regular_user, booking_approval: true)
+      log_in!(owner)
+      booking = create(:sub_space_booking, sub_space: subspace, user: owner,
+                       start_time: DateTime.parse("2027-04-03 10:00"), end_time: DateTime.parse("2027-04-03 11:00"))
+      expect(booking.sub_space_booking_status_id).to be_nil
+
+      delete sub_space_booking_delete_path(booking.id)
+
+      expect(SubSpaceBooking.find_by(id: booking.id)).to be_nil
     end
 
     it "non-owner hit gets the owner-or-admin alert and the row survives" do
@@ -988,6 +1242,34 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       log_in!(create(:user, :admin, booking_approval: true))
       delete sub_space_booking_delete_path(99_999_999)
       expect(response.status).to eq(404)
+    end
+
+    it "a delete from the booking page (JSON) answers 204 and leaves the notice for the reload" do
+      owner = create(:user, :regular_user, booking_approval: true)
+      log_in!(owner)
+      booking = booking_for(owner)
+      delete sub_space_booking_delete_path(booking.id), headers: { "Accept" => "application/json" }
+      expect(response).to have_http_status(:no_content)
+      expect(flash[:notice]).to eq("Booking for #{subspace.name} deleted successfully.")
+      expect(SubSpaceBooking.find_by(id: booking.id)).to be_nil
+    end
+
+    it "a JSON delete of an unknown booking answers 404 with the error and a reference" do
+      log_in!(create(:user, :admin, booking_approval: true))
+      delete sub_space_booking_delete_path(99_999_999), headers: { "Accept" => "application/json" }
+      expect(response).to have_http_status(:not_found)
+      expect(response.parsed_body).to include("error" => I18n.t("errors.generic.not_found"),
+                                              "reference" => response.request.request_id.first(8))
+    end
+
+    it "a JSON delete of the remaining occurrences answers 204" do
+      owner = create(:user, :regular_user, booking_approval: true)
+      log_in!(owner)
+      recurring = RecurringBooking.create!
+      booking = booking_for(owner, recurring_booking: recurring)
+      delete delete_remaining_recurring_sub_space_booking_path(booking.id), headers: { "Accept" => "application/json" }
+      expect(response).to have_http_status(:no_content)
+      expect(SubSpaceBooking.exists?(booking.id)).to be(false)
     end
 
     it "delete_remaining_recurring clears from THIS booking onward" do
@@ -1081,6 +1363,16 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
         "name" => booking.name,
         "sub_space_id" => booking.sub_space_id
       )
+    end
+
+    it "request_access says why a request with an unknown identity was not submitted" do
+      user = create(:user, :regular_user, booking_approval: false)
+      log_in!(user)
+
+      put request_access_sub_space_booking_index_path, params: { comments: "please", identity: "Nobody" }
+      expect(flash[:alert]).to start_with(I18n.t("errors.bookings.access_request_failed"))
+      expect(flash[:alert]).to include(UserBookingApproval.human_attribute_name(:identity))
+      expect(UserBookingApproval.where(user: user)).to be_empty
     end
 
     it "request_access gates blank comments and duplicate requests" do
@@ -1186,20 +1478,20 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(fresh.reload.booking_approval).to be(true)
     end
 
-    it "deny_access destroys the UBA and revokes user approval" do
+    it "deny_access revokes user approval and keeps the request as revoked" do
       admin = create(:user, :admin, booking_approval: true)
       log_in!(admin)
       user1 = create(:user, :regular_user, booking_approval: true)
       uba = UserBookingApproval.create!(user: user1, identity: "JMTS",
-                                        approved: true, comments: "why",
+                                        status: "approved", comments: "why",
                                         date: Date.today)
 
       put deny_access_sub_space_booking_index_path, params: { id: uba.id }
       expect(response).to redirect_to(
         sub_space_booking_index_path(anchor: "booking-admin-tab")
       )
-      expect(flash[:notice]).to eq("Access request declined successfully.")
-      expect(UserBookingApproval.find_by(id: uba.id)).to be_nil
+      expect(flash[:notice]).to eq("Booking access revoked successfully.")
+      expect(uba.reload.status).to eq("revoked")
       expect(user1.reload.booking_approval).to be(false)
     end
 

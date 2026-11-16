@@ -2,6 +2,33 @@
 
 class ReportGenerator
   require "axlsx"
+
+  # What a sheet or title says for a session that has no space.
+  UNKNOWN_SPACE = "Unknown"
+  # What a cell says for a session whose training or instructor is missing.
+  UNKNOWN = "Unknown"
+  # The header of the student number column, which follows every column the
+  # user tables have always had. Those columns keep their order and headers
+  # for the readers that load them by position: the cell under "Student ID"
+  # holds the join date (new users) or the attendee name (attendees).
+  STUDENT_NUMBER = "Student number"
+  # Cell types: text that people entered is written as text (TEXT), so a
+  # value that looks like a number, a date or a formula opens as it was
+  # entered; a nil type leaves the cell's type to its value. A label row
+  # (LABEL_ROW) has its text in the first cell and counts after it.
+  TEXT = :string
+  LABEL_ROW = [TEXT].freeze
+  # A new users line: the six text columns, then the year of study and the
+  # join date as before, and the student number as text.
+  NEW_USER_TYPES = ([TEXT] * 6 + [nil, nil, nil, TEXT]).freeze
+  # An attendee line (see attendee_row): the date and the empty column keep
+  # their own types.
+  ATTENDEE_TYPES = [TEXT, TEXT, TEXT, nil, TEXT, TEXT, TEXT, nil, TEXT].freeze
+  # A trainings line: every column but the date and the attendee count.
+  TRAINING_TYPES = [TEXT, TEXT, TEXT, TEXT, nil, TEXT].freeze
+  # A visitors line with a label in the first and the sixth cells (identity
+  # and faculty, or department and level), counts between them.
+  TWO_LABEL_TYPES = [TEXT, nil, nil, nil, nil, TEXT].freeze
   # region Date Range Reports
 
   # @param [DateTime] start_date
@@ -14,9 +41,10 @@ class ReportGenerator
       LabSession
         .where(created_at: start_date..end_date)
         .joins(:user, :space)
+        .left_joins(user: :uoeng_profile)
         .select(
           :"users.id",
-          :"users.faculty",
+          User.shown_faculty_sql.as("faculty"),
           :"users.gender",
           :"users.identity",
           :"users.program",
@@ -69,9 +97,10 @@ class ReportGenerator
             ["Identity", "Distinct Users", "", "Total Visits"]
           )
           space_visits
-            .group_by { |d| d["identity"] }
-            .each do |iden, counts|
-              sheet.add_row [iden.humanize, counts.uniq.count, "", counts.count]
+            .group_by { |d| User.identity_label(d["identity"]) }
+            .each do |identity, counts|
+              sheet.add_row [identity, counts.uniq.count, "", counts.count],
+                            types: LABEL_ROW
             end
 
           sheet.add_row # spacing
@@ -81,7 +110,9 @@ class ReportGenerator
           space_visits
             .group_by { |x| x["gender"] }
             .sort
-            .each { |gender, counts| sheet.add_row [gender, counts.uniq.count] }
+            .each do |gender, counts|
+              sheet.add_row [gender, counts.uniq.count], types: LABEL_ROW
+            end
 
           sheet.add_row # spacing
 
@@ -89,16 +120,15 @@ class ReportGenerator
 
           # sort by faculty
           space_visits
-            .group_by do |d|
-              d.faculty == "Génie" ? "Engineering" : d.faculty
-            end # Merge french
+            .group_by { |d| User.faculty_label(d.faculty) }
             .each do |faculty, counts|
               sheet.add_row [
-                              faculty == "" ? "None" : faculty,
+                              faculty,
                               counts.uniq.count,
                               "",
                               counts.count
-                            ]
+                            ],
+                            types: LABEL_ROW
             end
 
           # group by faculty, identity
@@ -116,23 +146,22 @@ class ReportGenerator
                                    }
           toggle_grey = true
           space_visits
-            .group_by { |x| x.identity }
-            .each do |iden, rest|
+            .group_by { |x| User.identity_label(x.identity) }
+            .each do |identity, rest|
               start_cell = sheet.rows.last.cells.first.pos # for merging
               rest
-                .group_by do |y|
-                  y.faculty == "Génie" ? "Engineering" : y.faculty
-                end # Merge french
+                .group_by { |y| User.faculty_label(y.faculty) }
                 .each do |faculty, counts|
                   sheet.add_row [
-                                  iden.humanize,
+                                  identity,
                                   counts.uniq.count,
                                   "",
                                   counts.count,
                                   "",
-                                  faculty == "" ? "None" : faculty
+                                  faculty
                                 ],
-                                style: toggle_grey ? grey_cell : merge_cell
+                                style: toggle_grey ? grey_cell : merge_cell,
+                                types: TWO_LABEL_TYPES
                 end
               end_cell = sheet.rows.last.cells.first.pos
               sheet.merge_cells Axlsx.cell_r(start_cell[0], start_cell[1] + 1) +
@@ -168,7 +197,8 @@ class ReportGenerator
                                   "",
                                   level
                                 ],
-                                style: toggle_grey ? grey_cell : merge_cell
+                                style: toggle_grey ? grey_cell : merge_cell,
+                                types: TWO_LABEL_TYPES
                 end
               end_cell = sheet.rows.last.cells.first.pos
               sheet.merge_cells Axlsx.cell_r(start_cell[0], start_cell[1] + 1) +
@@ -192,7 +222,8 @@ class ReportGenerator
           end
           .sort
           .each do |program, counts|
-            sheet.add_row [program, counts.uniq.count, "", counts.count]
+            sheet.add_row [program, counts.uniq.count, "", counts.count],
+                          types: LABEL_ROW
           end
       end
 
@@ -227,7 +258,8 @@ class ReportGenerator
                             k,
                             training_type.count,
                             training_type.sum { |d| d["attendee_count"] }
-                          ]
+                          ],
+                          types: LABEL_ROW
           end
 
         sheet.add_row # spacing
@@ -268,10 +300,11 @@ class ReportGenerator
                           row["training_level"],
                           row["course_name"],
                           row["instructor_name"],
-                          row["date"].localtime.strftime("%Y-%m-%d %H:%M"),
+                          row["date"].in_time_zone.strftime("%Y-%m-%d %H:%M"),
                           row["space_name"],
                           row["attendee_count"]
-                        ] # ,
+                        ],
+                        types: TRAINING_TYPES # ,
           # style: [style]
         end
       end
@@ -331,18 +364,20 @@ class ReportGenerator
     courses = courses.uniq # .map { |d| d || "None" }
 
     (spaces + ["total"]).each do |space|
+      space_label = space || UNKNOWN_SPACE
       spreadsheet
         .workbook
-        .add_worksheet(name: space || "Unknown") do |sheet|
+        .add_worksheet(name: space_label) do |sheet|
           title(sheet, "Makerepo Certifications report")
-          title_string = "Certifications granted in #{space}"
+          title_string = "Certifications granted in #{space_label}"
           header(sheet, title_string, start_date, end_date)
           sheet.column_widths title_string.length + 2
 
           # push headers, add space to be merged
           sheet.add_row [""] + courses.map { |d| [d || "Open", ""] }.flatten +
                           ["Total", ""],
-                        style: centered_style
+                        style: centered_style,
+                        types: TEXT
           # merge subheaders
           # Plus the total header
           (courses.count + 1).times do |n|
@@ -392,7 +427,7 @@ class ReportGenerator
             entry += [total_sessions, total_certs]
 
             # finally push row
-            sheet.add_row entry, style: centered_style
+            sheet.add_row entry, style: centered_style, types: LABEL_ROW
           end
 
           # push final total row, for each course
@@ -447,19 +482,22 @@ class ReportGenerator
         sheet.add_row
 
         title(sheet, "Year of Study")
-        # year of study is stored as text, transform key to int for sorting
-        users
-          .group(:year_of_study)
-          .count
-          .transform_keys { |k| k.to_i }
-          .sort
-          .each { |key, value| sheet.add_row [key, value] }
+        User
+          .years_of_study_in_order(users.current_years_of_study.tally)
+          .each do |year, count|
+            sheet.add_row [year, count], types: year_row_types(year)
+          end
 
         sheet.add_row
         title(sheet, "Level of Study")
         push_hash(
           sheet,
-          users.group(:identity).count.transform_keys(&:humanize)
+          users
+            .group(:identity)
+            .count
+            .each_with_object(Hash.new(0)) do |(identity, count), counts|
+              counts[User.identity_label(identity)] += count
+            end
         )
 
         sheet.add_row
@@ -468,7 +506,7 @@ class ReportGenerator
           .group(:gender)
           .count
           .sort
-          .each { |key, value| sheet.add_row [key, value] }
+          .each { |key, value| sheet.add_row [key, value], types: LABEL_ROW }
       end
 
     spreadsheet
@@ -487,20 +525,14 @@ class ReportGenerator
         # Engineering/non-engineering
 
         # By faculty
-        # HACK you should merge génie with engineering instead?
         title(sheet, "By Faculty")
         table_header(sheet, ["Faculty", "New Users"])
         push_hash(
           sheet,
           users
-            .group(:faculty)
-            .count
-            .transform_keys do |k|
-              if k == ""
-                "None"
-              elsif k == "Génie"
-                "Engineering"
-              end
+            .count_by_shown_faculty
+            .each_with_object(Hash.new(0)) do |(faculty, count), counts|
+              counts[User.faculty_label(faculty)] += count
             end
         )
         sheet.add_row ["Total", users.count]
@@ -598,51 +630,82 @@ class ReportGenerator
 
         title(sheet, "Overview")
 
-        groups = users.group_by(&:identity)
-
-        groups.each do |group_name, values|
-          sheet.add_row [group_name, values.length]
-        end
+        users
+          .group_by(&:identity)
+          .each do |identity, values|
+            sheet.add_row [identity, values.length], types: LABEL_ROW
+          end
 
         sheet.add_row # spacing
 
-        table_header(
-          sheet,
-          [
-            "Name",
-            "Username",
-            "Email",
-            "Gender",
-            "Identity",
-            "Faculty",
-            "Year of Study",
-            "Student ID",
-            "Joined on"
-          ]
-        )
+        columns = [
+          "Name",
+          "Username",
+          "Email",
+          "Gender",
+          "Identity",
+          "Faculty",
+          "Year of Study",
+          "Student ID",
+          "Joined on",
+          STUDENT_NUMBER
+        ]
+        table_header(sheet, columns)
 
-        users.each do |user|
+        users.with_shown_faculty.each do |user|
           sheet.add_row [
                           user.name,
                           user.username,
                           user.email,
                           user.gender,
                           user.identity,
-                          user.faculty,
-                          user.year_of_study,
-                          user.created_at.localtime.strftime("%Y-%m-%d %H:%M")
-                        ]
+                          user.shown_faculty,
+                          user.current_year_of_study,
+                          user.created_at.in_time_zone.strftime("%Y-%m-%d %H:%M"),
+                          nil,
+                          user.student_id
+                        ],
+                        types: NEW_USER_TYPES
         end
       end
 
     spreadsheet
   end
 
+  # One attendee line, starting under the first header (see STUDENT_NUMBER),
+  # with the student number in the last column. A missing attendee name,
+  # training or instructor shows Unknown in that cell.
+  def self.attendee_row(certification)
+    user = certification.user
+    [
+      user&.name || UNKNOWN,
+      user&.email,
+      *attendee_session_cells(certification.training_session),
+      nil,
+      user&.student_id
+    ]
+  end
+
+  # The training, date, instructor, course and facility cells of an attendee
+  # line.
+  def self.attendee_session_cells(session)
+    [
+      session.training&.name_en || UNKNOWN,
+      session.created_at.strftime("%Y-%m-%d %H:%M"),
+      session.user&.name || UNKNOWN,
+      session.course,
+      session.space&.name
+    ]
+  end
+  private_class_method :attendee_session_cells
+  private_class_method :attendee_row
+
   def self.generate_training_attendees_report(start_date, end_date)
     certifications =
       Certification
         .includes({ training_session: %i[user training space] }, :user)
         .where(created_at: start_date..end_date)
+        .where.not(training_session_id: nil)
         .order(
           "spaces.name",
           "training_sessions.created_at",
@@ -653,117 +716,65 @@ class ReportGenerator
     spreadsheet = Axlsx::Package.new
 
     certifications.each do |_space, space_certifications|
+      space_name =
+        space_certifications[0].training_session.space&.name || UNKNOWN_SPACE
       spreadsheet
         .workbook
-        .add_worksheet(
-          name:
-            "Report - #{space_certifications[0].training_session.space&.name}"
-        ) do |sheet|
+        .add_worksheet(name: "Report - #{space_name}") do |sheet|
           merge_cell = sheet.styles.add_style alignment: { vertical: :center }
 
-          title(
-            sheet,
-            "Training Attendees - #{space_certifications[0].training_session.space&.name}"
-          )
+          title(sheet, "Training Attendees - #{space_name}")
 
           sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
           sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
           sheet.add_row # spacing
 
-          table_header(
-            sheet,
-            [
-              "Student ID",
-              "Name",
-              "Email Address",
-              "Certification Type",
-              "Certification Date",
-              "Instructor",
-              "Course",
-              "Facility"
-            ]
-          )
+          columns = [
+            "Student ID",
+            "Name",
+            "Email Address",
+            "Certification Type",
+            "Certification Date",
+            "Instructor",
+            "Course",
+            "Facility",
+            STUDENT_NUMBER
+          ]
+          table_header(sheet, columns)
 
           space_certifications.each do |certification|
-            sheet.add_row [
-                            certification.user.name,
-                            certification.user.email,
-                            certification.training_session.training.name_en,
-                            certification.training_session.created_at.strftime(
-                              "%Y-%m-%d %H:%M"
-                            ),
-                            certification.training_session.user.name,
-                            certification.training_session.course,
-                            certification.training_session.space&.name
-                          ]
+            sheet.add_row attendee_row(certification), types: ATTENDEE_TYPES
           end
 
           sheet.add_row #spacing
 
-          month_average = ["Month average of attendees per sessions"]
+          one_decimal = sheet.styles.add_style format_code: "0.0"
           month_header = ["Month"]
-
-          (start_date.to_datetime..end_date.to_datetime)
-            .select { |date| date.day == 1 }
-            .map do |date|
-              month_header << date.strftime("%B")
-              month_certifications =
-                space_certifications.select do |cert|
-                  cert.created_at.between?(
-                    date.beginning_of_month,
-                    date.end_of_month
-                  )
-                end
-              average =
-                if month_certifications.count.zero? ||
-                     month_certifications
-                       .pluck(:training_session_id)
-                       .uniq
-                       .count
-                       .zero?
-                  0
-                else
-                  month_certifications.count /
-                    month_certifications.pluck(:training_session_id).uniq.count
-                end
-              month_average << average
-            end
+          month_average = ["Month average of attendees per sessions"]
+          calendar_periods(start_date, end_date, :month).each do |month|
+            month_header << month.first.strftime("%B")
+            month_average << average_attendees_per_session(
+              space_certifications,
+              month
+            )
+          end
 
           table_header(sheet, month_header)
-          sheet.add_row month_average
+          sheet.add_row month_average, style: one_decimal
           sheet.add_row # spacing
 
-          week_average = ["Week average of attendees per sessions"]
           week_header = ["Week"]
-
-          (start_date.to_datetime.to_i..end_date.to_datetime.to_i).step(
-            1.week
-          ) do |date|
-            week_header << "#{Time.at(date).beginning_of_week.strftime("%Y-%m-%d")} to #{Time.at(date).end_of_week.strftime("%Y-%m-%d")}"
-            week_certifications =
-              space_certifications.select do |cert|
-                cert.created_at.between?(
-                  Time.at(date).beginning_of_week,
-                  Time.at(date).end_of_week
-                )
-              end
-            average =
-              if week_certifications.count.zero? ||
-                   week_certifications
-                     .pluck(:training_session_id)
-                     .uniq
-                     .count
-                     .zero?
-                0
-              else
-                week_certifications.count /
-                  week_certifications.pluck(:training_session_id).uniq.count
-              end
-            week_average << average
+          week_average = ["Week average of attendees per sessions"]
+          calendar_periods(start_date, end_date, :week).each do |week|
+            week_header << "#{week.first.strftime("%Y-%m-%d")} to #{week.last.strftime("%Y-%m-%d")}"
+            week_average << average_attendees_per_session(
+              space_certifications,
+              week
+            )
           end
 
           table_header(sheet, week_header)
-          sheet.add_row week_average
+          sheet.add_row week_average, style: one_decimal
           sheet.add_row # spacing
         end
     end
@@ -772,8 +783,6 @@ class ReportGenerator
   end
 
   def self.generate_new_projects_report(start_date, end_date)
-    # aggregate_data = get_new_projects(start_date, end_date)
-
     repositories =
       Repository
         .where("created_at" => start_date..end_date)
@@ -811,14 +820,14 @@ class ReportGenerator
         sheet.add_row # spacing
 
         title(sheet, "Categories")
-        category_count.each { |key, value| sheet.add_row [key, value] }
+        push_hash(sheet, category_count)
         # add total sum
         sheet.add_row ["Total", category_count.values.sum]
 
         sheet.add_row
 
         title(sheet, "Equipment usage")
-        equipment_count.each { |key, value| sheet.add_row [key, value] }
+        push_hash(sheet, equipment_count)
         sheet.add_row ["Total", equipment_count.values.sum]
 
         sheet.add_row
@@ -829,7 +838,7 @@ class ReportGenerator
           .group(:license)
           .count
           .each do |key, value|
-            sheet.add_row [key, value]
+            sheet.add_row [key, value], types: LABEL_ROW
             total_licenses += value
           end
         sheet.add_row ["Total", total_licenses]
@@ -841,7 +850,7 @@ class ReportGenerator
           .group(:share_type)
           .count
           .each do |key, value|
-            sheet.add_row [key, value]
+            sheet.add_row [key, value], types: LABEL_ROW
             total_share_type += value
           end
         sheet.add_row ["Total", total_share_type]
@@ -869,12 +878,25 @@ class ReportGenerator
                             user_username: repository.user_username
                           ),
                           repository.categories.map(&:name).join(", ")
-                        ]
+                        ],
+                        types: TEXT
         end
       end
 
     spreadsheet
   end
+
+  # The type, location, date and instructor lines of a single session
+  # workbook. A missing training, space or instructor shows Unknown.
+  def self.session_summary_rows(session)
+    [
+      ["Training Type", session.training&.name_en || UNKNOWN],
+      ["Location", session.space&.name || UNKNOWN_SPACE],
+      ["Date", session.created_at.strftime("%Y-%m-%d %H:%M")],
+      ["Instructor", session.user&.name || UNKNOWN]
+    ]
+  end
+  private_class_method :session_summary_rows
 
   def self.generate_training_session_report(id)
     session =
@@ -887,11 +909,10 @@ class ReportGenerator
       .add_worksheet(name: "Report") do |sheet|
         title(sheet, "Training Session")
 
-        sheet.add_row ["Training Type", session.training.name_en]
-        sheet.add_row ["Location", session.space.name]
-        sheet.add_row ["Date", session.created_at.strftime("%Y-%m-%d %H:%M")]
-        sheet.add_row ["Instructor", session.user.name]
-        sheet.add_row ["Course", session.course]
+        session_summary_rows(session).each do |row|
+          sheet.add_row row, types: TEXT
+        end
+        sheet.add_row ["Course", session.course], types: TEXT
         sheet.add_row ["Number of Trainees", session.users.length]
 
         sheet.add_row # spacing
@@ -899,7 +920,7 @@ class ReportGenerator
         table_header(sheet, %w[Name Email])
 
         session.users.each do |student|
-          sheet.add_row [student.name, student.email]
+          sheet.add_row [student.name, student.email], types: TEXT
         end
       end
 
@@ -907,13 +928,14 @@ class ReportGenerator
   end
 
   def self.generate_space_present_users_report(id)
+    now = Time.current
     lab_sessions =
       LabSession
         .includes(:user)
         .joins(:user)
         .where("space_id" => id)
-        .where("sign_in_time < ?", DateTime.now)
-        .where("sign_out_time > ?", DateTime.now)
+        .where("sign_in_time < ?", now)
+        .where("sign_out_time > ?", now)
 
     spreadsheet = Axlsx::Package.new
 
@@ -922,14 +944,15 @@ class ReportGenerator
       .add_worksheet(name: "Report") do |sheet|
         title(sheet, "Present Users")
 
-        sheet.add_row ["Date", DateTime.now.strftime("%Y-%m-%d %H:%M:%S")]
+        sheet.add_row ["Date", now.strftime("%Y-%m-%d %H:%M:%S")]
 
         sheet.add_row # spacing
 
         table_header(sheet, %w[Name Email])
 
         lab_sessions.each do |lab_session|
-          sheet.add_row [lab_session.user.name, lab_session.user.email]
+          sheet.add_row [lab_session.user.name, lab_session.user.email],
+                        types: TEXT
         end
       end
 
@@ -938,6 +961,10 @@ class ReportGenerator
 
   def self.generate_peak_hours_report(start_date, end_date)
     ls = LabSession.arel_table
+    # One row per day from the From date to the To date; the visits counted are
+    # those of these whole days in the application time zone, so every hour
+    # column comes from a visit on one of the rows.
+    days = start_date.to_date..end_date.to_date
 
     result =
       ActiveRecord::Base.connection.exec_query(
@@ -950,40 +977,31 @@ class ReportGenerator
             Arel.star.count.as("total_visits")
           )
           .from(ls)
-          .where(ls["sign_in_time"].between(start_date..end_date))
+          .where(
+            ls["sign_in_time"].between(
+              days.begin.beginning_of_day..days.end.end_of_day
+            )
+          )
           .group("year", "month", "day", "hour")
           .to_sql
       )
 
-    visits_by_hour = {}
-    min_hour = 23
-    max_hour = 0
-
+    # The database stores UTC hours; each one is counted under its hour in the
+    # application time zone, so the two UTC hours that fall in the repeated
+    # hour when daylight saving time ends add up.
+    visits_by_hour = Hash.new(0)
     result.each do |row|
-      year = row["year"].to_i
-      month = row["month"].to_i
-      day = row["day"].to_i
-      hour = row["hour"].to_i
-      total_visits = row["total_visits"].to_i
-
-      date = DateTime.new(year, month, day, hour).localtime
-
-      min_hour = [min_hour, date.hour].min
-      max_hour = [max_hour, date.hour].max
-
-      visits_by_hour[date.year] = {} unless visits_by_hour[date.year]
-
-      visits_by_hour[date.year][date.month] = {} unless visits_by_hour[
-        date.year
-      ][
-        date.month
-      ]
-
-      visits_by_hour[date.year][date.month][date.day] = {
-      } unless visits_by_hour[date.year][date.month][date.day]
-
-      visits_by_hour[date.year][date.month][date.day][date.hour] = total_visits
+      at =
+        Time.utc(
+          row["year"].to_i,
+          row["month"].to_i,
+          row["day"].to_i,
+          row["hour"].to_i
+        ).in_time_zone
+      visits_by_hour[[at.to_date, at.hour]] += row["total_visits"].to_i
     end
+    hours = visits_by_hour.keys.map(&:last)
+    hour_columns = hours.empty? ? [] : (hours.min..hours.max).to_a
 
     spreadsheet = Axlsx::Package.new
 
@@ -995,23 +1013,14 @@ class ReportGenerator
 
       header = ["Date"]
 
-      (min_hour..max_hour).each { |hour| header << "%02i:00" % hour }
+      hour_columns.each { |hour| header << "%02i:00" % hour }
 
       table_header(sheet, header)
 
-      (start_date..end_date).each do |date|
+      days.each do |date|
         row = [date.strftime("%Y-%m-%d")]
 
-        (min_hour..max_hour).each do |hour|
-          row << if visits_by_hour[date.year] &&
-               visits_by_hour[date.year][date.month] &&
-               visits_by_hour[date.year][date.month][date.day] &&
-               visits_by_hour[date.year][date.month][date.day][hour]
-            visits_by_hour[date.year][date.month][date.day][hour]
-          else
-            0
-          end
-        end
+        hour_columns.each { |hour| row << visits_by_hour[[date, hour]] }
 
         sheet.add_row row
       end
@@ -1021,7 +1030,10 @@ class ReportGenerator
   end
 
   def self.generate_kit_purchased_report(start_date, end_date)
-    kits = ProjectKit.where("created_at" => start_date..end_date)
+    kits =
+      ProjectKit
+        .includes(:proficient_project, :user)
+        .where("created_at" => start_date..end_date)
 
     spreadsheet = Axlsx::Package.new
 
@@ -1043,292 +1055,12 @@ class ReportGenerator
                           kit.user.name,
                           kit.created_at,
                           status
-                        ]
+                        ],
+                        types: [TEXT, TEXT]
         end
       end
 
     spreadsheet
-  end
-
-  def self.get_new_projects(start_date, end_date)
-    # Essentially a copy of html report as xlsx
-    # Breakdown of projects by month
-    # By category, license, project type,
-    repos = Repository.arel_table
-    categories = Category.arel_table
-    propos = ProjectProposal.arel_table
-    equips = Equipment.arel_table
-
-    # Repository.select("date_trunc('year', created_at) as year, date_trunc('month', created_at) as month")
-    #           .includes(:categories)
-    #           .includes(:equipments)
-    #           .where(created_at: start_date..end_date)
-    #           .group("month")
-    ActiveRecord::Base.connection.exec_query(
-      Repository
-        .select(
-          [
-            repos["id"],
-            "to_char(repositories.created_at, 'MM') as created_month", # NOTE: postgresql specific hack to get month, year
-            "to_char(repositories.created_at, 'YYYY') as created_year",
-            repos["license"],
-            repos["share_type"],
-            categories["name"],
-            equips["name"]
-          ]
-        )
-        .joins(
-          repos
-            .join(categories)
-            .on(repos["id"].eq(categories["repository_id"]))
-            .join_sources
-        )
-        .joins(
-          repos
-            .join(equips)
-            .on(repos["id"].eq(equips["repository_id"]))
-            .join_sources
-        )
-        .where(repos["created_at"].between(start_date..end_date))
-        .to_sql
-    )
-  end
-
-  def self.get_visitors(start_date, end_date) # NOTE: This duplicates counts
-    g = Arel::Table.new("g")
-    ls = LabSession.arel_table
-    u = User.arel_table
-    s = Space.arel_table
-
-    result =
-      ActiveRecord::Base.connection.exec_query(
-        g
-          .project(
-            [
-              g[:space_name].minimum.as("space_name"),
-              g[:identity],
-              g[:faculty],
-              g[:gender],
-              Arel.star.count.as("unique_visitors"),
-              g[:count].sum.as("total_visits")
-            ]
-          )
-          .from(
-            LabSession
-              .select(
-                [
-                  ls[:space_id],
-                  s[:name].minimum.as("space_name"),
-                  u[:identity],
-                  u[:faculty],
-                  u[:gender],
-                  Arel.star.count
-                ]
-              )
-              .joins(ls.join(u).on(u[:id].eq(ls[:user_id])).join_sources)
-              .joins(ls.join(s).on(s[:id].eq(ls[:space_id])).join_sources)
-              .where(ls[:sign_in_time].between(start_date..end_date))
-              .group(
-                ls[:space_id],
-                ls[:user_id],
-                u[:faculty],
-                u[:identity],
-                u[:gender]
-              )
-              .arel
-              .as(g.name)
-          )
-          .order(g[:space_name].minimum, g[:identity], g[:faculty], g[:gender])
-          .group(g[:space_id], g[:identity], g[:faculty], g[:gender])
-          .to_sql
-      )
-
-    organized = {
-      unique: 0,
-      total: 0,
-      spaces: {
-      },
-      identities: {
-      },
-      faculties: {
-      },
-      genders: {
-      }
-    }
-
-    result.each do |row|
-      space_name = row["space_name"]
-      faculty = row["faculty"].presence || "Unknown"
-      gender = row["gender"]
-
-      identity =
-        case row["identity"]
-        when "undergrad"
-          "Undergraduate"
-        when "grad"
-          "Graduate"
-        when "faculty_member"
-          "Faculty Member"
-        when "staff_member"
-          "Staff Member"
-        when "community_member"
-          # @param [DateTime] start_date
-          # @param [DateTime] end_date
-
-          # @param [DateTime] start_date
-          # @param [DateTime] end_date
-
-          # @param [Integer] id
-
-          # @param [Integer] id
-
-          # @param [DateTime] start_date
-          # @param [DateTime] end_date
-
-          # @param [DateTime] start_date
-          # @param [DateTime] end_date
-
-          # endregion
-
-          # region Database helpers
-
-          # @param [DateTime] start_date
-          # @param [DateTime] end_date
-
-          # repos["created_at"].as("created"),
-
-          # repos["license"].count().as("license_count"),
-
-          # Arel.star.count
-
-          # .group(repos["share_type"], repos["license"], categories["name"],
-          #       equips["name"], "created_month", "created_year")
-
-          # @param [DateTime] start_date
-          # @param [DateTime] end_date
-
-          # shove everything into a hash
-
-          "Community Member"
-        else
-          "Unknown"
-        end
-
-      unless organized[:spaces][space_name]
-        organized[:spaces][space_name] = {
-          unique: 0,
-          total: 0,
-          identities: {
-          },
-          faculties: {
-          },
-          genders: {
-          }
-        }
-      end
-
-      unless organized[:spaces][space_name][:identities][identity]
-        organized[:spaces][space_name][:identities][identity] = {
-          unique: 0,
-          total: 0,
-          faculties: {
-          }
-        }
-      end
-
-      unless organized[:spaces][space_name][:identities][identity][:faculties][
-               faculty
-             ]
-        organized[:spaces][space_name][:identities][identity][:faculties][
-          faculty
-        ] = { unique: 0, total: 0 }
-      end
-
-      unless organized[:spaces][space_name][:faculties][faculty]
-        organized[:spaces][space_name][:faculties][faculty] = {
-          unique: 0,
-          total: 0
-        }
-      end
-
-      unless organized[:spaces][space_name][:genders][gender]
-        organized[:spaces][space_name][:genders][gender] = {
-          unique: 0,
-          total: 0
-        }
-      end
-
-      unless organized[:identities][identity]
-        organized[:identities][identity] = {
-          unique: 0,
-          total: 0,
-          faculties: {
-          }
-        }
-      end
-
-      unless organized[:identities][identity][:faculties][faculty]
-        organized[:identities][identity][:faculties][faculty] = {
-          unique: 0,
-          total: 0
-        }
-      end
-
-      organized[:faculties][faculty] = { unique: 0, total: 0 } unless organized[
-        :faculties
-      ][
-        faculty
-      ]
-
-      organized[:genders][gender] = { unique: 0, total: 0 } unless organized[
-        :genders
-      ][
-        gender
-      ]
-
-      unique = row["unique_visitors"].to_i
-      total = row["total_visits"].to_i
-
-      organized[:unique] += unique
-      organized[:total] += total
-
-      organized[:identities][identity][:unique] += unique
-      organized[:identities][identity][:total] += total
-
-      organized[:identities][identity][:faculties][faculty][:unique] += unique
-      organized[:identities][identity][:faculties][faculty][:total] += total
-
-      organized[:faculties][faculty][:unique] += unique
-      organized[:faculties][faculty][:total] += total
-
-      organized[:genders][gender][:unique] += unique
-      organized[:genders][gender][:total] += total
-
-      organized[:spaces][space_name][:unique] += unique
-
-      organized[:spaces][space_name][:total] += total
-      organized[:spaces][space_name][:identities][identity][:unique] += unique
-      organized[:spaces][space_name][:identities][identity][:total] += total
-
-      organized[:spaces][space_name][:identities][identity][:faculties][
-        faculty
-      ][
-        :unique
-      ] += unique
-      organized[:spaces][space_name][:identities][identity][:faculties][
-        faculty
-      ][
-        :total
-      ] += total
-
-      organized[:spaces][space_name][:faculties][faculty][:unique] += unique
-      organized[:spaces][space_name][:faculties][faculty][:total] += total
-
-      organized[:spaces][space_name][:genders][gender][:unique] += unique
-      organized[:spaces][space_name][:genders][gender][:total] += total
-    end
-
-    organized
   end
 
   # @param [DateTime] start_date
@@ -1354,7 +1086,7 @@ class ReportGenerator
             uu[:name].minimum.as("instructor_name"),
             ts[:created_at].minimum.as("date"),
             s[:name].minimum.as("space_name"),
-            Arel.star.count.as("attendee_count")
+            u[:id].count.as("attendee_count")
           ]
         )
         .where(ts[:created_at].between(start_date..end_date))
@@ -1452,12 +1184,34 @@ class ReportGenerator
     worksheet.add_row # spacing
   end
 
+  # A Year of Study line: a numbered year stays a number, any other value
+  # (Alumni, N/A, Unknown or other text) is a text label.
+  def self.year_row_types(year)
+    year.is_a?(Integer) ? nil : LABEL_ROW
+  end
+  private_class_method :year_row_types
+
   def self.push_hash(sheet, hash)
-    hash.each { |key, value| sheet.add_row [key, value] }
+    hash.each { |key, value| sheet.add_row [key, value], types: LABEL_ROW }
   end
 
-  def self.sum_by_key(hash, key)
-    hash.map { |x| x[key] }.sum
+  # The calendar months or weeks (unit :month or :week) that overlap the
+  # range, the partial ones at either end included, each as the range from
+  # its first to its last instant, in the application time zone.
+  def self.calendar_periods(start_date, end_date, unit)
+    (start_date.in_time_zone.to_date..end_date.in_time_zone.to_date)
+      .map { |day| day.public_send(:"beginning_of_#{unit}").in_time_zone }
+      .uniq
+      .map { |first| first..first.public_send(:"end_of_#{unit}") }
+  end
+
+  # Certificates per session among the certificates created in the period,
+  # rounded to one decimal place (0.0 when there are none).
+  def self.average_attendees_per_session(certifications, period)
+    in_period =
+      certifications.select { |cert| period.cover?(cert.created_at) }
+    sessions = in_period.map(&:training_session_id).uniq.count
+    sessions.zero? ? 0.0 : in_period.count.fdiv(sessions).round(1)
   end
 
   # Returns which engineering department a program belongs to
@@ -1497,25 +1251,6 @@ class ReportGenerator
     else
       "None"
     end
-  end
-
-  # Pass users.group(:program).count
-  # FIXME this detects MBA as bachelors, very false
-  def self.categorize_programs(programs)
-    {
-      "Blank" => programs.select { |k, _| k == "" }.values.sum,
-      "Engineering" =>
-        programs.select { |k, _| k =~ /Engineering/i }.values.sum,
-      "Non-Engineering" =>
-        programs.select { |k, _| k !~ /Engineering/i }.values.sum,
-      "Bachelors" =>
-        programs
-          .select { |k, _| k =~ /BASc|Bachelor|(?<!M)BA|BSc/i }
-          .values
-          .sum,
-      "Masters" => programs.select { |k, _| k =~ /Master/i }.values.sum,
-      "Doctorate" => programs.select { |k, _| k =~ /Doctorate/i }.values.sum
-    }
   end
 
   # endregion

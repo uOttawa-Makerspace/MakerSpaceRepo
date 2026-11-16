@@ -26,6 +26,18 @@ RSpec.describe "users:merge_duplicates" do
     $stdout = original_stdout
   end
 
+  it "keeps a hidden repository of the duplicate, with its photo, for the kept user" do
+    hidden = create(:repository, owner: duplicate, title: "Hidden One", users: [duplicate])
+    photo_ids = hidden.photos.pluck(:id)
+    hidden.hide!(by: hidden.owner)
+
+    merge
+
+    expect(User.unscoped.exists?(duplicate.id)).to be(false)
+    expect(Repository.unscoped.find(hidden.id)).to have_attributes(user_id: primary.id, deleted: true)
+    expect(Photo.where(id: photo_ids).pluck(:repository_id)).to eq([hidden.id])
+  end
+
   it "moves the duplicate's card to the kept user when that user has none, and the merge completes" do
     card = create(:rfid, user: duplicate, mac_address: "aa:aa:aa:aa:aa:aa")
 
@@ -92,6 +104,16 @@ RSpec.describe "users:merge_duplicates" do
     expect(proposal.reload.admin_id).to eq(primary.id)
   end
 
+  it "moves who ended a volunteer task join to the kept user instead of clearing it" do
+    join = create(:volunteer_task_join, :active)
+    join.finish!(:removed, by: duplicate)
+
+    merge
+
+    expect(User.unscoped.exists?(duplicate.id)).to be(false)
+    expect(join.reload).to have_attributes(state: "removed", state_changed_by_id: primary.id)
+  end
+
   it "moves what the user associations cover as before" do
     task = create(:volunteer_task, user: duplicate)
     merge
@@ -101,7 +123,7 @@ RSpec.describe "users:merge_duplicates" do
 
   it "moves a duplicate's booking access requests, and the requests it approved, with a blank identity filled in" do
     requested = UserBookingApproval.create!(user: duplicate, identity: "GNG", comments: "c", date: Date.today)
-    approved = UserBookingApproval.create!(user: create(:user), staff: duplicate, identity: "Other", approved: true,
+    approved = UserBookingApproval.create!(user: create(:user), staff: duplicate, identity: "Other", status: "approved",
                                            comments: "c", date: Date.today)
     approved.update_columns(identity: "")
 
@@ -112,6 +134,37 @@ RSpec.describe "users:merge_duplicates" do
     expect(approved.identity).to eq("Other")
     expect(primary.user_booking_approvals).to contain_exactly(requested)
     expect(primary.approved_booking_requests).to contain_exactly(approved)
+  end
+
+  it "moves the booking access answers the duplicate recorded, keeping the decision" do
+    declined = UserBookingApproval.create!(user: create(:user), identity: "GNG", comments: "c", date: Date.today)
+    declined.decline!(by: duplicate, reason: "not eligible")
+
+    merge
+
+    expect(declined.reload).to have_attributes(decided_by_id: primary.id, status: "declined", reason: "not eligible")
+    expect(primary.decided_booking_requests).to contain_exactly(declined)
+  end
+
+  it "moves the duplicate's printer sessions to the kept user, keeping every row" do
+    sessions = %i[um3_session um2p_session].map { |trait| create(:printer_session, trait, user: duplicate) }
+
+    expect { merge }.not_to change(PrinterSession, :count)
+
+    expect(User.unscoped.exists?(duplicate.id)).to be(false)
+    expect(PrinterSession.where(id: sessions.map(&:id)).pluck(:user_id)).to eq([primary.id, primary.id])
+  end
+
+  it "moves the trainer of a session that awarded certifications to the kept user" do
+    kept = create(:user, :staff)
+    trainer = create(:user, :staff)
+    awarded = create(:training_session_with_certifications, user: trainer).reload
+
+    send(:merge_record, kept, trainer)
+
+    expect(User.unscoped.exists?(trainer.id)).to be(false)
+    expect(awarded.reload.user_id).to eq(kept.id)
+    expect(awarded.certifications.count).to eq(2)
   end
 
   it "keeps one membership of a training session both users attended, and moves the others" do
@@ -243,6 +296,19 @@ RSpec.describe "users:merge_duplicates" do
       [create(:user), create(:user)]
     end
 
+    it "closes the open connections of the merged duplicate once it is deleted, and of nobody else" do
+      primary, duplicate = duplicated_pair
+      disconnected = []
+      allow(ActionCable.server.remote_connections).to receive(:where) do |current_user:|
+        double("remote").tap { |remote| allow(remote).to receive(:disconnect) { disconnected << current_user.id } }
+      end
+
+      send(:merge_users_into_one, [duplicate, primary], [], [])
+
+      expect(User.unscoped.exists?(duplicate.id)).to be(false)
+      expect(disconnected).to eq([duplicate.id])
+    end
+
     it "skips the pair whose sheets differ, merges the other pair and reports both" do
       good_primary, good_duplicate = duplicated_pair
       bad_primary, bad_duplicate = duplicated_pair
@@ -280,6 +346,18 @@ RSpec.describe "users:merge_duplicates" do
       User.where(id: [first.id, second.id]).update_all(username: "same")
       expect(send(:rename_duplicated_username, "same", [first.id, second.id])).to be_nil
       expect($stdout.string).to include("left alone: same (every holder is in a skipped pair)")
+    end
+
+    it "renames only the deleted holders when exactly one holder of the username is active" do
+      ActiveRecord::Base.connection.remove_index :users, name: "index_users_on_lowercase_username" # rolled back with the example
+      active, gone = duplicated_pair
+      User.where(id: [active.id, gone.id]).update_all(username: "same")
+      User.where(id: gone.id).update_all(deleted: true)
+
+      send(:rename_duplicated_username, "same")
+
+      expect(active.reload.username).to eq("same")
+      expect(User.unscoped.find(gone.id).username).to match(/\Asame\d{3}\z/)
     end
 
     it "lists the ids of the accounts in skipped pairs" do
@@ -333,6 +411,41 @@ RSpec.describe "users:merge_duplicates" do
     end
   end
 
+  describe "programs" do
+    def held_types(user) = Program.where(user_id: user.id).order(:id).pluck(:program_type)
+
+    it "moves the programs only the duplicate holds and keeps the ones the primary holds" do
+      create(:program, :development_program, user: primary)
+      create(:program, :volunteer_program, user: duplicate)
+
+      merge
+
+      expect(held_types(primary)).to match_array([Program::DEV_PROGRAM, Program::VOLUNTEER])
+      expect(User.unscoped.exists?(duplicate.id)).to be(false)
+    end
+
+    it "drops the duplicate's row only when the primary holds the same program with the same data" do
+      at = 3.days.ago.change(usec: 0)
+      kept = create(:program, :volunteer_program, user: primary, created_at: at)
+      create(:program, :volunteer_program, user: duplicate, created_at: at)
+
+      merge
+
+      expect(Program.where(user_id: primary.id).pluck(:id)).to eq([kept.id])
+      expect(Program.where(user_id: duplicate.id)).to be_empty
+    end
+
+    it "stops without deleting anything when both hold the program with different data" do
+      create(:program, :volunteer_program, user: primary, active: true)
+      create(:program, :volunteer_program, user: duplicate, active: false)
+
+      expect { merge }.to raise_error(UserMergeRefused, /programs rows/)
+
+      expect(Program.where(user_id: [primary.id, duplicate.id]).count).to eq(2)
+      expect(User.unscoped.exists?(duplicate.id)).to be(true)
+    end
+  end
+
   it "does not drop a row the primary does not have" do
     session = create(:training_session)
     session.users << duplicate
@@ -345,5 +458,116 @@ RSpec.describe "users:merge_duplicates" do
     key = create(:key, supervisor: other, space: create(:space))
     merge
     expect(key.reload.supervisor_id).to eq(other.id)
+  end
+
+  describe "pending checkouts for the same tier on both accounts" do
+    include ShopSpecHelpers
+
+    let!(:fake) { stub_shopify_admin! }
+    let(:tier) { create(:membership_tier) }
+    let(:other_tier) { create(:membership_tier, title_en: "Other tier") }
+
+    def pending(user, tier_for = tier, draft:)
+      create(:membership, user: user, membership_tier: tier_for, status: "pending", start_date: nil, end_date: nil,
+                          shopify_draft_order_id: draft, updated_at: 2.days.ago)
+    end
+
+    def merge_with_checkouts
+      send(:close_pending_conflicts, primary, duplicate)
+      merge
+    end
+
+    it "keeps the kept user's row, closes the duplicate's like the cleanup does, moves the rest and deletes nothing" do
+      kept = pending(primary, draft: "gid://shopify/DraftOrder/1")
+      closed = pending(duplicate, draft: "gid://shopify/DraftOrder/2")
+      moved = pending(duplicate, other_tier, draft: "gid://shopify/DraftOrder/3")
+      count = Membership.count
+
+      merge_with_checkouts
+
+      expect(fake.deleted_ids).to eq(["gid://shopify/DraftOrder/2"])
+      expect(Membership.count).to eq(count)
+      expect(closed.reload).to have_attributes(user_id: primary.id, status: "failed")
+      expect([kept.reload, moved.reload].map { |m| [m.user_id, m.status] }).to eq([[primary.id, "pending"], [primary.id, "pending"]])
+      expect(Membership::DuplicateClosure.find_by!(membership_id: closed.id)).to have_attributes(kept_membership_id: kept.id, restored_at: nil)
+      expect(User.unscoped.exists?(duplicate.id)).to be(false)
+    end
+
+    it "refuses the merge when the duplicate's draft is paid, changing nothing" do
+      pending(primary, draft: "gid://shopify/DraftOrder/1")
+      paid = pending(duplicate, draft: "gid://shopify/DraftOrder/2")
+      fake.draft_statuses["gid://shopify/DraftOrder/2"] = "COMPLETED"
+
+      expect { merge_with_checkouts }.to raise_error(UserMergeRefused, %r{memberships rows #{paid.id} .*Shopify draft gid://shopify/DraftOrder/2 is paid})
+
+      expect(fake.deleted_ids).to be_empty
+      expect(paid.reload).to have_attributes(user_id: duplicate.id, status: "pending")
+      expect(Membership::DuplicateClosure.count).to eq(0)
+      expect(User.unscoped.exists?(duplicate.id)).to be(true)
+    end
+
+    it "lets memberships:restore_duplicate_closures put the closed row back, as it was, on the kept user" do
+      pending(primary, draft: "gid://shopify/DraftOrder/1")
+      closed = pending(duplicate, draft: "gid://shopify/DraftOrder/2")
+      before = closed.reload.attributes.except("user_id")
+      merge_with_checkouts
+      ActiveRecord::Base.connection.remove_index(:memberships, name: Membership::DuplicateClosure::PENDING_UNIQUE_INDEX, if_exists: true)
+      stub_const("ENV", ENV.to_h.merge("CONFIRM_MAX_RESTORES" => "1"))
+
+      Rake::Task["memberships:restore_duplicate_closures"].reenable
+      Rake::Task["memberships:restore_duplicate_closures"].invoke("apply")
+
+      expect(closed.reload.attributes.except("user_id")).to eq(before)
+      expect(closed.user_id).to eq(primary.id)
+      expect(Membership::DuplicateClosure.find_by!(membership_id: closed.id).restored_at).to be_present
+    end
+
+    it "lists the closed rows in the summary even when the pair is then refused, with a plain paid-draft note" do
+      pending(primary, draft: "gid://shopify/DraftOrder/1")
+      pending(primary, other_tier, draft: "gid://shopify/DraftOrder/3")
+      closed = pending(duplicate, draft: "gid://shopify/DraftOrder/2")
+      paid = pending(duplicate, other_tier, draft: "gid://shopify/DraftOrder/4")
+      fake.draft_statuses["gid://shopify/DraftOrder/4"] = "COMPLETED"
+      merged = []
+      skipped = []
+
+      send(:merge_users_into_one, [duplicate, primary], merged, skipped)
+      send(:print_merge_summary, merged, skipped)
+
+      expect(merged).to be_empty
+      expect($stdout.string).to include("skipped: user #{duplicate.id} into #{primary.id} (memberships rows #{paid.id} is a pending checkout " \
+                                        "with a paid draft); pending memberships closed (restorable): #{closed.id}")
+      expect(closed.reload).to be_failed
+      expect(paid.reload).to be_pending
+    end
+
+    it "refuses the pair, and goes on, when Shopify fails while a draft is closed" do
+      pending(primary, draft: "gid://shopify/DraftOrder/1")
+      row = pending(duplicate, draft: "gid://shopify/DraftOrder/2")
+      fake.status = 500
+      skipped = []
+
+      send(:merge_users_into_one, [duplicate, primary], [], skipped)
+
+      expect(skipped).to contain_exactly(include(table: "memberships", row_ids: [row.id], note: match(/Shopify failed/)))
+      expect(row.reload).to have_attributes(status: "pending", user_id: duplicate.id)
+      expect(User.unscoped.exists?(duplicate.id)).to be(true)
+    end
+
+    it "leaves the duplicate's row pending when the kept user's row vanished before it could be closed" do
+      kept = pending(primary, draft: "gid://shopify/DraftOrder/1")
+      row = pending(duplicate, draft: "gid://shopify/DraftOrder/2")
+      # The kept row is closed elsewhere between finding the conflict and closing it.
+      allow(Membership).to receive(:served_pending).and_wrap_original do |original, user_id, tier_id|
+        kept.update_columns(status: "expired") if user_id == primary.id
+        original.call(user_id, tier_id)
+      end
+
+      merge_with_checkouts
+
+      expect(fake.calls).to be_empty
+      expect(row.reload).to have_attributes(status: "pending", user_id: primary.id)
+      expect($stdout.string).to include("Pending membership #{row.id} of the duplicate, closed in favour of the kept user's: vanished")
+    end
   end
 end

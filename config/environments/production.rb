@@ -50,7 +50,7 @@ Rails.application.configure do
     config.logger = ActiveSupport::TaggedLogging.new(logger)
   end
 
-  # Rails.cache is Solid Cache (the solid_cache_entries table in the primary
+  # Rails.cache is Solid Cache (the solid_cache_entries table in the cache
   # database; config/cache.yml): fragments and other cached values shared by every
   # worker. Not for counting: rate limits use RateLimitCounter (an atomic upsert),
   # because Solid Cache's increment cannot serialize a key that has no row yet.

@@ -11,10 +11,13 @@ class Upvote < ApplicationRecord
     find_by(comment_id: comment_id, user_id: user_id).present?
   end
 
-  # Records the vote. False when the user already voted on the comment: a repeated click, or two simultaneous
-  # requests of which the unique index lets only one through. Nothing is counted in that case.
+  # Records the vote and counts it on the comment in the same transaction. False when the user already voted on the
+  # comment: a repeated click, or two simultaneous requests of which the unique index lets only one through.
+  # Nothing is counted in that case.
   def self.cast(user, comment, downvote)
-    user.upvotes.build(comment_id: comment.id, downvote: downvote).save
+    transaction do
+      user.upvotes.build(comment_id: comment.id, downvote: downvote).save && count_on(comment, weight(downvote))
+    end
   rescue ActiveRecord::RecordNotUnique
     false
   end
@@ -24,7 +27,8 @@ class Upvote < ApplicationRecord
   def self.switch(user, comment, downvote)
     transaction do
       vote = user.upvotes.lock.find_by(comment_id: comment.id)
-      vote.present? && vote.downvote != downvote && vote.update!(downvote: downvote)
+      vote.present? && vote.downvote != downvote && vote.update!(downvote: downvote) &&
+        count_on(comment, 2 * weight(downvote))
     end
   end
 
@@ -32,19 +36,20 @@ class Upvote < ApplicationRecord
   def self.retract(user, comment, downvote)
     transaction do
       vote = user.upvotes.lock.find_by(comment_id: comment.id)
-      vote.present? && vote.downvote == downvote && vote.destroy.present?
+      vote.present? && vote.downvote == downvote && vote.destroy.present? && count_on(comment, -weight(downvote))
     end
   end
 
-  before_create do
-    downvote ? comment.decrement!(:upvote) : comment.increment!(:upvote)
+  # An upvote counts +1 on the comment, a downvote -1.
+  def self.weight(downvote)
+    downvote ? -1 : 1
   end
 
-  before_update do
-    downvote ? comment.decrement!(:upvote, 2) : comment.increment!(:upvote, 2)
+  # Moves the comment's counter. If no row was touched the comment is gone: the error rolls back the vote that was
+  # just changed instead of leaving it uncounted.
+  def self.count_on(comment, amount)
+    Comment.update_counters(comment.id, upvote: amount).positive? ||
+      raise(ActiveRecord::RecordNotFound, "Comment #{comment.id} is gone; the vote was not changed")
   end
-
-  before_destroy do
-    downvote ? comment.increment!(:upvote) : comment.decrement!(:upvote)
-  end
+  private_class_method :count_on
 end

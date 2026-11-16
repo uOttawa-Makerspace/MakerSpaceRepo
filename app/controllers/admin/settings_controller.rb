@@ -13,53 +13,43 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def add_category
-    if params[:category_option][:name].blank?
-      flash[:alert] = "Invalid category name."
+    if cat_params[:name].blank?
+      flash[:alert] = I18n.t("admin_pages.settings.flash.invalid_category")
     else
       @cat_option = CategoryOption.new(cat_params)
       @cat_option.save
-      flash[:notice] = "Category added successfully!"
+      flash[:notice] = I18n.t("admin_pages.settings.flash.category_added")
     end
     redirect_to admin_settings_path
   end
 
   def add_area
-    if params[:area_option][:name].blank?
-      flash[:alert] = "Invalid area name."
+    if area_params[:name].blank?
+      flash[:alert] = I18n.t("admin_pages.settings.flash.invalid_area")
     else
       @area_option = AreaOption.new(area_params)
       @area_option.save
-      flash[:notice] = "Area added successfully!"
+      flash[:notice] = I18n.t("admin_pages.settings.flash.area_added")
     end
     redirect_to admin_settings_path
   end
 
   def add_course
     @new_course = CourseName.new(course_params)
-    if @new_course.save
-      flash[:notice] = "Course added successfully!"
-    else
-      flash[:alert] = "Input is invalid"
-    end
+    flash_write(@new_course, "settings.course_not_added", I18n.t("admin_pages.settings.flash.course_added")) { @new_course.save }
     redirect_to admin_settings_path
   end
 
   def remove_course
     @course = CourseName.find(params[:id])
-    if @course.destroy
-      flash[:notice] = "Course removed successfully"
-    else
-      flash[:alert] = "There was an issue trying to remove the course"
-    end
+    flash_write(@course, "settings.course_not_removed", I18n.t("admin_pages.settings.flash.course_removed"), destroy: true) { @course.destroy }
     redirect_to admin_settings_path
   end
 
   def rename_course
     @course = CourseName.find(params[:id])
-    if @course.update(course_params.except(:id))
-      flash[:notice] = "Course updated successfully"
-    else
-      flash[:alert] = "There was an issue trying to rename the course"
+    flash_write(@course, "settings.course_not_renamed", I18n.t("admin_pages.settings.flash.course_updated")) do
+      @course.update(course_params.except(:id))
     end
     redirect_to admin_settings_path
   end
@@ -78,55 +68,59 @@ class Admin::SettingsController < AdminAreaController
   # end
 
   def remove_category
-    if params[:remove_category] != ""
-      CategoryOption.where(id: params[:remove_category]).destroy_all
-      flash[:notice] = "Category removed successfully!"
+    option = CategoryOption.find_by(id: params[:remove_category])
+    if option.nil?
+      flash[:alert] = I18n.t("admin_pages.settings.flash.select_category")
+    elsif option.in_use?
+      flash[:alert] = I18n.t("errors.admin.settings.category_in_use")
     else
-      flash[:alert] = "Please select a category."
+      option.destroy
+      flash[:notice] = I18n.t("admin_pages.settings.flash.category_removed")
     end
     redirect_to admin_settings_path
   end
 
   def remove_area
-    if params[:remove_area] != ""
-      AreaOption.where(id: params[:remove_area]).destroy_all
-      flash[:notice] = "Area removed successfully!"
+    option = AreaOption.find_by(id: params[:remove_area])
+    if option
+      option.destroy
+      flash[:notice] = I18n.t("admin_pages.settings.flash.area_removed")
     else
-      flash[:alert] = "Please select an area."
+      flash[:alert] = I18n.t("admin_pages.settings.flash.select_area")
     end
     redirect_to admin_settings_path
   end
+
   def add_equipment
-    if params[:equipment_option][:name].blank?
-      flash[:alert] = "Invalid equipment name."
+    if equip_params[:name].blank?
+      flash[:alert] = I18n.t("admin_pages.settings.flash.invalid_equipment")
     else
       @equip_option = EquipmentOption.new(equip_params)
       @equip_option.save
-      flash[:notice] = "Equipment added successfully!"
+      flash[:notice] = I18n.t("admin_pages.settings.flash.equipment_added")
     end
     redirect_to admin_settings_path
   end
 
   def rename_equipment
-    if params[:equipment_option][:name].blank?
-      flash[:alert] = "Invalid equipment name."
-    elsif params[:rename_equipment] == ""
-      flash[:alert] = "Please select a piece of equipment."
+    if equip_params[:name].blank?
+      flash[:alert] = I18n.t("admin_pages.settings.flash.invalid_equipment")
+    elsif (option = EquipmentOption.find_by(id: params[:rename_equipment])).nil?
+      flash[:alert] = I18n.t("admin_pages.settings.flash.select_equipment")
     else
-      EquipmentOption.where(id: params[:rename_equipment]).update_all(
-        name: equip_params["name"]
-      )
-      flash[:notice] = "Equipment renamed successfully!"
+      option.update(name: equip_params[:name])
+      flash[:notice] = I18n.t("admin_pages.settings.flash.equipment_renamed")
     end
     redirect_to admin_settings_path
   end
 
   def remove_equipment
-    if params[:remove_equipment] != ""
-      EquipmentOption.where(id: params[:remove_equipment]).destroy_all
-      flash[:notice] = "Equipment removed successfully!"
+    option = EquipmentOption.find_by(id: params[:remove_equipment])
+    if option
+      option.destroy
+      flash[:notice] = I18n.t("admin_pages.settings.flash.equipment_removed")
     else
-      flash[:alert] = "Please select a piece of equipment."
+      flash[:alert] = I18n.t("admin_pages.settings.flash.select_equipment")
     end
     redirect_to admin_settings_path
   end
@@ -146,71 +140,58 @@ class Admin::SettingsController < AdminAreaController
   def remove_pi
     if params[:remove_pi] != ""
       PiReader.where(id: params[:remove_pi]).destroy_all
-      flash[:notice] = "Card reader removed successfully!"
+      flash[:notice] = I18n.t("admin_pages.settings.flash.card_reader_removed")
     else
-      flash[:alert] = "Please select a card reader."
+      flash[:alert] = I18n.t("admin_pages.settings.flash.select_card_reader")
     end
     redirect_to admin_settings_path
   end
 
   def update_job_order_processed
     msg = params.dig(:job_order_message, :message)
-    if msg
-      if JobOrderMessage.find_by(name: "processed").update(message: msg)
-        flash[:notice] = "Message updated successfully!"
-      else
-        flash[:alert] = "Message update failed."
-      end
-    else
-      flash[:alert] = "Please enter a message."
-    end
-    redirect_to admin_settings_path
+    update_job_order_message(JobOrderMessage.find_by(name: "processed"), msg)
   end
 
   def update_print_failed_message
     msg = params.dig(:job_order_message, :message)
-    if msg
-      if JobOrderMessage.print_failed.update(message: msg)
-        flash[:notice] = "Message updated successfully!"
-      else
-        flash[:alert] = "Message update failed"
-      end
-    else
-      flash[:alert] = "Please enter a message."
-    end
-    redirect_to admin_settings_path
+    update_job_order_message(JobOrderMessage.print_failed, msg)
   end
 
   def pin_unpin_repository
     params.require(:repository_id)
     repo = Repository.find_by(id: params[:repository_id])
 
-    if repo.update(featured: !repo.featured)
-      flash[
-        :notice
-      ] = "Successfully #{repo.featured ? "Featured" : "Unfeatured"} repository"
-    else
-      flash[:alert] = "something went wrong"
+    flash_write(repo, "settings.repository_not_updated", repo.featured ? I18n.t("admin_pages.settings.flash.repository_unfeatured") : I18n.t("admin_pages.settings.flash.repository_featured")) do
+      repo.update(featured: !repo.featured)
     end
     redirect_back(fallback_location: root_path)
   end
 
   private
 
+  def update_job_order_message(message, text)
+    if text
+      flash_write(message, "settings.message_not_updated", I18n.t("admin_pages.settings.flash.message_updated")) { message.update(message: text) }
+    else
+      flash[:alert] = I18n.t("errors.admin.settings.message_missing")
+    end
+    redirect_to admin_settings_path
+  end
+
   def pi_params
     params.require(:pi_reader).permit(:pi_location)
   end
 
   def equip_params
-    params.require(:equipment_option).permit(:name)
+    params.expect(equipment_option: [:name])
   end
 
   def cat_params
-    params.require(:category_option).permit(:name)
+    params.expect(category_option: [:name])
   end
 
   def area_params
-    params.require(:area_option).permit(:name)
+    params.expect(area_option: [:name])
   end
 
   def printer_params

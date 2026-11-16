@@ -5,41 +5,23 @@ require Rails.root.join("lib/report_throttle")
 # Shopify webhooks
 class CustomWebhooksController < ApplicationController
   # Shopify sends no CSRF token and no session cookie; the caller is authenticated by
-  # the X-Shopify-Hmac-Sha256 signature below (ShopifyApp::WebhookVerification, which
-  # also skips the check, but only outside development, so the skip is stated here).
+  # the X-Shopify-Hmac-Sha256 signature (Payments::ShopifyAdapter#verify_webhook!).
   skip_forgery_protection
   # Webhook verification is on in every environment, test included, so specs sign their
   # payloads and can detect its removal. Only development is exempt (decided once, at load
   # time) so unsigned webhooks can be replayed locally (e.g. with curl) without the secret.
-  unless Rails.env.development?
-    # 1. Fail closed when no webhook secret is configured (production/staging without the
-    #    credential): the app boots, but every request is refused with 503 and reported.
-    #    503 (not 401) because it is OUR misconfiguration, and Shopify retries non-2xx
-    #    webhooks, so deliveries are processed once the secret is set.
-    before_action :require_webhook_secret!
-    # 2. A request with no X-Shopify-Hmac-Sha256 header would make the gem's
-    #    secure_compare(nil, ..) raise (500); answer 401 before the gem's check instead.
-    before_action :require_hmac_header!
-    # 3. The gem's HMAC check (X-Shopify-Hmac-Sha256), added after the two above so they run first.
-    include ShopifyApp::WebhookVerification
-  end
+  before_action :verify_webhook! unless Rails.env.development?
 
-  # Both order webhooks are an inbox: the verified body is stored (ProcessedOrder) and ApplyProcessedOrderJob applies
+  # The order webhooks are an inbox: the verified body is stored (ProcessedOrder) and ApplyProcessedOrderJob applies
   # it, so the webhook itself never calls Shopify and never touches memberships, CC Money or lockers, and answers
   # fast. A delivery of an order already stored inserts nothing and changes nothing: the stored order's own schedule
   # (ProcessedOrder.dispatch_due) decides when it is applied.
-  # An order with nothing to apply (plain merch, job orders) is answered and not stored.
+  # An order with nothing to apply (plain merch, job orders: no handler for its PaymentEvent) is answered and not
+  # stored.
   def orders_paid
-    hook = verified_body
-    # Job-order payment is recorded by staff, not automatically. Leave a trace so a
-    # paid job-order draft order can be reconciled by hand.
-    if JobOrder.draft_order_processable?(hook["tags"])
-      Rails.logger.info(
-        "[orders_paid] paid job-order draft order ignored (no automatic payment recording): " \
-        "order id=#{hook['id'].inspect} name=#{hook['name'].inspect} draft_order_id=#{hook['draft_order_id'].inspect}"
-      )
-    end
-    store_order(hook, "orders/paid")
+    order = Payments::ShopifyAdapter::Order.new(verified_body, topic: "orders/paid")
+    log_job_order(order.hook) if order.event.kinds.include?("job_order")
+    store_order(order)
   end
 
   # Cash locker payments. Staff fulfil a cash order in Shopify without marking it paid, so the fulfillment
@@ -52,7 +34,15 @@ class CustomWebhooksController < ApplicationController
     hook = verified_body
     return head :ok unless hook["financial_status"] == "pending"
 
-    store_order(hook, "orders/fulfilled")
+    store_order(Payments::ShopifyAdapter::Order.new(hook, topic: "orders/fulfilled"))
+  end
+
+  # A cancelled order (Shopify sends orders/cancelled; a pending payment voided by the cancellation arrives this way
+  # too, with financial_status "voided"). An order for any product the app tracks (locker, membership, job order,
+  # CC Money) is stored as its own unit (provider_ref "<id>/cancelled") and recorded: applying it changes no rental,
+  # membership, payment or ledger entry and sends no mail. Any other order is answered and not stored.
+  def orders_cancelled
+    store_order(Payments::ShopifyAdapter::Order.new(verified_body, topic: "orders/cancelled"))
   end
 
   # Raised only to be reported (Rails.error.report).
@@ -60,8 +50,14 @@ class CustomWebhooksController < ApplicationController
 
   private
 
-  def require_hmac_header!
-    head :unauthorized if request.headers["HTTP_X_SHOPIFY_HMAC_SHA256"].blank?
+  # 1. No webhook secret configured (production/staging without the credential): the app boots, but every request
+  #    is refused with 503 and reported. 503 (not 401) because it is OUR misconfiguration, and Shopify retries non-2xx
+  #    webhooks, so deliveries are processed once the secret is set.
+  # 2. No X-Shopify-Hmac-Sha256 header, or one that does not sign the body under the secret or the old secret: 401.
+  def verify_webhook!
+    Payments::ShopifyAdapter.new.verify_webhook!(body: request.raw_post, headers: request.headers)
+  rescue Payments::WebhookRejected => e
+    e.reason == :not_configured ? refuse_unconfigured : head(:unauthorized)
   end
 
   MISSING_SECRET_REPORT_THROTTLE = ReportThrottle.new(interval: 10.minutes)
@@ -78,10 +74,7 @@ class CustomWebhooksController < ApplicationController
     end
   end
 
-  def require_webhook_secret!
-    return if ShopifyWebhookSecret.configured?(ShopifyApp.configuration.secret) ||
-              ShopifyWebhookSecret.configured?(ShopifyApp.configuration.old_secret)
-
+  def refuse_unconfigured
     if self.class.report_missing_secret?
       error = ShopifyWebhookSecret::MissingSecret.new(
         "Shopify webhook secret is not configured (credentials.#{Rails.env}.shopify.webhook); refusing webhooks (503)"
@@ -100,25 +93,38 @@ class CustomWebhooksController < ApplicationController
     {}
   end
 
-  def store_order(hook, topic)
-    plan = ShopOrderApplier.plan_for(hook, topic: topic)
-    return head :ok unless plan.branches?
+  # Job-order payment is recorded by staff, not automatically. Leave a trace so a
+  # paid job-order draft order can be reconciled by hand.
+  def log_job_order(hook)
+    Rails.logger.info(
+      "[orders_paid] paid job-order draft order ignored (no automatic payment recording): " \
+      "order id=#{hook['id'].inspect} name=#{hook['name'].inspect} draft_order_id=#{hook['draft_order_id'].inspect}"
+    )
+  end
 
-    if plan.id.blank?
-      # Shopify always sends the id (the key of the stored order); reported with ids only, staff reconcile it.
-      Rails.error.report(
-        OrderWithoutId.new("#{topic} order without an order id; nothing stored"),
-        handled: true, severity: :error, context: { draft_order_id: hook["draft_order_id"] }.compact
-      )
-      return head :ok
-    end
+  # Stores the order when a handler applies its payment, or when it is a cancellation the app records
+  # (ShopOrderApplier.stores?).
+  def store_order(order)
+    event = order.event
+    return head :ok unless ShopOrderApplier.stores?(event)
+    return report_order_without_id(order) if event.provider_ref.blank?
 
-    order, = ProcessedOrder.receive!(provider: ShopOrderApplier::PROVIDER, order_id: plan.id, topic: topic,
-                                     payload: hook, name: hook["name"])
+    hook = order.hook
+    stored, = ProcessedOrder.receive!(provider: event.provider, order_id: order.id, topic: order.topic,
+                                      payload: hook, name: hook["name"])
     # The row is durable and due now: it is handed to the queue here, and if that fails (answer 200 all the same)
     # the recurring dispatcher hands it out. A redelivery of an order that is already scheduled, applied or failed
     # hands out nothing.
-    ProcessedOrder.dispatch_due(id: order.id)
+    ProcessedOrder.dispatch_due(id: stored.id)
+    head :ok
+  end
+
+  # Shopify always sends the id (the key of the stored order); reported with ids only, staff reconcile it.
+  def report_order_without_id(order)
+    Rails.error.report(
+      OrderWithoutId.new("#{order.topic} order without an order id; nothing stored"),
+      handled: true, severity: :error, context: { draft_order_id: order.hook["draft_order_id"] }.compact
+    )
     head :ok
   end
 end

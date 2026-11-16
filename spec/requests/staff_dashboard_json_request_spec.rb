@@ -23,9 +23,11 @@ RSpec.describe "Staff dashboard JSON", type: :request do
     expect(entry).not_to have_key("access_token")
     expect(entry).to include("username" => visitor.username, "name" => visitor.name, "email" => visitor.email)
     expect(entry).to include("certifications", "signed_safety_sheet", "membership_status", "flagged")
-    # The React app's contract: every column except the two secrets, plus the three computed keys.
+    # The React app's contract: every column except the two secrets and the year-of-study
+    # reference point (year_of_study is sent as the current year), plus the three computed keys.
     expect(entry.keys).to match_array(
-      User.column_names - %w[password access_token] + %w[certifications signed_safety_sheet membership_status]
+      User.column_names - %w[password access_token year_of_study_entered year_of_study_set_on year_of_study_set_by] +
+        %w[certifications signed_safety_sheet membership_status]
     )
   end
 
@@ -53,7 +55,8 @@ RSpec.describe "Staff dashboard JSON", type: :request do
     cert = create(:certification, :basic_training, user: visitor)
     create(:walk_in_safety_sheet, :is_adult, user: visitor, space: space)
     create(:membership, user: visitor, end_date: 10.days.from_now)
-    sign_in_as(:staff, space: space)
+    staff = sign_in_as(:staff, space: space)
+    [space, other_space].each { |s| StaffSpace.find_or_create_by!(user: staff, space: s) }
 
     get staff_dashboard_index_path, as: :json
 
@@ -94,5 +97,18 @@ RSpec.describe "Staff dashboard JSON", type: :request do
     get staff_dashboard_index_path, as: :json
 
     expect(response.parsed_body["space_users"].map { |u| u["id"] }).to eq([here.id])
+  end
+
+  it "searches names with percent and underscore characters matched literally" do
+    plain = create(:user, :regular_user, name: "Plain Person")
+    pct = create(:user, :regular_user, name: "100% Real")
+    sign_in_as(:staff, space: space)
+
+    get "/staff_dashboard/search", params: { query: "%" }
+    expect(response.body).to include(pct.username)
+    expect(response.body).not_to include(plain.username)
+
+    get "/staff_dashboard/search", params: { query: "_" }
+    expect(response.body).not_to include(plain.username)
   end
 end

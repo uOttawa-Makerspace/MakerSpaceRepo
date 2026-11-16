@@ -45,7 +45,7 @@
           <td class="text-center mx-auto">
             <div class="input-group text-center d-flex justify-content-center">
               <%= link_to 'Edit', edit_coupon_code_path(coupon), class: 'btn btn-primary' %>
-              <%= button_to 'Delete', coupon, method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-danger' %>
+              <%= button_to 'Delete', coupon, method: :delete, **confirmation_options(t('confirmations.coupon_codes.delete', code: coupon.code)), class: 'btn btn-danger' %>
             </div>
           </td>
         </tr>

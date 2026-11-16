@@ -1,7 +1,7 @@
-<% provide :title, "Locker manager" %>
+<% provide :title, t('lockers.admin.title') %>
 
-<h1 class="text-center">Locker Rentals</h1>
-<p class="text-center">Review pending requests and manage active rentals</p>
+<h1 class="text-center"><%= t('lockers.admin.heading') %></h1>
+<p class="text-center"><%= t('lockers.admin.intro') %></p>
 
 <!-- Requirement: Split between requests that have been dealt with vs requests that have not been looked at -->
 <h2 class="mt-4"><%= t('lockers.held_payments.title') %></h2>
@@ -12,18 +12,18 @@
   <div class="alert alert-info"><%= t('lockers.held_payments.none') %></div>
 <% end %>
 
-<h2 class="mt-5">Requests</h2>
-<p>Lockers that are pending review and have not been looked at yet.</p>
+<h2 class="mt-5"><%= t('lockers.admin.requests') %></h2>
+<p><%= t('lockers.admin.requests_intro') %></p>
 <% if @pending_requests.any? %>
   <%= render partial: 'rental_data_table', locals: { locker_rentals: @pending_requests } %>
 <% else %>
-  <div class="alert alert-info">No pending requests.</div>
+  <div class="alert alert-info"><%= t('lockers.admin.no_requests') %></div>
 <% end %>
 
-<h2 class="mt-5">Active Rentals</h2>
-<p>Lockers that have been dealt with (awaiting payment or currently occupied).</p>
+<h2 class="mt-5"><%= t('lockers.admin.active_rentals') %></h2>
+<p><%= t('lockers.admin.active_intro') %></p>
 <% if @active_rentals.any? %>
   <%= render partial: 'rental_data_table', locals: { locker_rentals: @active_rentals } %>
 <% else %>
-  <div class="alert alert-info">No active rentals.</div>
+  <div class="alert alert-info"><%= t('lockers.admin.no_active') %></div>
 <% end %>

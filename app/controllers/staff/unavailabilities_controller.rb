@@ -1,5 +1,7 @@
 # app/controllers/staff/unavailabilities_controller.rb
 class Staff::UnavailabilitiesController < StaffAreaController
+  include CalendarWindowed
+  include CalendarDialog
   layout "staff_area"
 
   def index
@@ -7,22 +9,17 @@ class Staff::UnavailabilitiesController < StaffAreaController
   end
 
   def create
+    start, finish = dialog_times
     @staff_unavailability = StaffUnavailability.new(
-      title: staff_params[:title].presence || default_title,
-      description: ActionController::Base.helpers.strip_tags(staff_params[:description].to_s),
-      start_time: Time.parse(staff_params[:utc_start_time]).utc,
-      end_time: Time.parse(staff_params[:utc_end_time]).utc,
+      **dialog_fields(default_title),
+      start_time: start,
+      end_time: finish,
       recurrence_rule: staff_params[:recurrence_rule].presence,
       user_id: target_user.id
     )
 
-    if @staff_unavailability.save
-      flash[:notice] = "Unavailability created#{" for #{target_user.name}" if admin_managing_other_user?}."
-    else
-      flash[:alert] = "Failed to create unavailability: #{@staff_unavailability.errors.full_messages.to_sentence}"
-    end
-
-    redirect_to after_action_path
+    dialog_saved(@staff_unavailability.save, "Unavailability created#{" for #{target_user.name}" if admin_managing_other_user?}.",
+                 @staff_unavailability, "failed_saves.unavailability_create")
   end
 
   def update
@@ -32,107 +29,56 @@ class Staff::UnavailabilitiesController < StaffAreaController
     # Check if trying to change event type (not allowed for unavailabilities)
     if params[:staff_unavailability][:event_type].present? && 
        params[:staff_unavailability][:event_type] != "unavailability"
-      flash[:alert] = "Cannot change an unavailability to another event type."
-      return redirect_to after_action_path
+      return dialog_done(alert: "Cannot change an unavailability to another event type.")
     end
 
     update_scope = @staff_unavailability.recurrence_rule.present? ? params[:update_scope] : "non-recurring"
 
     case update_scope
-    when "non-recurring"
-      update_single_unavailability
-    when "all"
-      update_all_occurrences
-    when "this"
-      update_this_occurrence
-    else
-      flash[:alert] = "Invalid update scope."
+    when "non-recurring" then update_single_unavailability
+    when "all" then update_all_occurrences
+    when "this" then update_this_occurrence
+    else dialog_done(alert: "Invalid update scope.")
     end
-
-    redirect_to after_action_path
   end
 
   def destroy
-    @unavailability = StaffUnavailability.find(params[:id])
-    authorize_unavailability!(@unavailability)
-    @unavailability.destroy
-
-    redirect_to after_action_path, notice: "Unavailability deleted."
+    @staff_unavailability = StaffUnavailability.find(params[:id])
+    authorize_unavailability!(@staff_unavailability)
+    remove_unavailability("Unavailability deleted.")
   end
 
   def delete_with_scope
-    @unavailability = StaffUnavailability.find(params[:id])
-    authorize_unavailability!(@unavailability)
-    scope = params[:scope]
+    @staff_unavailability = StaffUnavailability.find(params[:id])
+    authorize_unavailability!(@staff_unavailability)
+    return remove_unavailability("Unavailability deleted.") if @staff_unavailability.recurrence_rule.blank?
 
-    Rails.logger.info "=== DELETE_WITH_SCOPE ==="
-    Rails.logger.info "Unavailability ID: #{@unavailability.id}"
-    Rails.logger.info "Scope: #{scope}"
-    Rails.logger.info "Start Date: #{params[:start_date]}"
-    Rails.logger.info "Recurrence Rule: #{@unavailability.recurrence_rule.inspect}"
-    Rails.logger.info "========================"
-
-    if @unavailability.recurrence_rule.blank?
-      @unavailability.destroy
-      return redirect_to after_action_path, notice: "Unavailability deleted."
-    end
-
-    case scope
+    case params[:scope]
     when "single"
-      delete_single_occurrence
+      shorten_unavailability_series("This occurrence deleted.", :without_occurrence, "Start date is required for deleting a single occurrence.")
     when "following"
-      delete_following_occurrences
-    when "all"
-      @unavailability.destroy
-      redirect_to after_action_path, notice: "All occurrences deleted."
+      shorten_unavailability_series("This and following deleted.", :ending_before, "Start date is required for deleting following occurrences.")
+    when "all" then remove_unavailability("All occurrences deleted.")
     else
-      Rails.logger.error "Invalid scope received: #{scope}"
-      redirect_to after_action_path, alert: "Invalid delete scope: #{scope}"
+      Rails.logger.error "Invalid scope received: #{params[:scope]}"
+      dialog_done(alert: "Invalid delete scope: #{params[:scope]}")
     end
+  rescue ActiveRecord::RecordInvalid => e
+    dialog_done(alert: validation_message(e.record, "failed_saves.unavailability_update"))
   end
 
+  # The occurrences in the window (CalendarWindow, required) of the staff member's own unavailabilities and of
+  # those of their linked calendars.
   def json
-    @unavailabilities = StaffUnavailability.where(user_id: current_user.id)
+    window = CalendarWindow.bounded(params)
+    name = StaffExternalUnavailability.display_name_for(current_user.name)
+    calendars = current_user.staff_external_unavailabilities.map { |external| [external, external.fetch_calendar(name:)] }
+    report_failed_calendars(calendars)
 
-    local_unavails = @unavailabilities.map do |u|
-      duration = (u.end_time.to_time - u.start_time.to_time) * 1000
-
-      rrule_data = helpers.date_formatted_recurrence_rule(u)
-
-      {
-        id: u.id,
-        title: u.title || "Unavailable",
-        start: u.start_time.iso8601,
-        end: u.end_time.iso8601,
-        **(u.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
-        allDay: CalendarTime.all_day?(u.start_time, u.end_time),
-        extendedProps: {
-          description: u.description,
-          eventType: "unavailability",
-          userId: u.user_id,
-          isAdminCreated: u.title&.include?("(Admin)")
-        }
-      }
-    end.compact
-
-    ics_unavails = current_user.staff_external_unavailabilities.flat_map do |external|
-      parsed = helpers.parse_ics_calendar(
-        external.ics_url,
-        name: "#{current_user.name} External Unavailability"
-      )
-
-      parsed.flat_map do |calendar|
-        calendar[:events].map do |event|
-          event.merge(
-            title: "External - #{event[:title]}"
-          )
-        end
-      end
-    end
-
-    combined_unavailabilities = local_unavails + ics_unavails
-
-    render json: combined_unavailabilities
+    render json: own_unavailability_rows(window) + calendars.flat_map { |external, calendar|
+      # only the host is ever sent: a private link holds its secret in the path
+      calendar.feed_rows(window, prefix: "External - ", props: { sourceHost: external.source_host })
+    }
   end
 
   def update_external_unavailabilities
@@ -155,6 +101,20 @@ class Staff::UnavailabilitiesController < StaffAreaController
 
   private
 
+  def own_unavailability_rows(window)
+    window.records(StaffUnavailability.where(user_id: current_user.id)).flat_map do |unavailability|
+      unavailability.feed_rows(window, title: unavailability.title || "Unavailable", extendedProps: { description: unavailability.description })
+    end
+  end
+
+  # The hosts of the linked calendars that could not be loaded go in a header, a JSON list (null for a link whose
+  # host cannot be read). The header is not part of the body's ETag, so a browser must not reuse an earlier answer.
+  def report_failed_calendars(calendars)
+    failed_hosts = calendars.select { |_external, calendar| calendar.failed? }.map { |external, _calendar| external.source_host }
+    response.set_header("Cache-Control", "no-store")
+    response.set_header("X-Failed-Calendars", failed_hosts.to_json) unless failed_hosts.empty?
+  end
+
   def staff_params
     params.require(:staff_unavailability).permit(
       :user_id, :title, :description, :utc_start_time, :utc_end_time, :recurrence_rule, :event_type
@@ -165,7 +125,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
   def target_user
     @target_user ||= if admin_managing_other_user?
       # Use the safe navigation operator or fallback to params
-      user_id = @unavailability&.user_id || staff_params[:user_id]
+      user_id = @staff_unavailability&.user_id || staff_params[:user_id]
       User.find(user_id)
     else
       current_user
@@ -177,8 +137,8 @@ class Staff::UnavailabilitiesController < StaffAreaController
     return false unless current_user.admin?
 
     # If we are working on an existing record (Edit, Update, Delete)
-    if @unavailability.present?
-      return @unavailability.user_id != current_user.id
+    if @staff_unavailability.present?
+      return @staff_unavailability.user_id != current_user.id
     end
     
     # If we are creating a new record (Create), check raw params safely
@@ -198,11 +158,16 @@ class Staff::UnavailabilitiesController < StaffAreaController
     raise ActiveRecord::RecordNotFound
   end
 
+  # The title (a blank one becomes `default`) and the description, which is kept as plain text.
+  def dialog_fields(default = "Unavailable")
+    { title: staff_params[:title].presence || default, description: ActionController::Base.helpers.strip_tags(staff_params[:description].to_s) }
+  end
+
   def default_title
     admin_managing_other_user? ? "Unavailable (Admin)" : "Unavailable"
   end
 
-  def after_action_path
+  def after_dialog_path
     # If the user was on an admin page (like the Admin Calendar), send them back there.
     # This handles the case where an Admin edits their OWN unavailability from the Admin Calendar.
     if current_user.admin? && request.referer.to_s.match?(/admin/)
@@ -219,127 +184,78 @@ class Staff::UnavailabilitiesController < StaffAreaController
   end
 
   def update_single_unavailability
-    if @staff_unavailability.update(
-        title: staff_params[:title].presence || "Unavailable",
-        description: ActionController::Base.helpers.strip_tags(staff_params[:description].to_s),
-        start_time: parse_time(staff_params[:utc_start_time]),
-        end_time: parse_time(staff_params[:utc_end_time]),
-        recurrence_rule: staff_params[:recurrence_rule].presence
-      )
-      flash[:notice] = "Unavailability updated successfully."
-    else
-      flash[:alert] = "Failed to update unavailability: #{@staff_unavailability.errors.full_messages.to_sentence}"
-    end
+    start, finish = @staff_unavailability.times_after_update(*dialog_times, keep: keep_dialog_times?)
+    saved = @staff_unavailability.update(**dialog_fields, start_time: start, end_time: finish,
+                                                          recurrence_rule: staff_params[:recurrence_rule].presence)
+    dialog_saved(saved, "Unavailability updated successfully.", @staff_unavailability, "failed_saves.unavailability_update")
   end
 
   def update_all_occurrences
-    old_date_new_time_start = helpers.combine_date_and_time(
-      @staff_unavailability.start_time.utc,
-      parse_time(staff_params[:utc_start_time])
-    )
-    duration = (parse_time(staff_params[:utc_end_time]) - parse_time(staff_params[:utc_start_time])).to_i
-    old_date_new_time_end = old_date_new_time_start + duration
+    return alert_unreadable_times if unreadable_times?
 
-    old_rrule, old_dtstart, old_extra_lines = helpers.parse_rrule_and_dtstart(@staff_unavailability.recurrence_rule)
-    new_rrule, new_dtstart, _new_extra_lines = helpers.parse_rrule_and_dtstart(staff_params[:recurrence_rule])
+    start, finish = @staff_unavailability.times_after_update(*dialog_times, keep: keep_dialog_times?, series: true)
+    rule_to_use = series_rule(@staff_unavailability).with_time_from(staff_params[:recurrence_rule], at: start)
 
-    rule_to_use = if old_rrule == new_rrule && old_dtstart && new_dtstart
-      combined_dtstart = old_dtstart.change(
-        hour: new_dtstart.hour,
-        min: new_dtstart.min,
-        sec: new_dtstart.sec
-      )
+    saved = @staff_unavailability.update(**dialog_fields, start_time: start, end_time: finish, recurrence_rule: rule_to_use)
+    dialog_saved(saved, "All occurrences updated successfully.", @staff_unavailability, "failed_saves.unavailability_update")
+  end
 
-      ([
-        "DTSTART:#{combined_dtstart.strftime('%Y%m%dT%H%M%SZ')}",
-        "RRULE:#{old_rrule}"
-      ] + old_extra_lines).join("\n")
-    else
-      staff_params[:recurrence_rule]
-    end
-
-    if @staff_unavailability.update(
-        title: staff_params[:title].presence || "Unavailable",
-        description: ActionController::Base.helpers.strip_tags(staff_params[:description].to_s),
-        start_time: old_date_new_time_start,
-        end_time: old_date_new_time_end,
-        recurrence_rule: rule_to_use
-      )
-      flash[:notice] = "All occurrences updated successfully."
-    else
-      flash[:alert] = "Failed to update unavailability: #{@staff_unavailability.errors.full_messages.to_sentence}"
-    end
+  # Whether the dialog sent its time fields as it filled them from the clicked entry.
+  def keep_dialog_times?
+    params[:keep_series_times] == "1"
   end
 
   def update_this_occurrence
-    exclusion_start_time = helpers.combine_date_and_time(
-      parse_time(staff_params[:utc_start_time]),
-      @staff_unavailability.start_time.utc
-    )
+    return alert_unreadable_times if unreadable_times?
 
-    updated_rule = helpers.add_exdate_to_rrule(@staff_unavailability.recurrence_rule, exclusion_start_time)
+    excluded, start, finish = @staff_unavailability.occurrence_after_update(*dialog_times, keep: keep_dialog_times?)
+    updated_rule = series_rule(@staff_unavailability).appending_exdate(excluded)
 
     unless @staff_unavailability.update(recurrence_rule: updated_rule)
-      flash[:alert] = "Failed to update unavailability: #{@staff_unavailability.errors.full_messages.to_sentence}"
-      return
+      return dialog_done(alert: validation_message(@staff_unavailability, "failed_saves.unavailability_update"))
     end
 
     StaffUnavailability.create!(
-      title: staff_params[:title].presence || "Unavailable",
-      description: ActionController::Base.helpers.strip_tags(staff_params[:description].to_s),
-      start_time: parse_time(staff_params[:utc_start_time]),
-      end_time: parse_time(staff_params[:utc_end_time]),
+      **dialog_fields,
+      start_time: start,
+      end_time: finish,
       recurrence_rule: nil,
       user_id: @staff_unavailability.user_id
     )
 
-    flash[:notice] = "This occurrence updated successfully."
+    dialog_done(notice: "This occurrence updated successfully.")
   end
 
-  def delete_single_occurrence
-    if params[:start_date].blank?
-      return redirect_to after_action_path, alert: "Start date is required for deleting a single occurrence."
-    end
-
-    rrule_line, dtstart, rest_of_lines = helpers.parse_rrule_and_dtstart(@unavailability.recurrence_rule)
-    exdate = Time.parse(params[:start_date]).utc.strftime("%Y%m%dT%H%M%SZ")
-
-    rule = RRule::Rule.new(rrule_line, dtstart: dtstart || @unavailability.start_time)
-    recurrence_lines = [
-      "DTSTART:#{rule.dtstart.utc.strftime("%Y%m%dT%H%M%SZ")}",
-      "RRULE:#{rule}",
-      "EXDATE:#{exdate}"
-    ]
-
-    @unavailability.update!(recurrence_rule: (recurrence_lines + rest_of_lines).join("\n"))
-    redirect_to after_action_path, notice: "This occurrence deleted."
-  rescue ActiveRecord::RecordInvalid => e
-    redirect_to after_action_path, alert: "Failed to update unavailability: #{e.record.errors.full_messages.to_sentence}"
+  def remove_unavailability(notice)
+    @staff_unavailability.destroy
+    dialog_done(notice: notice)
   end
 
-  def delete_following_occurrences
-    if params[:start_date].blank?
-      return redirect_to after_action_path, alert: "Start date is required for deleting following occurrences."
-    end
+  def shorten_unavailability_series(notice, change, start_missing)
+    return dialog_done(alert: start_missing) unless shorten_series(@staff_unavailability, change)
 
-    rrule_line, dtstart, rest_of_lines = helpers.parse_rrule_and_dtstart(@unavailability.recurrence_rule)
-    previous_day = Time.parse(params[:start_date]).utc - 24.hours
-    rrule_line = "#{helpers.remove_until_from_rrule(rrule_line)};UNTIL=#{previous_day.strftime("%Y%m%dT%H%M%SZ")}"
-
-    rule = RRule::Rule.new(rrule_line, dtstart: dtstart || @unavailability.start_time)
-    recurrence_lines = [
-      "DTSTART:#{rule.dtstart.utc.strftime("%Y%m%dT%H%M%SZ")}",
-      "RRULE:#{rule}"
-    ]
-
-    @unavailability.update!(recurrence_rule: (recurrence_lines + rest_of_lines).join("\n"))
-    redirect_to after_action_path, notice: "This and following deleted."
-  rescue ActiveRecord::RecordInvalid => e
-    redirect_to after_action_path, alert: "Failed to update unavailability: #{e.record.errors.full_messages.to_sentence}"
+    dialog_done(notice: notice)
   end
 
-  def parse_time(time_string)
-    return nil if time_string.blank?
-    Time.parse(time_string).utc
+  def series_rule(unavailability)
+    RecurrenceRule.new(unavailability.recurrence_rule, unavailability.start_time)
+  end
+
+  # The posted start and end as UTC times; nil for one that is missing or not a time.
+  def dialog_times
+    [parse_time(staff_params[:utc_start_time]), parse_time(staff_params[:utc_end_time])]
+  end
+
+  def unreadable_times?
+    dialog_times.any?(&:nil?)
+  end
+
+  # The model's blank-time messages for a series edit that has no usable start or end.
+  def alert_unreadable_times
+    record = StaffUnavailability.new
+    start, finish = dialog_times
+    record.errors.add(:start_time, :blank) if start.nil?
+    record.errors.add(:end_time, :blank) if finish.nil?
+    dialog_done(alert: validation_message(record, "failed_saves.unavailability_update"))
   end
 end

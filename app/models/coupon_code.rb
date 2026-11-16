@@ -4,7 +4,7 @@ class CouponCode < ApplicationRecord
   scope :unclaimed, -> { where(user_id: nil) }
   scope :claimed, -> { where.not(user_id: nil) }
 
-  # A coupon a user claimed was paid for in CC points and cannot be deleted (no refund exists). Unclaimed coupons
+  # A coupon a user claimed was paid for in CCs and cannot be deleted (no refund exists). Unclaimed coupons
   # can. Deleting the owning user still takes their coupons along.
   before_destroy :refuse_deletion_once_claimed, unless: :destroyed_by_association
 
@@ -17,7 +17,13 @@ class CouponCode < ApplicationRecord
   # One rule: blank, non-numeric, fractional and negative are all refused with the same message.
   validates :cc_cost, numericality: { only_integer: true, greater_than_or_equal_to: 0, message: :invalid_cc_cost }
 
-  # Trades `user`'s CC points for one unclaimed coupon worth `dollar_cost` AT `cc_cost`, the
+  # A coupon needs a code and a whole-dollar value above zero, and no two coupons share a code. Coupons
+  # created before these rules may break them, so each rule is checked for a new coupon and when its own
+  # field changes: claiming or editing an old coupon over another field still works.
+  validates :code, presence: true, uniqueness: true, if: :checks_code?
+  validates :dollar_cost, numericality: { only_integer: true, greater_than: 0 }, if: :checks_dollar_cost?
+
+  # Trades `user`'s CCs for one unclaimed coupon worth `dollar_cost` AT `cc_cost`, the
   # price the user confirmed (a same-dollar coupon at another price is never picked; a blank
   # cc_cost matches nothing). Atomic: the
   # wallet check, the debit and the assignment happen in ONE transaction, so a claim that loses
@@ -54,7 +60,7 @@ class CouponCode < ApplicationRecord
                                                   .order(:id).lock(User::GUARD_LOCK_MODE).first
         next [:no_coupon, nil] if coupon.nil? || !coupon.user_id.nil? # guard, re-checked on the locked row
 
-        CcMoney.debit!(payer, coupon.cc_cost.to_i)
+        CcMoney.debit!(payer, coupon.cc_cost)
         coupon.update!(user: payer)
         [:claimed, coupon]
       end
@@ -69,10 +75,18 @@ class CouponCode < ApplicationRecord
 
   private
 
+  def checks_code?
+    new_record? || will_save_change_to_code?
+  end
+
+  def checks_dollar_cost?
+    new_record? || will_save_change_to_dollar_cost?
+  end
+
   def refuse_deletion_once_claimed
     return unless claimed?
 
-    errors.add(:base, "A user has already claimed this coupon with CC points, so it cannot be deleted")
+    errors.add(:base, :claimed_cannot_delete)
     throw :abort
   end
 end

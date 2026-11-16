@@ -7,6 +7,7 @@ class PrintersController < StaffAreaController
 
   def index
     @printer = Printer.new
+    @printers = Printer.with_type
     @printer_models =
       PrinterType
         .all
@@ -17,10 +18,9 @@ class PrintersController < StaffAreaController
   end
 
   def update
-    if Printer.find_by(id: params[:id]).update(printer_params)
-      flash[
-        :notice
-      ] = "Printer #{Printer.find_by(id: params[:id]).name} updated"
+    printer = Printer.find(params[:id])
+    if printer.update(printer_params)
+      flash[:notice] = "Printer #{printer.name} updated"
     else
       flash[:alert] = "Failed to update printer"
     end
@@ -50,11 +50,16 @@ class PrintersController < StaffAreaController
   end
 
   def remove_printer
-    if params[:remove_printer] != ""
-      Printer.where(id: params[:remove_printer]).destroy_all
+    printer_id = params[:remove_printer].to_s
+    printer = Printer.find_by(id: printer_id) if printer_id.present?
+    if printer_id.blank?
+      flash[:alert] = "Please select a Printer."
+    elsif printer.nil?
+      flash[:alert] = I18n.t("errors.printers.printer_not_found")
+    elsif printer.destroy
       flash[:notice] = "Printer removed successfully!"
     else
-      flash[:alert] = "Please select a Printer."
+      flash[:alert] = validation_message(printer, "errors.printers.printer_not_removed")
     end
     redirect_to printers_path
   end
@@ -72,50 +77,46 @@ class PrintersController < StaffAreaController
         .uniq
         .pluck(:name, :id)
     @list_users.unshift(%w[Clear clear])
-    @printer_types = PrinterType.all.order("lower(name) ASC")
-    # Sort by length then by value, solves the "1 then 10" issue
-    @printers_by_type =
-      Printer
-        .all
-        .sort_by { |p| [p.number.length, p.number] }
-        .group_by(&:printer_type)
+    @printer_types = PrinterType.includes(:printers).order("lower(name) ASC")
+    @last_sessions = Printer.last_sessions_by_type(@printer_types)
   end
 
   def staff_printers_updates
-    @printer_types = PrinterType.all.order("lower(name) ASC")
+    @printer_types = PrinterType.includes(printers: :printer_issues).order("lower(name) ASC")
+    @last_sessions = Printer.last_sessions(@printer_types.flat_map(&:printers))
   end
 
   def link_printer_to_user
     link_params = params.require(:printer).permit(:printer_id, :user_id)
     printer_id = link_params[:printer_id]
     user_id = link_params[:user_id]
-    last_session = Printer.get_last_number_session(printer_id)
-    if printer_id.blank? || user_id.blank?
-      flash[:alert] = "Please add both printer and user."
-    elsif user_id != "clear" && !(Printer.exists?(id: printer_id) && User.exists?(id: user_id))
-      flash[:alert] = "Something went wrong"
-    elsif user_id == "clear" && last_session.update(in_use: false)
-      flash[:notice] = "Cleared the user."
-    elsif PrinterSession.create(
-          printer_id: printer_id,
-          user_id: user_id,
-          in_use: true
-        )
-      if !last_session.nil? && last_session.in_use?
-        last_session.update(in_use: false)
-      end
-      flash[:notice] = "Printer Session Created"
+    clear = user_id == "clear"
+    printer = Printer.find_by(id: printer_id) if printer_id.present?
+    user = User.find_by(id: user_id) unless user_id.blank? || clear
+    if (problem = printer_link_problem(printer_id, user_id, printer, user))
+      reply = { alert: I18n.t("errors.printers.#{problem}") }
+    elsif clear
+      printer.release!
+      reply = { notice: "Cleared the user." }
     else
-      flash[:alert] = "Something went wrong"
+      printer.assign_to!(user)
+      reply = { notice: "Printer Session Created" }
     end
     respond_to do |format|
       # blame the client if something goes wrong
-      format.json do
-        render json: flash, status: flash[:alert] ? :bad_request : :ok
-      end
-      format.html { redirect_to staff_printers_printers_path }
+      format.json { render json: reply, status: reply[:alert] ? :bad_request : :ok }
+      format.html { redirect_to staff_printers_printers_path, flash: reply }
     end
   end
+
+  # Why a printer cannot be linked to a user (a key under errors.printers), or nil.
+  def printer_link_problem(printer_id, user_id, printer, user)
+    return :printer_and_user_required if printer_id.blank? || user_id.blank?
+    return :printer_not_found unless printer
+
+    :user_not_found unless user || user_id == "clear"
+  end
+  private :printer_link_problem
 
   def send_print_failed_message_to_user
     msg_params = params[:print_failed_message]
@@ -138,8 +139,8 @@ class PrintersController < StaffAreaController
 
     if msg_params[:sent_from] == "updates"
       redirect_to staff_printers_updates_printers_url
-    elsif msg_params[:sent_from] == "printers"
-      redirect_to staff_printers_printers_url #(anchor: 'failedPrintHeader')
+    else
+      redirect_to staff_printers_printers_url
     end
   end
 
@@ -168,7 +169,7 @@ class PrintersController < StaffAreaController
         end
 
     respond_to do |format|
-      format.html { redirect_to root_path }
+      format.html { head :not_acceptable }
       format.json { render json: data }
     end
   end
@@ -176,7 +177,8 @@ class PrintersController < StaffAreaController
   def last_user_assigned_to_printer
     printer_users = {}
     Printer.includes(printer_sessions: :user).find_each do |printer|
-      printer_users[printer.id] = printer.printer_sessions.last.user.slice(:id, :username, :name)
+      user = printer.printer_sessions.last&.user
+      printer_users[printer.id] = user.slice(:id, :username, :name) if user
     end
 
     render json: printer_users

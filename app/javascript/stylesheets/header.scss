@@ -1,5 +1,44 @@
 @import "shared/variables";
 
+@mixin collapsed-drawer {
+  .navbar-collapse {
+    .dropdown-menu {
+      position: static !important;
+      float: none;
+      width: auto;
+      margin-top: 0;
+      background-color: transparent;
+      border: 0;
+      box-shadow: none;
+      padding-left: 1rem;
+
+      &:before {
+        display: none !important;
+      }
+
+      .dropdown-item {
+        color: white;
+        padding: 0.5rem 1rem;
+        white-space: normal;
+
+        &:hover,
+        &:focus {
+          background-color: rgba(255, 255, 255, 0.1);
+          color: white;
+        }
+      }
+    }
+
+    .nav-item.dropdown.d-flex {
+      display: block !important;
+      .nav-link,
+      .dropdown-toggle-split {
+        display: inline-block;
+      }
+    }
+  }
+}
+
 #sticky-header {
   width: 100%;
   max-width: 100%;
@@ -18,10 +57,6 @@
   }
 
   .nav-link {
-    [data-bs-theme="dark"] & {
-      --bs-nav-link-hover-color: #{$primary-text-dark};
-      --bs-nav-link-color: white;
-    }
     --bs-nav-link-hover-color: white;
     --bs-nav-link-color: white;
     font-weight: 700;
@@ -43,8 +78,9 @@
     --bs-btn-color: white;
     --bs-btn-hover-color: white;
 
-    [data-bs-theme="dark"] & {
-      --bs-btn-hover-color: #{$primary-text-dark};
+    &:hover,
+    &:focus-visible {
+      text-decoration: underline;
     }
   }
 
@@ -72,7 +108,7 @@
   &.navbar-staff .nav-link {
     color: white;
     &:hover {
-      color: $primary-text-dark;
+      color: white;
     }
     &.show {
       color: white;
@@ -146,43 +182,16 @@
     }
   }
 
-  // Collapsed drawer styles for tablets and mobile (< 1200px)
-  @media (max-width: 1199.98px) {
-    .navbar-collapse {
-      .dropdown-menu {
-        position: static !important;
-        float: none;
-        width: auto;
-        margin-top: 0;
-        background-color: transparent;
-        border: 0;
-        box-shadow: none;
-        padding-left: 1rem;
-
-        &:before {
-          display: none !important;
-        }
-
-        .dropdown-item {
-          color: white;
-          padding: 0.5rem 1rem;
-          white-space: normal;
-
-          &:hover,
-          &:focus {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-          }
-        }
-      }
-
-      .nav-item.dropdown.d-flex {
-        display: block !important;
-        .nav-link,
-        .dropdown-toggle-split {
-          display: inline-block;
-        }
-      }
+  // Collapsed drawer styles. The staff navbars collapse below 1200px, the main
+  // navbar below 1600px (see $grid-breakpoints in application.scss).
+  &.navbar-staff {
+    @media (max-width: 1199.98px) {
+      @include collapsed-drawer;
+    }
+  }
+  &:not(.navbar-staff) {
+    @media (max-width: 1599.98px) {
+      @include collapsed-drawer;
     }
   }
 

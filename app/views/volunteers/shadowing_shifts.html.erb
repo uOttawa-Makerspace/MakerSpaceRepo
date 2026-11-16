@@ -6,32 +6,32 @@
         <ol class="breadcrumb mb-0 small">
           <li class="breadcrumb-item">
             <%= link_to volunteers_path, class: "text-decoration-none text-body-secondary" do %>
-              <i class="fa-solid fa-hand-holding-heart me-1"></i>Volunteers
+              <i class="fa-solid fa-hand-holding-heart me-1"></i><%= t('volunteer_area.shared.volunteers') %>
             <% end %>
           </li>
           <li class="breadcrumb-item">
             <%= link_to calendar_volunteers_path, class: "text-decoration-none text-body-secondary" do %>
-              Calendar
+              <%= t('volunteer_area.shared.calendar') %>
             <% end %>
           </li>
-          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page">Shadowing Shifts</li>
+          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page"><%= t('volunteer_area.shifts.title') %></li>
         </ol>
       </nav>
       <h1 class="h3 fw-bold text-body-emphasis mb-0 d-flex align-items-center gap-2">
         <i class="fa-solid fa-user-clock text-primary"></i>
-        <span>Shadowing Shifts</span>
+        <span><%= t('volunteer_area.shifts.title') %></span>
       </h1>
-      <p class="text-body-secondary small mb-0 mt-1">Manage and track scheduled shadowing shifts across all spaces.</p>
+      <p class="text-body-secondary small mb-0 mt-1"><%= t('volunteer_area.shifts.subtitle') %></p>
     </div>
     <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
       <%= link_to calendar_volunteers_path, class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center" do %>
         <i class="fa-solid fa-calendar-days"></i>
-        <span>View Calendar</span>
+        <span><%= t('volunteer_area.shifts.view_calendar') %></span>
       <% end %>
       <% if current_user.staff? || current_user.admin? %>
         <%= link_to new_event_volunteers_path, class: "btn btn-primary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center shadow-sm" do %>
           <i class="fa-solid fa-calendar-plus"></i>
-          <span>Add Shadowing Shift</span>
+          <span><%= t('volunteer_area.shared.add_shadowing_shift') %></span>
         <% end %>
       <% end %>
     </div>
@@ -46,7 +46,7 @@
             <i class="fa-solid fa-calendar-check"></i>
           </div>
           <div>
-            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">My Upcoming Shifts</h6>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1"><%= t('volunteer_area.shifts.my_upcoming') %></h6>
             <h2 class="fw-bold text-body-emphasis mb-0"><%= @shifts.count %></h2>
           </div>
         </div>
@@ -60,7 +60,7 @@
               <i class="fa-solid fa-users-viewfinder"></i>
             </div>
             <div>
-              <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">All Scheduled Volunteer Shifts</h6>
+              <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1"><%= t('volunteer_area.shifts.all_scheduled') %></h6>
               <h2 class="fw-bold text-body-emphasis mb-0"><%= @all_shifts.count %></h2>
             </div>
           </div>
@@ -79,14 +79,14 @@
           <li class="nav-item" role="presentation">
             <button class="nav-link active fw-semibold d-inline-flex align-items-center gap-2" id="my-shifts-tab" data-bs-toggle="pill" data-bs-target="#my-shifts" type="button" role="tab" aria-controls="my-shifts" aria-selected="true">
               <i class="fa-solid fa-user"></i>
-              <span>My Shifts</span>
+              <span><%= t('volunteer_area.shared.my_shifts') %></span>
               <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-1"><%= @shifts.count %></span>
             </button>
           </li>
           <li class="nav-item" role="presentation">
             <button class="nav-link fw-semibold d-inline-flex align-items-center gap-2" id="all-shifts-tab" data-bs-toggle="pill" data-bs-target="#all-shifts" type="button" role="tab" aria-controls="all-shifts" aria-selected="false">
               <i class="fa-solid fa-users"></i>
-              <span>All Volunteer Shifts</span>
+              <span><%= t('volunteer_area.shifts.all_tab') %></span>
               <span class="badge bg-secondary-subtle text-body-secondary border border-secondary-subtle rounded-pill ms-1"><%= @all_shifts.count %></span>
             </button>
           </li>
@@ -97,7 +97,7 @@
       <div class="card-header bg-body-tertiary border-bottom py-3 px-3 px-md-4">
         <h5 class="card-title fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
           <i class="fa-solid fa-clock text-primary"></i>
-          <span>My Upcoming Shifts</span>
+          <span><%= t('volunteer_area.shifts.my_upcoming') %></span>
         </h5>
       </div>
     <% end %>
@@ -111,19 +111,17 @@
             <table class="table table-hover align-middle mb-0">
               <thead class="bg-body-secondary border-bottom">
                 <tr class="text-body-secondary small text-uppercase">
-                  <th class="ps-3 ps-md-4 py-3" scope="col">Space</th>
-                  <th class="py-3" scope="col">Date</th>
-                  <th class="py-3" scope="col">Shift Time</th>
-                  <th class="py-3" scope="col">Duration</th>
+                  <th class="ps-3 ps-md-4 py-3" scope="col"><%= t('volunteer_area.shared.space') %></th>
+                  <th class="py-3" scope="col"><%= t('volunteer_area.shared.date') %></th>
+                  <th class="py-3" scope="col"><%= t('volunteer_area.shifts.shift_time') %></th>
+                  <th class="py-3" scope="col"><%= t('volunteer_area.shifts.duration') %></th>
                   <% if current_user.staff? || current_user.admin? %>
-                    <th class="pe-3 pe-md-4 py-3 text-end" scope="col">Actions</th>
+                    <th class="pe-3 pe-md-4 py-3 text-end" scope="col"><%= t('volunteer_area.shared.actions') %></th>
                   <% end %>
                 </tr>
               </thead>
               <tbody class="divide-y">
                 <% @shifts.each do |s| %>
-                  <% start_dt = s.start_time.is_a?(String) ? Time.zone.parse(s.start_time) : s.start_time %>
-                  <% end_dt = s.end_time.is_a?(String) ? Time.zone.parse(s.end_time) : s.end_time %>
                   <tr>
                     <!-- Space Badge -->
                     <td class="ps-3 ps-md-4 py-3">
@@ -135,7 +133,7 @@
                       <% else %>
                         <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle d-inline-flex align-items-center gap-1 py-1 px-2">
                           <i class="fa-solid fa-industry"></i>
-                          <span><%= s.space&.name&.capitalize || "Space" %></span>
+                          <span><%= s.space&.name&.capitalize || t('volunteer_area.shared.space') %></span>
                         </span>
                       <% end %>
                     </td>
@@ -144,11 +142,7 @@
                     <td class="py-3">
                       <div class="fw-semibold text-body-emphasis small">
                         <i class="fa-regular fa-calendar text-secondary me-1"></i>
-                        <%= begin
-                              start_dt.strftime("%A, %B %d, %Y")
-                            rescue StandardError
-                              s.start_time
-                            end %>
+                        <%= l(s.start_time, format: :volunteer_weekday) %>
                       </div>
                     </td>
 
@@ -156,33 +150,21 @@
                     <td class="py-3">
                       <span class="badge bg-body-secondary text-body-emphasis border border-secondary-subtle d-inline-flex align-items-center gap-1 py-1 px-2 small">
                         <i class="fa-regular fa-clock text-secondary"></i>
-                        <span><%= begin
-                                    start_dt.strftime("%l:%M %p")
-                                  rescue StandardError
-                                    ""
-                                  end %> – <%= begin
-                                                                                     end_dt.strftime("%l:%M %p")
-                                                                                   rescue StandardError
-                                                                                     ""
-                                                                                   end %></span>
+                        <span><%= l(s.start_time, format: :volunteer_hour) %> – <%= l(s.end_time, format: :volunteer_hour) %></span>
                       </span>
                     </td>
 
                     <!-- Duration -->
                     <td class="py-3 text-body-secondary small">
-                      <% if start_dt && end_dt %>
-                        <%= distance_of_time_in_words(start_dt, end_dt) %>
-                      <% else %>
-                        —
-                      <% end %>
+                      <%= distance_of_time_in_words(s.start_time, s.end_time) %>
                     </td>
 
                     <!-- Actions (Staff/Admin) -->
                     <% if current_user.staff? || current_user.admin? %>
                       <td class="pe-3 pe-md-4 py-3 text-end">
-                        <%= button_to delete_event_volunteers_path(event_id: s.event_id), method: :delete, form: { data: { turbo_confirm: "Are you sure you want to cancel this shadowing shift?" } }, class: "btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" do %>
+                        <%= button_to delete_event_volunteers_path(event_id: s.event_id), method: :delete, **confirmation_options(t('confirmations.shadowing_shifts.cancel')), class: "btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" do %>
                           <i class="fa-solid fa-trash-can"></i>
-                          <span>Cancel Shift</span>
+                          <span><%= t('volunteer_area.shifts.cancel') %></span>
                         <% end %>
                       </td>
                     <% end %>
@@ -196,23 +178,23 @@
             <div class="rounded-circle bg-body-secondary text-body-secondary d-inline-flex align-items-center justify-content-center p-4 fs-1 mb-3">
               <i class="fa-solid fa-calendar-xmark"></i>
             </div>
-            <h5 class="fw-bold text-body-emphasis">No Planned Shifts</h5>
-            <p class="text-body-secondary small mb-4">You do not have any upcoming shadowing shifts scheduled.</p>
+            <h5 class="fw-bold text-body-emphasis"><%= t('volunteer_area.shifts.none_mine_title') %></h5>
+            <p class="text-body-secondary small mb-4"><%= t('volunteer_area.shifts.none_mine_body') %></p>
             <% if current_user.staff? || current_user.admin? %>
               <div class="d-flex flex-wrap justify-content-center gap-2">
                 <%= link_to new_event_volunteers_path(space: 'makerspace'), class: "btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" do %>
                   <i class="fa-solid fa-cube"></i>
-                  <span>Schedule for Makerspace</span>
+                  <span><%= t('volunteer_area.shifts.schedule_makerspace') %></span>
                 <% end %>
                 <%= link_to new_event_volunteers_path(space: 'brunsfield centre'), class: "btn btn-outline-warning btn-sm d-inline-flex align-items-center gap-1" do %>
                   <i class="fa-solid fa-industry"></i>
-                  <span>Schedule for Brunsfield</span>
+                  <span><%= t('volunteer_area.shifts.schedule_brunsfield') %></span>
                 <% end %>
               </div>
             <% else %>
               <%= link_to calendar_volunteers_path, class: "btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1" do %>
                 <i class="fa-solid fa-calendar-days"></i>
-                <span>Check Calendar</span>
+                <span><%= t('volunteer_area.shifts.check_calendar') %></span>
               <% end %>
             <% end %>
           </div>
@@ -227,17 +209,15 @@
               <table class="table table-hover align-middle mb-0">
                 <thead class="bg-body-secondary border-bottom">
                   <tr class="text-body-secondary small text-uppercase">
-                    <th class="ps-3 ps-md-4 py-3" scope="col">Volunteer</th>
-                    <th class="py-3" scope="col">Space</th>
-                    <th class="py-3" scope="col">Date</th>
-                    <th class="py-3" scope="col">Shift Time</th>
-                    <th class="pe-3 pe-md-4 py-3 text-end" scope="col">Actions</th>
+                    <th class="ps-3 ps-md-4 py-3" scope="col"><%= t('volunteer_area.shared.volunteer') %></th>
+                    <th class="py-3" scope="col"><%= t('volunteer_area.shared.space') %></th>
+                    <th class="py-3" scope="col"><%= t('volunteer_area.shared.date') %></th>
+                    <th class="py-3" scope="col"><%= t('volunteer_area.shifts.shift_time') %></th>
+                    <th class="pe-3 pe-md-4 py-3 text-end" scope="col"><%= t('volunteer_area.shared.actions') %></th>
                   </tr>
                 </thead>
                 <tbody class="divide-y">
                   <% @all_shifts.each do |s| %>
-                    <% start_dt = s.start_time.is_a?(String) ? Time.zone.parse(s.start_time) : s.start_time %>
-                    <% end_dt = s.end_time.is_a?(String) ? Time.zone.parse(s.end_time) : s.end_time %>
                     <tr>
                       <!-- Volunteer Info -->
                       <td class="ps-3 ps-md-4 py-3">
@@ -250,7 +230,7 @@
                               <%= staff_user_link(s.display_user, titleize: true, class: "fw-bold text-body-emphasis text-decoration-none d-block lh-sm small") %>
                               <span class="text-body-secondary small"><%= s.display_user.email %></span>
                             <% else %>
-                              <span class="text-body-secondary small fst-italic">Unassigned User</span>
+                              <span class="text-body-secondary small fst-italic"><%= t('volunteer_area.shifts.unassigned') %></span>
                             <% end %>
                           </div>
                         </div>
@@ -266,7 +246,7 @@
                         <% else %>
                           <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle d-inline-flex align-items-center gap-1 py-1 px-2">
                             <i class="fa-solid fa-industry"></i>
-                            <span><%= s.space&.name&.capitalize || "Space" %></span>
+                            <span><%= s.space&.name&.capitalize || t('volunteer_area.shared.space') %></span>
                           </span>
                         <% end %>
                       </td>
@@ -275,11 +255,7 @@
                       <td class="py-3">
                         <div class="fw-semibold text-body-emphasis small">
                           <i class="fa-regular fa-calendar text-secondary me-1"></i>
-                          <%= begin
-                                start_dt.strftime("%A, %B %d, %Y")
-                              rescue StandardError
-                                s.start_time
-                              end %>
+                          <%= l(s.start_time, format: :volunteer_weekday) %>
                         </div>
                       </td>
 
@@ -287,23 +263,15 @@
                       <td class="py-3">
                         <span class="badge bg-body-secondary text-body-emphasis border border-secondary-subtle d-inline-flex align-items-center gap-1 py-1 px-2 small">
                           <i class="fa-regular fa-clock text-secondary"></i>
-                          <span><%= begin
-                                      start_dt.strftime("%l:%M %p")
-                                    rescue StandardError
-                                      ""
-                                    end %> – <%= begin
-                                                                                       end_dt.strftime("%l:%M %p")
-                                                                                     rescue StandardError
-                                                                                       ""
-                                                                                     end %></span>
+                          <span><%= l(s.start_time, format: :volunteer_hour) %> – <%= l(s.end_time, format: :volunteer_hour) %></span>
                         </span>
                       </td>
 
                       <!-- Cancel Action -->
                       <td class="pe-3 pe-md-4 py-3 text-end">
-                        <%= button_to delete_event_volunteers_path(event_id: s.event_id), method: :delete, form: { data: { turbo_confirm: "Are you sure you want to cancel #{staff_user_name(s.display_user)}'s shadowing shift?" } }, class: "btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" do %>
+                        <%= button_to delete_event_volunteers_path(event_id: s.event_id), method: :delete, **confirmation_options(t('confirmations.shadowing_shifts.cancel_for', name: staff_user_name(s.display_user))), class: "btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" do %>
                           <i class="fa-solid fa-trash-can"></i>
-                          <span>Cancel Shift</span>
+                          <span><%= t('volunteer_area.shifts.cancel') %></span>
                         <% end %>
                       </td>
                     </tr>
@@ -316,11 +284,11 @@
               <div class="rounded-circle bg-body-secondary text-body-secondary d-inline-flex align-items-center justify-content-center p-4 fs-1 mb-3">
                 <i class="fa-solid fa-calendar-check"></i>
               </div>
-              <h5 class="fw-bold text-body-emphasis">No Shifts Scheduled</h5>
-              <p class="text-body-secondary small mb-3">There are currently no volunteer shadowing shifts planned across any space.</p>
+              <h5 class="fw-bold text-body-emphasis"><%= t('volunteer_area.shifts.none_all_title') %></h5>
+              <p class="text-body-secondary small mb-3"><%= t('volunteer_area.shifts.none_all_body') %></p>
               <%= link_to new_event_volunteers_path, class: "btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm" do %>
                 <i class="fa-solid fa-calendar-plus"></i>
-                <span>Add Shadowing Shift</span>
+                <span><%= t('volunteer_area.shared.add_shadowing_shift') %></span>
               <% end %>
             </div>
           <% end %>

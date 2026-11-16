@@ -24,8 +24,8 @@
   <div class="mb-4">
     <%= form_for @printer, url: { controller: 'printers', action: 'remove_printer' } do |f| %>
       <div class="mb-3">
-        <%= f.label :remove_a_printer, class: 'form-label' %>
-        <%= select_tag :remove_printer, options_from_collection_for_select(Printer.show_options, :id, :model_and_number), class: 'form-control form-select', aria: { label: t('common.names.printer_to_remove') }, include_blank: 'Select a printer...' %>
+        <%= f.label :remove_a_printer, for: 'remove_printer', class: 'form-label' %>
+        <%= select_tag :remove_printer, options_from_collection_for_select(@printers, :id, :model_and_number), class: 'form-control form-select', aria: { label: t('common.names.printer_to_remove') }, include_blank: 'Select a printer...' %>
       </div>
 
       <%= f.submit 'Remove', class: 'btn btn-primary' %>

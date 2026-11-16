@@ -18,6 +18,8 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
   def shifts(query = {}, id: space.id, as: staff)
     get "/api/v1/spaces/#{id}/shifts", params: query, headers: json_headers.merge(as ? auth(as) : {})
   end
+  before { StaffSpace.find_or_create_by!(user: staff, space: space) }
+
   def window = { start: (t0 - 1.day).iso8601, end: (t0 + 7.days).iso8601 }
   def shift(attrs = {}) = create(:event, { space: space, event_type: "shift", title: "Shift", start_time: t0, end_time: t0 + 2.hours }.merge(attrs))
 
@@ -27,6 +29,17 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
     shifts(window, as: regular)
     expect(response).to have_http_status(:forbidden)
     expect(error["code"]).to eq("forbidden")
+  end
+
+  it "403s staff for a space they are not assigned to, even when it is their saved space, and lists it for an admin" do
+    create(:event, space: other_space, event_type: "shift", title: "Shift", start_time: t0, end_time: t0 + 1.hour)
+    staff.update_columns(space_id: other_space.id)
+    shifts(window, id: other_space.id)
+    expect(response).to have_http_status(:forbidden)
+    expect(error).to include("code" => "space_not_assigned", "message" => "You are not assigned to that space")
+    shifts(window, id: other_space.id, as: admin)
+    expect(response).to have_http_status(:ok)
+    expect(body.size).to eq(1)
   end
 
   it "lists published shifts with the exact keys, for staff and admin" do
@@ -92,6 +105,13 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
     expect(body.first["end"]).to eq((t0 + 2.hours).in_time_zone.iso8601)
   end
 
+  it "leaves out an occurrence removed from the series with an EXDATE" do
+    ev = shift(recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4\nEXDATE:#{(t0 + 7.days).utc.strftime('%Y%m%dT%H%M%SZ')}")
+    shifts({ start: t0.iso8601, end: (t0 + 15.days).iso8601 })
+    expect(body.map { |r| r["id"] }).to eq([t0, t0 + 14.days].map { |t| "event-#{ev.id}-#{t.to_i}" })
+    expect(body.first.keys).to eq(%w[id title start end allDay extendedProps])
+  end
+
   it "does not query per event" do
     users = create_list(:user, 3, :staff)
     4.times do |i|
@@ -105,7 +125,7 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
       get "/api/v1/spaces/#{space.id}/shifts", params: window, headers: json_headers.merge(token)
     end
     expect(body.size).to eq(4)
-    expect(count).to be <= 7 # token user, space, events, assignments, users, staff_spaces, + slack
+    expect(count).to be <= 8 # token user, space, assignment check, events, assignments, users, staff_spaces, + slack
   end
 
   it "404s an unknown space and a non-integer id" do
@@ -113,6 +133,13 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
     expect(response).to have_http_status(:not_found)
     shifts(window, id: "abc")
     expect(response).to have_http_status(:not_found)
+  end
+
+  it "accepts 100 local days across the autumn clock change and refuses one more" do
+    shifts({ start: "2027-08-05T00:00:00-04:00", end: "2027-11-13T00:00:00-05:00" })
+    expect(response).to have_http_status(:ok)
+    shifts({ start: "2027-08-05T00:00:00-04:00", end: "2027-11-14T00:00:00-05:00" })
+    expect(response).to have_http_status(:unprocessable_content)
   end
 
   it "422s a missing, malformed, reversed or over-long window" do
@@ -144,11 +171,11 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
       shift(attrs).tap { |e| e.update_column(:recurrence_rule, rule) }
     end
 
-    # IceCube rule steps (one per candidate occurrence) taken while the block runs. A
+    # Repeat-library steps (one per period of candidates) taken while the block runs. A
     # deterministic bound on expansion work: wall-clock limits failed under gate load.
     def rule_steps
       steps = 0
-      allow_any_instance_of(IceCube::ValidatedRule).to receive(:next_time).and_wrap_original do |m, *args|
+      allow_any_instance_of(RRule::Frequency).to receive(:advance).and_wrap_original do |m, *args|
         steps += 1
         m.call(*args)
       end
@@ -156,30 +183,36 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
       steps
     end
 
+    # No stored rule is finer than daily (the validator refuses them), so the series refuses one instead of
+    # stepping through it: the failure is reported with the event id and the event is shown once.
     %w[MINUTELY SECONDLY].each do |freq|
-      it "caps a FREQ=#{freq} event per event, quickly, and flags the truncation" do
-        stored_shift("FREQ=#{freq}")
+      it "refuses a FREQ=#{freq} event without stepping through it, reports it and shows the event once" do
+        ev = stored_shift("FREQ=#{freq}")
+        allow(Rails.error).to receive(:report).and_call_original
         steps = rule_steps { shifts(wide) }
         expect(response).to have_http_status(:ok)
-        expect(body.size).to eq(500)
-        expect(response.headers["X-Truncated"]).to eq("true")
-        expect(body.first.keys).to eq(%w[id title start end allDay extendedProps])
-        expect(steps).to be <= 501 # an unbounded expansion of the window takes 144k (MINUTELY)
+        expect(body.map { |r| r["id"] }).to eq(["event-#{ev.id}"])
+        expect(response.headers["X-Truncated"]).to be_nil
+        expect(Rails.error).to have_received(:report)
+          .with(kind_of(RecurringSeries::UnsupportedRule), hash_including(handled: true, context: { event_id: ev.id }))
+        expect(steps).to eq(0) # refused before the repeat library is touched (unbounded: 144k for MINUTELY)
       end
     end
 
-    it "bounds the cost of a sub-hourly rule whose DTSTART is far in the past" do
+    it "does not step through a sub-minute rule whose DTSTART is far in the past" do
       stored_shift("FREQ=MINUTELY", start_time: t0 - 2.years, end_time: t0 - 2.years + 1.hour)
+      inside = shift(start_time: t0 + 1.hour, end_time: t0 + 2.hours) # the refused series is outside the window, so it is not listed
       steps = rule_steps { shifts({ start: t0.iso8601, end: (t0 + 1.day).iso8601 }) }
-      expect(body.size).to eq(500)
-      expect(steps).to be <= 501 # unbounded: 1440 for the day, ~1M walking from DTSTART
+      expect(body.map { |r| r["id"] }).to eq(["event-#{inside.id}"])
+      expect(steps).to eq(0) # unbounded: ~1M walking from DTSTART
     end
 
     it "caps the whole response across events and keeps the earliest first" do
       stub_const("Api::V1::ShiftEventSerializer::MAX_ITEMS", 12)
       stub_const("Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT", 5)
-      3.times { |i| stored_shift("FREQ=HOURLY", start_time: t0 + i.minutes) }
-      shifts(wide)
+      3.times { |i| stored_shift("FREQ=DAILY", start_time: t0 + i.minutes) }
+      steps = rule_steps { shifts(wide) }
+      expect(steps).to be <= 30 # 3 events, each stops after its sixth day
       expect(body.size).to eq(12)
       expect(response.headers["X-Truncated"]).to eq("true")
     end

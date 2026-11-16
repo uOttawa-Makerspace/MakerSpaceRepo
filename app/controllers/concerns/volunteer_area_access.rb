@@ -6,22 +6,34 @@
 module VolunteerAreaAccess
   extend ActiveSupport::Concern
 
+  included do
+    require_authorization
+  end
+
   private
 
   def volunteer_access
     return signed_in unless signed_in?
 
-    deny_volunteer_area unless current_user.staff? || current_user.volunteer?
+    if current_user.staff? || current_user.volunteer?
+      record_authorization!(:volunteer)
+    else
+      deny_volunteer_area
+    end
   end
 
   def staff_access
     return signed_in unless signed_in?
 
-    deny_volunteer_area unless current_user.staff?
+    if current_user.staff?
+      record_authorization!(:staff)
+    else
+      deny_volunteer_area
+    end
   end
 
   def deny_volunteer_area
-    flash[:alert] = "You cannot access this area."
+    flash[:alert] = I18n.t("volunteer_area.flash.no_access")
     redirect_to root_path
   end
 end

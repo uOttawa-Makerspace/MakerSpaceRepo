@@ -1,0 +1,115 @@
+en:
+  common:
+    by: "by"
+    time_ago: "%{time} ago"
+  time:
+    formats:
+      published: "%b %e %Y"
+  search:
+    sort_names:
+      newest: "Newest"
+      most_likes: "Most Likes"
+      most_makes: "Most Makes"
+      recently_updated: "Recently Updated"
+    explore:
+      heading: "Explore recent repositories"
+      results_title: "Search results for \"%{query}\""
+      results_heading: "Search results for %{query}"
+      query_label: "Project title or description"
+      query_placeholder: "Project title or description..."
+      categories:
+        internet_of_things: "Internet of Things"
+        course_related_projects: "Course-related Projects"
+        gng2101_gng2501: "GNG2101/GNG2501"
+        gng1103_gng1503: "GNG1103/GNG1503"
+        health_sciences: "Health Sciences"
+        wearable: "Wearable"
+        mobile_development: "Mobile Development"
+        virtual_reality: "Virtual Reality"
+        other_projects: "Other Projects"
+        uottawa_team_projects: "uOttawa Team Projects"
+    category:
+      all_projects: "All projects"
+      featured_projects: "Featured projects"
+      featured: "Featured"
+      sort:
+        newest: "Newest / Plus récent"
+        most_likes: "Most Likes / Plus d'Aimes"
+        most_makes: "Most Makes / Plus de fabrications"
+        recently_updated: "Recently Updated / Récemment mis à jour"
+    equipment:
+      sort_by: "sort by/trier par"
+      sort:
+        newest: "Newest/Plus récent"
+        most_likes: "Most Likes/Plus d'Aimes"
+        most_makes: "Most Makes/Plus de fabrications"
+        recently_updated: "Recently Updated/Récemment mis à jour"
+  repositories:
+    show:
+      featured: "This is a featured project!"
+      size_kb: "%{size} KB"
+  users:
+    repositories:
+      none_repositories: "%{username} doesn't have any repositories yet."
+      none_makes: "%{username} doesn't have any makes yet."
+      none_joined_projects: "%{username} doesn't have any joined projects yet."
+      displaying_html: "Displaying repositories <b>%{from}</b> - <b>%{to}</b> of <b>%{total}</b> in total"
+      by_deleted_user: "by [Deleted User]"
+
+fr:
+  common:
+    by: "par"
+    time_ago: "il y a %{time}"
+  time:
+    formats:
+      published: "%e %b %Y"
+  search:
+    sort_names:
+      newest: "Plus récent"
+      most_likes: "Plus d'Aimes"
+      most_makes: "Plus de fabrications"
+      recently_updated: "Récemment mis à jour"
+    explore:
+      heading: "Parcourir les dépôts récents"
+      results_title: "Résultats de recherche pour \"%{query}\""
+      results_heading: "Résultats de recherche pour %{query}"
+      query_label: "Titre ou description du projet"
+      query_placeholder: "Titre ou description du projet..."
+      categories:
+        internet_of_things: "Internet des objets"
+        course_related_projects: "Projets liés à un cours"
+        gng2101_gng2501: "GNG2101/GNG2501"
+        gng1103_gng1503: "GNG1103/GNG1503"
+        health_sciences: "Sciences de la santé"
+        wearable: "Technologie portable"
+        mobile_development: "Développement mobile"
+        virtual_reality: "Réalité virtuelle"
+        other_projects: "Autres projets"
+        uottawa_team_projects: "Projets d'équipe uOttawa"
+    category:
+      all_projects: "Tous les projets"
+      featured_projects: "Projets en vedette"
+      featured: "En vedette"
+      sort:
+        newest: "Plus récent"
+        most_likes: "Plus d'Aimes"
+        most_makes: "Plus de fabrications"
+        recently_updated: "Récemment mis à jour"
+    equipment:
+      sort_by: "trier par"
+      sort:
+        newest: "Plus récent"
+        most_likes: "Plus d'Aimes"
+        most_makes: "Plus de fabrications"
+        recently_updated: "Récemment mis à jour"
+  repositories:
+    show:
+      featured: "Ce projet est en vedette !"
+      size_kb: "%{size} Ko"
+  users:
+    repositories:
+      none_repositories: "%{username} n'a pas encore de dépôts."
+      none_makes: "%{username} n'a pas encore de créations."
+      none_joined_projects: "%{username} n'a pas encore de projets participés."
+      displaying_html: "Affichage des dépôts <b>%{from}</b> - <b>%{to}</b> sur <b>%{total}</b> au total"
+      by_deleted_user: "par [utilisateur supprimé]"

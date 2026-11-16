@@ -1,4 +1,4 @@
-<h2 class="text-center pt-2 mb-5">Question in <strong>"<%= sanitize(@question.trainings.map(&:name).join(', ')) if @question.trainings.present? %>"</strong></h2>
+<h2 class="text-center pt-2 mb-5"><%= t('questions.show.title_html', trainings: (sanitize(@question.trainings.map(&:name).join(', ')) if @question.trainings.present?)) %></h2>
 
 <div class="text-start word-break">
   <h2><b><%= sanitize(@question.description) %></b></h2>

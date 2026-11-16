@@ -8,12 +8,11 @@ require "rails_helper"
 # HTTP boundary (spec/support/webmock.rb defaults, overridden below for the
 # populated case).
 #
-# JS console: the page boots FullCalendar (fullcalendar_setup_homepage) which
-# fetches /open_hours; the JS-error check is being added to system specs by a
+# JS console: the page boots FullCalendar (hours_calendar_controller) which
+# fetches /open_hours when a space has opening hours; the JS-error check is being added to system specs by a
 # parallel chunk, so no SEVERE console errors were observed or asserted here
 # (see c17-notes.md).
-# N+1 pinned (home eager-loads variant_records it never uses)
-RSpec.describe "Homepage", type: :system, skip_bullet: true do
+RSpec.describe "Homepage", type: :system do
   let(:workshop_ms) { (Time.current + 3.days).to_i * 1000 }
 
   before do
@@ -31,12 +30,14 @@ RSpec.describe "Homepage", type: :system, skip_bullet: true do
       ] } } }.to_json
     )
     create(:repository, title: "Featured Gizmo")
+    create(:repository, title: "Second Gizmo")
     create(:announcement, :all, description: "Maker night this Friday")
+    create(:announcement, :all, description: "Open house on Monday")
   end
 
   def expect_public_chrome
     # Navbar
-    expect(page).to have_css("nav.navbar.navbar-expand-xl")
+    expect(page).to have_css("nav.navbar.navbar-expand-xxxl")
     expect(page).to have_css("a.navbar-brand", text: "MakerRepo")
     within("nav.navbar") do
       expect(page).to have_css("a.nav-link", text: "Home", visible: :all)
@@ -74,6 +75,9 @@ RSpec.describe "Homepage", type: :system, skip_bullet: true do
   it "shows the public chrome and tiles to a guest, with a sign-in entry and no user cards" do
     visit root_path
     expect_public_chrome
+    # The three columns have a gutter between them, so the cards do not touch.
+    expect(page).to have_css(".row.g-3 > #offcanvas-shortcuts", visible: :all)
+    expect(page).to have_no_css(".row.g-0 > #offcanvas-shortcuts", visible: :all)
     expect(page).to have_css("a.nav-link", text: /sign in/i, visible: :all)
     expect(page).to have_no_css("#home-user-info")
     expect(page).to have_no_text("Staff Resources")

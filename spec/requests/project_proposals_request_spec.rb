@@ -72,6 +72,28 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(response.body).not_to include("Approved One")
     end
 
+    it "filters by several numeric statuses, and by approved and pending together" do
+      content_sign_in_as(:admin)
+      get project_proposals_path, params: { status: %w[0 1] }
+      expect(response.body).to include("Approved One", "Declined One")
+      expect(response.body).not_to include("Pending One")
+      get project_proposals_path, params: { status: %w[1 nil] }
+      expect(response.body).to include("Approved One", "Pending One")
+      expect(response.body).not_to include("Declined One")
+      get project_proposals_path, params: { status: "0" }
+      expect(response.body).to include("Declined One")
+      expect(response.body).not_to include("Approved One", "Pending One")
+    end
+
+    it "ignores a semester whose year is missing or not positive" do
+      approved.update_columns(season: ProjectProposal.seasons[:fall], year: 2024)
+      content_sign_in_as(:admin)
+      %w[fall fall_0 fall_-1].each do |semester|
+        get project_proposals_path, params: { semester: semester }
+        expect(response.body).to include("Approved One", "Pending One", "Declined One")
+      end
+    end
+
     it "searches by title and filters by semester" do
       approved.update_columns(season: ProjectProposal.seasons[:fall], year: 2024)
       create(:project_proposal, :approved, title: "Zebra Crossing")
@@ -89,49 +111,49 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
   describe "GET show" do
     it "renders an approved proposal for a guest" do
-      get project_proposal_path(approved.slug)
+      get project_proposal_path(approved)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Approved One")
     end
 
     it "writes the budget as $1500 in English and 1 500 $ in French" do
       approved.update_columns(prototype_cost: 1500, project_cost: 20)
-      get project_proposal_path(approved.slug, locale: "en")
+      get project_proposal_path(approved, locale: "en")
       expect(response.body).to include("$1,500").and include("$20")
-      get project_proposal_path(approved.slug, locale: "fr")
+      get project_proposal_path(approved, locale: "fr")
       expect(response.body).to include("1\u00A0500\u00A0$").and include("20\u00A0$")
     end
 
     it "finds a proposal by slug or by id" do
-      get project_proposal_path(approved.id)
+      get project_proposal_path(approved)
       expect(response).to have_http_status(:ok)
     end
 
     [[:pending, "pending"], [:declined, "declined"]].each do |name, label|
       it "redirects a guest and a stranger away from a #{label} proposal" do
         pp = send(name)
-        get project_proposal_path(pp.slug)
+        get project_proposal_path(pp)
         expect(response).to redirect_to(project_proposals_path)
         expect(flash[:alert]).to eq("You are not allowed to access this pending project proposal.")
         content_login!(other)
-        get project_proposal_path(pp.slug)
+        get project_proposal_path(pp)
         expect(response).to redirect_to(project_proposals_path)
       end
 
       it "renders a #{label} proposal for its owner and for admin, but not for staff" do
         pp = send(name)
         content_login!(owner)
-        get project_proposal_path(pp.slug)
+        get project_proposal_path(pp)
         expect(response).to have_http_status(:ok)
       end
     end
 
     it "admin sees a pending proposal; staff does not" do
       content_sign_in_as(:staff)
-      get project_proposal_path(pending.slug)
+      get project_proposal_path(pending)
       expect(response).to redirect_to(project_proposals_path)
       content_sign_in_as(:admin)
-      get project_proposal_path(pending.slug)
+      get project_proposal_path(pending)
       expect(response).to have_http_status(:ok)
     end
 
@@ -141,24 +163,24 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       let!(:rev_own) { create(:project_proposal, user: owner, linked_project_proposal: approved, title: "Revision Own Pending") }
 
       it "shows a guest only approved revisions" do
-        get project_proposal_path(approved.slug)
+        get project_proposal_path(approved)
         expect(response.body).to include("Revision Approved Other")
         expect(response.body).not_to include("Revision Pending Other", "Revision Own Pending")
       end
 
       it "shows the viewer their own pending revision but not other users'" do
         content_login!(owner)
-        get project_proposal_path(approved.slug)
+        get project_proposal_path(approved)
         expect(response.body).to include("Revision Approved Other", "Revision Own Pending")
         expect(response.body).not_to include("Revision Pending Other")
       end
 
       it "shows an admin every revision, and staff only the approved one" do
         content_sign_in_as(:staff)
-        get project_proposal_path(approved.slug)
+        get project_proposal_path(approved)
         expect(response.body).not_to include("Revision Pending Other")
         content_sign_in_as(:admin)
-        get project_proposal_path(approved.slug)
+        get project_proposal_path(approved)
         expect(response.body).to include("Revision Pending Other", "Revision Own Pending", "Revision Approved Other")
       end
     end
@@ -171,7 +193,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     it "lists the repositories linked to the proposal, with sorting" do
       create(:repository, owner: owner, title: "Linked Repo", project_proposal_id: approved.id)
-      get project_proposal_path(approved.slug, sort: "most_likes")
+      get project_proposal_path(approved, sort: "most_likes")
       expect(response.body).to include("Linked Repo")
     end
   end
@@ -186,7 +208,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
 
     def expect_cards(visible:, hidden: [])
-      get project_proposal_path(approved.slug)
+      get project_proposal_path(approved)
       expect(response).to have_http_status(:ok)
       visible.each { |t| expect(response.body).to include(t) }
       hidden.each { |t| expect(response.body).not_to include(t) }
@@ -230,9 +252,9 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     it "still paginates the filtered scope" do
       10.times { |i| create(:repository, owner: repo_owner, title: "Bulk Repo #{i}", project_proposal_id: approved.id) }
-      get project_proposal_path(approved.slug)
+      get project_proposal_path(approved)
       expect(response.body).not_to include("Secret Linked Repo")
-      get project_proposal_path(approved.slug, page: 2)
+      get project_proposal_path(approved, page: 2)
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include("Secret Linked Repo")
     end
@@ -245,16 +267,16 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
 
     it "sends a guest to the login page instead of rendering edit" do
-      get edit_project_proposal_path(pending.slug)
+      get edit_project_proposal_path(pending)
       # edit requires sign-in, then ownership or admin
-      expect(response).to redirect_to(login_path(back_to: edit_project_proposal_path(pending.slug)))
+      expect(response).to redirect_to(login_path(back_to: edit_project_proposal_path(pending)))
       expect(response.body).not_to include(pending.email)
     end
 
     it "refuses edit to a stranger and to staff" do
       [create(:user, :regular_user), create(:user, :staff)].each do |user|
         content_login!(user)
-        get edit_project_proposal_path(pending.slug)
+        get edit_project_proposal_path(pending)
         expect(response).to redirect_to(project_proposals_path)
         expect(flash[:alert]).to eq("You are not allowed to modify this project proposal.")
       end
@@ -262,12 +284,139 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     it "renders edit for the owner and for an admin" do
       content_login!(owner)
-      get edit_project_proposal_path(pending.slug)
+      get edit_project_proposal_path(pending)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(pending.email)
       content_sign_in_as(:admin)
-      get edit_project_proposal_path(pending.slug)
+      get edit_project_proposal_path(pending)
       expect(response).to have_http_status(:ok)
+    end
+
+    it "shows each stored photo on edit with an empty alt, beside its visible file name" do
+      pending.photos.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")),
+                            filename: "avatar.png", content_type: "image/png")
+      content_login!(owner)
+      get edit_project_proposal_path(pending)
+      preview = Nokogiri::HTML(response.body).at_css(".file-upload-item-preview")
+      expect(preview.at_css("img")["alt"]).to eq("")
+      expect(preview.text).to include("avatar.png")
+    end
+
+    it "always sends the category field, so clearing every category is submitted" do
+      content_login!(owner)
+      get edit_project_proposal_path(pending)
+      page = Nokogiri::HTML(response.body)
+      expect(page.at_css("input[type='hidden'][name='project_proposal[categories][]'][value='']")).to be_present
+    end
+  end
+
+  describe "proposal addresses" do
+    let(:edited) do
+      create(:project_proposal, user: owner, title: "Before").tap { |pp| pp.update!(title: "After Edit") }
+    end
+    let(:canonical) { "/project_proposals/#{edited.id}-after-edit" }
+    let(:old_dotted) { "/project_proposals/#{edited.id}.after-edit" }
+
+    before { content_login!(owner) }
+
+    it "builds the address from the id and the title" do
+      expect(project_proposal_path(edited)).to eq(canonical)
+      expect(edit_project_proposal_path(edited)).to eq("#{canonical}/edit")
+    end
+
+    it "shows and edits the proposal at the canonical address" do
+      get canonical
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("After Edit")
+      get "#{canonical}/edit"
+      expect(response).to have_http_status(:ok)
+    end
+
+    [["a stale title", "-before", :found], ["the old dotted form", ".after-edit", :moved_permanently],
+     ["the bare id", "", :found]].each do |label, suffix, status|
+      it "moves #{label} to the canonical address for show and edit, keeping the query string" do
+        get "/project_proposals/#{edited.id}#{suffix}?sort=newest&locale=en"
+        expect(response).to have_http_status(status)
+        expect(response).to redirect_to("#{canonical}?sort=newest&locale=en")
+        get "/project_proposals/#{edited.id}#{suffix}/edit"
+        expect(response).to have_http_status(status)
+        expect(response).to redirect_to("#{canonical}/edit")
+      end
+    end
+
+    it "does not loop when a title is renamed and renamed back" do
+      edited.update!(title: "B Title")
+      edited.update!(title: "After Edit")
+      get canonical
+      expect(response).to have_http_status(:ok)
+      get "/project_proposals/#{edited.id}-b-title"
+      expect(response).to have_http_status(:found)
+      expect(response).to redirect_to(canonical)
+    end
+
+    it "moves a changed title to a new address and the old address to it" do
+      old_path = project_proposal_path(edited)
+      edited.update!(title: "Third Title")
+      get old_path
+      expect(response).to have_http_status(:found)
+      expect(response).to redirect_to("/project_proposals/#{edited.id}-third-title")
+    end
+
+    it "uses the id alone when the title has no letters or digits" do
+      edited.update!(title: "!!!")
+      expect(project_proposal_path(edited)).to eq("/project_proposals/#{edited.id}")
+      get project_proposal_path(edited)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "answers JSON by id, by the canonical address and by the old dotted form, without moving" do
+      ["#{edited.id}.json", "#{edited.id}-after-edit.json", "#{edited.id}.after-edit.json"].each do |id|
+        get "/project_proposals/#{id}"
+        expect(response).to have_http_status(:ok)
+        expect(response.media_type).to eq("application/json")
+      end
+    end
+
+    it "gives the canonical address in the url of the JSON representation" do
+      get "/project_proposals/#{edited.id}.json"
+      expect(response.parsed_body["url"]).to eq("/project_proposals/#{edited.id}-after-edit.json")
+    end
+
+    it "does not move a pending proposal's address for someone who may not see it" do
+      content_login!(other)
+      get "/project_proposals/#{pending.id}"
+      expect(response).to redirect_to(project_proposals_path)
+      expect(response).to have_http_status(:found)
+      get "/project_proposals/#{pending.id}/edit"
+      expect(response).to redirect_to(project_proposals_path)
+      expect(response).to have_http_status(:found)
+    end
+
+    it "updates the proposal at the old forms without moving" do
+      patch old_dotted, params: { project_proposal: { title: "Third Title" } }
+      expect(edited.reload.title).to eq("Third Title")
+      expect(response).to redirect_to("/project_proposals/#{edited.id}-third-title")
+      expect(response).to have_http_status(:found)
+      patch "/project_proposals/#{edited.id}", params: { project_proposal: { title: "Fourth Title" } }
+      expect(edited.reload.title).to eq("Fourth Title")
+    end
+
+    it "deletes the proposal at the old forms without moving" do
+      old_dotted
+      content_sign_in_as(:admin)
+      expect { delete old_dotted }.to change(ProjectProposal, :count).by(-1)
+      expect(response).to redirect_to(project_proposals_path)
+    end
+
+    it "sends an unknown id back to the list" do
+      get "/project_proposals/0-nothing"
+      expect(response).to redirect_to(project_proposals_path)
+      expect(flash[:alert]).to eq("Project proposal not found")
+    end
+
+    it "does not read digits followed by letters as an id" do
+      get "/project_proposals/#{edited.id}x"
+      expect(response).to redirect_to(project_proposals_path)
     end
   end
 
@@ -277,7 +426,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       pp = ProjectProposal.find_by(title: "New Idea")
       expect(pp.user_id).to be_nil
       expect(pp.approved).to be_nil
-      expect(response).to redirect_to(project_proposal_path(pp.slug))
+      expect(response).to redirect_to(project_proposal_path(pp))
       expect(flash[:notice]).to eq("Project proposal was successfully created.")
     end
 
@@ -309,12 +458,25 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "sets user_id from the session and emails makerlab@uottawa.ca" do
       content_login!(owner)
       ActionMailer::Base.deliveries.clear
-      post project_proposals_path, params: proposal_params
+      perform_enqueued_jobs { post project_proposals_path, params: proposal_params }
       pp = ProjectProposal.find_by(title: "New Idea")
       expect(pp.user_id).to eq(owner.id)
-      mail = ActionMailer::Base.deliveries.last
-      expect(mail.to).to eq(["makerlab@uottawa.ca"])
-      expect(mail.subject).to eq("New Project Proposal")
+      expect(ActionMailer::Base.deliveries.map(&:to)).to eq([["makerlab@uottawa.ca"]])
+      expect(ActionMailer::Base.deliveries.last.subject).to eq("New Project Proposal")
+    end
+
+    # The mail is queued after the proposal is stored, so a delivery failure neither fails the request nor undoes
+    # the proposal.
+    it "stores the proposal and redirects when the new-proposal mail cannot be delivered" do
+      content_login!(owner)
+      allow_any_instance_of(Mail::TestMailer).to receive(:deliver!).and_raise(Net::SMTPFatalError, "550 rejected")
+      expect { post project_proposals_path, params: proposal_params }.to change(ProjectProposal, :count).by(1)
+      pp = ProjectProposal.find_by!(title: "New Idea")
+      expect(response).to redirect_to(project_proposal_path(pp))
+
+      # the failure only surfaces when the queued job runs, and leaves the proposal as it was
+      expect { perform_enqueued_jobs }.to raise_error(Net::SMTPFatalError)
+      expect(ProjectProposal.find_by!(title: "New Idea")).to eq(pp)
     end
 
     it "ignores submitted approved/admin_id/user_id: a guest cannot self-approve" do
@@ -359,16 +521,32 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     it "answers JSON with the redirect uri" do
       post project_proposals_path(format: :json), params: proposal_params
-      expect(response.parsed_body).to eq("redirect_uri" => project_proposal_path(ProjectProposal.find_by(title: "New Idea").slug))
+      expect(response.parsed_body).to eq("redirect_uri" => project_proposal_path(ProjectProposal.find_by(title: "New Idea")))
     end
 
     it "re-renders new with 422 and an alert when invalid, sending no mail" do
       ActionMailer::Base.deliveries.clear
-      expect { post project_proposals_path, params: proposal_params(title: "", project_cost: -1) }
+      expect { perform_enqueued_jobs { post project_proposals_path, params: proposal_params(title: "", project_cost: -1) } }
         .not_to change(ProjectProposal, :count)
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to eq("An error occurred while creating the project proposal, try again later.")
+      expect(flash[:alert]).to start_with("The project proposal was not created. Title")
       expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "shows the creation error only on the page that re-renders new" do
+      post project_proposals_path, params: proposal_params(title: "", project_cost: -1)
+      expect(response.body).to include("The project proposal was not created.")
+      get new_project_proposal_path
+      expect(response.body).not_to include("The project proposal was not created.")
+    end
+
+    it "shows the captcha error only on the page that re-renders new" do
+      allow_any_instance_of(ProjectProposalsController).to receive(:verify_turnstile).and_return(false)
+      post project_proposals_path, params: proposal_params
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Captcha error, please try again")
+      get new_project_proposal_path
+      expect(response.body).not_to include("Captcha error")
     end
 
     it "JSON validation errors are keyed by attribute" do
@@ -382,10 +560,14 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(ProjectProposal.find_by(title: "New Idea").categories.pluck(:name)).to match_array(%w[a b c d e])
     end
 
+    it "creates no category from the empty value the form sends with no selection" do
+      post project_proposals_path, params: proposal_params(categories: ["", "a"])
+      expect(ProjectProposal.find_by(title: "New Idea").categories.pluck(:name)).to eq(["a"])
+    end
+
     # ProjectProposal validates project_files (sniffed type + size) in the model
-    it "attaches up to 5 images and any number of allowed files, but not an executable" do
-      files = [content_pdf_upload, content_named_upload("run.exe", type: "application/x-msdownload"),
-               content_named_upload("a.stl", content: "solid x\nfacet normal 0 0 0\n", type: "model/stl")]
+    it "attaches up to 5 images and any number of allowed files" do
+      files = [content_pdf_upload, content_named_upload("a.stl", content: "solid x\nfacet normal 0 0 0\n", type: "model/stl")]
       imgs = Array.new(6) { content_png_upload }
       post project_proposals_path, params: { images: imgs, files: files }.merge(proposal_params)
       pp = ProjectProposal.find_by(title: "New Idea")
@@ -393,36 +575,41 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(pp.project_files.map { |f| f.filename.to_s }).to contain_exactly("RepoFile1.pdf", "a.stl")
     end
 
-    it "keeps the good files after a refused one and tells the user which file was refused" do
+    it "stores nothing when one file is refused, names it, and keeps the typed values in the form" do
+      ActionMailer::Base.deliveries.clear
       files = [content_named_upload("run.exe", type: "application/x-msdownload"), content_named_upload("ok.txt", content: "tiny")]
-      post project_proposals_path, params: { files: files }.merge(proposal_params)
-      pp = ProjectProposal.find_by(title: "New Idea")
-      expect(pp.project_files.map { |f| f.filename.to_s }).to eq(["ok.txt"])
-      expect(flash[:alert]).to include("run.exe")
-      expect(flash[:alert]).not_to include("ok.txt")
+      expect { perform_enqueued_jobs { post project_proposals_path, params: { images: [content_png_upload], files: files }.merge(proposal_params(categories: %w[a])) } }
+        .not_to change { [ProjectProposal.count, Category.count, ActiveStorage::Attachment.count] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to eq("The project proposal was not saved because the type or size of these files is not allowed: run.exe.")
+      expect(response.body).to include('value="New Idea"')
+      expect(ActionMailer::Base.deliveries).to be_empty
     end
 
     it "caps the refused-names flash so many long names cannot overflow the cookie session" do
       files = Array.new(12) { |i| content_named_upload("#{'x' * 200}#{i}.exe", type: "application/x-msdownload") }
-      post project_proposals_path, params: { files: files }.merge(proposal_params)
-      expect(response).to have_http_status(:found)
+      expect { post project_proposals_path, params: { files: files }.merge(proposal_params) }.not_to change(ProjectProposal, :count)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(flash[:alert].length).to be < 400
       expect(flash[:alert]).to include("and 7 more")
-      expect(ProjectProposal.find_by(title: "New Idea").project_files).not_to be_attached
     end
 
-    it "reports both the pre-check refusals and the model's own errors, with no success flash, and still saves the proposal" do
-      # run.exe passes the (stubbed) pre-check but fails the model validation; fake.exe is refused by the pre-check
-      allow_any_instance_of(ProjectProposal).to receive(:sniffed_upload_problems) { |_, _name, f| f.original_filename == "fake.exe" ? ["bad"] : [] }
-      files = [content_named_upload("run.exe", type: "application/x-msdownload"), content_named_upload("fake.exe", type: "application/x-msdownload")]
-      expect { post project_proposals_path, params: { files: files }.merge(proposal_params) }.to change(ProjectProposal, :count).by(1)
-      pp = ProjectProposal.find_by(title: "New Idea")
-      expect(response).to redirect_to(project_proposal_path(pp.slug))
-      expect(flash[:notice]).to be_blank
-      expect(flash[:alert]).to include("fake.exe") # pre-check refusal
-      expect(flash[:alert]).to include("run.exe has a file type that is not allowed") # the model's real error
-      expect(pp.project_files).not_to be_attached
-      expect(pp.errors).to be_empty
+    it "stores nothing when the model refuses a file the pre-check let through, and gives the model's reason" do
+      allow_any_instance_of(ProjectProposal).to receive(:sniffed_upload_problems).and_return([])
+      files = [content_named_upload("run.exe", type: "application/x-msdownload")]
+      expect { post project_proposals_path, params: { files: files }.merge(proposal_params(categories: %w[a])) }
+        .not_to change { [ProjectProposal.count, Category.count, ActiveStorage::Attachment.count] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to start_with("The project proposal was not saved. ")
+      expect(flash[:alert]).to include("run.exe has a file type that is not allowed")
+      expect(response.body).to include('value="New Idea"')
+    end
+
+    it "answers JSON with the refused file when one is refused" do
+      files = [content_named_upload("run.exe", type: "application/x-msdownload")]
+      post project_proposals_path(format: :json), params: { files: files }.merge(proposal_params)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["project_files"].join).to include("run.exe")
     end
 
     it "keeps the success notice when every file was accepted" do
@@ -440,15 +627,15 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "does not store an executable disguised as a pdf" do
       exe = "MZ" + ("\x00" * 200)
       files = [content_named_upload("ok.txt", content: "tiny"), content_named_upload("fake.pdf", content: exe, type: "application/pdf")]
-      post project_proposals_path, params: { files: files }.merge(proposal_params)
-      expect(ProjectProposal.find_by(title: "New Idea").project_files.map { |f| f.filename.to_s }).to eq(["ok.txt"])
+      expect { post project_proposals_path, params: { files: files }.merge(proposal_params) }.not_to change(ProjectProposal, :count)
+      expect(flash[:alert]).to include("fake.pdf")
     end
 
     it "does not store a file over the size cap" do
       stub_const("ProjectProposal::MAX_PROJECT_FILE_SIZE", 20.bytes)
       files = [content_named_upload("ok.txt", content: "tiny"), content_named_upload("big.txt", content: "x" * 21)]
-      post project_proposals_path, params: { files: files }.merge(proposal_params)
-      expect(ProjectProposal.find_by(title: "New Idea").project_files.map { |f| f.filename.to_s }).to eq(["ok.txt"])
+      expect { post project_proposals_path, params: { files: files }.merge(proposal_params) }.not_to change(ProjectProposal, :count)
+      expect(flash[:alert]).to include("big.txt")
     end
 
     it "model: invalid project_files make the proposal invalid" do
@@ -464,13 +651,96 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(name).not_to include("/")
     end
 
-    it "an unreadable image destroys the proposal and redirects back without a mail" do
+    def junk_png
+      content_named_upload("x.png", content: "junk", type: "image/png")
+    end
+
+    def expect_create_refused(params)
       ActionMailer::Base.deliveries.clear
-      expect do
-        post project_proposals_path, params: { images: [content_named_upload("x.png", content: "junk", type: "image/png")] }.merge(proposal_params)
-      end.not_to change(ProjectProposal, :count)
-      expect(flash[:alert]).to eq("Something went wrong while uploading photos, try again later.")
+      expect { perform_enqueued_jobs { post project_proposals_path, params: params } }
+        .not_to change { [ProjectProposal.count, Category.count, ActiveStorage::Attachment.count] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include('value="New Idea"')
       expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "stores nothing and sends no mail when an image in the legacy field is unreadable" do
+      expect_create_refused({ images: [junk_png] }.merge(proposal_params))
+    end
+
+    it "stores nothing when an image in the form's photos field is unreadable" do
+      expect_create_refused(proposal_params(photos: ["", content_png_upload, junk_png], categories: %w[a]))
+    end
+
+    it "stores nothing when a photo is named by the signed id of a stored file that is not an image" do
+      blob = ActiveStorage::Blob.create_and_upload!(io: StringIO.new("%PDF-1.4\n"), filename: "a.pdf")
+      expect_create_refused(proposal_params(photos: [blob.signed_id]))
+    end
+
+    it "stores nothing when a photo is named by a signed id that does not resolve" do
+      expect_create_refused(proposal_params(photos: ["not-a-signed-id"]))
+    end
+
+    it "stores nothing when a photo is named by the signed id of an unreadable image" do
+      blob = ActiveStorage::Blob.create_and_upload!(io: StringIO.new("junk"), filename: "x.png", content_type: "image/png")
+      expect_create_refused(proposal_params(photos: [blob.signed_id]))
+    end
+
+    it "stores nothing when a photo is named by the signed id of a file missing from storage" do
+      blob = ActiveStorage::Blob.create_and_upload!(io: Rails.root.join("spec/support/assets/avatar.png").open, filename: "a.png")
+      blob.service.delete(blob.key)
+      expect_create_refused(proposal_params(photos: [blob.signed_id]))
+    end
+
+    it "stores no file named by the signed id of an executable in the project_files field" do
+      blob = ActiveStorage::Blob.create_and_upload!(io: StringIO.new("MZ" + ("\x00" * 200)), filename: "run.exe", content_type: "application/x-msdownload")
+      expect { post project_proposals_path, params: proposal_params(project_files: [blob.signed_id]) }
+        .not_to change { ActiveStorage::Attachment.where(name: "project_files").count }
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "stores a new proposal's slug as '<id>.<title>'" do
+      post project_proposals_path, params: proposal_params(title: "Zed Title")
+      created = ProjectProposal.find_by(title: "Zed Title")
+      expect(created.slug).to eq("#{created.id}.zed-title")
+    end
+
+    it "attaches a stored image named by its signed id" do
+      blob = ActiveStorage::Blob.create_and_upload!(io: Rails.root.join("spec/support/assets/avatar.png").open, filename: "a.png")
+      post project_proposals_path, params: proposal_params(photos: ["", blob.signed_id])
+      expect(ProjectProposal.find_by(title: "New Idea").photos.blobs).to eq([blob])
+    end
+
+    it "attaches the images sent in the form's photos field" do
+      post project_proposals_path, params: proposal_params(photos: ["", content_png_upload])
+      expect(ProjectProposal.find_by(title: "New Idea").photos.count).to eq(1)
+    end
+
+    it "re-renders the form without the unsaved photos when a create with photos is invalid" do
+      expect_create_refused(proposal_params(username: "", photos: ["", content_png_upload]))
+    end
+
+    it "keeps the typed values without the photos when a guest fails the captcha" do
+      allow(TurnstileHelper).to receive(:verification_enabled?).and_return(true)
+      stub_request(:post, TurnstileHelper::TURNSTILE_SITEVERIFY_ENDPOINT).to_return(status: 200, body: { success: false }.to_json)
+      expect_create_refused(proposal_params(photos: ["", content_png_upload], categories: %w[a]))
+      expect(response.body).to include("Captcha error, please try again")
+    end
+
+    it "stores nothing when a category cannot be stored" do
+      allow_any_instance_of(Category).to receive(:save!).and_raise(ActiveRecord::RecordInvalid)
+      expect { post project_proposals_path, params: { images: [content_png_upload] }.merge(proposal_params(categories: %w[a])) }
+        .not_to change { [ProjectProposal.count, ActiveStorage::Attachment.count] }
+      # the error is raised, so it is answered by the error page after the create has rolled back
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "creates one proposal when the form is sent again after a refusal" do
+      post project_proposals_path, params: { files: [content_named_upload("run.exe", type: "application/x-msdownload")] }.merge(proposal_params)
+      expect { post project_proposals_path, params: { files: [content_named_upload("ok.txt", content: "tiny")] }.merge(proposal_params) }
+        .to change(ProjectProposal, :count).by(1)
+      expect(ProjectProposal.where(title: "New Idea").count).to eq(1)
+      expect(flash[:notice]).to eq("Project proposal was successfully created.")
     end
 
     it "an unparseable youtube link is nulled" do
@@ -480,25 +750,58 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "PATCH update" do
-    it "update with a refused file gives no success notice" do
+    it "refuses an edit whose form photos field has an unreadable image, and saves nothing" do
       content_login!(owner)
-      files = [content_named_upload("run.exe", type: "application/x-msdownload")]
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Pending One" }, files: files }
-      expect(flash[:notice]).to be_blank
-      expect(flash[:alert]).to include("run.exe")
+      junk = content_named_upload("x.png", content: "junk", type: "image/png")
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed", photos: ["", junk] } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(pending.reload.title).to eq("Pending One")
+      expect(pending.photos).not_to be_attached
     end
 
-    it "keeps the good files after a refused one on update and reports the refused name" do
+    it "re-renders the form with the stored photos when an edit with a new photo is invalid" do
       content_login!(owner)
-      mine = pending
-      files = [content_named_upload("run.exe", type: "application/x-msdownload"), content_named_upload("ok.txt", content: "tiny")]
-      patch project_proposal_path(mine.slug), params: { project_proposal: { title: "Pending One" }, files: files }
-      expect(mine.reload.project_files.map { |f| f.filename.to_s }).to eq(["ok.txt"])
+      pending.photos.attach(content_png_upload)
+      kept = pending.photos.first.signed_id
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "", photos: ["", kept, content_png_upload] } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(kept)
+      expect(pending.reload.photos.count).to eq(1)
+    end
+
+    it "keeps the stored photos it is sent back by signed id without reading them again" do
+      content_login!(owner)
+      pending.photos.attach(content_png_upload)
+      kept = pending.photos.first.signed_id
+      expect(FastImage).not_to receive(:size)
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed", photos: ["", kept] } }
+      expect(pending.reload.title).to eq("Changed")
+      expect(pending.photos.count).to eq(1)
+    end
+
+    it "refuses an update with a refused file, names it in the alert and gives no success notice" do
+      content_login!(owner)
+      files = [content_named_upload("run.exe", type: "application/x-msdownload")]
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Pending One" }, files: files }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:notice]).to be_blank
       expect(flash[:alert]).to include("run.exe")
+      expect(pending.reload.project_files).not_to be_attached
+    end
+
+    it "attaches none of the files and saves nothing when one new file is refused and one is good" do
+      content_login!(owner)
+      files = [content_named_upload("run.exe", type: "application/x-msdownload"), content_named_upload("ok.txt", content: "tiny")]
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, files: files }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to include("run.exe")
+      expect(flash[:alert]).not_to include("ok.txt")
+      expect(pending.reload.project_files).not_to be_attached
+      expect(pending.title).to eq("Pending One")
     end
 
     it "does not let a guest rewrite a proposal" do
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Hijacked" } }
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Hijacked" } }
       # update requires sign-in, then ownership or admin
       expect(response).to redirect_to(login_path)
       expect(pending.reload.title).to eq("Pending One")
@@ -507,10 +810,10 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "does not let a stranger or staff rewrite a proposal" do
       [create(:user, :regular_user), create(:user, :staff)].each do |user|
         content_login!(user)
-        patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Hijacked" } }
+        patch project_proposal_path(pending), params: { project_proposal: { title: "Hijacked" } }
         expect(response).to redirect_to(project_proposals_path)
         expect(flash[:alert]).to eq("You are not allowed to modify this project proposal.")
-        patch project_proposal_path(pending.slug, format: :json), params: { project_proposal: { title: "Hijacked" } }
+        patch project_proposal_path(pending, format: :json), params: { project_proposal: { title: "Hijacked" } }
         expect(response).to have_http_status(:forbidden)
         expect(pending.reload.title).to eq("Pending One")
       end
@@ -518,17 +821,17 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     it "lets the owner and an admin edit" do
       content_login!(owner)
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Owner Edit" } }
-      expect(response).to redirect_to(project_proposal_path(pending.reload.slug))
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Owner Edit" } }
+      expect(response).to redirect_to(project_proposal_path(pending.reload))
       expect(flash[:notice]).to eq("Project proposal was successfully updated.")
       content_sign_in_as(:admin)
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Admin Edit" } }
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Admin Edit" } }
       expect(pending.reload.title).to eq("Admin Edit")
     end
 
     it "an owner's edit of an approved proposal sends it back to pending and drops it from the public list" do
       content_login!(owner)
-      patch project_proposal_path(approved.slug), params: { project_proposal: { title: "Approved Reworked" } }
+      patch project_proposal_path(approved), params: { project_proposal: { title: "Approved Reworked" } }
       expect(approved.reload).to have_attributes(approved: nil, admin_id: nil, title: "Approved Reworked")
       expect(flash[:notice]).to include("needs to be re-approved by an admin")
       reset!
@@ -539,7 +842,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "an admin sees the re-pended proposal in the Pending Decision filter" do
       approved.update!(user: owner)
       content_login!(owner)
-      patch project_proposal_path(approved.slug), params: { project_proposal: { title: "Approved Reworked" } }
+      patch project_proposal_path(approved), params: { project_proposal: { title: "Approved Reworked" } }
       content_sign_in_as(:admin)
       get project_proposals_path, params: { status: ["nil"] }
       expect(response.body).to include("Approved Reworked")
@@ -548,58 +851,113 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "an admin's edit keeps an approved proposal approved" do
       admin = content_sign_in_as(:admin)
       approved.update_columns(admin_id: admin.id)
-      patch project_proposal_path(approved.slug), params: { project_proposal: { title: "Admin Tweak" } }
+      patch project_proposal_path(approved), params: { project_proposal: { title: "Admin Tweak" } }
       expect(approved.reload).to have_attributes(approved: "approved", admin_id: admin.id, title: "Admin Tweak")
       expect(flash[:notice]).to eq("Project proposal was successfully updated.")
     end
 
     it "an owner's edit of a pending proposal keeps it pending" do
       content_login!(owner)
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Pending Reworked" } }
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Pending Reworked" } }
       expect(pending.reload.approved).to be_nil
       expect(flash[:notice]).to eq("Project proposal was successfully updated.")
     end
 
     it "the owner cannot reassign user_id or set review fields through mass assignment" do
       content_login!(owner)
-      patch project_proposal_path(pending.slug),
+      patch project_proposal_path(pending),
             params: { project_proposal: { user_id: other.id, approved: "approved", admin_id: owner.id } }
       expect(pending.reload).to have_attributes(user_id: owner.id, approved: nil, admin_id: nil)
     end
 
     it "the owner cannot re-link their proposal to someone else's" do
       content_login!(owner)
-      patch project_proposal_path(pending.slug), params: { project_proposal: { linked_project_proposal_id: approved.id } }
+      patch project_proposal_path(pending), params: { project_proposal: { linked_project_proposal_id: approved.id } }
       expect(pending.reload.linked_project_proposal_id).to be_nil
     end
 
     it "an admin cannot mass-assign review fields on update either" do
       content_sign_in_as(:admin)
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Edited", approved: "approved", user_id: other.id } }
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Edited", approved: "approved", user_id: other.id } }
       expect(pending.reload).to have_attributes(title: "Edited", approved: nil, user_id: owner.id)
     end
 
     it "replaces categories, JSON answers with the uri" do
       content_login!(owner)
       Category.create!(name: "Old", project_proposal_id: pending.id)
-      patch project_proposal_path(pending.slug, format: :json),
+      patch project_proposal_path(pending, format: :json),
             params: { project_proposal: { title: "Retitled", categories: %w[New] } }
       expect(pending.reload.categories.pluck(:name)).to eq(["New"])
-      expect(response.parsed_body).to eq("redirect_uri" => project_proposal_path(pending.slug))
+      expect(response.parsed_body).to eq("redirect_uri" => project_proposal_path(pending))
     end
 
-    it "wipes categories even when the update is invalid" do
+    it "keeps the categories, photos and files when the update is refused with new categories submitted" do
       content_login!(owner)
       Category.create!(name: "Old", project_proposal_id: pending.id)
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "" } }
+      pending.photos.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")), filename: "keep.png", content_type: "image/png")
+      pending.project_files.attach(io: StringIO.new("tiny"), filename: "keep.txt", content_type: "text/plain")
+      patch project_proposal_path(pending.id),
+            params: { project_proposal: { title: "", categories: %w[New] }, deleteimages: ["keep.png"], deletefiles: ["keep.txt"] }
       expect(response).to have_http_status(:unprocessable_content)
-      # categories.destroy_all runs before validation
-      expect(pending.reload.categories).to be_empty
+      pending.reload
+      expect(pending.categories.pluck(:name)).to eq(["Old"])
+      expect(pending.photos.map { |p| p.filename.to_s }).to eq(["keep.png"])
+      expect(pending.project_files.map { |f| f.filename.to_s }).to eq(["keep.txt"])
+    end
+
+    it "attaches no file named by the signed id of an executable in the project_files field" do
+      content_login!(owner)
+      blob = ActiveStorage::Blob.create_and_upload!(io: StringIO.new("MZ" + ("\x00" * 200)), filename: "run.exe", content_type: "application/x-msdownload")
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed", project_files: [blob.signed_id] } }
+      expect(pending.reload.project_files).not_to be_attached
+    end
+
+    it "keeps the categories when the update is refused with none submitted" do
+      content_login!(owner)
+      Category.create!(name: "Old", project_proposal_id: pending.id)
+      patch project_proposal_path(pending), params: { project_proposal: { title: "" } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(pending.reload.categories.pluck(:name)).to eq(["Old"])
+    end
+
+    it "keeps an approved proposal approved and its categories when a non-admin edit is refused" do
+      content_login!(owner)
+      Category.create!(name: "Old", project_proposal_id: approved.id)
+      patch project_proposal_path(approved), params: { project_proposal: { title: "", categories: %w[New] } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(approved.reload.categories.pluck(:name)).to eq(["Old"])
+      expect(approved.approved).to eq("approved")
+    end
+
+    it "sets the categories as submitted on a valid update, and keeps them when the field is not sent" do
+      content_login!(owner)
+      Category.create!(name: "Old", project_proposal_id: pending.id)
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Fine", categories: %w[A B] } }
+      expect(pending.reload.categories.pluck(:name)).to match_array(%w[A B])
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Finer" } }
+      expect(pending.reload.title).to eq("Finer")
+      expect(pending.categories.pluck(:name)).to match_array(%w[A B])
+    end
+
+    it "keeps the categories when a JSON update does not send the field" do
+      content_login!(owner)
+      Category.create!(name: "Old", project_proposal_id: pending.id)
+      patch project_proposal_path(pending, format: :json), params: { project_proposal: { title: "Retitled" } }
+      expect(response.parsed_body).to eq("redirect_uri" => project_proposal_path(pending.reload))
+      expect(pending.categories.pluck(:name)).to eq(["Old"])
+    end
+
+    it "clears the categories when the form sends an empty selection" do
+      content_login!(owner)
+      Category.create!(name: "Old", project_proposal_id: pending.id)
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Fine", categories: [""] } }
+      expect(response).to redirect_to(project_proposal_path(pending.reload))
+      expect(pending.categories).to be_empty
     end
 
     it "re-slugs to '<id>.<title>' on update" do
       content_login!(owner)
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Zed Title" } }
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Zed Title" } }
       expect(pending.reload.slug).to eq("#{pending.id}.zed-title")
     end
 
@@ -607,25 +965,267 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       content_login!(owner)
       pending.photos.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")), filename: "keep.png", content_type: "image/png")
       pending.photos.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")), filename: "drop.png", content_type: "image/png")
-      patch project_proposal_path(pending.slug),
+      patch project_proposal_path(pending),
             params: { project_proposal: { title: "T" }, deleteimages: ["drop.png"], files: [content_pdf_upload] }
       pending.reload
       expect(pending.photos.map { |p| p.filename.to_s }).to eq(["keep.png"])
       expect(pending.project_files.map { |f| f.filename.to_s }).to eq(["RepoFile1.pdf"])
-      patch project_proposal_path(pending.slug),
+      patch project_proposal_path(pending),
             params: { project_proposal: { title: "T" }, deletefiles: [pending.project_files.first.id.to_s] }
       expect(pending.reload.project_files.count).to eq(0)
     end
   end
 
+  describe "PATCH update with attachment changes" do
+    def attach_png(proposal, name)
+      proposal.photos.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")), filename: name, content_type: "image/png")
+    end
+
+    def unreadable_image
+      content_named_upload("broken.png", content: "not an image", type: "image/png")
+    end
+
+    before { content_login!(owner) }
+
+    def photo_names
+      pending.reload.photos.map { |p| p.filename.to_s }
+    end
+
+    def file_names
+      pending.reload.project_files.map { |f| f.filename.to_s }
+    end
+
+    it "removes one photo and adds another in one valid edit" do
+      attach_png(pending, "drop.png")
+      attach_png(pending, "keep.png")
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, deleteimages: ["drop.png"], images: [content_png_upload] }
+      expect(photo_names).to match_array(%w[keep.png avatar.png])
+      expect(pending.title).to eq("Changed")
+    end
+
+    it "does not remove a newly attached photo that shares a name with one marked for removal" do
+      attach_png(pending, "avatar.png")
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, deleteimages: ["avatar.png"], images: [content_png_upload] }
+      expect(photo_names).to eq(["avatar.png"])
+      expect(pending.photos.count).to eq(1)
+    end
+
+    it "refuses the edit and keeps everything when a new photo is unreadable" do
+      attach_png(pending, "drop.png")
+      Category.create!(name: "Old", project_proposal_id: pending.id)
+      patch project_proposal_path(pending.id),
+            params: { project_proposal: { title: "Changed", categories: %w[New] }, deleteimages: ["drop.png"], images: [content_png_upload, unreadable_image] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to eq("The project proposal was not updated. Photos could not be read as images")
+      expect(photo_names).to eq(["drop.png"])
+      expect(pending.title).to eq("Pending One")
+      expect(pending.categories.pluck(:name)).to eq(["Old"])
+    end
+
+    it "shows the refusal message only on the page that refuses the edit" do
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "" } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("The project proposal was not updated.")
+      get edit_project_proposal_path(pending)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("The project proposal was not updated.")
+    end
+
+    it "shows the refused files message only on the page that refuses the edit" do
+      patch project_proposal_path(pending.id),
+            params: { project_proposal: { title: "Changed" }, files: [content_named_upload("run.exe", type: "application/x-msdownload")] }
+      expect(response.body).to include("The project proposal was not saved because the type or size")
+      get edit_project_proposal_path(pending)
+      expect(response.body).not_to include("The project proposal was not saved")
+    end
+
+    it "names both causes when a new photo is unreadable and a new file is refused, and saves nothing" do
+      attach_png(pending, "drop.png")
+      Category.create!(name: "Old", project_proposal_id: pending.id)
+      patch project_proposal_path(pending.id),
+            params: { project_proposal: { title: "Changed", categories: %w[New] }, deleteimages: ["drop.png"],
+                      images: [unreadable_image], files: [content_named_upload("run.exe", type: "application/x-msdownload")] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to eq(
+        "The project proposal was not saved because the type or size of these files is not allowed: run.exe. Photos could not be read as images"
+      )
+      expect(photo_names).to eq(["drop.png"])
+      expect(file_names).to be_empty
+      expect(pending.title).to eq("Pending One")
+      expect(pending.categories.pluck(:name)).to eq(["Old"])
+    end
+
+    it "shows the typed title on the form when a new photo is unreadable, without saving it" do
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Typed Title" }, images: [unreadable_image] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Typed Title")
+      expect(pending.reload.title).to eq("Pending One")
+    end
+
+    it "shows the typed values on the form when validation refuses the edit" do
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "", description: "Typed Description" } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Typed Description")
+      expect(pending.reload.description).not_to eq("Typed Description")
+    end
+
+    it "keeps the file marked for removal and shows the typed title when a new file is refused" do
+      pending.project_files.attach(io: StringIO.new("old"), filename: "drop.txt", content_type: "text/plain")
+      patch project_proposal_path(pending.id),
+            params: { project_proposal: { title: "Typed Title" }, deletefiles: ["drop.txt"],
+                      files: [content_named_upload("run.exe", type: "application/x-msdownload")] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Typed Title")
+      expect(file_names).to eq(["drop.txt"])
+      expect(pending.title).to eq("Pending One")
+    end
+
+    it "keeps the photo marked for removal when a new file is refused" do
+      attach_png(pending, "drop.png")
+      patch project_proposal_path(pending.id),
+            params: { project_proposal: { title: "Changed" }, deleteimages: ["drop.png"], images: [content_png_upload],
+                      files: [content_named_upload("run.exe", type: "application/x-msdownload")] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(photo_names).to eq(["drop.png"])
+    end
+
+    it "answers a refused file edit with the errors as JSON" do
+      patch project_proposal_path(pending.id, format: :json),
+            params: { project_proposal: { title: "Changed" }, files: [content_named_upload("run.exe", type: "application/x-msdownload")] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["project_files"].join).to include("run.exe")
+    end
+
+    it "caps the refused names in the alert" do
+      files = Array.new(12) { |i| content_named_upload("#{'x' * 200}#{i}.exe", type: "application/x-msdownload") }
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, files: files }
+      expect(flash[:alert].length).to be < 400
+      expect(flash[:alert]).to include("and 7 more")
+    end
+
+    context "when the model rejects a file the pre-check let through" do
+      before { allow_any_instance_of(ProjectProposal).to receive(:sniffed_upload_problems).and_return([]) }
+
+      let(:bad_file) { content_named_upload("run.exe", type: "application/x-msdownload") }
+
+      it "re-renders the edit form with the typed title and the refused file's name, and saves nothing" do
+        pending.project_files.attach(io: StringIO.new("old"), filename: "drop.txt", content_type: "text/plain")
+        Category.create!(name: "Old", project_proposal_id: pending.id)
+        patch project_proposal_path(pending.id),
+              params: { project_proposal: { title: "Typed Title", categories: %w[New] }, deletefiles: ["drop.txt"], files: [bad_file] }
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("Typed Title")
+        expect(response.body).to include("run.exe")
+        expect(response.body).to include('name="project_proposal[title]"')
+        expect(flash[:alert]).to include("The project proposal was not saved")
+        expect(pending.reload.title).to eq("Pending One")
+        expect(file_names).to eq(["drop.txt"])
+        expect(pending.categories.pluck(:name)).to eq(["Old"])
+      end
+
+      it "links to the stored address of the proposal, not one built from the typed title" do
+        pending.update!(title: "Stored Title")
+        stored_path = project_proposal_path(pending.reload)
+        patch stored_path, params: { project_proposal: { title: "Typed Title" }, files: [bad_file] }
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include(%(href="#{stored_path}"))
+        expect(response.body).not_to include("typed-title")
+      end
+
+      it "shows only the stored photos on the form when new photos came with the rejected file" do
+        attach_png(pending, "stored.png")
+        new_photo = Rack::Test::UploadedFile.new(Rails.root.join("spec/support/assets/avatar.png"), "image/png", original_filename: "newphoto.png")
+        patch project_proposal_path(pending.id),
+              params: { project_proposal: { title: "Typed Title" }, images: [new_photo], files: [bad_file] }
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("Typed Title")
+        expect(response.body).to include("stored.png")
+        expect(response.body).not_to include("newphoto.png")
+        expect(photo_names).to eq(["stored.png"])
+        expect(pending.title).to eq("Pending One")
+      end
+
+      it "answers JSON clients with the project_files error" do
+        patch project_proposal_path(pending.id, format: :json), params: { project_proposal: { title: "Changed" }, files: [bad_file] }
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["project_files"].join).to include("run.exe")
+        expect(pending.reload.title).to eq("Pending One")
+        expect(pending.project_files).not_to be_attached
+      end
+    end
+
+    it "answers a refused photo edit with the errors as JSON" do
+      attach_png(pending, "drop.png")
+      patch project_proposal_path(pending.id, format: :json),
+            params: { project_proposal: { title: "Changed" }, deleteimages: ["drop.png"], images: [unreadable_image] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to have_key("photos")
+      expect(photo_names).to eq(["drop.png"])
+    end
+
+    it "removes one file and adds another in one valid edit" do
+      pending.project_files.attach(io: StringIO.new("old"), filename: "drop.txt", content_type: "text/plain")
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, deletefiles: ["drop.txt"], files: [content_named_upload("new.txt", content: "new")] }
+      expect(file_names).to eq(["new.txt"])
+    end
+
+    it "removes only the file named when the removal is sent as a single value" do
+      pending.project_files.attach(io: StringIO.new("a"), filename: "a.txt", content_type: "text/plain")
+      pending.project_files.attach(io: StringIO.new("aa"), filename: "aa.txt", content_type: "text/plain")
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, deletefiles: "aa.txt" }
+      expect(file_names).to eq(["a.txt"])
+    end
+
+    it "removes only the photo named when the removal is sent as a single value" do
+      attach_png(pending, "p.png")
+      attach_png(pending, "pp.png")
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, deleteimages: "pp.png" }
+      expect(photo_names).to eq(["p.png"])
+    end
+
+    it "keeps the file marked for removal when the proposal is refused" do
+      pending.project_files.attach(io: StringIO.new("old"), filename: "drop.txt", content_type: "text/plain")
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "" }, deletefiles: ["drop.txt"], files: [content_named_upload("new.txt", content: "new")] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(file_names).to eq(["drop.txt"])
+    end
+
+    it "keeps the proposal, its categories and the files marked for removal when an upload fails to attach" do
+      pending.project_files.attach(io: StringIO.new("old"), filename: "drop.txt", content_type: "text/plain")
+      Category.create!(name: "Old", project_proposal_id: pending.id)
+      allow_any_instance_of(ProjectProposal).to receive(:sniffed_upload_problems).and_raise(ActiveStorage::IntegrityError)
+      patch project_proposal_path(pending.id),
+            params: { project_proposal: { title: "Changed", categories: %w[New] }, deletefiles: ["drop.txt"], files: [content_named_upload("new.txt", content: "new")] }
+      expect(response).to have_http_status(:internal_server_error)
+      expect(file_names).to eq(["drop.txt"])
+      expect(pending.title).to eq("Pending One")
+      expect(pending.categories.pluck(:name)).to eq(["Old"])
+    end
+
+    it "rolls the edit back when a category cannot be stored" do
+      Category.create!(name: "Old", project_proposal_id: pending.id)
+      allow_any_instance_of(Category).to receive(:save!).and_raise(ActiveRecord::RecordInvalid)
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed", categories: %w[New] } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(pending.reload.title).to eq("Pending One")
+      expect(pending.categories.pluck(:name)).to eq(["Old"])
+    end
+  end
+
   describe "DELETE destroy" do
-    it "does nothing for guests, owners and staff (action returns without rendering: 204)" do
+    it "refuses guests, owners and staff with a redirect and an alert" do
       [nil, owner, create(:user, :staff)].each do |user|
         content_login!(user) if user
-        expect { delete project_proposal_path(pending.slug) }.not_to change(ProjectProposal, :count)
-        # `return unless admin?` renders nothing, so a refused delete answers 204 instead of a redirect/alert
-        expect(response).to have_http_status(:no_content)
+        expect { delete project_proposal_path(pending) }.not_to change(ProjectProposal, :count)
+        expect(response).to redirect_to(project_proposals_path)
+        expect(flash[:alert]).to eq("Only admins can delete project proposals.")
       end
+    end
+
+    it "answers 403 to JSON when not an admin" do
+      content_login!(owner)
+      expect { delete project_proposal_path(pending, format: :json) }.not_to change(ProjectProposal, :count)
+      expect(response).to have_http_status(:forbidden)
     end
 
     it "deletes for an admin, both routes, cascading joins and categories, not repositories" do
@@ -633,17 +1233,17 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       ProjectJoin.create!(project_proposal_id: pending.id, user_id: owner.id)
       Category.create!(name: "c", project_proposal_id: pending.id)
       repo = create(:repository, owner: owner, project_proposal_id: pending.id)
-      expect { delete project_proposal_path(pending.slug) }
+      expect { delete project_proposal_path(pending) }
         .to change(ProjectProposal, :count).by(-1).and change(ProjectJoin, :count).by(-1).and change(Category, :count).by(-1)
       expect(response).to redirect_to(project_proposals_url)
       expect(flash[:notice]).to eq("Project proposal was successfully deleted.")
       expect(Repository.exists?(repo.id)).to be(true)
-      expect { delete project_proposal_path(approved.slug) }.to change(ProjectProposal, :count).by(-1)
+      expect { delete project_proposal_path(approved) }.to change(ProjectProposal, :count).by(-1)
     end
 
     it "answers 204 for JSON when admin" do
       content_sign_in_as(:admin)
-      delete project_proposal_path(pending.slug, format: :json)
+      delete project_proposal_path(pending, format: :json)
       expect(response).to have_http_status(:no_content)
       expect(ProjectProposal.exists?(pending.id)).to be(false)
     end
@@ -700,6 +1300,51 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
   end
 
+  describe "a file shared by a revision and its original proposal" do
+    before do
+      content_login!(owner)
+      pending.project_files.attach(io: StringIO.new("shared bytes"), filename: "shared.txt", content_type: "text/plain")
+      pending.photos.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")), filename: "shared.png", content_type: "image/png")
+      post create_revision_project_proposals_path, params: { old_project_proposal_id: pending.id }
+    end
+
+    let(:revision) { ProjectProposal.find_by!(linked_project_proposal_id: pending.id) }
+
+    it "keeps the revision's file in storage and downloadable when the original drops it" do
+      expect(revision.project_files.first.blob_id).to eq(pending.project_files.first.blob_id)
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, deletefiles: ["shared.txt"] }
+      expect(pending.reload.project_files.count).to eq(0)
+      expect(revision.reload.project_files.map { |f| f.filename.to_s }).to eq(["shared.txt"])
+      expect(revision.project_files.first.download).to eq("shared bytes")
+    end
+
+    it "keeps the revision's photo in storage when the original drops it" do
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, deleteimages: ["shared.png"] }
+      expect(pending.reload.photos.count).to eq(0)
+      expect(revision.reload.photos.first.download).to eq(File.binread(Rails.root.join("spec/support/assets/avatar.png")))
+    end
+
+    it "keeps the original's file when the revision drops it" do
+      patch project_proposal_path(revision.id), params: { project_proposal: { title: "Changed" }, deletefiles: ["shared.txt"] }
+      expect(revision.reload.project_files.count).to eq(0)
+      expect(pending.reload.project_files.first.download).to eq("shared bytes")
+    end
+
+    it "purges the stored file once the last proposal using it drops it" do
+      blob = pending.project_files.first.blob
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, deletefiles: ["shared.txt"] }
+      patch project_proposal_path(revision.id), params: { project_proposal: { title: "Changed" }, deletefiles: ["shared.txt"] }
+      expect(ActiveStorage::Blob.exists?(blob.id)).to be(false)
+    end
+
+    it "keeps the revision's files when the original proposal is deleted" do
+      revision
+      content_login!(create(:user, :admin))
+      perform_enqueued_jobs { delete project_proposal_path(pending.id) }
+      expect(revision.reload.project_files.first.download).to eq("shared bytes")
+    end
+  end
+
   describe "POST create_revision" do
     it "sends a guest to login and clones nothing" do
       expect { post create_revision_project_proposals_path, params: { old_project_proposal_id: pending.id } }
@@ -726,7 +1371,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
         .to change(ProjectProposal, :count).by(1)
       rev = ProjectProposal.find_by(title: "Revision of Pending One")
       expect(rev).to have_attributes(linked_project_proposal_id: pending.id, user_id: owner.id, approved: nil, admin_id: nil, email: pending.email)
-      expect(response).to redirect_to(project_proposal_path(rev.slug))
+      expect(response).to redirect_to(project_proposal_path(rev))
       expect(flash[:notice]).to eq("The project proposal revision has been successfully created.")
       admin = content_sign_in_as(:admin)
       expect { post create_revision_project_proposals_path, params: { old_project_proposal_id: declined.id } }
@@ -746,7 +1391,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(rev.photos.first.blob_id).to eq(approved.photos.first.blob_id)
       expect(rev.project_files.first.blob_id).to eq(approved.project_files.first.blob_id)
       expect(rev.categories.pluck(:name)).to eq(["cat"])
-      expect(response.parsed_body).to eq("redirect_uri" => project_proposal_path(rev.slug))
+      expect(response.parsed_body).to eq("redirect_uri" => project_proposal_path(rev))
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
@@ -762,7 +1407,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       content_login!(owner)
       post create_revision_project_proposals_path
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to start_with("An error occured while trying to create")
+      expect(flash[:alert]).to eq("The project proposal to copy for a revision could not be found.")
       post create_revision_project_proposals_path, params: { old_project_proposal_id: 0 }
       expect(response).to redirect_to(root_path)
     end
@@ -793,7 +1438,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
         .to change { ProjectJoin.where(user_id: other.id).count }.by(1)
       expect { post join_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id } }
         .not_to change(ProjectJoin, :count)
-      expect(flash[:alert]).to eq("You already joined this project or something went wrong.")
+      expect(flash[:alert]).to eq("You already joined this project.")
     end
 
     it "cannot join a pending or declined proposal" do
@@ -864,9 +1509,9 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(response.body).not_to include("Declined One")
     end
 
-    it "user_projects renders for a guest (empty sets)" do
+    it "user_projects sends a guest to the login page" do
       get user_projects_project_proposals_path
-      expect(response).to have_http_status(:ok)
+      expect(response.location).to start_with("http://www.example.com/login")
     end
 
     it "projects_assigned lists approved, joined proposals without a repository; projects_completed those with one" do
@@ -882,6 +1527,18 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
   end
 
+  describe "a proposal whose only repository was deleted" do
+    it "is listed as assigned again, not as completed" do
+      done = create(:project_proposal, :completed, title: "Finished Work")
+      hidden = done.repositories.first
+      hidden.hide!(by: hidden.owner)
+      get projects_assigned_project_proposals_path
+      expect(response.body).to include("Finished Work")
+      get projects_completed_project_proposals_path
+      expect(response.body).not_to include("Finished Work")
+    end
+  end
+
   describe "JSON contact details" do
     let(:public_keys) do
       %w[id user_id admin_id approved title description youtube_link created_at updated_at area client_type url]
@@ -893,30 +1550,30 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       get project_proposals_path(format: :json)
       expect(response).to have_http_status(:not_acceptable)
 
-      get project_proposal_path(approved.slug, format: :json)
+      get project_proposal_path(approved, format: :json)
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body).keys).to match_array(public_keys)
 
       content_login!(other)
-      get project_proposal_path(approved.slug, format: :json)
+      get project_proposal_path(approved, format: :json)
       expect(JSON.parse(response.body).keys).to match_array(public_keys)
       expect(response.body).not_to include(approved.email, approved.client)
     end
 
     it "includes them for the owner and for admins" do
       content_login!(owner)
-      get project_proposal_path(approved.slug, format: :json)
+      get project_proposal_path(approved, format: :json)
       body = JSON.parse(response.body)
       expect(body.keys).to match_array(public_keys + contact_keys)
       expect(body.values_at(*contact_keys)).to eq([approved.username, approved.email, approved.client])
 
       content_sign_in_as(:admin)
-      get project_proposal_path(approved.slug, format: :json)
+      get project_proposal_path(approved, format: :json)
       expect(JSON.parse(response.body).keys).to match_array(public_keys + contact_keys)
     end
 
     it "leaves the HTML pages unaffected" do
-      get project_proposal_path(approved.slug)
+      get project_proposal_path(approved)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Approved One")
       get project_proposals_path

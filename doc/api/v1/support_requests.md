@@ -24,20 +24,22 @@ Request:
 | `comments`    | required, max 5000 chars (plain text)      |
 | `app_version` | optional, max 50 chars; shown in the email |
 
-Unknown fields are ignored. Values must be strings (an object or array counts as missing). Fields are trimmed.
+Unknown fields are ignored. Values must be strings (an object or array counts as missing). Fields are trimmed. The lengths above are counted on the posted (trimmed) text, before it is stored as rich text; the web Help form and `PUT /send_email` do not cap the subject, comments or app version, and the GitHub issue of any request gets a title of at most 250 and a body of at most 60000 characters, marked as truncated.
 
-When the caller is signed in, `name` and `email` are taken from the account and the posted values are ignored (they may be omitted). Anonymous callers' `email` is used as given, but only as Reply-To and in the email body (never as a recipient).
+When the caller is signed in, `name` and `email` are taken from the account and the posted values are ignored (they may be omitted); the account's own name and email are not checked against the rules above. Anonymous callers' `email` is used as given, but only as Reply-To and in the email body (never as a recipient).
 
-Same path as the web Help form (`HelpController#create`): a `Help` record is saved (which opens the GitHub issue) and `MsrMailer.issue_email` is queued. Signed in: To the account email, Bcc `uottawa.makerepo@gmail.com`. Anonymous (`MsrMailer.issue_email_to_team`): To `uottawa.makerepo@gmail.com` only, Reply-To the posted email. Subject `Issue Report | <subject>`. The public GitHub issue text of API requests has `@`, `#<n>`/`GH-<n>` neutralised with a zero-width joiner and `< > &` escaped.
+Same path as the web Help form (`HelpController#create`): the request only saves a `Help` record and queues `HelpFilingJob`. It answers once the record is saved; the GitHub issue and the email come after, from the job.
 
-202: `{ "status": "accepted" }`. The email is queued, not yet delivered; the body is never echoed back.
+The job sends the email and opens the GitHub issue, each once. Signed in: `MsrMailer.issue_email_copy_to_team` To `uottawa.makerepo@gmail.com`, in English, and `MsrMailer.issue_email` To the account email, in the account's language. Anonymous (`MsrMailer.issue_email_to_team`): To `uottawa.makerepo@gmail.com` only, Reply-To the posted email. Subject `Issue Report | <subject>` (in English). The public GitHub issue text has `@`, `#<n>`/`GH-<n>` neutralised with a zero-width joiner and `< > &` escaped. When GitHub is unavailable the job tries again later (3 runs with a growing wait, then every 15 minutes for about an hour and a half); the caller is not told.
 
-| Status | `error.code`          | When                                                                     |
-| ------ | --------------------- | ------------------------------------------------------------------------ |
-| 400    | `bad_request`         | Malformed JSON                                                           |
-| 422    | `validation_failed`   | Missing/invalid/too long fields (`fields.<name>`)                        |
-| 429    | `rate_limited`        | Over the limits below                                                    |
-| 503    | `service_unavailable` | The GitHub issue could not be opened; nothing saved or sent. Retry later |
+202: `{ "status": "accepted" }`. The request is saved; the email and the GitHub issue are not sent yet. The body is never echoed back. A 202 is also the answer when the job could not be queued: the saved request is queued again within about 15 minutes. A retry after a 202 sends a second request.
+
+| Status | `error.code`        | When                                                         |
+| ------ | ------------------- | ------------------------------------------------------------ |
+| 400    | `bad_request`       | Malformed JSON                                               |
+| 422    | `validation_failed` | Missing/invalid/too long fields (`fields.<name>`)            |
+| 429    | `rate_limited`      | Over the limits below                                        |
+| 500    | `internal_error`    | The request could not be saved; nothing is sent. Retry later |
 
 ## Rate limits
 

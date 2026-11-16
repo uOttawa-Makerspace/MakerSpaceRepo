@@ -11,6 +11,13 @@ module MakerSpaceRepo
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 7.2
 
+    # Failed requests (404, 422, 500) are answered by ErrorsController, in the user's
+    # locale and with a reference code. Rails does not consult public/*.html when
+    # exceptions_app is set; if ErrorsController itself fails, Rails sends its plain text
+    # failsafe response. public/404.html, 422.html and 500.html are kept because a reverse
+    # proxy may serve them (for example for 502 or 504 when the app is down).
+    config.exceptions_app = routes
+
     # Assigning an attr_readonly attribute on a persisted record raises
     # ActiveRecord::ReadonlyAttributeError instead of being silently dropped on save
     # (User#deactivated_at, OrderItem#proficient_project_id, WalkInSafetySheet#supervisor_names and #supervisor_contacts).

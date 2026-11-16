@@ -60,6 +60,7 @@ RSpec.describe AddShareTokenToCertifications, "up and down" do
 
   def migrate(direction)
     ActiveRecord::Migration.suppress_messages { described_class.new.public_send(direction) }
+    PooledStatements.reset
     Certification.reset_column_information
   end
 

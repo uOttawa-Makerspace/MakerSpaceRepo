@@ -1,7 +1,11 @@
 # frozen_string_literal: true
 
 class DevelopmentProgramsController < SessionsController
+  require_authorization
+  skip_authorization only: %i[index join_development_program],
+                     reason: "#{Authorization::ROLLOUT_PENDING}index and join_development_program are not behind grant_access"
   before_action :current_user
+  before_action :signed_in, only: :join_development_program
   before_action :with_development_header, except: :index
 
   # HACK: hardcode exception for this controller's index page only
@@ -22,7 +26,7 @@ class DevelopmentProgramsController < SessionsController
   end
 
   def all_badges
-    @certifications = current_user.certifications
+    @certifications = current_user.certifications_with_training
     @digital_certs = []
     @manu_certs = []
     @prof_certs = []
@@ -53,53 +57,25 @@ class DevelopmentProgramsController < SessionsController
   end
 
   def skills
-    @skills = Skill.all
-    @certifications = current_user.certifications
+    @skills = Skill.includes(trainings: %i[proficient_projects learning_modules])
+    @certifications = current_user.certifications.includes(training_session: :training)
     @remaining_trainings = current_user.remaining_trainings
-    @proficient_projects_awarded =
-      proc do |training|
-        training.proficient_projects.where(
-          id: current_user.order_items.awarded.pluck(:proficient_project_id)
-        )
-      end
-    @learning_modules_completed =
-      proc do |training|
-        training.learning_modules.where(
-          id:
-            current_user.learning_module_tracks.completed.pluck(
-              :learning_module_id
-            )
-        )
-      end
-    @recomended_hours =
-      proc do |training, levels|
-        training.learning_modules.where(level: levels).count +
-          training.proficient_projects.where(level: levels).count
-      end
   end
 
   def join_development_program
-    program =
-      Program.new(user_id: current_user.id, program_type: Program::DEV_PROGRAM)
-    if program.save
+    if Program.join(current_user, Program::DEV_PROGRAM)
       flash[:notice] = "You've joined the Development Program"
       redirect_to development_programs_path
     else
-      redirect_to root_path,
-                  alert:
-                    (
-                      if current_user.dev_program?
-                        "You already joined the Program. You can already access it!"
-                      else
-                        "Something went wrong. Please try again later"
-                      end
-                    )
+      redirect_to root_path, alert: "You already joined the Program. You can already access it!"
     end
   end
 
   private
 
   def grant_access
-    signed_in
+    return signed_in unless signed_in?
+
+    record_authorization!(:signed_in)
   end
 end

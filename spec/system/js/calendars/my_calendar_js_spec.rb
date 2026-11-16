@@ -43,16 +43,27 @@ RSpec.describe "Staff calendar: toolbar and events", type: :system do
     expect(page).to have_css(".fc-timegrid-event", text: "My shift", visible: :all)
   end
 
-  it "labels the button 'Show My Shifts Only' after the first press and 'Show All Shifts' after the second", js: true, skip_bullet: true do
+  it "labels the button with what pressing it does: 'Show All Shifts' after the first press, 'Show My Shifts Only' after the second", js: true, skip_bullet: true do
     open_calendar
     button = ".fc-toggleOthersShifts-button"
 
     expect(page).to have_css(button, text: "Show My Shifts Only")
     find(button).click
-    expect(page).to have_css(button, text: "Show My Shifts Only")
-    find(button).click
     expect(page).to have_css(button, text: "Show All Shifts")
+    find(button).click
+    expect(page).to have_css(button, text: "Show My Shifts Only")
     expect(page).to have_css(".fc-timegrid-event", text: "Their shift", visible: :all)
+  end
+
+  it "names a toggled button after its new label, and keeps the label when another week is shown", js: true, skip_bullet: true do
+    open_calendar
+    button = ".fc-toggleOthersShifts-button"
+
+    find(button).click
+    expect(page).to have_css("#{button}[title='Show All Shifts']", exact_text: "Show All Shifts")
+    find(".fc-next-button").click
+    expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 21 – 27, 2027")
+    expect(page).to have_css("#{button}[title='Show All Shifts']", exact_text: "Show All Shifts")
   end
 
   it "switches event overlap on and remembers it for the next visit", js: true, skip_bullet: true do
@@ -63,6 +74,19 @@ RSpec.describe "Staff calendar: toolbar and events", type: :system do
 
     visit staff_my_calendar_index_path
     expect(page).to have_css(".fc-toggleEventOverlap-button", text: "Disable Event Overlap")
+  end
+
+  it "names its toolbar buttons in French on a French page", js: true, skip_bullet: true do
+    log_in_as(staff, to: staff_my_calendar_index_path(locale: :fr), local_storage: { fullCalendarDefaultDateStaffCalendar: CalendarJsHelpers::WEEK_MIDDAY })
+    shifts = ".fc-toggleOthersShifts-button"
+    overlap = ".fc-toggleEventOverlap-button"
+
+    expect(page).to have_css(shifts, exact_text: "Afficher seulement mes quarts")
+    expect(page).to have_css(overlap, exact_text: "Activer le chevauchement des événements")
+    find(shifts).click
+    expect(page).to have_css(shifts, exact_text: "Afficher tous les quarts")
+    find(overlap).click
+    expect(page).to have_css(overlap, exact_text: "Désactiver le chevauchement des événements")
   end
 
   it "remembers the week shown", js: true, skip_bullet: true do

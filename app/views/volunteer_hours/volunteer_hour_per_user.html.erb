@@ -1,15 +1,15 @@
 <section class="page-contents">
   <div class="text-center">
 
-    <h2>Volunteer hour per user</h2>
-    <h5>Total number of Volunteers: <b><%= @total_volunteers %></b></h5>
-    <h5>Total volunteer hours <b>requested</b> until now: <b><%= @total_volunteer_hours_requested %> hours</b></h5>
-    <h5>Total volunteer hours <b class="text-success">approved</b> until now: <b><%= @total_volunteer_hour_approved || 0 %> hours</b></h5>
-    <h5>Total volunteer hours <b class="text-danger">rejected</b> until now: <b><%= @total_volunteer_hour_rejected || 0 %> hours</b></h5>
+    <h2><%= t('volunteer_area.hours.per_user.title') %></h2>
+    <h5><%= t('volunteer_area.hours.per_user.volunteers_html', count: @total_volunteers) %></h5>
+    <h5><%= t('volunteer_area.hours.per_user.requested_html', hours: @total_volunteer_hours_requested) %></h5>
+    <h5><%= t('volunteer_area.hours.per_user.approved_html', hours: @total_volunteer_hour_approved || 0) %></h5>
+    <h5><%= t('volunteer_area.hours.per_user.rejected_html', hours: @total_volunteer_hour_rejected || 0) %></h5>
 
     <% if !@users_with_volunteer_hours.blank? %>
 
-      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: User" class="form-control mx-auto">
+      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="<%= t('volunteer_area.hours.per_user.find_placeholder') %>" class="form-control mx-auto">
 
       <br />
 
@@ -18,9 +18,9 @@
 
           <thead>
             <tr>
-              <th>User</th>
-              <th>Total Time Worked</th>
-              <th>Information</th>
+              <th><%= t('volunteer_area.hours.columns.user') %></th>
+              <th><%= t('volunteer_area.hours.per_user.total_time') %></th>
+              <th><%= t('volunteer_area.hours.per_user.information') %></th>
             </tr>
           </thead>
 
@@ -48,7 +48,7 @@
                       <th class = "volunteer_task">
                         <%= link_to vh.volunteer_task.title, volunteer_task_path(vh.volunteer_task.id) %>
                       </th>
-                      <th>Time Worked: <%= vh.total_time %></th>
+                      <th><%= t('volunteer_area.hours.per_user.time_worked', hours: vh.total_time) %></th>
                       <th><%= return_approval(vh.approval) %></th>
                     </tr>
                   <% end %>

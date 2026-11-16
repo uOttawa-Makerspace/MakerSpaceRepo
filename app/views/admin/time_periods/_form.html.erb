@@ -2,7 +2,7 @@
   <%= form_for([:admin, @time_period]) do |f| %>
     <% if @time_period.errors.any? %>
       <div id="error_explanation">
-        <h2><%= pluralize(@time_period.errors.count, 'error') %> prohibited this service from being saved:</h2>
+        <h2><%= t('admin_pages.time_periods.errors_heading', count: @time_period.errors.count) %></h2>
 
         <ul>
           <% @time_period.errors.full_messages.each do |message| %>
@@ -14,17 +14,17 @@
 
     <div class="text-center">
       <div class="col-lg-6 text-center mx-auto mb-3">
-        <%= f.label :name, 'Name of the Time Period' %>
+        <%= f.label :name, t('admin_pages.time_periods.name_label') %>
         <%= f.text_field :name, class: 'form-control', required: true %>
       </div>
 
       <div class="col-lg-6 text-center mx-auto mb-3">
-        <%= f.label :start_date, 'Start Date', class: 'form-label' %>
+        <%= f.label :start_date, t('admin_pages.time_periods.start_date'), class: 'form-label' %>
         <%= f.date_field :start_date, autocomplete: 'off', class: 'form-control mb-3', required: true %>
       </div>
 
       <div class="col-lg-6 text-center mx-auto mb-3">
-        <%= f.label :end_date, 'End Date', class: 'form-label' %>
+        <%= f.label :end_date, t('admin_pages.time_periods.end_date'), class: 'form-label' %>
         <%= f.date_field :end_date, autocomplete: 'off', class: 'form-control mb-3', required: true %>
       </div>
 

@@ -1,40 +1,14 @@
-# Runs when a user taps their card on the tap box. Push a popup modal to staff
-# dashboard with membership details
+# Runs when a user taps their card on the tap box. Updates the signed-in tables
+# on the staff dashboard once, then hands the faculty membership check and the
+# popup that reports it to MembershipCheckJob, which can be retried on its own.
 class CardTapJob < ApplicationJob
   queue_as :default
-  # Network call to faculty can take time, make sure we don't process double
-  # taps out of order. Only one job per space can run
+  # Make sure we don't process double taps out of order. Only one job per space
+  # can run
   limits_concurrency to: 1, key: ->(_rfid, space_id) { space_id }, duration: 1.minutes
 
   def perform(rfid, space_id)
-    # Update faculty membership
-    space = Space.find_by(id: space_id)
-
-    begin
-      rfid.user.validate_uoeng_membership(
-        card_number: rfid.card_number,
-        space: space
-      )
-    rescue ActiveRecord::RecordNotFound => e
-      # the "Faculty membership" tier is missing. Log it, but the tap is
-      # already persisted, so staff still get their modal.
-      TapBoxLog.log_card_tap_job_failure(
-        user: rfid.user,
-        card_number: rfid.card_number,
-        space: space,
-        exception: e
-      )
-    end
-
-    # Push notification to staff dashboard
-    StaffDashboardChannel.send_tap_in(rfid.user, space_id)
-  rescue => e
-    TapBoxLog.log_card_tap_job_failure(
-      user: rfid.user,
-      card_number: rfid.card_number,
-      space: Space.find_by(id: space_id),
-      exception: e
-    )
-    raise
+    StaffDashboardChannel.broadcast_table_updates(space_id)
+    MembershipCheckJob.perform_later(rfid, space_id)
   end
 end

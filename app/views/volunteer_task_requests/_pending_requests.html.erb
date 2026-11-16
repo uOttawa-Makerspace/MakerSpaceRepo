@@ -3,20 +3,20 @@
     <div class="rounded-circle bg-success-subtle text-success d-inline-flex align-items-center justify-content-center p-4 fs-1 mb-3">
       <i class="fa-solid fa-circle-check"></i>
     </div>
-    <h5 class="fw-bold text-body-emphasis">All Caught Up!</h5>
-    <p class="text-body-secondary small mb-0">There are no pending completion requests waiting for review.</p>
+    <h5 class="fw-bold text-body-emphasis"><%= t('volunteer_area.requests.pending.empty_title') %></h5>
+    <p class="text-body-secondary small mb-0"><%= t('volunteer_area.requests.pending.empty_body') %></p>
   </div>
 <% else %>
   <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
       <thead class="bg-body-secondary border-bottom">
         <tr class="text-body-secondary small text-uppercase">
-          <th class="ps-3 ps-md-4 py-3" scope="col">Volunteer</th>
-          <th class="py-3" scope="col">Task Details</th>
-          <th class="py-3" scope="col">Space</th>
-          <th class="py-3" scope="col">Reward & Hours</th>
-          <th class="py-3" scope="col">Submitted</th>
-          <th class="pe-3 pe-md-4 py-3 text-end" scope="col">Actions</th>
+          <th class="ps-3 ps-md-4 py-3" scope="col"><%= t('volunteer_area.shared.volunteer') %></th>
+          <th class="py-3" scope="col"><%= t('volunteer_area.shared.task_details') %></th>
+          <th class="py-3" scope="col"><%= t('volunteer_area.shared.space') %></th>
+          <th class="py-3" scope="col"><%= t('volunteer_area.requests.pending.reward_hours') %></th>
+          <th class="py-3" scope="col"><%= t('volunteer_area.requests.pending.submitted') %></th>
+          <th class="pe-3 pe-md-4 py-3 text-end" scope="col"><%= t('volunteer_area.shared.actions') %></th>
         </tr>
       </thead>
       <tbody class="divide-y">
@@ -45,7 +45,7 @@
               <div class="d-flex flex-column gap-1">
                 <div>
                   <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle text-uppercase small">
-                    <%= task.category.to_s.capitalize %>
+                    <%= task_category_name(task.category, task.category.to_s.capitalize) %>
                   </span>
                 </div>
                 <%= link_to task.title.to_s.capitalize, volunteer_task_path(task.id), class: "fw-semibold text-body-emphasis text-decoration-none d-block lh-sm hover-primary" %>
@@ -62,7 +62,7 @@
               <% else %>
                 <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle d-inline-flex align-items-center gap-1 py-1 px-2 small">
                   <i class="fa-solid fa-industry"></i>
-                  <span><%= task.space&.name&.capitalize || "General" %></span>
+                  <span><%= task.space&.name&.capitalize || t('volunteer_area.shared.general') %></span>
                 </span>
               <% end %>
             </td>
@@ -72,11 +72,11 @@
               <div class="d-inline-flex flex-column gap-1">
                 <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1 small d-inline-flex align-items-center gap-1">
                   <i class="fa-solid fa-coins text-warning"></i>
-                  <span><%= task.cc %> CC</span>
+                  <span><%= t('volunteer_area.shared.cc_amount', cc: task.cc) %></span>
                 </span>
                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1 small d-inline-flex align-items-center gap-1">
                   <i class="fa-regular fa-clock text-primary"></i>
-                  <span><%= task.hours %> hrs</span>
+                  <span><%= t('volunteer_area.shared.hours_short', hours: task.hours) %></span>
                 </span>
               </div>
             </td>
@@ -85,10 +85,10 @@
             <td class="py-3">
               <div class="text-body-emphasis small fw-medium">
                 <i class="fa-regular fa-calendar text-secondary me-1"></i>
-                <%= req.created_at.strftime('%b %d, %Y') %>
+                <%= l(req.created_at, format: :volunteer_day) %>
               </div>
               <div class="text-body-secondary small font-monospace">
-                <%= req.created_at.strftime('%I:%M %p') %>
+                <%= l(req.created_at, format: :volunteer_clock) %>
               </div>
             </td>
 
@@ -98,26 +98,24 @@
                 <div class="d-inline-flex flex-column flex-sm-row gap-1 justify-content-end align-items-end">
                   <%= button_to update_approval_volunteer_task_requests_path(id: req.id, approval: true),
                                 method: :put,
-                                data: { turbo_confirm: "Approve this task? This will credit #{task.cc} CC and log #{task.hours} hours for #{volunteer.name.titleize}.",
-                                        confirm: "Approve this task? This will credit #{task.cc} CC and log #{task.hours} hours for #{volunteer.name.titleize}." },
+                                **confirmation_options(t('confirmations.volunteer_tasks.approve_request', cc: task.cc, hours: task.hours, name: volunteer.name.titleize)),
                                 class: "btn btn-sm btn-success fw-semibold d-inline-flex align-items-center justify-content-center gap-1 shadow-sm text-white" do %>
                     <i class="fa-solid fa-check"></i>
-                    <span>Approve</span>
+                    <span><%= t('common.approve') %></span>
                   <% end %>
 
                   <%= button_to update_approval_volunteer_task_requests_path(id: req.id, approval: false),
                                 method: :put,
-                                data: { turbo_confirm: "Deny this completion request for #{volunteer.name.titleize}?",
-                                        confirm: "Deny this completion request for #{volunteer.name.titleize}?" },
+                                **confirmation_options(t('confirmations.volunteer_tasks.deny_request', name: volunteer.name.titleize)),
                                 class: "btn btn-sm btn-outline-danger fw-semibold d-inline-flex align-items-center justify-content-center gap-1" do %>
                     <i class="fa-solid fa-xmark"></i>
-                    <span>Deny</span>
+                    <span><%= t('volunteer_area.requests.pending.deny') %></span>
                   <% end %>
                 </div>
               <% else %>
                 <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-2 small d-inline-flex align-items-center gap-1">
                   <i class="fa-solid fa-hourglass-half text-warning"></i>
-                  <span>Under Review</span>
+                  <span><%= t('volunteer_area.shared.under_review') %></span>
                 </span>
               <% end %>
             </td>

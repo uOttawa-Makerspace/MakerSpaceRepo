@@ -63,19 +63,18 @@ RSpec.describe "Locker inventory inline editing", type: :system, skip_bullet: tr
     expect(page).to have_no_css("#{row} select[name='locker[audience]'].is-valid")
   end
 
-  it "saves a locker note on change and refreshes the row's search text but not the hover note" do
+  it "saves a locker note on change and refreshes the row's search text and the hover note" do
     switch_on
     commit_note("#{row} input[name='locker[notes]']", "Door sticks")
 
     expect(page).to have_css("#{row} input[name='locker[notes]'].is-valid")
     expect(locker.reload.notes).to eq("Door sticks")
     expect(page).to have_css("#{row} td[data-search='Door sticks']")
-    # the hover text is not refreshed: it keeps the text from before the save
-    expect(page).to have_css("#{row} [data-bs-original-title='Locker Note (click inline editing to edit)']")
-    expect(page).to have_no_css("#{row} [data-bs-original-title='Door sticks']")
+    expect(page).to have_css("#{row} [data-bs-original-title='Door sticks']")
+    expect(page).to have_no_css("#{row} [data-bs-original-title='Locker Note (click inline editing to edit)']")
   end
 
-  it "keeps the old hover note after the note is cleared" do
+  it "shows the placeholder hover note after the note is cleared" do
     locker.update!(notes: "Old note")
     visit lockers_path
     expect(page).to have_css("#{row} input[name='locker[notes]']")
@@ -83,8 +82,8 @@ RSpec.describe "Locker inventory inline editing", type: :system, skip_bullet: tr
     commit_note("#{row} input[name='locker[notes]']", "")
 
     wait_until("note not cleared") { locker.reload.notes.blank? }
-    expect(page).to have_css("#{row} [data-bs-original-title='Old note']")
-    expect(page).to have_no_css("#{row} [data-bs-original-title='No note']")
+    expect(page).to have_css("#{row} [data-bs-original-title='No note']")
+    expect(page).to have_no_css("#{row} [data-bs-original-title='Old note']")
   end
 
   it "saves a staff note of an assigned locker on its rental" do

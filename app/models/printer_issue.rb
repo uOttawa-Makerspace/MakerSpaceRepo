@@ -15,6 +15,16 @@ class PrinterIssue < ApplicationRecord
   #                 bed_issue: 'Bed issue' }, validate: false
   # I wish we had normalization here, that's 7.1+ too
 
+  # Marks the issue as resolved. Safe to repeat. Raises RecordInvalid when the issue itself is invalid.
+  def resolve!
+    update!(active: false)
+  end
+
+  # The issues grouped by the canned summary their summary contains, else "Other".
+  def self.group_by_summary(issues)
+    issues.group_by { |issue| summaries.values.detect { |s| issue.summary.include? s } || "Other" }
+  end
+
   def self.summaries
     {
       nozzle_clogged: "Nozzle clogged",

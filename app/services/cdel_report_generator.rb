@@ -28,7 +28,7 @@ class CdelReportGenerator
         %i[spaces.name lab_sessions.sign_in_time lab_sessions.sign_out_time]
     query =
       LabSession
-        .where(created_at: start_date..end_date)
+        .where(created_at: whole_days(start_date, end_date))
         .joins(:user, :space)
         .order(:created_at)
         .pluck(*headers)
@@ -51,7 +51,7 @@ class CdelReportGenerator
         ]
     query =
       Certification
-        .where(created_at: start_date..end_date)
+        .where(created_at: whole_days(start_date, end_date))
         .joins(:user, :training_session, { training: :skill }, :space)
         .order(:created_at)
         .pluck(*headers)
@@ -76,7 +76,7 @@ class CdelReportGenerator
     query =
       User
         .including_deleted
-        .where(created_at: start_date..end_date)
+        .where(created_at: whole_days(start_date, end_date))
         .order(:created_at)
         .pluck(*headers)
     {
@@ -86,10 +86,25 @@ class CdelReportGenerator
     }
   end
 
+  # From the start of the first day to the end of the last; a Date covers its
+  # whole day in the application time zone. A missing date leaves that end
+  # of the range open.
+  def self.whole_days(start_date, end_date)
+    start_date&.beginning_of_day..end_date&.end_of_day
+  end
+
+  # A text field that a spreadsheet would read as a formula (one starting
+  # with =, +, -, @, a tab or a carriage return) is written with a leading
+  # single quote, so it opens as the text that was entered.
+  FORMULA_START = /\A[=+\-@\t\r]/
+  TEXT_AS_ENTERED = lambda do |field|
+    field.is_a?(String) && FORMULA_START.match?(field) ? "'#{field}" : field
+  end
+
   private
 
   def self.make_into_csv(headers, query)
-    CSV.generate do |csv|
+    CSV.generate(write_converters: [TEXT_AS_ENTERED]) do |csv|
       csv << headers
       query.each { |row| csv << row }
     end

@@ -82,7 +82,7 @@ RSpec.describe "Admin teams", type: :request do
       it "rejects a blank name" do
         expect { post admin_teams_path, params: { team: { name: "" }, captain: member.id } }.not_to change(Team, :count)
         expect(response).to redirect_to(new_admin_team_path)
-        expect(flash[:alert]).to eq("Something went wrong while creating the team")
+        expect(flash[:alert]).to eq("The team was not created. Name A team name is required.")
       end
     end
 
@@ -106,7 +106,7 @@ RSpec.describe "Admin teams", type: :request do
       it "redirects to edit with an alert for a blank name" do
         patch admin_team_path(team), params: { team: { name: "" }, captain: captain.id }
         expect(response).to redirect_to(edit_admin_team_path)
-        expect(flash[:alert]).to eq("Something went wrong when trying to update the team.")
+        expect(flash[:alert]).to eq("The team was not updated. Name A team name is required.")
         expect(team.reload.name).to eq("Alpha")
       end
 
@@ -139,16 +139,16 @@ RSpec.describe "Admin teams", type: :request do
 
       it "refuses a second captain and a duplicate member" do
         patch add_member_admin_team_path(team, member_id: member.id), params: { role: "captain" }
-        expect(flash[:alert]).to eq("Something went wrong while trying to add the user.")
+        expect(flash[:alert]).to eq("The user was not added to the team. Role has already been taken")
         expect(role_of(member)).to be_nil
         patch add_member_admin_team_path(team, member_id: captain.id), params: { role: "lead" }
-        expect(flash[:alert]).to eq("Something went wrong while trying to add the user.")
+        expect(flash[:alert]).to eq("The user was not added to the team. User has already been taken")
       end
 
-      # an unknown role value raises ArgumentError from the enum: 500 instead of a flash.
-      it "add_member 500s for an unknown role" do
+      it "asks for a known role when the role is unknown" do
         patch add_member_admin_team_path(team, member_id: member.id), params: { role: "boss" }
-        expect(response).to have_http_status(:internal_server_error)
+        expect(flash[:alert]).to eq("Choose a role for the new member: regular member, lead or captain.")
+        expect(role_of(member)).to be_nil
       end
 
       it "redirects to the index when the team or member is unknown" do
@@ -166,12 +166,12 @@ RSpec.describe "Admin teams", type: :request do
         expect(flash[:notice]).to eq("Successfully promoted member.")
         expect(role_of(member)).to eq("lead")
         patch promote_member_admin_team_path(team, member_id: member.id)
-        expect(flash[:alert]).to eq("Something went wrong while promoting the team member. You can only promote regular team members.")
+        expect(flash[:alert]).to eq("The member was not promoted. Only regular team members can be promoted to team lead.")
         patch demote_member_admin_team_path(team, member_id: member.id)
         expect(flash[:notice]).to eq("Successfully demoted member.")
         expect(role_of(member)).to eq("regular_member")
         patch demote_member_admin_team_path(team, member_id: member.id)
-        expect(flash[:alert]).to eq("Something went wrong while demoting the team member. You can only demote team leads.")
+        expect(flash[:alert]).to eq("The member was not demoted. Only team leads can be demoted to regular member.")
         patch demote_member_admin_team_path(team, member_id: captain.id)
         expect(role_of(captain)).to eq("captain")
       end

@@ -32,22 +32,18 @@ RSpec.describe Upvote, type: :model do
     end
   end
 
-  describe "Before create" do
-    context "votes" do
-      it 'should increment the comment\'s upvote' do
-        upvote = create(:upvote)
-        expect(upvote.comment.upvote).to eq(1)
-      end
+  describe "saving a vote row directly" do
+    it "leaves the comment's counter alone: only cast, switch and retract count" do
+      upvote = create(:upvote)
+      upvote.update!(downvote: true)
+      upvote.destroy
+      expect(upvote.comment.reload.upvote).to eq(0)
     end
-  end
 
-  describe "Before update" do
-    context "votes" do
-      it 'should increment the comment\'s upvote' do
-        upvote = create(:upvote)
-        upvote.update(user_id: upvote.user_id)
-        expect(upvote.comment.upvote).to eq(3)
-      end
+    it "does not change the counter when a vote is re-pointed to another user" do
+      upvote = create(:upvote)
+      upvote.update!(user: create(:user, :regular_user))
+      expect(upvote.comment.reload.upvote).to eq(0)
     end
   end
 
@@ -83,14 +79,66 @@ RSpec.describe Upvote, type: :model do
     end
   end
 
-  describe "Before destroy" do
-    context "votes" do
-      it 'should increment the comment\'s upvote' do
-        upvote = create(:upvote)
-        comment = upvote.comment_id
-        upvote.destroy
-        expect(Comment.find(comment).upvote).to eq(0)
-      end
+  describe ".retract" do
+    let(:user) { create(:user, :regular_user) }
+    let(:comment) { create(:comment) }
+
+    it "takes an upvote back off the counter and a downvote too" do
+      Upvote.cast(user, comment, false)
+      expect(Upvote.retract(user, comment, false)).to be(true)
+      Upvote.cast(user, comment, true)
+      expect(Upvote.retract(user, comment, true)).to be(true)
+      expect([Upvote.count, comment.reload.upvote]).to eq([0, 0])
+    end
+  end
+
+  describe ".switch" do
+    let(:user) { create(:user, :regular_user) }
+    let(:comment) { create(:comment) }
+
+    it "moves the counter by two each way and counts nothing when the vote is already of that kind" do
+      Upvote.cast(user, comment, false)
+      expect(Upvote.switch(user, comment, true)).to be(true)
+      expect(comment.reload.upvote).to eq(-1)
+      expect(Upvote.switch(user, comment, true)).to be(false)
+      expect(Upvote.switch(user, comment, false)).to be(true)
+      expect(comment.reload.upvote).to eq(1)
+    end
+
+    it "counts nothing when the user has no vote" do
+      expect(Upvote.switch(user, comment, true)).to be(false)
+      expect(comment.reload.upvote).to eq(0)
+    end
+  end
+
+  describe "counting with the vote" do
+    it "does not keep the vote when the counter cannot be written" do
+      user = create(:user, :regular_user)
+      comment = create(:comment)
+      allow(Comment).to receive(:update_counters).and_raise(ActiveRecord::StatementInvalid)
+      expect { Upvote.cast(user, comment, false) }.to raise_error(ActiveRecord::StatementInvalid)
+      expect(Upvote.count).to eq(0)
+    end
+  end
+
+  describe "when no comment row is counted" do
+    let(:user) { create(:user, :regular_user) }
+    let(:comment) { create(:comment) }
+
+    it "rolls back a cast" do
+      allow(Comment).to receive(:update_counters).and_return(0)
+      expect { Upvote.cast(user, comment, false) }.to raise_error(ActiveRecord::RecordNotFound)
+      expect(Upvote.count).to eq(0)
+    end
+
+    it "rolls back a switch and a retract" do
+      Upvote.cast(user, comment, false)
+      allow(Comment).to receive(:update_counters).and_return(0)
+
+      expect { Upvote.switch(user, comment, true) }.to raise_error(ActiveRecord::RecordNotFound)
+      expect(Upvote.sole.downvote).to be(false)
+      expect { Upvote.retract(user, comment, false) }.to raise_error(ActiveRecord::RecordNotFound)
+      expect(Upvote.count).to eq(1)
     end
   end
 end

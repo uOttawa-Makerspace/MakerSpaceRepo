@@ -8,8 +8,8 @@ RSpec.describe CouponCode, type: :model do
   it { should belong_to(:user).optional }
 
   it "refuses a negative price, accepts 0" do
-    expect(CouponCode.new(cc_cost: -1)).not_to be_valid
-    expect(CouponCode.new(cc_cost: 0)).to be_valid
+    expect(CouponCode.new(cc_cost: -1, code: "A", dollar_cost: 5)).not_to be_valid
+    expect(CouponCode.new(cc_cost: 0, code: "A", dollar_cost: 5)).to be_valid
   end
 
   it "the database refuses a negative or a NULL price too (CHECK coupon_codes_cc_cost_non_negative, NOT NULL)" do
@@ -22,12 +22,50 @@ RSpec.describe CouponCode, type: :model do
     end.to raise_error(ActiveRecord::NotNullViolation)
   end
 
-  it "requires a price; a blank code is still accepted" do
-    expect(CouponCode.new(cc_cost: 0, code: "")).to be_valid
+  it "requires a price and a code" do
+    expect(CouponCode.new(cc_cost: 0, code: "", dollar_cost: 5)).not_to be_valid
+    expect(CouponCode.new(cc_cost: 0, code: nil, dollar_cost: 5)).not_to be_valid
+    expect(CouponCode.new(cc_cost: 0, code: "ABC", dollar_cost: 5)).to be_valid
+  end
+
+  it "requires a positive dollar value" do
+    [nil, 0, -5].each do |value|
+      coupon = CouponCode.new(cc_cost: 10, code: "ABC", dollar_cost: value)
+      expect(coupon).not_to be_valid, "for #{value.inspect}"
+      expect(coupon.errors[:dollar_cost]).to be_present
+    end
+  end
+
+  it "refuses a code another coupon already has" do
+    create(:coupon_code, code: "SAVE5")
+    duplicate = CouponCode.new(cc_cost: 10, code: "SAVE5", dollar_cost: 5)
+    expect(duplicate).not_to be_valid
+    expect(duplicate.errors[:code]).to be_present
+  end
+
+  describe "an existing coupon that predates the rules" do
+    let!(:legacy_a) { create(:coupon_code, :unclaimed, code: "DUP") }
+    let!(:legacy_b) { create(:coupon_code, :claimed, user: user, code: "OTHER") }
+
+    before do
+      legacy_a.update_columns(code: "")
+      legacy_b.update_columns(code: "", dollar_cost: nil)
+    end
+
+    it "can still be claimed, assigned or edited over an unrelated field" do
+      expect(legacy_a.reload.update(cc_cost: 20)).to be(true)
+      expect(legacy_b.reload.update(user: nil)).to be(true)
+    end
+
+    it "is checked again once its code or dollar value is edited" do
+      expect(legacy_a.reload.update(code: "")).to be(true)
+      expect(legacy_a.update(code: " ")).to be(false)
+      expect(legacy_b.reload.update(dollar_cost: 0)).to be(false)
+    end
   end
 
   it "refuses a blank, a non-numeric and a negative price with ONE message (a single numericality rule)" do
-    message = ["must be a number of CC points (0 or more)"]
+    message = ["must be a number of CCs (0 or more)"]
     [nil, "", "abc", -1, "2.9", 2.9].each do |price|
       expect(CouponCode.new(cc_cost: price).tap(&:valid?).errors[:cc_cost]).to eq(message), "for #{price.inspect}"
     end
@@ -45,9 +83,10 @@ RSpec.describe CouponCode, type: :model do
     expect(CouponCode.new.title).to eq("$ off MakerStore")
   end
 
-  it "stores an integer price (a fractional price is refused, never truncated; dollar_cost still truncates)" do
-    expect(CouponCode.new(cc_cost: 49.9)).not_to be_valid
-    c = CouponCode.create!(dollar_cost: 7.9, cc_cost: 49)
+  it "stores integer amounts (a fractional price or dollar value is refused, never truncated)" do
+    expect(CouponCode.new(cc_cost: 49.9, code: "A", dollar_cost: 7)).not_to be_valid
+    expect(CouponCode.new(cc_cost: 49, code: "A", dollar_cost: 7.9)).not_to be_valid
+    c = CouponCode.create!(dollar_cost: 7, cc_cost: 49, code: "A")
     expect([c.reload.dollar_cost, c.cc_cost]).to eq([7, 49])
   end
 
@@ -59,7 +98,7 @@ RSpec.describe CouponCode, type: :model do
   it "cannot be destroyed once claimed" do
     coupon = create(:coupon_code, :claimed, user: user)
     expect(coupon.destroy).to be(false)
-    expect(coupon.errors.full_messages).to eq(["A user has already claimed this coupon with CC points, so it cannot be deleted"])
+    expect(coupon.errors.full_messages).to eq(["A user has already claimed this coupon with CCs, so it cannot be deleted"])
     expect(CouponCode.exists?(coupon.id)).to be(true)
   end
 

@@ -1,0 +1,33 @@
+<%# The files attached to the order itself, not to one of its tasks: the customer's from the order form, staff's from the comments step. %>
+<% client_files = job_order.user_files_attachments.includes(:blob).to_a %>
+<% staff_files = job_order.staff_files_attachments.includes(:blob).to_a %>
+<% if client_files.any? || staff_files.any? %>
+  <div class="card mb-4">
+    <div class="card-header">
+      <strong><%= t("job_orders.order.order_files") %></strong>
+    </div>
+    <div class="card-body">
+      <% [[t("job_orders.order.files_from_client"), client_files], [t("job_orders.order.files_from_staff"), staff_files]].each do |heading, files| %>
+        <% next if files.empty? %>
+        <h6 class="mt-2"><%= heading %></h6>
+        <div class="list-group list-group-flush mb-2">
+          <% files.each do |file| %>
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+              <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
+                <i class="fa fa-file me-2 flex-shrink-0"></i>
+                <span class="text-truncate d-block overflow-hidden"><%= file.filename %></span>
+              </div>
+              <%= link_to job_order_file_path(job_order, file),
+                          class: "btn btn-sm btn-outline-primary flex-shrink-0 ms-2",
+                          target: "_blank",
+                          rel: "noopener",
+                          title: t("job_orders.order.download") do %>
+                <i class="fa fa-download"></i>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>

@@ -40,16 +40,25 @@ end
 
 # Chunk 13 characterization.
 RSpec.describe VolunteerTask, "defaults, validation and cascade", type: :model do
-  it "has column defaults and no presence validations once saved" do
+  it "has column defaults when saved without validation" do
     task = VolunteerTask.new.tap { |t| t.save!(validate: false) }
     expect(task.attributes.values_at("title", "description", "status", "joins", "category", "cc"))
       .to eq(["", "", "open", 1, "Other", 0])
     expect(task.hours).to eq(0)
   end
 
-  it "accepts negative cc/joins and arbitrary status" do
-    task = VolunteerTask.new(cc: -1, hours: 2, joins: -3, status: "whatever")
-    expect(task).to be_valid
+  describe "form fields" do
+    it "needs a title, whole CC of 0 or more, at least 1 seat and an open or completed status" do
+      expect(build(:volunteer_task)).to be_valid
+      expect(build(:volunteer_task, title: " ")).not_to be_valid
+      expect(build(:volunteer_task, cc: -1)).not_to be_valid
+      expect(build(:volunteer_task, cc: 1.5)).not_to be_valid
+      expect(build(:volunteer_task, cc: 0)).to be_valid
+      expect(build(:volunteer_task, joins: 0)).not_to be_valid
+      expect(build(:volunteer_task, joins: -3)).not_to be_valid
+      expect(build(:volunteer_task, status: "whatever")).not_to be_valid
+      expect(build(:volunteer_task, status: "completed")).to be_valid
+    end
   end
 
   describe "hours" do
@@ -58,11 +67,11 @@ RSpec.describe VolunteerTask, "defaults, validation and cascade", type: :model d
         expect(VolunteerTask.new(hours: hours)).not_to be_valid
         expect(VolunteerTask.new(hours: hours).tap { |t| t.valid?(:task_form) }.errors[:hours]).to be_present
       end
-      expect(VolunteerTask.new(hours: 0.5)).to be_valid
+      expect(VolunteerTask.new(hours: 0.5, title: "Open house")).to be_valid
     end
 
     it "are not checked on a stored task with 0 or 36 hours outside the task form" do
-      zero = VolunteerTask.new(hours: 0).tap { |t| t.save!(validate: false) }
+      zero = VolunteerTask.new(hours: 0, title: "Old task").tap { |t| t.save!(validate: false) }
       long = create(:volunteer_task, hours: 36)
       expect(zero.update(status: "completed")).to be(true)
       expect(long.update(title: "renamed")).to be(true)
@@ -105,6 +114,15 @@ RSpec.describe VolunteerTask, "defaults, validation and cascade", type: :model d
     expect(task.errors[:photos]).to eq([" can't exceed 5 photos"])
   end
 
+  it "words the photo limit in French" do
+    task = create(:volunteer_task)
+    6.times { Photo.new(volunteer_task: task).save(validate: false) }
+    I18n.with_locale(:fr) do
+      task.valid?
+      expect(task.errors[:photos]).to eq(["ne peut pas dépasser 5 photos"])
+    end
+  end
+
   it "is valid with exactly 5 photos" do
     task = create(:volunteer_task)
     5.times { Photo.new(volunteer_task: task).save(validate: false) }
@@ -125,19 +143,47 @@ end
 RSpec.describe VolunteerTask, "#remove_user", type: :model do
   let(:task) { create(:volunteer_task) }
   let(:user) { create(:user, :volunteer) }
+  let(:staff) { create(:user, :staff) }
 
-  it "marks the user's active joins inactive and keeps every row" do
+  it "marks the user's joined row left when they remove themselves, and keeps the row" do
     first = create(:volunteer_task_join, :active, volunteer_task: task, user: user)
-    second = create(:volunteer_task_join, :active, volunteer_task: task, user: user)
 
-    expect(task.remove_user(user.id)).to be(true)
-    expect(VolunteerTaskJoin.where(id: [first.id, second.id]).pluck(:active)).to eq([false, false])
+    expect(task.remove_user(user.id, by: user)).to be(true)
+    rows = VolunteerTaskJoin.where(id: first.id)
+    expect(rows.pluck(:state, :active, :state_changed_by_id).uniq).to eq([["left", false, user.id]])
+    expect(rows.map(&:state_changed_at)).to all(be_present)
   end
 
-  it "refuses a user with no active join" do
+  it "marks the rows removed when someone else removes the user" do
+    join = create(:volunteer_task_join, :active, volunteer_task: task, user: user)
+
+    expect(task.remove_user(user.id, by: staff)).to be(true)
+    expect(join.reload).to have_attributes(state: "removed", active: false, state_changed_by_id: staff.id)
+  end
+
+  it "leaves ended rows alone" do
+    done = create(:volunteer_task_join, :completed, volunteer_task: task, user: user)
+    create(:volunteer_task_join, :active, volunteer_task: task, user: user)
+
+    expect { task.remove_user(user.id, by: staff) }.not_to(change { done.reload.attributes })
+  end
+
+  it "refuses, and writes nothing, when the join ended between the lookup and the change" do
+    join = create(:volunteer_task_join, :active, volunteer_task: task, user: user)
+    allow_any_instance_of(VolunteerTaskJoin).to receive(:with_lock).and_wrap_original do |original, *args, &block|
+      VolunteerTaskJoin.where(id: original.receiver.id).update_all(state: "left", active: false)
+      original.call(*args, &block)
+    end
+
+    expect(task.remove_user(user.id, by: staff)).to be(false)
+    expect(task.errors.full_messages).to eq(["The user to remove is not on this task."])
+    expect(join.reload.state_changed_by_id).to be_nil
+  end
+
+  it "refuses a user with no joined row" do
     create(:volunteer_task_join, :not_active, volunteer_task: task, user: user)
 
-    expect(task.remove_user(user.id)).to be(false)
+    expect(task.remove_user(user.id, by: staff)).to be(false)
     expect(task.errors.full_messages).to eq(["The user to remove is not on this task."])
   end
 end
