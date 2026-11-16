@@ -21,7 +21,7 @@ module LearningModuleTrackHelper
     tag.span class: "btn btn-sm #{color} mt-auto w-100",
              role: 'status',
              aria: {
-               label: "Status: #{localized}"
+               label: t('learning_module_track.status_label', status: localized)
              } do
       localized
     end

@@ -12,6 +12,16 @@ RSpec.describe Answer, type: :model do
         answer = create(:answer, :correct)
         expect(answer.correct).to eq(true)
       end
+
+      it "should be false for the wrong trait" do
+        answer = create(:answer, :wrong)
+        expect(answer.correct).to eq(false)
+      end
+
+      it "gives a wrong exam response a wrong answer" do
+        response = create(:exam_response, :wrong)
+        expect([response.correct, response.answer.correct]).to eq([false, false])
+      end
     end
   end
 

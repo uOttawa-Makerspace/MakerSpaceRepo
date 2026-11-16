@@ -5,7 +5,7 @@ require "rails_helper"
 # End-to-end training journey: staff send exams for a training session, the
 # trainee takes the exam in the browser (answers are saved by the page JS),
 # finishes it, passes and sees the certification on the profile.
-RSpec.describe "Journey: training exam", type: :system, skip_bullet: true do
+RSpec.describe "Journey: training exam", type: :system do
   include TrainingSpecHelpers
 
   let!(:fx) { build_exam_fixture(level: "Beginner", question_count: 3) }
@@ -47,7 +47,7 @@ RSpec.describe "Journey: training exam", type: :system, skip_bullet: true do
       answer_all(correct: true)
       accept_confirm { click_button "Finish Exam" }
       expect(page).to have_current_path(exams_path)
-      expect(page).to have_text("Score: 100. You passed the exam.")
+      expect_flash("Score: 100. You passed the exam.")
       expect(page).to have_css("tr", text: "Passed")
     end
     expect(exam.reload.status).to eq("passed")
@@ -65,7 +65,6 @@ RSpec.describe "Journey: training exam", type: :system, skip_bullet: true do
     end
   end
 
-  # data-confirm is a no-op under Turbo; the buttons use turbo_confirm
   it "does nothing when the confirmation is dismissed (Send Exams, Certify, Finish Exam)" do
     as_actor(:staff) do
       log_in_as(staff, to: staff_training_session_path(fx[:session]))
@@ -100,7 +99,7 @@ RSpec.describe "Journey: training exam", type: :system, skip_bullet: true do
       log_in_as(user, to: exam_path(exam))
       answer_all(correct: false)
       accept_confirm { click_button "Finish Exam" }
-      expect(page).to have_text("Score: 0. You failed the exam.")
+      expect_flash("Score: 0. You failed the exam.")
     end
     expect(exam.reload.status).to eq("failed")
     expect(Certification.where(user_id: user.id)).to be_empty

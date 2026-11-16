@@ -39,11 +39,30 @@
       <tbody>
         <% @job_orders.each do |jo| %>
           <tr id="job-order-row-<%= jo.id %>">
-            <%= render 'admin_row', jo: %>
+            <%= render 'admin_row', jo:, expedited: @expedited_ids.include?(jo.id), unread: @unread_counts.fetch(jo.id, 0) %>
           </tr>
         <% end %>
       </tbody>
     </table>
+    <%# one assign-staff dialog per order, kept out of the table so the rows stay valid markup %>
+    <% @job_orders.each do |jo| %>
+      <div class="modal fade" id="assignStaffModal-<%= jo.id %>" tabindex="-1" aria-labelledby="assignStaffModalLabel-<%= jo.id %>" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="assignStaffModalLabel-<%= jo.id %>">Assign Staff</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
+            </div>
+            <div class="modal-body">
+              <%= render "assign_staff", jo: jo, staff: @staff %>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
   </div>
 </div>
 

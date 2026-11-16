@@ -103,7 +103,7 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
     order = order_with_draft!(:staff_approval, stored: "gid://shopify/DraftOrder/1")
     locked = []
     allow_any_instance_of(JobOrder).to receive(:lock!).and_wrap_original { |m, *a| locked << true; m.call(*a) }
-    shopify.on_query = ->(q, _v) { expect(locked).not_to be_empty unless q.include?("jobOrderOpenDrafts") }
+    shopify.on_query = ->(q, _v) { expect(locked).not_to be_empty unless q.include?("shopifyOpenDrafts") }
     sweep(draft_node("gid://shopify/DraftOrder/1", order))
 
     expect(shopify.deleted_ids).to eq(["gid://shopify/DraftOrder/1"])
@@ -262,7 +262,7 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       report = sweep(pages: [[draft_node("gid://shopify/DraftOrder/1", order)]])
 
       expect(report.unresolved.first).to include("cursor", "repeated")
-      expect(shopify.calls.count { |c| c[:query].include?("jobOrderOpenDrafts") }).to eq(2)
+      expect(shopify.calls.count { |c| c[:query].include?("shopifyOpenDrafts") }).to eq(2)
       expect(shopify.deleted_ids).to eq(["gid://shopify/DraftOrder/1"])
     end
 
@@ -270,7 +270,7 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       stub_const("JobOrder::DraftSweep::MAX_PAGES", 3)
       report = sweep(pages: Array.new(6) { [] })
 
-      expect(shopify.calls.count { |c| c[:query].include?("jobOrderOpenDrafts") }).to eq(3)
+      expect(shopify.calls.count { |c| c[:query].include?("shopifyOpenDrafts") }).to eq(3)
       expect(report.unresolved.first).to include("more than 3 pages")
     end
 
@@ -546,8 +546,8 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
 
         expect { described_class.run }.to raise_error(Interrupt)
         expect(reports.map { |r| r.first.class }).to eq([described_class::Unresolved])
-        expect(reports.first.last[:context][:unresolved].first).to start_with("interrupted: Interrupt")
-        expect(Rails.logger).to have_received(:warn).with(/interrupted: Interrupt/)
+        expect(reports.first.last[:context][:unresolved].first).to eq("interrupted: Interrupt")
+        expect(Rails.logger).to have_received(:warn).with("[JobOrder::DraftSweep] interrupted: Interrupt")
       end
 
       def failing_unlock!
@@ -604,10 +604,51 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
         expect(reports.size).to eq(1)
       end
 
+      it "reports the original error and a not-ok report naming both when building the abort report fails" do
+        order = order_with_draft!
+        allow_any_instance_of(described_class).to receive(:over_cap?).and_raise(RuntimeError, "count failed")
+        allow_any_instance_of(described_class).to receive(:abort_run).and_raise(IOError, "abort failed")
+        shopify.draft_pages = [nodes_for(order)]
+
+        report = described_class.run
+        expect(report).not_to be_ok
+        expect(report.unresolved.join("\n")).to include("RuntimeError: count failed").and include("IOError: abort failed")
+        expect(reports.map { |r| r.first.class }).to eq([RuntimeError, IOError, described_class::Unresolved])
+      end
+
+      it "keeps the error in flight, and reports the unlock's failure, when the unlock fails after a StandardError" do
+        order = order_with_draft!
+        allow_any_instance_of(described_class).to receive(:over_cap?).and_raise(RuntimeError, "count failed")
+        failing_unlock!
+        shopify.draft_pages = [nodes_for(order)]
+
+        report = begin
+          described_class.run
+        ensure
+          release_lock!
+        end
+        expect(report.unresolved.first).to eq("aborted: RuntimeError: count failed")
+        expect(reports.map { |r| r.first.class }).to eq([ActiveRecord::ConnectionFailed, RuntimeError, described_class::Unresolved])
+      end
+
+      it "lets a non-signal Exception through when the unlock fails over it, reporting the unlock's failure" do
+        order = order_with_draft!
+        allow_any_instance_of(described_class).to receive(:over_cap?).and_raise(SystemExit)
+        failing_unlock!
+        shopify.draft_pages = [nodes_for(order)]
+
+        begin
+          expect { described_class.run }.to raise_error(SystemExit)
+        ensure
+          release_lock!
+        end
+        expect(reports.map { |r| r.first.class }).to eq([ActiveRecord::ConnectionFailed, described_class::Unresolved])
+      end
+
       describe "the flush never fails silently" do
         before { allow_any_instance_of(described_class).to receive(:over_cap?).and_raise(RuntimeError, "count failed") }
 
-        %i[abort_run build_report report_errors].each do |step|
+        %i[abort_run build_report].each do |step|
           it "reports a failing #{step} and still returns a report" do
             order = order_with_draft!
             allow_any_instance_of(described_class).to receive(step).and_raise(IOError, "#{step} failed")
@@ -682,6 +723,16 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
 
       expect(reports.map { |r| r.first.class }).to eq([ArgumentError, ActiveRecord::ConnectionFailed, described_class::Unresolved])
       expect(report.unresolved.first).to eq("aborted: ActiveRecord::ConnectionFailed: connection gone")
+    end
+
+    it "logs a report the tracker cannot take and still finishes the run" do
+      order = order_with_draft!
+      allow(JobOrder).to receive(:reconcile_orphan_draft!).and_raise(ArgumentError, "boom")
+      allow(Rails.error).to receive(:report).and_raise("tracker down")
+      allow(Rails.logger).to receive(:error)
+
+      expect { sweep(draft_node("gid://shopify/DraftOrder/1", order)) }.not_to raise_error
+      expect(Rails.logger).to have_received(:error).with(/could not report .*: RuntimeError/).at_least(:once)
     end
 
     describe "run-level lines" do
@@ -832,10 +883,13 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       end
     end
 
-    it "gives LockerRental and Membership no delete-by-gid method at all" do
+    # LockerRental's own reconcile_orphan_draft! is public for LockerRental::DraftSweep; like the job order's it fetches
+    # the draft and refuses one whose tags do not name the rental before it deletes.
+    it "gives LockerRental and Membership no delete-by-gid method at all, but the marker-checked reconcile" do
       [LockerRental, Membership].each do |model|
         names = model.public_methods + model.new.public_methods
-        expect(names.grep(/delete.*draft|draft.*delete|reconcile_orphan/) - %i[destroy_shopify_draft_order]).to be_empty
+        allowed = %i[destroy_shopify_draft_order] + (model == LockerRental ? %i[reconcile_orphan_draft!] : [])
+        expect(names.grep(/delete.*draft|draft.*delete|reconcile_orphan/) - allowed).to be_empty
       end
     end
 
@@ -920,7 +974,7 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       expect { JobOrder.const_get(:DraftDeletion).delete_unless_completed!("gid://shopify/DraftOrder/1") }.to raise_error(ArgumentError, /marker/)
 
       tags = "#{operating_tag}, job_order:#{order.id}"
-      expect(JobOrder.draft_marker_order_id(tags)).to eq(order.id)
+      expect(JobOrder.draft_marker_record_id(tags)).to eq(order.id)
       expect(JobOrder.marked_for?(tags, order.id)).to be(true)
       expect(JobOrder.marked_for?("#{operating_tag}, job_order:#{order.id}, job_order:#{order.id + 1}", order.id)).to be(false)
     end
@@ -929,15 +983,15 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       expect { JobOrder::DraftDeletion }.to raise_error(NameError, /private constant/)
     end
 
-    it "uses one Admin client builder for ShopifyService and the draft calls" do
-      expect(ShopifyConcern::DraftOrders).to receive(:client).and_return(:client)
-      expect(ShopifyService.admin_client).to eq(:client)
+    it "uses one Admin client builder for the catalogue and the draft calls" do
+      expect(Payments::ShopifyAdapter).to receive(:admin_client).and_return(double(query: double(body: { "data" => { "product" => nil } })))
+      expect(Payments::ShopifyCatalog.product("gid://shopify/Product/1")).to be_nil
     end
 
     it "builds the client for a draft create through the one builder" do
       order = order_with_draft!
       order.job_tasks.create!(title: "Task #1").build_job_task_quote(price: 5, service_price: 0, service_quantity: 0).save!
-      expect(ShopifyConcern::DraftOrders).to receive(:client).at_least(:once).and_call_original
+      expect(Payments::ShopifyAdapter).to receive(:admin_client).at_least(:once).and_call_original
 
       expect(order.reload.checkout_link).to be_ok
     end

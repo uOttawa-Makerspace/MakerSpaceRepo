@@ -3,11 +3,8 @@
 class RequireTrainingsController < VolunteerTasksController
   def create
     require_training = RequireTraining.new(require_training_params)
-    if require_training.save
-      flash[:notice] = "You've successfully added a required training for this volunteer task."
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    write_flash(require_training, "errors.training.required_training_not_added",
+                "You've successfully added a required training for this volunteer task.") { require_training.save }
     redirect_back(fallback_location: task_page(require_training.volunteer_task_id))
   end
 
@@ -20,7 +17,7 @@ class RequireTrainingsController < VolunteerTasksController
       require_training.destroy
       flash[:notice] = "You've successfully deleted this required training"
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = I18n.t("errors.training.required_training_missing")
     end
     redirect_back(fallback_location: root_path)
   end

@@ -1,4 +1,4 @@
-<% store_link = link_to('MakerStore', 'http://makerstore.ca/', target: :blank) %>
+<% store_link = link_to(t('rewards.index.store_name'), 'http://makerstore.ca/', target: :blank) %>
 <div class="container py-5">
 
   <!-- Hero -->
@@ -189,7 +189,7 @@
                   <td><%= cc.created_at.strftime('%Y/%m/%d') %></td>
                   <td>
                     <span class="badge bg-<%= cc.cc.to_i >= 0 ? 'success' : 'danger' %>">
-                      <%= cc.cc.to_i >= 0 ? '+' : '' %><%= cc.cc %> CC
+                      <%= t('rewards.index.activity.amount', amount: format('%+d', cc.cc.to_i)) %>
                     </span>
                   </td>
                 </tr>

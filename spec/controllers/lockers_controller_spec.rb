@@ -106,7 +106,7 @@ RSpec.describe LockersController, type: :controller do
           locker_size_id: locker_size.id
         }
         
-        expect(flash[:alert]).to eq('Range end must be larger than range start')
+        expect(flash[:alert]).to eq('Enter a first and last locker number, the last not smaller than the first')
         expect(response).to redirect_to(lockers_path(anchor: 'lockerInventory'))
       end
     end

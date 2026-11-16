@@ -54,7 +54,7 @@ RSpec.describe "JobOrders gaps", type: :request do
     {
       "destroy" => -> { delete job_order_path(order) },
       "user_approval" => -> { patch job_order_user_approval_path(order), params: { approved: "true" } },
-      "quote" => -> { patch job_order_quote_path(order), params: { approved: "true" } },
+      "quote" => -> { patch_quote order, { approved: "true" } },
       "comments" => -> { patch job_order_comments_path(order), params: { job_order: { staff_comments: "x" } } },
       "processed" => -> { patch job_order_processed_path(order), params: { completed: "true" } },
       "resend_quote_email" => -> { patch job_order_resend_quote_email_path(order) },
@@ -139,17 +139,17 @@ RSpec.describe "JobOrders gaps", type: :request do
       session_login!(staff)
       start = order_with_task!(status_key: :waiting_processed)
       patch job_order_start_processing_path(start)
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.not_requested"))
       expect(status_names(start)).to eq(["Waiting to be Processed"])
     end
 
     # an order with no status rows is in no source state, so the
-    # transition is refused with the generic error (the status is read under the lock)
+    # transition is refused as a wrong state (the status is read under the lock)
     it "refuses a transition for an order with no status rows (no 500)" do
       session_login!(staff)
       statusless = create(:job_order, user: owner)
       patch job_order_start_processing_path(statusless), params: { start_processing: "true" }
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.wrong_state"))
       expect(statusless.reload.job_order_statuses).to be_empty
     end
 
@@ -160,31 +160,99 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(ActionMailer::Base.deliveries.map(&:subject)).to eq(["Your Job Order ##{completed.id} is now ready for pickup"])
     end
 
-    # the js format renders admin_row -> _assign_staff with a nil @staff
-    it "answers format.js on a transition with the same 500 (ActionView::Template::Error)" do
+    it "answers format.js on a transition with a redirect to the order page, as for html" do
       session_login!(staff)
       start = order_with_task!(status_key: :waiting_processed)
       patch job_order_start_processing_path(start), params: { start_processing: "true" },
                                                     headers: { "ACCEPT" => "text/javascript" }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("ActionView::Template::Error")
+      expect(response).to redirect_to(job_order_path(start))
+      expect(status_names(start)).to end_with("Currently being Processed")
     end
   end
 
   # ------------------------------------------------------------- unknown / deleted orders
 
   describe "set_job_order for unknown or soft-deleted orders" do
-    it "redirects staff with no_permission for an unknown id and for a soft-deleted order" do
+    it "answers not found and returns to the order list for an unknown id and for a soft-deleted order" do
       session_login!(staff)
       patch job_order_comments_path(job_order_id: 99_999_999), params: { job_order: { staff_comments: "x" } }
-      expect(response).to redirect_to(new_job_orders_path)
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
 
       deleted = order_with_task!
       deleted.update!(is_deleted: true)
       patch job_order_comments_path(deleted), params: { job_order: { staff_comments: "x" } }
-      expect(response).to redirect_to(new_job_orders_path)
+      expect(response).to redirect_to(job_orders_path)
       expect(deleted.reload.staff_comments).not_to eq("x")
+    end
+
+    # The order is the one the route names (job_order_id on the nested routes, id on destroy); an id in the
+    # query string is never used in its place.
+    it "refuses a deleted order named by the route even when the query names a live one" do
+      deleted = order_with_task!
+      deleted.update!(is_deleted: true)
+      live = order_with_task!
+      session_login!(staff)
+      patch job_order_comments_path(deleted, id: live.id), params: { job_order: { staff_comments: "x" } }
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
+      expect([deleted.reload.staff_comments, live.reload.staff_comments]).not_to include("x")
+    end
+
+    it "deletes the order the route names, not one named by job_order_id in the query" do
+      named = order_with_task!
+      other_order = order_with_task!
+      session_login!(owner)
+      delete job_order_path(named, job_order_id: other_order.id)
+      expect(response).to redirect_to(job_orders_path)
+      expect([named.reload.is_deleted, other_order.reload.is_deleted]).to eq([true, false])
+    end
+
+    # Every action that loads the order through the shared lookup.
+    {
+      "DELETE destroy" => [:delete, ->(id) { job_order_path(id) }],
+      "PATCH user_approval" => [:patch, ->(id) { job_order_user_approval_path(id) }],
+      "PATCH start_processing" => [:patch, ->(id) { job_order_start_processing_path(id) }],
+      "PATCH processed" => [:patch, ->(id) { job_order_processed_path(id) }],
+      "PATCH paid" => [:patch, ->(id) { job_order_paid_path(id) }],
+      "PATCH picked_up" => [:patch, ->(id) { job_order_picked_up_path(id) }],
+      "PATCH quote" => [:patch, ->(id) { job_order_quote_path(id) }],
+      "PATCH resend_quote_email" => [:patch, ->(id) { job_order_resend_quote_email_path(id) }],
+      "PATCH comments" => [:patch, ->(id) { job_order_comments_path(id) }],
+      "GET timeline_modal" => [:get, ->(id) { job_order_timeline_modal_path(id) }],
+      "GET invoice" => [:get, ->(id) { job_order_invoice_path(id) }]
+    }.each do |label, (verb, path)|
+      staff_only = %w[start_processing processed paid picked_up quote resend_quote_email comments timeline_modal]
+        .any? { |action| label.end_with?(action) }
+
+      it "#{label}: an unknown id answers not found and returns to the order list" do
+        session_login!(staff)
+        public_send(verb, instance_exec(99_999_999, &path))
+        expect(response).to redirect_to(job_orders_path)
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
+      end
+
+      it "#{label}: a deleted order answers not found and returns to the order list" do
+        order = order_with_task!
+        order.update!(is_deleted: true)
+        session_login!(staff)
+        public_send(verb, instance_exec(order.id, &path))
+        expect(response).to redirect_to(job_orders_path)
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
+      end
+
+      it "#{label}: an existing order another customer owns is refused" do
+        order = order_with_task!
+        session_login!(other)
+        public_send(verb, instance_exec(order.id, &path))
+        if staff_only
+          expect(response).to redirect_to(root_path)
+          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.cannot_access_area"))
+        else
+          expect(response).to redirect_to(new_job_orders_path)
+          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
+        end
+      end
     end
 
     it "treats a non-owner's user_approval like any other protected action (no_permission redirect)" do
@@ -206,6 +274,26 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(ActionMailer::Base.deliveries.last.to).to eq([order.user.email])
     end
 
+    it "records the customer as the actor when the customer approves or declines a quote" do
+      approved = order_with_task!(status_key: :user_approval)
+      declined = order_with_task!(status_key: :user_approval)
+      session_login!(owner)
+      patch job_order_user_approval_path(approved), params: { approved: "true" }
+      patch job_order_user_approval_path(declined), params: { approved: "false" }
+      expect(approved.job_order_statuses.last.user).to eq(owner)
+      expect(declined.job_order_statuses.last.user).to eq(owner)
+      expect(status_names(declined).last).to eq("Declined")
+    end
+
+    it "records the staff member as the actor when staff decline a quote for the customer" do
+      order = order_with_task!(status_key: :user_approval)
+      session_login!(staff)
+      patch job_order_user_approval_path(order), params: { approved: "false" }
+      expect(status_names(order).last).to eq("Declined")
+      expect(order.job_order_statuses.last.user).to eq(staff)
+      expect(order.job_order_statuses.last.user).not_to eq(order.user)
+    end
+
     it "accepts the SENT_REMINDER state as an origin for a user approval" do
       order = order_with_task!(status_key: :sent_reminder)
       session_login!(owner)
@@ -218,7 +306,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       session_login!(owner)
       [nil, "maybe"].each do |value|
         patch job_order_user_approval_path(order), params: { approved: value }.compact
-        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.not_requested"))
       end
       expect(status_names(order)).to eq(["Waiting for User Approval"])
     end
@@ -245,8 +333,7 @@ RSpec.describe "JobOrders gaps", type: :request do
   # ------------------------------------------------------------- index
 
   describe "GET /job_orders (index) corners" do
-    # N+1 pinned
-    it "lists only the viewer's own, non-deleted orders and skips orders without status rows", skip_bullet: true do
+    it "lists only the viewer's own, non-deleted orders and skips orders without status rows" do
       mine = order_with_task!(status_key: :staff_approval)
       deleted = order_with_task!(status_key: :staff_approval)
       deleted.update!(is_deleted: true)
@@ -310,25 +397,35 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(order.chat_messages.first.reload.is_read).to be(false)
     end
 
-    # staff see the quote modal on show, which calls
-    # `task.job_type.name` for every task; a task without a job type crashes it.
-    it "500s (NoMethodError) for staff when a task has no job type" do
+    # The quote modal sits on the order page for staff; a task without a job type
+    # shows neutral text instead of a type name.
+    it "renders the order page and quote modal for staff and admin when a task has no job type" do
       order = order_with_task!(status_key: :staff_approval)
-      session_login!(staff)
-      get job_order_path(order)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("undefined method 'name' for nil")
-      expect(response.body).to include("app/views/job_orders/_quote_modal.html.erb")
+      [staff, admin].each do |viewer|
+        session_login!(viewer)
+        get job_order_path(order)
+        expect(response).to have_http_status(:ok)
+        modal = Capybara.string(response.body).find("#quote-modal-rendered")
+        expect(modal.text.squish).to include("Task #1 No job type")
+      end
     end
 
-    # show dereferences the "processed" JobOrderMessage unconditionally
-    it "raises (500, NoMethodError) when the processed JobOrderMessage row is missing" do
+    it "words the missing job type in French for a French-speaking viewer" do
+      order = order_with_task!(status_key: :staff_approval)
+      session_login!(staff)
+      get job_order_path(order, locale: "fr")
+      expect(response).to have_http_status(:ok)
+      expect(Capybara.string(response.body).find("#quote-modal-rendered").text.squish).to include("Task #1 Aucun type de tâche")
+    end
+
+    it "renders the order page when the processed JobOrderMessage row is missing" do
       JobOrderMessage.where(name: "processed").delete_all
       order = order_with_task!(status_key: :staff_approval)
+      order.job_tasks.first.update!(job_type: JobType.find_by!(name: "3D Print"))
       session_login!(owner)
       get job_order_path(order)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("NoMethodError")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Job Order ##{order.id}")
     end
 
     # the missing-info alert is flash.now, shown on the page that computed it only
@@ -348,13 +445,19 @@ RSpec.describe "JobOrders gaps", type: :request do
   describe "POST /job_orders (create) corners" do
     before { session_login!(owner) }
 
+    it "prefixes the stored name of a user file sent with the new order with the order id" do
+      post job_orders_path, params: { job_order: { user_files: [FilesTestHelper.stl] }, redirect_step: "1" }
+      order = JobOrder.order(:id).last
+      expect(order.user_files.map { |f| f.filename.to_s }).to eq(["#{order.id}_#{FilesTestHelper.stl_name}"])
+    end
+
     it "re-renders new with the creation-error flash when the order cannot be saved (disallowed upload)" do
       expect do
         post job_orders_path, params: { job_order: { user_files: [FilesTestHelper.mp4] }, redirect_step: "1" }
       end.not_to change(JobOrder, :count)
 
       expect(response).to have_http_status(:ok)
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_trying_to_create"))
+      expect(flash[:alert]).to start_with(I18n.t("errors.job_orders.create_failed"))
       expect(response.body).to include(I18n.t("job_orders.new.title"))
     end
 
@@ -365,6 +468,54 @@ RSpec.describe "JobOrders gaps", type: :request do
       order = JobOrder.order(:id).last
       expect(order.staff_comments).to be_blank
       expect(order.user_comments).to eq("mine")
+    end
+
+    # The database refuses every new status row (a check constraint, undone with the test transaction): the order and
+    # its Draft status are saved together, so the refused status leaves no order behind.
+    it "leaves no order behind when its Draft status row cannot be saved" do
+      ActiveRecord::Base.connection.execute(
+        "ALTER TABLE job_order_statuses ADD CONSTRAINT refuse_new_rows_in_spec CHECK (false) NOT VALID"
+      )
+
+      post job_orders_path, params: { job_order: { user_comments: "first order" }, redirect_step: "1" }
+
+      expect(response).to have_http_status(:internal_server_error)
+      expect(JobOrder.where(user: owner).count).to eq(0)
+      expect(JobTask.count).to eq(0)
+    end
+
+    # The first task is saved with the order and its Draft status: a task that fails validation leaves no order and
+    # shows the form again with the task's reason.
+    it "re-renders new with the task's reason and leaves no order when the first task cannot be saved" do
+      allow_any_instance_of(JobTask).to receive(:valid?).and_wrap_original do |original, *args|
+        original.call(*args)
+        original.receiver.errors.add(:base, "The task cannot be saved")
+        false
+      end
+
+      post job_orders_path, params: { job_order: { user_comments: "first order" }, redirect_step: "1" }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(I18n.t("job_orders.new.title"))
+      expect(flash[:alert]).to start_with(I18n.t("errors.job_orders.create_failed"))
+      expect(flash[:alert]).to include("The task cannot be saved")
+      expect(JobOrder.where(user: owner).count).to eq(0)
+      expect(JobOrderStatus.count).to eq(0)
+      expect(JobTask.count).to eq(0)
+    end
+
+    # The database refuses every new task row (a check constraint, undone with the test transaction): the order, its
+    # Draft status and its first task are saved together, so the refused task leaves no order behind.
+    it "leaves no order behind when its first task row cannot be saved" do
+      ActiveRecord::Base.connection.execute(
+        "ALTER TABLE job_tasks ADD CONSTRAINT refuse_new_rows_in_spec CHECK (false) NOT VALID"
+      )
+
+      post job_orders_path, params: { job_order: { user_comments: "first order" }, redirect_step: "1" }
+
+      expect(response).to have_http_status(:internal_server_error)
+      expect(JobOrder.where(user: owner).count).to eq(0)
+      expect(JobOrderStatus.count).to eq(0)
     end
 
     it "falls back to a nil job type when the Design Services row is missing" do
@@ -396,13 +547,13 @@ RSpec.describe "JobOrders gaps", type: :request do
       end
     end
 
-    it "redirects a second delete of an already deleted order to new with no_permission" do
+    it "answers not found and returns to the order list on a second delete of an already deleted order" do
       order = order_with_task!
       order.update!(is_deleted: true)
       session_login!(owner)
       delete job_order_path(order)
-      expect(response).to redirect_to(new_job_orders_path)
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
     end
 
     # destroy is a soft delete here: the order and its tasks stay.
@@ -420,13 +571,41 @@ RSpec.describe "JobOrders gaps", type: :request do
   describe "PATCH assign_staff corners" do
     let!(:order) { order_with_task!(status_key: :staff_approval) }
 
-    it "lets an admin assign a non-staff user" do
+    it "refuses to assign a non-staff user, with a message, and mails nobody" do
       session_login!(admin)
       perform_enqueued_jobs { patch job_order_assign_staff_path(order), params: { staff_id: other.id } }
 
-      expect(order.reload.assigned_staff).to eq(other)
-      expect(flash[:notice]).to eq("#{other.name} has been assigned to this job order.")
-      expect(ActionMailer::Base.deliveries.last.to).to eq([other.email])
+      expect(order.reload.assigned_staff).to be_nil
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.assign_staff_not_staff"))
+      expect(flash[:notice]).to be_nil
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "refuses to assign a deleted staff member, saying the staff member no longer exists" do
+      gone = create(:user, :staff)
+      gone.update_columns(deleted: true)
+      session_login!(admin)
+      patch job_order_assign_staff_path(order), params: { staff_id: gone.id }
+
+      expect(order.reload.assigned_staff_id).to be_nil
+      expect(flash[:alert]).to eq(I18n.t("errors.job_orders.assign_staff_missing"))
+    end
+
+    it "keeps the previous assignee when a non-staff user is refused" do
+      order.update!(assigned_staff: staff)
+      session_login!(admin)
+      patch job_order_assign_staff_path(order), params: { staff_id: other.id }
+      expect(order.reload.assigned_staff).to eq(staff)
+    end
+
+    it "words the assigned and unassigned notices in the request's language" do
+      session_login!(admin)
+      patch job_order_assign_staff_path(order, locale: "fr"), params: { staff_id: staff.id }
+      expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.staff_assigned", name: staff.name, locale: :fr))
+
+      patch job_order_assign_staff_path(order, locale: "fr"), params: { staff_id: "" }
+      expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.no_staff_assigned", locale: :fr))
+      expect(flash[:notice]).not_to include("assigned")
     end
 
     it "unassigns with a blank staff_id and says 'No staff'" do
@@ -444,13 +623,18 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(response).to redirect_to(admin_job_orders_url)
     end
 
-    # the else branch dereferences the (nil) assigned staff
-    it "500s (NoMethodError) when staff assigns someone else, and assigns nothing" do
+    it "tells staff only an admin can assign someone else, and assigns nothing" do
       session_login!(staff)
       patch job_order_assign_staff_path(order), params: { staff_id: admin.id }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("NoMethodError")
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("errors.job_orders.assign_not_allowed"))
       expect(order.reload.assigned_staff).to be_nil
+    end
+
+    it "lets staff assign themselves" do
+      session_login!(staff)
+      patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
+      expect(order.reload.assigned_staff).to eq(staff)
     end
 
     it "sends the EXPEDITED subject and priority headers to the assigned staff member" do
@@ -469,8 +653,7 @@ RSpec.describe "JobOrders gaps", type: :request do
   # ------------------------------------------------------------- admin / settings / invoice / timeline
 
   describe "admin, settings, invoice and timeline corners" do
-    # N+1 pinned
-    it "renders the admin list for the admin role, newest first, hiding drafts and deleted orders", skip_bullet: true do
+    it "renders the admin list for the admin role, newest first, hiding drafts and deleted orders" do
       older = order_with_task!(status_key: :staff_approval)
       newer = nil
       travel_to(2.minutes.from_now) { newer = order_with_task!(status_key: :user_approval) }
@@ -486,6 +669,21 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(body).not_to include("<td>#{draft.id}</td>")
       expect(body).not_to include("<td>#{deleted.id}</td>")
       expect(body.index("<td>#{newer.id}</td>")).to be < body.index("<td>#{older.id}</td>")
+    end
+
+    # Every order is created with its Draft status row in the same save, so an order with no status row only
+    # exists when written straight to the table; the admin list, like the customer list, leaves it out.
+    it "leaves an order with no status row out of the admin list, and create always gives an order its Draft row" do
+      statusless = create(:job_order, user: owner)
+      session_login!(owner)
+      post job_orders_path, params: { job_order: { user_comments: "first order" }, redirect_step: "1" }
+      created = JobOrder.order(:id).last
+      expect(created.job_order_statuses.map { |s| s.job_status.name }).to eq(["Draft"])
+
+      session_login!(admin)
+      get admin_job_orders_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("<td>#{statusless.id}</td>")
     end
 
     it "offers every non-Draft status in the admin filter" do
@@ -531,10 +729,8 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(text).to include("Total: CAD $25.50")
     end
 
-    # the parts line is only printed when the task has a job service,
-    # but the total always includes service_price * service_quantity, so the
-    # printed lines can fail to add up to the printed total.
-    it "omits the parts line for a task without a service although the total includes it" do
+    # The service line is itemised whenever it counts toward the total, with or without a job service.
+    it "itemises the service amount for a task without a service, matching the total" do
       order = order_with_task!(status_key: :completed)
       order.job_tasks.first.build_job_task_quote(price: 10, service_price: 3, service_quantity: 2).save!
       session_login!(owner)
@@ -542,20 +738,32 @@ RSpec.describe "JobOrders gaps", type: :request do
 
       text = Capybara.string(response.body).text.squish
       expect(text).to include("Task #1 - Base Fee CAD $10.00")
-      expect(text).not_to include("CAD $6.00")
+      expect(text).to include("Task #1 - Service - 2.0 unit CAD $6.00")
       expect(text).to include("Total: CAD $16.00")
     end
 
-    it "redirects invoice requests for a soft-deleted order to new with no_permission" do
+    it "prints no service line when the service amount is zero" do
+      order = order_with_task!(status_key: :completed)
+      order.job_tasks.first.build_job_task_quote(price: 10, service_price: 3, service_quantity: 0).save!
+      session_login!(owner)
+      get job_order_invoice_path(order)
+
+      text = Capybara.string(response.body).text.squish
+      expect(text).not_to include("Task #1 - Service")
+      expect(text).to include("Total: CAD $10.00")
+    end
+
+    it "answers not found and returns to the order list for invoice requests on a soft-deleted order" do
       order = order_with_task!(status_key: :completed)
       order.update!(is_deleted: true)
       session_login!(owner)
       get job_order_invoice_path(order)
-      expect(response).to redirect_to(new_job_orders_path)
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
     end
 
     # N+1 pinned
-    it "shows the status history with a timestamp to the admin role, naming the actor only for processing steps", skip_bullet: true do
+    it "shows the status history with a timestamp to the admin role, naming the actor only for processing steps" do
       order = order_with_task!
       advance_to!(order, :staff_approval, by: owner)
       advance_to!(order, :being_processed, by: staff)

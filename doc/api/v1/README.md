@@ -14,7 +14,8 @@ JSON API for the React frontends (app.makerepo.com, designday.makerepo.com). Con
 
 - JSON bodies with `Content-Type: application/json`. Malformed JSON is a 400.
 - Every response sets `Cache-Control: no-store`.
-- CORS: only the known frontend origins, no credentials. Allowed request headers: `Authorization`, `Content-Type`, `X-Refresh-Token`.
+- CORS: only the known frontend origins, no credentials. Allowed request headers: `Authorization`, `Content-Type`, `X-Refresh-Token`, `Idempotency-Key`.
+- Idempotency: an endpoint whose contract says so requires an `Idempotency-Key` header (1 to 255 characters; send a new random value, such as a UUID, for each submission and the same value when retrying it). Without one it answers 400 `idempotency_key_required`. A repeat with the same key by the same user gets the first response again and changes nothing; the same key with a different request (method, path or body) is a 422 `idempotency_key_reused`. Only a successful request records its key, so a refused request can be corrected and retried with the same key. Today only `POST /api/v1/training_sessions` uses it.
 
 ## Errors
 
@@ -25,24 +26,27 @@ Always JSON, always a real status:
   "error": {
     "code": "validation_failed",
     "message": "Validation failed",
-    "fields": { "email": ["is invalid"] }
+    "fields": { "email": ["is invalid"] },
+    "reference": "3f2a9c1e"
   }
 }
 ```
 
-`code` is a stable machine string (branch on it, not on `message`); `fields` appears on 422 only; some errors add extra keys (for example `support_email`).
+`code` is a stable machine string (branch on it, not on `message`); `fields` appears on 422 only; `reference` is on every error body and is the first 8 characters of the request id (the `X-Request-Id` response header): quote it when reporting a problem, it finds the request in the server logs and error tracker; some errors add extra keys (for example `support_email`).
 
-| Status | Meaning                                                            | Typical codes                                                     |
-| ------ | ------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| 400    | Malformed request                                                  | `bad_request`                                                     |
-| 401    | Missing/invalid/expired credentials                                | `unauthenticated`, `invalid_credentials`, `invalid_refresh_token` |
-| 403    | Authenticated but not allowed                                      | `forbidden`, `account_inactive`, `account_unconfirmed`            |
-| 404    | No such record or route (any unknown `/api/v1/...` path, any verb) | `not_found`                                                       |
-| 409    | Retry with the newest stored refresh token                         | `refresh_in_progress`                                             |
-| 422    | Validation or missing parameter                                    | `validation_failed`, `parameter_missing`, `last_admin`            |
-| 423    | Account locked                                                     | `account_locked`                                                  |
-| 429    | Rate limited                                                       | `rate_limited`                                                    |
-| 503    | Upstream unavailable, nothing saved                                | `service_unavailable`                                             |
+| Status | Meaning                                                            | Typical codes                                                                    |
+| ------ | ------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| 400    | Malformed request, or a required `Idempotency-Key` header missing  | `bad_request`, `idempotency_key_required`                                        |
+| 401    | Missing/invalid/expired credentials                                | `unauthenticated`, `invalid_credentials`, `invalid_refresh_token`                |
+| 403    | Authenticated but not allowed                                      | `forbidden`, `account_inactive`, `account_unconfirmed`, `space_not_assigned`     |
+| 404    | No such record or route (any unknown `/api/v1/...` path, any verb) | `not_found`                                                                      |
+| 409    | Retry with the newest stored refresh token                         | `refresh_in_progress`                                                            |
+| 422    | Validation, missing parameter, or an idempotency key reused        | `validation_failed`, `parameter_missing`, `last_admin`, `idempotency_key_reused` |
+| 423    | Account locked                                                     | `account_locked`                                                                 |
+| 429    | Rate limited                                                       | `rate_limited`                                                                   |
+| 503    | Upstream unavailable, nothing saved                                | `service_unavailable`                                                            |
+
+`space_not_assigned` (403, message "You are not assigned to that space"): a staff member named a space they may not work in. Staff work only in the spaces they are assigned to (a saved space they are no longer assigned to does not count); admins work in any space. The staff dashboard, the kiosk, the shifts feed and the staff tap endpoint apply the same rule. Nothing is changed.
 
 401 responses carry `WWW-Authenticate: Bearer realm="makerepo"`.
 

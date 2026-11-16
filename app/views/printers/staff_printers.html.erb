@@ -5,7 +5,7 @@
   <% @printer_types.filter(&:available).each do |pt| %>
     <div>
       <h2><%= pt.name %></h2>
-      <% latest_session = Printer.get_last_model_session(pt.name) %>
+      <% latest_session = @last_sessions[pt.id] %>
       <% printers = pt.printers.reject(&:maintenance) %>
       <% if latest_session.present? %>
         <div class="mb-2">

@@ -88,6 +88,15 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(status_name(SubSpaceBooking.find_by!(name: "Fresh"))).to eq("Pending")
     end
 
+    it "refuses a booking with a missing time in a room with automatic-approval hours, saving nothing" do
+      room = create(:sub_space, space: managed_space, approval_required: true,
+                                max_automatic_approval_hour: 1)
+      create_booking(room, end_time: "")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["errors"]).to include(a_string_matching(/End time/))
+      expect(SubSpaceBooking.where(name: "Fresh")).to be_empty
+    end
+
     it "copies a default_public sub space into the booking" do
       room = create(:sub_space, space: space, default_public: true)
       create_booking(room)
@@ -359,7 +368,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."],
                                          "summary" => message)
-      expect(flash[:alert]).to eq(message)
+      expect(flash[:alert]).to be_nil
       expect(flash[:notice]).to be_nil
       expect(RecurringBooking.count).to eq(0)
     end
@@ -530,7 +539,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       }
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."])
-      expect(flash[:alert]).to eq("This time slot is already booked.")
+      expect(flash[:alert]).to be_nil
       expect(booking.reload.name).not_to eq("Moved")
     end
 
@@ -814,14 +823,16 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     it "sends any unrecognised identity to the Other mailbox and the request is rejected by validation" do
       request_access(identity: "Wizard")
       # the UBA identity vocabulary is closed, so nothing is saved and no mail goes out
-      expect(flash[:alert]).to eq("Identity Selection is not valid.")
+      expect(flash[:alert]).to eq("#{I18n.t("errors.bookings.access_request_failed")} Identity Selection is not valid.")
       expect(UserBookingApproval.where(user: applicant)).to be_empty
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
     it "reports a validation alert when no identity is given" do
       request_access({})
-      expect(flash[:alert]).to eq("Identity This field is required., Identity Selection is not valid.")
+      expect(flash[:alert]).to eq(
+        "#{I18n.t("errors.bookings.access_request_failed")} Identity This field is required. and Identity Selection is not valid."
+      )
       expect(UserBookingApproval.where(user: applicant)).to be_empty
     end
 
@@ -874,7 +885,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
 
     it "tells the admin when the user already has booking access (no change, no mail)" do
       applicant = create(:user, :regular_user, booking_approval: true)
-      UserBookingApproval.create!(user: applicant, identity: "Other", approved: true,
+      UserBookingApproval.create!(user: applicant, identity: "Other", status: "approved",
                                   comments: "c", date: Date.new(2027, 1, 1))
       perform_enqueued_jobs { put approve_access_sub_space_booking_index_path, params: { user_id: applicant.id } }
 
@@ -895,7 +906,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       put approve_access_sub_space_booking_index_path, params: { id: uba.id }
 
       expect(response).to redirect_to(sub_space_booking_index_path(anchor: "booking-admin-tab"))
-      expect(flash[:alert]).to start_with("Failed to approve: ")
+      expect(flash[:alert]).to start_with(I18n.t("errors.bookings.access_approve_failed"))
       expect(uba.reload.approved).to be(false)
       expect(applicant.reload.booking_approval).to be(false)
     end
@@ -922,7 +933,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     end
 
     it "bulk approve skips requests that are already approved" do
-      uba = UserBookingApproval.create!(user: applicant, identity: "Other", approved: true, staff: admin,
+      uba = UserBookingApproval.create!(user: applicant, identity: "Other", status: "approved", staff: admin,
                                         comments: "c", date: Date.new(2027, 1, 1))
       applicant.update_column(:booking_approval, true)
       other_admin = create(:user, :admin, booking_approval: true)
@@ -940,7 +951,8 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
 
     def request_for(approved:)
       user = create(:user, :regular_user, booking_approval: approved)
-      UserBookingApproval.create!(user: user, identity: "Other", approved: approved, staff: (admin if approved),
+      UserBookingApproval.create!(user: user, identity: "Other", status: (approved ? "approved" : "pending"),
+                                  staff: (admin if approved),
                                   comments: "c", date: Date.new(2027, 1, 1))
     end
 
@@ -966,6 +978,28 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       put bulk_approve_access_sub_space_booking_index_path, params: { user_booking_approval_ids: [b.id] }
       expect(flash[:notice]).to be_nil
       expect(flash[:alert]).to eq("1 selected request(s) were already approved and were skipped.")
+    end
+
+    it "keeps the English wording when several were skipped" do
+      a = request_for(approved: false)
+      skipped = Array.new(2) { request_for(approved: true) }
+      put bulk_approve_access_sub_space_booking_index_path, params: { user_booking_approval_ids: [a.id, *skipped.map(&:id)] }
+      expect(flash[:alert]).to eq("2 selected request(s) were already approved and were skipped.")
+    end
+
+    it "words the results in French, one or several skipped" do
+      a = request_for(approved: false)
+      b = request_for(approved: true)
+      put bulk_approve_access_sub_space_booking_index_path(locale: "fr"), params: { user_booking_approval_ids: [a.id, b.id] }
+      expect(flash[:notice]).to eq("Les demandes d'accès sélectionnées ont été approuvées.")
+      expect(flash[:alert]).to eq("1 demande sélectionnée était déjà approuvée et a été ignorée.")
+
+      c = request_for(approved: false)
+      put bulk_approve_access_sub_space_booking_index_path(locale: "fr"), params: { user_booking_approval_ids: [c.id] }
+      expect(flash[:notice]).to eq("Toutes les demandes d'accès sélectionnées ont été approuvées.")
+
+      put bulk_approve_access_sub_space_booking_index_path(locale: "fr"), params: { user_booking_approval_ids: [a.id, b.id] }
+      expect(flash[:alert]).to eq("2 demandes sélectionnées étaient déjà approuvées et ont été ignorées.")
     end
   end
 
@@ -994,7 +1028,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
         put bulk_approve_decline_sub_space_booking_index_path,
             params: { sub_space_booking_ids: [b.id, done.id], bulk_status: action }
         expect(flash[:notice]).to eq("Bookings #{verb} successfully.")
-        expect(flash[:alert]).to include("1 selected booking(s)")
+        expect(flash[:alert]).to eq("1 selected booking(s) were no longer pending and were skipped.")
       end
 
       it "#{action}: only the alert when none are pending" do
@@ -1004,6 +1038,24 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
             params: { sub_space_booking_ids: [done.id], bulk_status: action }
         expect(flash[:notice]).to be_nil
         expect(flash[:alert]).to include("1 selected booking(s)")
+      end
+    end
+
+    { "approve" => "approuvées", "decline" => "refusées" }.each do |action, verb|
+      it "#{action}: words the notice and the skipped alert in French" do
+        b = pending_booking(booker)
+        done = Array.new(2) do |i|
+          pending_booking(booker, start_time: DateTime.parse("2027-04-0#{4 + i} 10:00"),
+                                  end_time: DateTime.parse("2027-04-0#{4 + i} 11:00")).tap { |row| row.change_status!(@approved_status) }
+        end
+        put bulk_approve_decline_sub_space_booking_index_path(locale: "fr"),
+            params: { sub_space_booking_ids: [b.id, *done.map(&:id)], bulk_status: action }
+        expect(flash[:notice]).to eq("Les réservations ont été #{verb}.")
+        expect(flash[:alert]).to eq("2 réservations sélectionnées n'étaient plus en attente et ont été ignorées.")
+
+        put bulk_approve_decline_sub_space_booking_index_path(locale: "fr"),
+            params: { sub_space_booking_ids: [done.first.id], bulk_status: action }
+        expect(flash[:alert]).to eq("1 réservation sélectionnée n'était plus en attente et a été ignorée.")
       end
     end
   end
@@ -1042,33 +1094,32 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
             params: { user_booking_approval_ids: [older.id, newer.id] }
       end
 
-      expect(flash[:alert]).to start_with("Failed to approve: ")
+      expect(flash[:alert]).to start_with(I18n.t("errors.bookings.access_approve_failed"))
       expect(newer.reload.approved).to be(false)
       expect(good_user.reload.booking_approval).to be(false)
       expect(older.reload.approved).to be(false)
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    it "deny_access removes the request and clears the user's booking access even when the user record is otherwise invalid" do
+    it "deny_access opens its failure message in French for a French request" do
       applicant = create(:user, :regular_user, booking_approval: true)
-      applicant.update_column(:gender, "Unlisted")
-      uba = UserBookingApproval.create!(user: applicant, identity: "Other", approved: true,
+      row = UserBookingApproval.create!(user: applicant, identity: "Other", status: "approved", staff: admin,
                                         comments: "c", date: Date.new(2027, 1, 1))
-      put deny_access_sub_space_booking_index_path, params: { id: uba.id }
+      put deny_access_sub_space_booking_index_path(locale: "fr"), params: { id: row.id, reason: "x" * 1001 }
 
-      expect(flash[:notice]).to eq("Access request declined successfully.")
-      expect(UserBookingApproval.exists?(uba.id)).to be(false)
-      expect(applicant.reload.booking_approval).to be(false)
+      expect(flash[:alert]).to start_with("Impossible de refuser ou de révoquer :")
     end
 
-    it "deny_access keeps the user's access when removing the request fails" do
+    it "deny_access keeps the user's access and every request when the decision cannot be saved" do
       applicant = create(:user, :regular_user, booking_approval: true)
-      uba = UserBookingApproval.create!(user: applicant, identity: "Other", approved: true,
-                                        comments: "c", date: Date.new(2027, 1, 1))
-      allow_any_instance_of(UserBookingApproval).to receive(:destroy!).and_raise(ActiveRecord::RecordNotDestroyed)
-      put deny_access_sub_space_booking_index_path, params: { id: uba.id }
+      rows = 2.times.map do
+        UserBookingApproval.create!(user: applicant, identity: "Other", status: "approved", staff: admin,
+                                    comments: "c", date: Date.new(2027, 1, 1))
+      end
+      put deny_access_sub_space_booking_index_path, params: { id: rows.first.id, reason: "x" * 1001 }
 
-      expect(UserBookingApproval.exists?(uba.id)).to be(true)
+      expect(flash[:alert]).to start_with("Failed to decline or revoke: Reason")
+      expect(rows.map { |row| row.reload.status }).to eq(%w[approved approved])
       expect(applicant.reload.booking_approval).to be(true)
     end
   end
@@ -1176,6 +1227,27 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       get sub_space_booking_index_path, params: { room: room.id }
       text = Capybara.string(response.body).find("p.alert-info").text.squish
       expect(text).to eq("#{room.name} bookings will require manual approval")
+    end
+
+    it "shows no approval rule for a room that does not require approval, even with an automatic-approval hour" do
+      room = create(:sub_space, space: space, approval_required: false, max_automatic_approval_hour: 3,
+                                default_public: true)
+      log_in!(user)
+      get sub_space_booking_index_path, params: { room: room.id }
+
+      expect(response).to have_http_status(:ok)
+      text = Capybara.string(response.body).find("p.alert-info").text.squish
+      expect(text).to eq("#{room.name} bookings (Name and Description of event) are public by default")
+    end
+
+    it "shows no rules notice for a room with no rules and no approval requirement" do
+      room = create(:sub_space, space: space, approval_required: false, default_public: false)
+      log_in!(user)
+      get sub_space_booking_index_path, params: { room: room.id }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("#{room.name} Calendar")
+      expect(Capybara.string(response.body)).not_to have_css("p.alert-info")
     end
 
     it "404s for an unknown room" do

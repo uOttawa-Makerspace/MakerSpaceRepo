@@ -69,6 +69,71 @@ RSpec.describe "Admin spaces", type: :request do
       expect(response.body).to include("Room A")
     end
 
+    it "counts each training's sessions and active certifications, across spaces, without a query per session" do
+      laser = create(:training, name_en: "Laser", spaces: [space])
+      create(:training, name_en: "Mill", spaces: [space])
+      sessions = [space, space, create(:space)].map { |where| create(:training_session, training: laser, space: where) }
+      sessions.each_with_index { |ts, i| create_list(:certification, 2 - (i / 2), training_session: ts, training: laser) }
+      sessions.first.certifications.first.update_columns(active: false)
+
+      get edit_admin_space_path(space)
+
+      expect(response).to have_http_status(:ok)
+      rows = Nokogiri::HTML(response.body).css("table tr").map { |tr| tr.css("td").map { |td| td.text.strip } }
+      expect(rows).to include(["Laser", "3", "4", ""], ["Mill", "0", "0", ""])
+    end
+
+    it "gives every calendar colour input its own id and an accessible name, keeping each saved colour" do
+      StaffNeededCalendar.create!(space: space, calendar_url: "https://x.test/a.ics", color: "#112233")
+      StaffNeededCalendar.create!(space: space, calendar_url: "https://x.test/b.ics", color: "#445566")
+
+      get edit_admin_space_path(space)
+
+      page = Nokogiri::HTML(response.body)
+      inputs = page.css("#link-container input[type=color]")
+      expect(inputs.map { |input| input["value"] }).to match_array(%w[#112233 #445566])
+      expect(inputs.map { |input| input["id"] }.uniq.size).to eq(2)
+      expect(page.css("input[type=color][id]").map { |input| input["id"] }).to all(start_with("staff_needed_calendar_color_"))
+      expect(page.css("#colorpicker")).to be_empty
+      expect(page.css("input[type=color]").map { |input| input["aria-label"] }).to all(be_present)
+    end
+
+    it "gives every calendar name, url and role input its own id and an accessible name, keeping the submitted names" do
+      StaffNeededCalendar.create!(space: space, name: "A", calendar_url: "https://x.test/a.ics", color: "#112233")
+      StaffNeededCalendar.create!(space: space, name: "B", calendar_url: "https://x.test/b.ics", color: "#445566")
+
+      get edit_admin_space_path(space)
+
+      page = Nokogiri::HTML(response.body)
+      { "staff_needed_calendar_name[]" => "input", "staff_needed_calendar[]" => "input", "staff_needed_calendar_role[]" => "select" }.each do |name, tag|
+        saved = page.css("#link-container #{tag}[name='#{name}']")
+        expect(saved.map { |field| field["id"] }.uniq.size).to eq(2)
+        expect(page.css("#{tag}[name='#{name}']").map { |field| field["aria-label"] }).to all(be_present)
+        expect(page.css("#new-link-input #{tag}[name='#{name}']").map { |field| field["id"] }).to eq([nil])
+      end
+      ids = page.css("#link-container [id]").map { |node| node["id"] }
+      expect(ids).to eq(ids.uniq)
+    end
+
+    it "gives every element on the page a unique id, with two sub spaces" do
+      create(:sub_space, space: space, name: "Room B")
+
+      get edit_admin_space_path(space)
+
+      page = Nokogiri::HTML(response.body)
+      ids = page.css("[id]").map { |node| node["id"] }
+      expect(ids.tally.select { |_id, count| count > 1 }).to be_empty
+      expect(page.css("input[type=hidden][name=space_id]").size).to be >= 5
+      expect(page.css("input[name=name]").map { |input| input["aria-label"] }).to all(be_present)
+    end
+
+    it "gives the new calendar row a colour the colour input accepts" do
+      get edit_admin_space_path(space)
+
+      colour = Nokogiri::HTML(response.body).at_css("#new-link-input input[type=color]")["value"]
+      expect(colour).to match(/\A#\h{6}\z/)
+    end
+
     it "edit 404s for an unknown space" do
       get edit_admin_space_path(0)
       expect(response).to have_http_status(:not_found)
@@ -84,11 +149,30 @@ RSpec.describe "Admin spaces", type: :request do
         expect(Space.find_by!(name: "Beta")).to have_attributes(max_capacity: 7, keycode: "k1")
       end
 
+      it "creates the popular hour rows for the new space and none when the save fails" do
+        expect {
+          post admin_spaces_path, params: { space_params: { name: "Beta", max_capacity: 7, keycode: "k1" } }
+        }.to change(PopularHour, :count).by(168)
+        expect(Space.find_by!(name: "Beta").popular_hours.pluck(:day, :hour)).to match_array((0..6).to_a.product((0..23).to_a))
+
+        expect { post admin_spaces_path, params: { space_params: { name: "Beta" } } }.not_to change(PopularHour, :count)
+      end
+
+      it "stores no space and shows the reason, not a server error, when the popular hour rows cannot be inserted" do
+        allow(PopularHour).to receive(:insert_all).and_raise(ActiveRecord::StatementInvalid, "insert failed")
+        expect {
+          post admin_spaces_path, params: { space_params: { name: "Gamma", max_capacity: 7, keycode: "k9" } }
+        }.not_to change { [Space.count, PopularHour.count] }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to start_with("The space was not created. ").and include("popular hours")
+        expect(Space.find_by(name: "Gamma")).to be_nil
+      end
+
       it "alerts on a blank or duplicate name" do
         expect { post admin_spaces_path, params: { space_params: { name: "" } } }.not_to change(Space, :count)
-        expect(flash[:alert]).to eq("Something went wrong.")
+        expect(flash[:alert]).to start_with("The space was not created. ")
         expect { post admin_spaces_path, params: { space_params: { name: "Alpha" } } }.not_to change(Space, :count)
-        expect(flash[:alert]).to eq("Something went wrong.")
+        expect(flash[:alert]).to start_with("The space was not created. ")
       end
 
       it "redirects home with the ParameterMissing message when space_params is absent" do
@@ -186,35 +270,46 @@ RSpec.describe "Admin spaces", type: :request do
       it "alerts when the limit params are missing" do
         patch admin_space_set_max_booking_duration_path(space_id: space.id, sub_space_id: room.id)
         expect(response).to redirect_to(edit_admin_space_path(id: space.id))
-        expect(flash[:alert]).to eq("Something went wrong.")
+        expect(flash[:alert]).to eq("Choose a sub space and enter the number of hours for the limit you want to change.")
         patch admin_space_set_max_automatic_approval_hour_path(space_id: space.id, sub_space_id: room.id)
-        expect(flash[:alert]).to eq("Something went wrong.")
+        expect(flash[:alert]).to eq("Choose a sub space and enter the number of hours for the automatic approval limit.")
       end
 
-      # a non-numeric limit is silently stored as 0 (to_i) rather than rejected.
-      it "stores a non-numeric max_hours as 0" do
-        patch admin_space_set_max_booking_duration_path(space_id: space.id, sub_space_id: room.id), params: { max_hours: "abc" }
-        expect(room.reload.maximum_booking_duration).to eq(0)
+      it "refuses a limit that is not a whole number of hours and keeps the stored limits" do
+        room.update!(maximum_booking_duration: 3, maximum_booking_hours_per_week: 9, max_automatic_approval_hour: 1)
+        ["abc", "2.5", "-2", "1e3"].each do |bad|
+          patch admin_space_set_max_booking_duration_path(space_id: space.id, sub_space_id: room.id), params: { max_hours: bad }
+          expect(response).to redirect_to(edit_admin_space_path(id: space.id))
+          expect(flash[:alert]).to eq("The limit must be a whole number of hours, or -1 to remove it.")
+          patch admin_space_set_max_booking_duration_path(space_id: space.id, sub_space_id: room.id), params: { max_weekly_hours: bad }
+          expect(flash[:alert]).to eq("The limit must be a whole number of hours, or -1 to remove it.")
+          patch admin_space_set_max_automatic_approval_hour_path(space_id: space.id, sub_space_id: room.id), params: { auto_approve_hours: bad }
+          expect(flash[:alert]).to eq("The limit must be a whole number of hours, or -1 to remove it.")
+        end
+        expect(room.reload).to have_attributes(maximum_booking_duration: 3, maximum_booking_hours_per_week: 9, max_automatic_approval_hour: 1)
       end
 
-      it "delete_sub_space removes the room together with its bookings and statuses" do
-        booking = create(:sub_space_booking, sub_space: room)
+      it "names the refused limit in French" do
+        patch admin_space_set_max_booking_duration_path(space_id: space.id, sub_space_id: room.id), params: { max_hours: "abc", locale: "fr" }
+        expect(flash[:alert]).to eq("La limite doit être un nombre entier d'heures, ou -1 pour la retirer.")
+      end
+
+      it "delete_sub_space refuses a room that has bookings and keeps the room, bookings and statuses" do
+        booking = create(:sub_space_booking, :with_old_status_row, sub_space: room)
         status_id = booking.sub_space_booking_status_id
         delete admin_space_delete_sub_space_path(space_id: space.id, id: room.id)
         expect(response).to redirect_to(edit_admin_space_path(id: space.id))
-        expect(flash[:notice]).to eq("Sub Space deleted!")
-        expect(SubSpace.exists?(room.id)).to be(false)
-        expect(SubSpaceBooking.exists?(booking.id)).to be(false)
-        expect(SubSpaceBookingStatus.exists?(status_id)).to be(false)
+        expect(flash[:alert]).to include("bookings")
+        expect(flash[:notice]).to be_nil
+        expect(SubSpace.exists?(room.id)).to be(true)
+        expect(SubSpaceBooking.exists?(booking.id)).to be(true)
+        expect(SubSpaceBookingStatus.exists?(status_id)).to be(true)
       end
 
-      it "delete_sub_space removes the room and a booking that has no status" do
-        booking = create(:sub_space_booking, sub_space: room)
-        booking.update_column(:sub_space_booking_status_id, nil)
+      it "delete_sub_space removes a room that has no bookings" do
         delete admin_space_delete_sub_space_path(space_id: space.id, id: room.id)
         expect(flash[:notice]).to eq("Sub Space deleted!")
         expect(SubSpace.exists?(room.id)).to be(false)
-        expect(SubSpaceBooking.exists?(booking.id)).to be(false)
       end
     end
 
@@ -275,10 +370,10 @@ RSpec.describe "Admin spaces", type: :request do
       it "refuses non-admins, duplicates and the -1 placeholder" do
         patch add_space_manager_admin_spaces_path, params: { space_id: space.id, space_manager_id: create(:user, :staff).id }
         expect(response).to redirect_to(admin_spaces_path)
-        expect(flash[:alert]).to eq("Failed to add space manager")
+        expect(flash[:alert]).to start_with("The space manager was not added. ")
         SpaceManagerJoin.create!(user: manager, space: space)
         patch add_space_manager_admin_spaces_path, params: { space_id: space.id, space_manager_id: manager.id }
-        expect(flash[:alert]).to eq("Failed to add space manager")
+        expect(flash[:alert]).to start_with("The space manager was not added. ")
         patch add_space_manager_admin_spaces_path, params: { space_id: space.id, space_manager_id: -1 }
         expect(flash[:alert]).to eq("Please select an admin")
         expect(SpaceManagerJoin.count).to eq(1)
@@ -305,7 +400,7 @@ RSpec.describe "Admin spaces", type: :request do
       it "rejects wrong confirmation text" do
         destroy_space("alpha")
         expect(response).to redirect_to(admin_spaces_path)
-        expect(flash[:alert]).to eq("Invalid Input")
+        expect(flash[:alert]).to eq("The text you typed does not match the space name, so nothing was deleted.")
         expect(space.reload.destroy_admin_id).to be_nil
       end
 
@@ -341,6 +436,17 @@ RSpec.describe "Admin spaces", type: :request do
         expect(reader.reload.space_id).to eq(space.id)
       end
 
+      it "records no request and says why when the space no longer saves (a blank name stored earlier)" do
+        space.update_columns(name: "")
+
+        destroy_space("")
+
+        expect(response).to redirect_to(admin_spaces_path)
+        expect(flash[:notice]).to be_nil
+        expect(flash[:alert]).to eq("The deletion request was not recorded. Name A name is required for the space")
+        expect(space.reload.destroy_admin_id).to be_nil
+      end
+
       it "404s without the id param (the route only supplies space_id)" do
         delete admin_space_destroy_path(space_id: space.id), params: { admin_input: "ALPHA" }
         expect(response).to have_http_status(:not_found)
@@ -357,7 +463,7 @@ RSpec.describe "Admin spaces", type: :request do
       it "alerts when space_id is missing" do
         put update_staff_needed_calendars_admin_spaces_path
         expect(response).to redirect_to(root_path)
-        expect(flash[:alert]).to eq("An error occurred while trying to add/remove the calendar URLs, please try again later.")
+        expect(flash[:alert]).to eq(I18n.t("errors.admin.spaces.calendar_space_missing", locale: :en))
       end
 
       it "replaces all calendars (new rows each save), skipping blank urls and blank roles" do
@@ -376,6 +482,12 @@ RSpec.describe "Admin spaces", type: :request do
         save_calendars
         expect(StaffNeededCalendar.where(space: space)).to be_empty
         expect(flash[:notice]).to eq("Calendars updated successfully.")
+      end
+
+      it "opens the failure flash in French for a French request" do
+        put update_staff_needed_calendars_admin_spaces_path(locale: "fr"),
+            params: { space_id: space.id, staff_needed_calendar: [url], staff_needed_calendar_role: ["bogus"] }
+        expect(flash[:alert]).to start_with("Les calendriers n'ont pas été enregistrés (rien n'a changé) :")
       end
 
       it "saves nothing and flashes an error when a calendar has an invalid role" do

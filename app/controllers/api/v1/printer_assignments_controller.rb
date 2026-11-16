@@ -16,16 +16,7 @@ module Api
         end
         user = clear ? nil : User.find(raw)
 
-        PrinterSession.transaction do
-          printer.lock!
-          last = Printer.get_last_number_session(printer.id)
-          if clear
-            last&.update!(in_use: false)
-          else
-            PrinterSession.create!(printer_id: printer.id, user_id: user.id, in_use: true)
-            last.update!(in_use: false) if last&.in_use?
-          end
-        end
+        clear ? printer.release! : printer.assign_to!(user)
         head :no_content
       end
     end

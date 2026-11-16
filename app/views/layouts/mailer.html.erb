@@ -2,7 +2,7 @@
 <head>
   <meta name="viewport" content="width=device-width">
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <title>Transactional Email</title>
+  <title><%= t("layouts.mailer.title") %></title>
   <style>
       @media only screen and (max-width: 620px) {
           table[class=body] h1 {
@@ -97,7 +97,7 @@
   </style>
 </head>
 <body class="" style="background-color: #f6f6f6; font-family: sans-serif; -webkit-font-smoothing: antialiased; font-size: 14px; line-height: 1.4; margin: 0; padding: 0; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;">
-<span class="preheader" style="color: transparent; display: none; height: 0; max-height: 0; max-width: 0; opacity: 0; overflow: hidden; mso-hide: all; visibility: hidden; width: 0;"><%= content_for?(:preheader) ? yield(:preheader) : "MakerRepo Notification" %></span>
+<span class="preheader" style="color: transparent; display: none; height: 0; max-height: 0; max-width: 0; opacity: 0; overflow: hidden; mso-hide: all; visibility: hidden; width: 0;"><%= content_for?(:preheader) ? yield(:preheader) : t("layouts.mailer.preheader") %></span>
 <table role="presentation" class="body" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; background-color: #f6f6f6; width: 100%;" width="100%" bgcolor="#f6f6f6">
   <tr>
     <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;" valign="top">&nbsp;</td>
@@ -113,12 +113,12 @@
               <table role="presentation" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;" width="100%">
                 <tr>
                   <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;" valign="top">
-                    <%= vite_image_tag('images/ceed.png', alt: 'CEED Logo', width: 120, height: 34, border: 0, style: 'border:0; outline:none; text-decoration:none; display:block;') %>
+                    <%= vite_image_tag('images/ceed.png', alt: t("layouts.mailer.logo_alt"), width: 120, height: 34, border: 0, style: 'border:0; outline:none; text-decoration:none; display:block;') %>
                     <br>
                     <%= yield %>
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-                      Thank you,<br>
-                      <b><%= content_for?(:team_name) ? yield(:team_name) : "CEED Team" %></b>
+                      <%= t("layouts.mailer.thank_you") %><br>
+                      <b><%= content_for?(:team_name) ? yield(:team_name) : t("layouts.mailer.ceed_team") %></b>
                     </p>
                   </td>
                 </tr>
@@ -135,8 +135,8 @@
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;" width="100%">
             <tr>
               <td class="content-block" style="font-family: sans-serif; vertical-align: top; padding-bottom: 10px; padding-top: 10px; color: #999999; font-size: 12px; text-align: center;" valign="top" align="center">
-                <span class="apple-link" style="color: #999999; font-size: 12px; text-align: center;">CEED, 150 Louis Pasteur, Ottawa ON Canada K1N 6N5</span>
-                <p style="font-family: sans-serif; font-weight: normal; margin: 0; margin-bottom: 15px; color: #999999; font-size: 12px; text-align: center;"><%= content_for?(:why_received) ? yield(:why_received) : "You received this email from MakerRepo." %></p>
+                <span class="apple-link" style="color: #999999; font-size: 12px; text-align: center;"><%= t("layouts.mailer.address") %></span>
+                <p style="font-family: sans-serif; font-weight: normal; margin: 0; margin-bottom: 15px; color: #999999; font-size: 12px; text-align: center;"><%= content_for?(:why_received) ? yield(:why_received) : t("layouts.mailer.why_received") %></p>
               </td>
             </tr>
           </table>

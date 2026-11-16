@@ -84,9 +84,11 @@ RSpec.describe Announcement, type: :model do
     end
 
     it "does not filter by audience" do
-      goals = %w[all admin staff volunteer regular_user nonsense]
+      goals = %w[all admin staff volunteer regular_user]
       goals.each { |g| create(:announcement, user: admin, public_goal: g) }
-      expect(Announcement.active.pluck(:public_goal)).to match_array(goals)
+      stray = create(:announcement, :all, user: admin)
+      stray.update_columns(public_goal: "nonsense")
+      expect(Announcement.active.pluck(:public_goal)).to match_array(goals + ["nonsense"])
     end
 
     it "has a regular_user scope" do
@@ -107,8 +109,45 @@ RSpec.describe Announcement, type: :model do
       expect { a.destroy }.to change(AnnouncementDismiss, :count).by(-1)
     end
 
-    it "does not validate description or public_goal" do
-      expect(Announcement.new(user: create(:user, :admin))).to be_valid
+    describe "AnnouncementDismiss.dismiss" do
+      let(:user) { create(:user, :admin) }
+      let(:announcement) { create(:announcement, :all, user: user) }
+
+      it "records one dismissal however often it is called" do
+        first = AnnouncementDismiss.dismiss(announcement, by: user)
+        expect(AnnouncementDismiss.dismiss(announcement, by: user)).to eq(first)
+        expect(AnnouncementDismiss.where(user: user, announcement: announcement).count).to eq(1)
+      end
+
+      it "returns the existing row when a concurrent request inserts it first" do
+        winner = nil
+        allow(AnnouncementDismiss).to receive(:find_or_create_by!).and_wrap_original do |_original, **attrs|
+          winner = AnnouncementDismiss.create!(**attrs)
+          raise ActiveRecord::RecordNotUnique
+        end
+        expect(AnnouncementDismiss.dismiss(announcement, by: user)).to eq(winner)
+        expect(AnnouncementDismiss.count).to eq(1)
+      end
+
+      it "is refused by the database for a second row" do
+        AnnouncementDismiss.create!(user: user, announcement: announcement)
+        expect { AnnouncementDismiss.new(user: user, announcement: announcement).save!(validate: false) }
+          .to raise_error(ActiveRecord::RecordNotUnique)
+      end
+    end
+
+    it "does not validate the description" do
+      expect(Announcement.new(user: create(:user, :admin), public_goal: "all")).to be_valid
+    end
+
+    it "accepts only the known audiences" do
+      admin = create(:user, :admin)
+      Announcement::PUBLIC_GOALS.each { |goal| expect(Announcement.new(user: admin, public_goal: goal)).to be_valid }
+      ["evryone", "", nil, "all_visitors"].each do |goal|
+        announcement = Announcement.new(user: admin, public_goal: goal)
+        expect(announcement).not_to be_valid
+        expect(announcement.errors[:public_goal]).to be_present
+      end
     end
   end
 end

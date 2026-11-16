@@ -6,6 +6,8 @@ require 'google/apis/calendar_v3'
 class VolunteersController < SessionsController
   include VolunteerAreaAccess
 
+  skip_authorization only: %i[index join_volunteer_program transcript],
+                     reason: "#{Authorization::ROLLOUT_PENDING}open to any signed-in user or checked inline"
   before_action :no_container, only: :index
   before_action :with_volunteer_header, except: :index
   before_action :current_user
@@ -56,17 +58,10 @@ class VolunteersController < SessionsController
 
   def join_volunteer_program
     if current_user.staff?
-      flash[:notice] = 'You already have access to the Volunteer Program.'
+      flash[:notice] = I18n.t("volunteer_area.flash.program_already")
     else
-      # Check if user is already enrolled to prevent duplicates
-      unless current_user.programs.where(program_type: Program::VOLUNTEER).exists?
-        Program.create!(
-          user_id: current_user.id,
-          program_type: Program::VOLUNTEER,
-          active: true
-        )
-      end
-      flash[:notice] = "You've joined the Volunteer Program"
+      Program.join(current_user, Program::VOLUNTEER)
+      flash[:notice] = I18n.t("volunteer_area.flash.program_joined")
     end
 
     # Redirect to external HubSpot intake form
@@ -80,26 +75,6 @@ class VolunteersController < SessionsController
     @certifications = current_user.certifications.highest_level
     @remaining_trainings = current_user.remaining_trainings
     @skills = Skill.includes(trainings: [:proficient_projects, :learning_modules])
-    @proficient_projects_awarded =
-      Proc.new do |training|
-        training.proficient_projects.where(
-          id: current_user.order_items.awarded.pluck(:proficient_project_id)
-        )
-      end
-    @learning_modules_completed =
-      Proc.new do |training|
-        training.learning_modules.where(
-          id:
-            current_user.learning_module_tracks.completed.pluck(
-              :learning_module_id
-            )
-        )
-      end
-    @recommended_hours =
-      Proc.new do |training, levels|
-        training.learning_modules.where(level: levels).count +
-          training.proficient_projects.where(level: levels).count
-      end
   end
 
   def calendar
@@ -115,64 +90,45 @@ class VolunteersController < SessionsController
   end
 
   def shadowing_shifts
-    @shifts = current_user.shadowing_hours.where('end_time > ?', DateTime.now)
-    @all_shifts = ShadowingHour.includes(:display_user).where('end_time > ?', DateTime.now)
+    @shifts = current_user.shadowing_hours.complete.includes(:space).where('end_time > ?', DateTime.now)
+    @all_shifts = ShadowingHour.complete.includes(:display_user, :space).where('end_time > ?', DateTime.now)
   end
 
   def delete_event
-    if params[:event_id].present? &&
-         ShadowingHour.find_by(event_id: params[:event_id]).present?
-      space = ShadowingHour.find_by(event_id: params[:event_id]).space.name
-      event = ShadowingHour.delete_event(params[:event_id], space)
+    shift = ShadowingHour.find_by(event_id: params[:event_id]) if params[:event_id].present?
+    return refuse_shift(:shift_not_found) if shift.nil?
 
-      if event != 'error'
-        ShadowingHour.find_by(event_id: params[:event_id]).destroy!
-        flash[:notice] = 'This shift has been cancelled.'
-      else
-        flash[:alert] = 'An error occured while deleting the shift.'
-      end
-    else
-      flash[:alert] = 'This shift has not been found.'
+    case shift.cancel
+    when :removed
+      flash[:notice] = I18n.t("volunteer_area.flash.shift_cancelled")
+      redirect_to calendar_volunteers_path
+    when :gone then refuse_shift(:shift_not_found)
+    else refuse_shift(:shift_not_removed)
     end
-    redirect_to calendar_volunteers_path
   end
 
   def create_event
-    if (
-         params[:space] == 'makerspace' || params[:space] == 'brunsfield centre'
-       ) && params[:datepicker_start].present? &&
-         params[:datepicker_end].present? && params[:user_id] &&
-         User.find(params[:user_id]).present?
-      start_time =
-        DateTime.parse(params[:datepicker_start].to_s).strftime(
-          '%Y-%m-%dT%k:%M:00'
-        )
-      end_time =
-        DateTime.parse(params[:datepicker_end].to_s).strftime(
-          '%Y-%m-%dT%k:%M:00'
-        )
-      user = User.find(params[:user_id])
-      unless user.volunteer?
-        flash[:alert] = 'Shadowing shifts can only be booked for volunteers.'
-        return redirect_to calendar_volunteers_path
-      end
+    problem = shift_request_problem
+    return refuse_shift(problem) if problem
 
-      space = Space.where('LOWER(name) = ?', params[:space].downcase).first
-      if space.nil?
-        flash[:alert] = 'The selected space was not found.'
-        return redirect_to calendar_volunteers_path
-      end
+    user = User.find(params[:user_id])
+    return refuse_shift(:not_a_volunteer) unless user.volunteer?
 
-      create_shadowing_shift(user, space, start_time, end_time)
-    else
-      flash[:alert] = 'An error occurred, please make sure you choose a space.'
-    end
+    space = Space.where('LOWER(name) = ?', params[:space].downcase).first
+    return refuse_shift(:space_not_found) if space.nil?
+
+    create_shadowing_shift(
+      user,
+      space,
+      shift_time(params[:datepicker_start]),
+      shift_time(params[:datepicker_end])
+    )
     redirect_to calendar_volunteers_path
   end
-  
+
   def transcript
     unless signed_in?
-      flash[:alert] = 'Please sign in to view your volunteer transcript.'
+      flash[:alert] = I18n.t("volunteer_area.flash.transcript_sign_in")
       redirect_to login_path and return
     end
 
@@ -196,28 +152,59 @@ class VolunteersController < SessionsController
 
   private
 
-  def create_shadowing_shift(user, space, start_time, end_time)
-    event =
-      ShadowingHour.create_event(start_time, end_time, user, params[:space])
+  SHADOWING_SPACES = ['makerspace', 'brunsfield centre'].freeze
 
-    if event.status != 'cancelled'
-      ShadowingHour.create!(
+  # The key (under errors.volunteers) of what is missing from a new shadowing shift request, or nil.
+  def shift_request_problem
+    if SHADOWING_SPACES.exclude?(params[:space])
+      :no_space
+    elsif shift_time(params[:datepicker_start]).nil? || shift_time(params[:datepicker_end]).nil?
+      :no_dates
+    elsif params[:user_id].blank?
+      :no_user
+    end
+  end
+
+  # The calendar's timestamp for a picked date and time, or nil when it is blank or not a date.
+  def shift_time(value)
+    DateTime.parse(value.to_s).strftime('%Y-%m-%dT%k:%M:00') if value.present?
+  rescue Date::Error
+    nil
+  end
+
+  # A shadowing shift request that was refused goes back to the calendar with the message for its cause.
+  def refuse_shift(cause)
+    flash[:alert] = I18n.t("errors.volunteers.#{cause}")
+    redirect_to calendar_volunteers_path
+  end
+
+  # The shift is stored first, with the id its Google Calendar event will have, together with the record that the
+  # event still has to be created. A job creates the event after that and is tried again until Google has it. If
+  # the job cannot even be queued, the shift stays, the resend job queues it later, and the staff member is told.
+  def create_shadowing_shift(user, space, start_time, end_time)
+    change = nil
+    ShadowingHour.transaction do
+      shift = ShadowingHour.create!(
         user_id: user.id,
         start_time: start_time,
         end_time: end_time,
-        event_id: event.id,
+        event_id: SecureRandom.hex(16),
         space_id: space.id
       )
-      flash[:notice] = 'The shadowing shift has been added'
+      change = GoogleCalendar::PendingChange.ask_shadow_push(shift.id)
+    end
+
+    if change.enqueue
+      flash[:notice] = I18n.t("volunteer_area.flash.shift_added")
     else
-      flash[:alert] = 'An Error occurred'
+      flash[:alert] = I18n.t('errors.volunteers.calendar_event_missing')
     end
   end
 
   def grant_access_list
     unless current_user.admin? || current_user.staff?
       redirect_to root_path
-      flash[:alert] = 'You cannot access this area.'
+      flash[:alert] = I18n.t("volunteer_area.flash.no_access")
     end
   end
 end

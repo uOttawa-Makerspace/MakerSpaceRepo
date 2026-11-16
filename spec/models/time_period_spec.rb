@@ -43,17 +43,14 @@ RSpec.describe TimePeriod, type: :model do
       end
     end
 
-    # Uses Date.today (system zone: UTC in the devcontainer/CI), not Time.zone.today.
     describe ".current around local midnight" do
       around { |ex| travel_to(Time.zone.local(2027, 2, 10, 22)) { ex.run } } # 03:00Z on 02-11
 
-      it "decides 'today' in the system zone, not the app zone" do
-        skip "system zone is not UTC" unless Time.now.utc_offset.zero?
+      it "decides 'today' in the app zone, not in UTC" do
         evening = TimePeriod.create!(name: "toronto-today", start_date: Date.new(2027, 2, 10), end_date: Date.new(2027, 2, 10))
-        utc_day = TimePeriod.create!(name: "utc-today", start_date: Date.new(2027, 2, 11), end_date: Date.new(2027, 2, 11))
+        TimePeriod.create!(name: "utc-today", start_date: Date.new(2027, 2, 11), end_date: Date.new(2027, 2, 11))
         expect(Time.zone.today).to eq(Date.new(2027, 2, 10))
-        expect(TimePeriod.current).to eq(utc_day)
-        expect(TimePeriod.current).not_to eq(evening)
+        expect(TimePeriod.current).to eq(evening)
       end
     end
   end

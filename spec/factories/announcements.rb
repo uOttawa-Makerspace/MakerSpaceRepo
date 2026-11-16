@@ -3,6 +3,7 @@ FactoryBot.define do
     association :user, :admin
     description { Faker::Lorem.paragraph }
     active { true }
+    public_goal { "all" }
 
     trait "volunteer" do
       public_goal { "volunteer" }
@@ -22,10 +23,6 @@ FactoryBot.define do
 
     trait "all" do
       public_goal { "all" }
-    end
-
-    trait "all_visitors" do
-      public_goal { "all_visitors" }
     end
   end
 end

@@ -13,15 +13,15 @@ module ShopifyHttpHelpers
   # logs. Every example sees these values instead (see the before hook below), and the
   # real credential is never read, asserted against or printed.
   FAKE_SHOPIFY_CONFIG = {
-    shop_name: "fake-shop", api_key: "fake_api_key", password: "shpat_test_fake", api_version: "2025-01"
+    shop_name: "fake-shop", api_key: "fake_api_key", password: "shpat_test_fake", api_version: "2026-10"
   }.freeze
 
   def shopify_test_config
     FAKE_SHOPIFY_CONFIG
   end
 
-  # Replaces credentials.test.shopify (dig and [] access, as used by ShopifyConcern,
-  # ShopifyService and StaticPagesController) with FAKE_SHOPIFY_CONFIG.
+  # Replaces credentials.test.shopify (dig and [] access, as used by ShopifyContext
+  # and Payments::ShopifyCatalog) with FAKE_SHOPIFY_CONFIG.
   def stub_shopify_credentials!
     creds = Rails.application.credentials
     env = Rails.env.to_sym
@@ -43,12 +43,11 @@ module ShopifyHttpHelpers
     "https://#{cfg[:shop_name]}.myshopify.com/admin/api/#{cfg[:api_version]}/graphql.json"
   end
 
-  # In production another code path (ShopifyService) has
-  # called ShopifyAPI::Context.setup before ShopifyConcern runs; ShopifyConcern
-  # itself only activates the session. Do the same priming here so the URL carries
-  # the API version regardless of spec order.
+  # In production the boot initializer (or an earlier session) has called
+  # ShopifyAPI::Context.setup before a draft call runs. Do the same priming here so
+  # the URL carries the API version regardless of spec order.
   def prime_shopify_context!
-    ShopifyService.start_shopify_session
+    ShopifyContext.start_session!
   end
 
   # Answers POSTs whose GraphQL query contains `marker` with `data`; returns an
@@ -67,9 +66,9 @@ module ShopifyHttpHelpers
     seen
   end
 
-  def stub_draft_order_create(draft_id)
+  def stub_draft_order_create(draft_id, invoice_url: nil)
     stub_shopify_graphql("mutation draftOrderCreate",
-                         { "draftOrderCreate" => { "draftOrder" => { "id" => draft_id }, "userErrors" => [] } })
+                         { "draftOrderCreate" => { "draftOrder" => { "id" => draft_id, "invoiceUrl" => invoice_url }, "userErrors" => [] } })
   end
 
   def stub_draft_order_fetch(draft_id, invoice_url:, fully_paid: false)

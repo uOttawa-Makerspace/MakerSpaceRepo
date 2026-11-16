@@ -4,7 +4,7 @@ require "rails_helper"
 
 # Every rate_limit counts in RateLimitCounter (atomic across workers), never in
 # the controller's cache_store (Solid Cache cannot count a fresh key atomically).
-# The store is set once, by RateLimitStore, in the two controller bases.
+# The store is set once, by RateLimitStore, in each controller base.
 RSpec.describe RateLimitStore do
   it "is the rate_limit every controller uses" do
     Rails.application.eager_load!
@@ -15,9 +15,10 @@ RSpec.describe RateLimitStore do
     expect(controllers.map { |c| c.method(:rate_limit).owner }.uniq).to eq([RateLimitStore::ClassMethods])
   end
 
-  it "covers the two controller bases" do
+  it "covers the controller bases" do
     expect(ApplicationController.method(:rate_limit).owner).to eq(RateLimitStore::ClassMethods)
     expect(Api::V1::BaseController.method(:rate_limit).owner).to eq(RateLimitStore::ClassMethods)
+    expect(ErrorsController.method(:rate_limit).owner).to eq(RateLimitStore::ClassMethods)
   end
 
   it "refuses a call site that names its own store" do

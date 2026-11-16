@@ -1,6 +1,16 @@
 en:
   rewards:
+    redeem:
+      # %{name} = name of the account the CCs were added to
+      added: "The CCs have been added to %{name}"
+    link_cc_to_user:
+      title: "Add CCs to your account"
+      # %{email} = the signed-in user's email address
+      body: "You can only add these CCs once. They will be added to your account (%{email}), which must be the account the purchase was made with."
+      submit: "Add the CCs"
+      cancel: "Cancel"
     index:
+      store_name: "MakerStore"
       title: "CEED Credits"
       subtitle: "Earn CCs by participating in the CEED community and redeem them for real rewards."
       wallet:
@@ -50,6 +60,8 @@ en:
       activity:
         title: "Your Recent CC Activity"
         date: "Date"
+        # %{amount} = signed number of CCs, for example +5 or -3
+        amount: "%{amount} CC"
         credits: "CCs"
       faq:
         title: "Frequently Asked Questions"

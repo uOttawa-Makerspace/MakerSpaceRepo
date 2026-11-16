@@ -36,13 +36,33 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
   def open_event(title, index: 0)
     expect(page).to have_css(".fc-timegrid-event", text: title, visible: :all)
     page.all(".fc-timegrid-event", text: title, visible: :all)[index].click
-    expect(page).to have_css("#eventModal.show")
+    expect(page).to have_css("#eventModal[data-shown='true']")
   end
 
   def create_series(title: "Open lab", rule: "DTSTART:20270315T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20270331T235959Z")
     create(:event, space: space, title: title, event_type: "other", draft: false,
                    start_time: eastern.local(2027, 3, 15, 10), end_time: eastern.local(2027, 3, 15, 11),
                    recurrence_rule: rule)
+  end
+
+  describe "a staff member's unavailabilities" do
+    it "opens the edit dialog for a stored one and nothing for one from their external calendar", js: true, skip_bullet: true do
+      create(:staff_unavailability, user: worker, title: "Class", start_time: eastern.local(2027, 3, 17, 13), end_time: eastern.local(2027, 3, 17, 14))
+      ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//spec//EN", "BEGIN:VEVENT", "UID:dentist@ics.test", "DTSTAMP:20270101T000000Z",
+             "DTSTART:20270318T170000Z", "DTEND:20270318T180000Z", "SUMMARY:Dentist", "END:VEVENT", "END:VCALENDAR"].join("\r\n")
+      stub_request(:get, "https://calendar.example/wanda.ics").to_return(status: 200, body: ics)
+      StaffExternalUnavailability.create!(user: worker, ics_url: "https://calendar.example/wanda.ics")
+      open_admin_calendar
+
+      expect(page).to have_css(".fc-timegrid-event", text: "Wanda Worker - Dentist", visible: :all)
+      page.find(".fc-timegrid-event", text: "Wanda Worker - Dentist", visible: :all).click
+      # the click handler runs at once: the dialog was not set up for editing
+      expect(page).to have_css("#eventModalLabel", text: "Add Event", visible: :all)
+      expect(page).to have_no_css("#eventModal.show", visible: :all)
+
+      open_event("Wanda Worker - Class")
+      expect(page).to have_css("#eventModalLabel", text: "Edit Unavailability")
+    end
   end
 
   describe "a single event" do
@@ -58,8 +78,8 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       expect(find("#save_button").value).to eq("Update")
       expect(find("#eventForm", visible: :all)[:action]).to end_with("/admin/events/#{single.id}")
       expect(find("#eventForm input[name=_method]", visible: :all).value).to eq("patch")
-      expect(field_value("start_time_field")).to eq(browser_local(single.start_time))
-      expect(field_value("end_time_field")).to eq(browser_local(single.end_time))
+      expect(field_value("start_time_field")).to eq(toronto_field(single.start_time))
+      expect(field_value("end_time_field")).to eq(toronto_field(single.end_time))
       expect(page).to have_css("#staff_select + .ts-wrapper .item", text: "Wanda Worker")
       expect(page).to have_css("#publish_and_delete_forms", visible: :visible)
       expect(page).to have_css("#delete_single_form", visible: :all)
@@ -84,8 +104,38 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       open_event("Team sync")
       click_button "Publish"
 
-      expect(page).to have_text("Event published successfully.")
+      expect_flash("Event published successfully.")
       expect(single.reload.draft).to be(false)
+    end
+
+    it "offers to unpublish a published event and not a draft", js: true, skip_bullet: true do
+      open_admin_calendar
+      open_event("Team sync")
+      expect(page).to have_css("#unpublish_form", visible: :visible)
+      expect(find("#unpublish_form", visible: :all)[:action]).to end_with("/admin/events/#{single.id}/publication")
+      expect(page).to have_button("Unpublish")
+    end
+
+    it "keeps the event published when the unpublish confirmation is refused", js: true, skip_bullet: true do
+      open_admin_calendar
+      open_event("Team sync")
+      dismiss_confirm("Unpublish this event?") { click_button "Unpublish" }
+
+      expect(single.reload.draft).to be(false)
+      expect(page).to have_css("#eventModal[data-shown=true]")
+    end
+
+    it "unpublishes a published event from the modal and shows it as a draft", js: true, skip_bullet: true do
+      open_admin_calendar
+      open_event("Team sync")
+      accept_confirm(/Unpublish this event\?.*whole series/) { click_button "Unpublish" }
+
+      expect_flash("Event unpublished successfully.")
+      expect(single.reload.draft).to be(true)
+      wait_for_admin_calendar_scripts
+      open_event("Team sync")
+      expect(page).to have_css("#publish_form", visible: :visible)
+      expect(page).to have_css("#unpublish_form", visible: :hidden)
     end
 
     it "saves changes to the title, the type and the assigned staff", js: true, skip_bullet: true do
@@ -100,11 +150,31 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       find(".ts-dropdown .option", text: "Ada Admin").click
       click_button "Update"
 
-      expect(page).to have_text("Event updated successfully.")
+      expect_flash("Event updated successfully.")
+      expect_saved_in_place
+      expect(page).to have_css(".fc-timegrid-event", text: "Team retro", visible: :all)
       single.reload
       expect(single.title).to eq("Team retro")
       expect(single.event_type).to eq("other")
       expect(single.users).to contain_exactly(admin)
+    end
+
+    it "keeps the dialog open with what was typed and the alert when the server refuses the update", js: true, skip_bullet: true do
+      open_admin_calendar
+      open_event("Team sync")
+      open_custom_values
+      fill_in "title", with: "Team retro"
+      select "Weekly", from: "recurrence_frequency"
+      uncheck "day_TU"
+      click_button "Update"
+
+      expect(page).to have_css("#eventModal.show #calendar_dialog_alert", text: "Failed to update event")
+      expect(page).to have_no_css("#flash", text: "Failed to update event")
+      expect(find("#title", visible: :all).value).to eq("Team retro")
+      expect(page).to have_select("recurrence_frequency", selected: "Weekly")
+      expect(page.evaluate_script("window.sameDocument")).to be(true)
+      expect(single.reload.title).to eq("Team sync")
+      expect(single.recurrence_rule).to be_nil
     end
 
     it "moves the event when the times are changed", js: true, skip_bullet: true do
@@ -114,9 +184,9 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       fill_datetime("end_time_field", "2027-03-18T16:00")
       click_button "Update"
 
-      expect(page).to have_text("Event updated successfully.")
-      expect(single.reload.start_time).to eq(browser_utc("2027-03-18T15:00"))
-      expect(single.end_time).to eq(browser_utc("2027-03-18T16:00"))
+      expect_flash("Event updated successfully.")
+      expect(single.reload.start_time).to eq(toronto_utc("2027-03-18T15:00"))
+      expect(single.end_time).to eq(toronto_utc("2027-03-18T16:00"))
     end
 
     it "shows an all-day event with the end field locked", js: true, skip_bullet: true do
@@ -124,7 +194,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       open_admin_calendar
       expect(page).to have_css(".fc-daygrid-event", text: "Closed", visible: :all)
       find(".fc-daygrid-event", text: "Closed", visible: :all).click
-      expect(page).to have_css("#eventModal.show")
+      expect(page).to have_css("#eventModal[data-shown='true']")
 
       expect(page).to have_checked_field("all_day_checkbox")
       expect(page).to have_field("end_time_field", disabled: true)
@@ -136,7 +206,9 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       click_button "Delete"
       click_button "This event"
 
-      expect(page).to have_text("Event deleted.")
+      expect_flash("Event deleted.")
+      expect_saved_in_place
+      expect(page).to have_no_css(".fc-timegrid-event", text: "Team sync", visible: :all)
       expect(Event.exists?(single.id)).to be(false)
     end
   end
@@ -154,6 +226,22 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       expect(page).to have_unchecked_field("day_TU", visible: :all)
       expect(field_value("recurrence_until")).to eq("2027-03-31")
       expect(field_value("recurrence_rule_field")).to include("FREQ=WEEKLY")
+    end
+
+    it "clears the end date and weekdays of the previous series when a series without an end is opened next", js: true, skip_bullet: true do
+      create_series
+      create_series(title: "Night lab", rule: "DTSTART:20270316T200000Z\nRRULE:FREQ=DAILY")
+      open_admin_calendar
+      open_event("Open lab", index: 1)
+      expect(field_value("recurrence_until")).to eq("2027-03-31")
+      accept_confirm { within("#eventModal") { click_button "Cancel" } }
+      expect(page).to have_no_css("#eventModal.show", visible: :all)
+      open_event("Night lab", index: 1)
+
+      expect(find("#recurrence_frequency", visible: :all).value).to eq("DAILY")
+      expect(field_value("recurrence_until")).to eq("")
+      expect(page).to have_unchecked_field("day_MO", visible: :all)
+      expect(field_value("recurrence_rule_field")).not_to include("UNTIL")
     end
 
     it "moves the save button into the scope menu and offers all three delete choices", js: true, skip_bullet: true do
@@ -180,7 +268,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       expect(page).to have_checked_field("update_this")
       click_button "Update"
 
-      expect(page).to have_text("This event occurrence updated successfully.")
+      expect_flash("This event occurrence updated successfully.")
       expect(Event.where(title: "Open lab (special)").count).to eq(1)
       expect(series.reload.title).to eq("Open lab")
       expect(series.recurrence_rule).to include("EXDATE")
@@ -196,9 +284,20 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       choose "update_all"
       click_button "Update"
 
-      expect(page).to have_text("Unavailability updated successfully.")
+      expect_flash("Event updated successfully.")
       expect(series.reload.title).to eq("Open lab (all)")
       expect(Event.count).to eq(2)
+    end
+
+    it "unpublishes the whole series from one occurrence", js: true, skip_bullet: true do
+      series = create_series
+      open_admin_calendar
+      open_event("Open lab", index: 1)
+      accept_confirm(/whole series/) { click_button "Unpublish" }
+
+      expect_flash("Event unpublished successfully.")
+      expect(series.reload.draft).to be(true)
+      expect(Event.where(title: "Open lab").count).to eq(1)
     end
 
     it "removes one occurrence by excluding its date", js: true, browser_zone: "America/Toronto", skip_bullet: true do
@@ -208,8 +307,9 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       click_button "Delete"
       click_button "This event"
 
-      expect(page).to have_text("This occurrence deleted.")
-      # in the Toronto browser the excluded instant is the occurrence itself (14:00Z)
+      expect_flash("This occurrence deleted.")
+      expect_saved_in_place
+      # the excluded instant is the occurrence itself (14:00Z)
       expect(series.reload.recurrence_rule).to include("EXDATE:20270317T140000Z")
       expect(page).to have_css(".fc-timegrid-event", text: "Open lab", count: 1, visible: :all)
     end
@@ -221,7 +321,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       click_button "Delete"
       click_button "This and following events"
 
-      expect(page).to have_text("This and following deleted.")
+      expect_flash("This and following deleted.")
       expect(series.reload.recurrence_rule).to include("UNTIL=20270316T140000Z")
     end
 
@@ -232,8 +332,31 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       click_button "Delete"
       click_button "All events"
 
-      expect(page).to have_text("Event series deleted.")
+      expect_flash("Event series deleted.")
+      expect_saved_in_place
+      expect(page).to have_no_css(".fc-timegrid-event", text: "Open lab", visible: :all)
       expect(Event.exists?(series.id)).to be(false)
+    end
+  end
+
+  describe "with the browser clock in Tokyo", browser_zone: "Asia/Tokyo" do
+    it "shows the event at its Toronto times", js: true, skip_bullet: true do
+      open_admin_calendar
+      open_event("Team sync")
+
+      expect(field_value("start_time_field")).to eq("2027-03-16T10:00")
+      expect(field_value("end_time_field")).to eq("2027-03-16T11:00")
+    end
+
+    it "removes one occurrence by its own instant", js: true, skip_bullet: true do
+      series = create_series
+      open_admin_calendar
+      open_event("Open lab", index: 1)
+      click_button "Delete"
+      click_button "This event"
+
+      expect_flash("This occurrence deleted.")
+      expect(series.reload.recurrence_rule).to include("EXDATE:20270317T140000Z")
     end
   end
 
@@ -271,16 +394,31 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       expect(unavail.reload.description).to eq("Calculus tutorial")
     end
 
-    # The title field is filled with the calendar's own label ("<icon> <name> - <title>"),
-    # so every save writes that label back as the title.
-    it "fills the title field with the calendar label and saves it back as the title", js: true, skip_bullet: true do
+    it "fills the title field with the stored title and keeps it unchanged when saved", js: true, skip_bullet: true do
       open_admin_calendar
       open_event("Lecture")
-      expect(find("#title", visible: :all).value).to eq("🚫 Wanda Worker - Lecture")
+      expect(find("#title", visible: :all).value).to eq("Lecture")
+      open_custom_values
+      fill_in "description", with: "Calculus tutorial"
       click_button "Update"
 
-      eventually { unavail.reload.title != "Lecture" }
-      expect(unavail.reload.title).to eq("🚫 Wanda Worker - Lecture")
+      eventually { unavail.reload.description == "Calculus tutorial" }
+      expect(unavail.reload.title).to eq("Lecture")
+    end
+
+    it "leaves the title field empty for an unavailability without a title and does not save the label as its title", js: true, skip_bullet: true do
+      unavail.update_columns(title: nil)
+      open_admin_calendar
+      expect(page).to have_css(".fc-timegrid-event", text: "Wanda Worker", visible: :all)
+      page.all(".fc-timegrid-event", text: "Wanda Worker", visible: :all).first.click
+      expect(page).to have_css("#eventModal[data-shown='true']")
+      expect(find("#title", visible: :all).value).to eq("")
+      open_custom_values
+      fill_in "description", with: "Calculus tutorial"
+      click_button "Update"
+
+      eventually { unavail.reload.description == "Calculus tutorial" }
+      expect(unavail.reload.title).not_to include("🚫")
     end
 
     it "deletes it from the modal", js: true, skip_bullet: true do
@@ -289,7 +427,9 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       click_button "Delete"
       click_button "This event"
 
-      expect(page).to have_text("Unavailability deleted.")
+      expect_flash("Unavailability deleted.")
+      expect_saved_in_place
+      expect(page).to have_no_css(".fc-event", text: "Lecture", visible: :all)
       expect(StaffUnavailability.exists?(unavail.id)).to be(false)
     end
   end

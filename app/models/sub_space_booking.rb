@@ -10,8 +10,9 @@ class SubSpaceBooking < ApplicationRecord
   # because the column may still be empty on rows older than the status column.
   belongs_to :booking_status, optional: true
   validates :booking_status, presence: true, on: :create
-  # The status row the booking used to be linked to. It is still written with every status change
-  # so the old table stays consistent until it is retired; nothing reads it.
+  # The old status row, kept only for deleting a booking: the row's foreign key must be cleared before
+  # the booking goes, and its `dependent: :destroy` is what refuses a plain destroy. Nothing writes the
+  # row any more, so a booking made since has none; the state of a booking is booking_status_id.
   has_one :sub_space_booking_status,
           dependent: :destroy
   validates :name, presence: true
@@ -67,26 +68,46 @@ class SubSpaceBooking < ApplicationRecord
   def approved? = booking_status_id == BookingStatus.approved.id
   def declined? = booking_status_id == BookingStatus.declined.id
 
-  # Saves a new booking with its first status, and records the status on the old status row too.
-  # All or nothing.
+  # Saves a new booking with its first status.
   def save_with_status!(status)
-    transaction do
-      self.booking_status_id = status.id
-      save!
-      write_status_row
-    end
+    self.booking_status_id = status.id
+    save!
   end
 
   # Changes the status of a saved booking without running validations (a booking that no longer passes
-  # some rule can still be approved or declined), and records it on the old status row too.
+  # some rule can still be approved or declined). Like the two methods below, it sets updated_at, which
+  # is how bookings:reconcile_statuses tells a status the app changed from one an old status row holds.
   def change_status!(status)
-    transaction do
-      update_column(:booking_status_id, status.id)
-      write_status_row
-    end
+    update_columns(booking_status_id: status.id, updated_at: Time.current)
   end
 
-  # Gives every booking of the list the status, each through change_status!, so the old status rows follow.
+  # Approves the booking if it is still pending and says whether this call did it, so only one of two
+  # simultaneous approvals goes on to mail the owner. It writes only the status and approval columns
+  # (no validations), so a past pending booking can still be approved.
+  def approve_if_pending!(by:)
+    claimed = self.class.pending.where(id: id).update_all(
+      booking_status_id: BookingStatus.approved.id, **approval_stamp(by), updated_at: Time.current
+    )
+    return false if claimed.zero?
+
+    reload
+    true
+  end
+
+  # Declines the booking if it is still pending and says whether this call did it, so only one of two
+  # simultaneous declines goes on to mail the owner. It also clears any earlier approval stamp, and
+  # writes without validations like approve_if_pending!.
+  def decline_if_pending!
+    claimed = self.class.pending.where(id: id).update_all(
+      booking_status_id: BookingStatus.declined.id, approved_at: nil, approved_by_id: nil, updated_at: Time.current
+    )
+    return false if claimed.zero?
+
+    reload
+    true
+  end
+
+  # Gives every booking of the list the status, each through change_status!.
   def self.change_status_of!(bookings, status)
     transaction { bookings.each { |booking| booking.change_status!(status) } }
   end
@@ -124,33 +145,7 @@ class SubSpaceBooking < ApplicationRecord
     SubSpaceBooking.delete_booking(self) if google_booking_id.present?
   end
 
-  def self.authorizer # rubocop:disable Metrics/AbcSize
-    scope = "https://www.googleapis.com/auth/calendar"
-
-    @config = {
-      private_key:
-        Rails.application.credentials[Rails.env.to_sym][:google][:private_key],
-      client_email:
-        Rails.application.credentials[Rails.env.to_sym][:google][:client_email],
-      project_id:
-        Rails.application.credentials[Rails.env.to_sym][:google][:project_id],
-      private_key_id:
-        Rails.application.credentials[Rails.env.to_sym][:google][
-          :private_key_id
-        ],
-      type: Rails.application.credentials[Rails.env.to_sym][:google][:type]
-    }
-
-    authorizer =
-      Google::Auth::ServiceAccountCredentials.make_creds(
-        json_key_io: StringIO.new(@config.to_json, "r"),
-        scope: scope
-      )
-
-    authorizer.sub = "volunteer@makerepo.com"
-    authorizer.fetch_access_token!
-    authorizer
-  end
+  def self.authorizer = GoogleCalendar::ServiceAccount.authorizer
 
   COLOR_LEGEND = [
     {
@@ -194,18 +189,37 @@ class SubSpaceBooking < ApplicationRecord
 
     now = reference_time.beginning_of_minute
     if new_record?
-      errors.add(:start_time, :in_the_past) if self.class.start_in_past?(start_time, now)
+      start_not_in_past(now)
     elsif times_changing?
-      stored_end = attribute_in_database(:end_time)
-      if stored_end.present? && stored_end <= now
-        errors.add(:end_time, :booking_ended)
-      elsif minute_changed?(:start_time)
-        errors.add(:start_time, :in_the_past) if self.class.start_in_past?(start_time, now)
-      elsif self.class.start_in_past?(start_time, now) && end_time.present? && end_time <= now
-        errors.add(:end_time, :in_the_past)
-      end
+      moved_times_not_in_past(now)
     end
   end
+
+  # An edit that moves the times: an ended booking may not move, a moved start may not be in the past, and a
+  # booking in progress may not end in the past.
+  def moved_times_not_in_past(now)
+    if stored_end_passed?(now)
+      errors.add(:end_time, :booking_ended)
+    elsif minute_changed?(:start_time)
+      start_not_in_past(now)
+    elsif in_progress_ending_in_past?(now)
+      errors.add(:end_time, :in_the_past)
+    end
+  end
+
+  def start_not_in_past(now)
+    errors.add(:start_time, :in_the_past) if self.class.start_in_past?(start_time, now)
+  end
+
+  def stored_end_passed?(now)
+    stored_end = attribute_in_database(:end_time)
+    stored_end.present? && stored_end <= now
+  end
+
+  def in_progress_ending_in_past?(now)
+    self.class.start_in_past?(start_time, now) && end_time.present? && end_time <= now
+  end
+  private :moved_times_not_in_past, :start_not_in_past, :stored_end_passed?, :in_progress_ending_in_past?
 
   # Whether this save moves the booking, at minute precision (the form picks
   # whole minutes, so "09:00" resubmitted for a stored 09:00:30 is no move).
@@ -213,6 +227,88 @@ class SubSpaceBooking < ApplicationRecord
   def times_changing?
     minute_changed?(:start_time) || minute_changed?(:end_time)
   end
+
+  # Whether this save moves the booking in time or to another room.
+  def moving?
+    times_changing? || will_save_change_to_sub_space_id?
+  end
+
+  # Whether an admin block in this booking's room, other than this booking, overlaps its times (the zoned
+  # instants the model stores, compared with the stored UTC instants of the blocks).
+  def overlaps_block?
+    return false unless times_present?
+
+    SubSpaceBooking
+      .where(sub_space_id: sub_space_id)
+      .where(blocking: true)
+      .where.not(id: id)
+      .overlapping(start_time.utc, end_time.utc)
+      .any?
+  end
+
+  # The booking's length in hours, or nil while a time is missing (every limit check below reads it, so a
+  # booking with a missing time breaks no limit).
+  def duration_hours
+    (end_time - start_time) / 1.hour if times_present?
+  end
+
+  # Hours the booking's owner already has in the booking's sub space, in the week (Time.zone) containing
+  # the booking's start_time, not counting the booking itself.
+  def owner_hours_that_week
+    week = start_time.in_time_zone.all_week
+    SubSpaceBooking
+      .where(sub_space_id: sub_space_id, user_id: user_id)
+      .where.not(id: id)
+      .where(start_time: week)
+      .sum { |other| other.end_time - other.start_time } / 1.hour
+  end
+
+  # Whether the booking is longer than its room's maximum duration. False when the room has no maximum or a
+  # time is missing.
+  def exceeds_maximum_duration?
+    max_duration = sub_space.maximum_booking_duration
+    hours = duration_hours
+    !max_duration.nil? && !hours.nil? && hours > max_duration
+  end
+
+  # Whether the booking takes its owner past the room's maximum hours that week, counting the owner's other
+  # bookings in the room. False when the room has no weekly maximum or a time is missing.
+  def exceeds_weekly_hours?
+    max_per_week = sub_space.maximum_booking_hours_per_week
+    hours = duration_hours
+    !max_per_week.nil? && !hours.nil? && owner_hours_that_week + hours > max_per_week
+  end
+
+  # Sets what a new booking starts with when the user books it: its first status (see initial_status), the
+  # room's default visibility and, when an admin books it, the approval stamp (an admin booking is always
+  # approved). Sets only the booking's own attributes; the caller saves it.
+  def apply_initial_state(by:)
+    admin = by.admin?
+    self.booking_status_id = initial_status(booked_by_admin: admin).id
+    self.public = sub_space.default_public
+    assign_attributes(approval_stamp(by)) if admin
+  end
+
+  # The status a new booking starts with: approved when an admin books it or its room needs no approval;
+  # otherwise approved only up to the room's automatic-approval hours, and pending beyond them, when the
+  # room has none or while a time is missing.
+  def initial_status(booked_by_admin:)
+    return BookingStatus.approved if booked_by_admin || !sub_space.approval_required
+
+    auto_hours = sub_space.max_automatic_approval_hour
+    hours = duration_hours
+    [auto_hours, hours].none?(nil) && hours <= auto_hours ? BookingStatus.approved : BookingStatus.pending
+  end
+
+  def times_present?
+    [start_time, end_time].none?(nil)
+  end
+
+  # Who approved the booking, and when: written by approve_if_pending! and by apply_initial_state.
+  def approval_stamp(by)
+    { approved_at: Time.current, approved_by_id: by.id }
+  end
+  private :times_present?, :approval_stamp
 
   def minute_changed?(attribute)
     to_minute = ->(time) { time&.change(sec: 0) }
@@ -282,7 +378,7 @@ class SubSpaceBooking < ApplicationRecord
       begin # Update an existing booking
         service.update_event(calendar_id, sub_space_booking.google_booking_id, gcal_event)
       rescue Google::Apis::ClientError => e
-        Rails.logger.error "Failed to update Google sub space booking #{sub_space_booking.id}: #{e.message}"
+        HandledError.report(e, source: "sub_space_booking.upsert_booking", step: "update", sub_space_booking_id: sub_space_booking.id)
       end
     else
       begin #Create a new booking
@@ -290,7 +386,7 @@ class SubSpaceBooking < ApplicationRecord
         response = service.insert_event(calendar_id, gcal_event)
         sub_space_booking.update(google_booking_id: response.id)
       rescue StandardError => e
-        Rails.logger.error "Failed to create booking #{sub_space_booking.id}: #{e.message}"
+        HandledError.report(e, source: "sub_space_booking.upsert_booking", step: "create", sub_space_booking_id: sub_space_booking.id)
       end
     end
   end
@@ -304,18 +400,12 @@ class SubSpaceBooking < ApplicationRecord
     calendar_id = GoogleCalendar::EventPublisher::SHARED_CALENDAR
 
     begin
-      response = service.delete_event(calendar_id, sub_space_booking.google_booking_id)
+      service.delete_event(calendar_id, sub_space_booking.google_booking_id)
     rescue Google::Apis::ClientError => e
-      Rails.logger.error "Failed to delete Google event #{sub_space_booking.id}: #{e.message}"
+      # Expected outcome, not a failure: Google no longer has the event, so nothing is left to delete.
+      return if [404, 410].include?(e.status_code)
+
+      HandledError.report(e, source: "sub_space_booking.delete_booking", sub_space_booking_id: sub_space_booking.id)
     end
-  end
-
-  private
-
-  # The old status row follows the booking's status: created when the booking has none, linked back.
-  def write_status_row
-    row = sub_space_booking_status || build_sub_space_booking_status
-    row.update!(booking_status_id: booking_status_id)
-    update_column(:sub_space_booking_status_id, row.id)
   end
 end

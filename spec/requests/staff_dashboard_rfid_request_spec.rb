@@ -178,7 +178,35 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       expect(card.mac_address).not_to eq(reader_b.pi_mac_address)
     end
 
-    it "keeps the card's mac_address when the staff member has no assigned space" do
+    it "re-homes to the assigned space's reader, not a stale saved space's" do
+      StaffSpace.where(user: staff).destroy_all
+      StaffSpace.create!(user: staff, space: space_b)
+      staff.update_columns(space_id: space_a.id)
+
+      put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
+
+      expect(card.reload.mac_address).to eq(reader_b.pi_mac_address)
+    end
+
+    it "keeps the card's mac_address when the staff member is assigned to no space, even with a saved space" do
+      StaffSpace.where(user: staff).destroy_all
+
+      put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
+
+      expect(card.reload.user_id).to be_nil
+      expect(card.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+    end
+
+    it "re-homes for an admin to the reader of the space they work in" do
+      sign_in_as(:admin, space: space_b)
+
+      put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
+
+      expect(card.reload.mac_address).to eq(reader_b.pi_mac_address)
+    end
+
+    it "keeps the card's mac_address when the staff member has no saved space and no assignment" do
+      StaffSpace.where(user: staff).destroy_all
       staff.update_columns(space_id: nil)
 
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
@@ -188,7 +216,10 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
     end
 
     it "keeps the mac when the staff member's assigned space has no reader" do
-      staff.update!(space: create(:space))
+      empty = create(:space)
+      StaffSpace.where(user: staff).destroy_all
+      StaffSpace.create!(user: staff, space: empty)
+      staff.update!(space: empty)
 
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
 
@@ -197,6 +228,7 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
     end
 
     it "shows the unlinked card in the staff member's own unset list, wherever they last signed in" do
+      StaffSpace.find_or_create_by!(user: staff, space: space_b)
       staff.update!(space: space_b)
       sign_in_session(staff, space_a, sign_out_in: 1.hour)
 
@@ -212,9 +244,9 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       allow(Rfid).to receive(:unlink_card!).and_raise(Rfid::OwnerChanging)
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
       expect(response).to have_http_status(:conflict)
-      expect(body).to eq("status" => "error", "error" => "card is changing, try again")
+      expect(body).to eq("status" => "error", "error" => "This card is being changed by someone else right now. Try again in a moment.")
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, headers: { "HTTP_REFERER" => "http://www.example.com/anywhere" }
-      expect(flash[:alert]).to eq("card is changing, try again")
+      expect(flash[:alert]).to eq("This card is being changed by someone else right now. Try again in a moment.")
       expect(card.reload.user_id).to eq(owner.id)
     end
 

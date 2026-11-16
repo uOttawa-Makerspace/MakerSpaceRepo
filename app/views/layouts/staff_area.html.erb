@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="<%= I18n.locale %>">
+<html lang="<%= I18n.locale %>" <%= tag.attributes(request_text_attributes) %>>
   <head>
     <%= render 'shared/theme_init' %>
     <title><%= page_title(yield(:title), base_title: 'Staff Area | MakerRepo') %></title>
@@ -8,8 +8,7 @@
 
     <%# Vite Core %>
     <%= vite_client_tag %>
-    <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
-    <%= vite_stylesheet_tag 'application.scss', 'data-turbo-track': 'reload' %>
+    <%= render 'layouts/head_assets' %>
     <%= vite_javascript_tag controller_name if Rails.root.join("app/javascript/entrypoints/#{controller_name}.js").exist? %>
 
     <%= csrf_meta_tags %>
@@ -22,9 +21,13 @@
     <main id="main-content" tabindex="-1" style="width:100%">
       <%= yield(:before_container) %>
       <div class="container">
+        <div class="flash" id="flash">
+          <%= render 'layouts/flash' %>
+        </div>
         <%= yield %>
       </div>
     </main>
     <%= render 'layouts/footer' %>
+    <%= render 'layouts/accessibility_widget' %>
   </body>
 </html>

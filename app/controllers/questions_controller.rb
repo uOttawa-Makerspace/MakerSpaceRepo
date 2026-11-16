@@ -22,7 +22,7 @@ class QuestionsController < AdminAreaController
         .distinct
         .pluck(:id)
 
-    scope = Question.where(id: question_ids).order(created_at: :desc)
+    scope = Question.where(id: question_ids).includes(:trainings, :user).order(created_at: :desc)
     @pagy, @questions = pagy(scope, limit: 50)
   end
 
@@ -40,7 +40,7 @@ class QuestionsController < AdminAreaController
     mark_first_answer_correct_by_default
     if @new_question.save(context: :question_form)
       redirect_to questions_path
-      flash[:notice] = "You've successfully created a new question!"
+      flash[:notice] = I18n.t("questions.flash.created")
     else
       set_levels
       set_categories
@@ -49,43 +49,37 @@ class QuestionsController < AdminAreaController
   end
 
   def show
-    preload_answer_texts
+    @question.preload_answer_texts
   end
 
   def edit
-    preload_answer_texts
+    @question.preload_answer_texts
     if params[:n_answers].present? &&
          params[:n_answers].to_i > @question.answers.count
       (params[:n_answers].to_i - @question.answers.count).times do
         @question.answers.new(correct: false)
       end
-      flash[:notice] = "Answer added. Please update its content!"
+      flash[:notice] = I18n.t("questions.flash.answer_added")
     end
 
     @answers = @question.answers.sort_by { |a| a.correct ? 0 : 1 }
   end
 
   def remove_answer
-    @question.answers.where(correct: false).find(params[:answer_id]).destroy
-    redirect_to edit_question_path(@question),
-                notice: "Successfully removed answer"
+    if @question.remove_answer(params[:answer_id])
+      redirect_to edit_question_path(@question), notice: I18n.t("questions.flash.answer_removed")
+    else
+      redirect_to edit_question_path(@question), alert: I18n.t("activerecord.errors.models.question.attributes.base.two_answers_required")
+    end
   end
 
   def update
-    if @question.update(question_params)
-      flash[:notice] = "Question updated"
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    write_flash(@question, "errors.training.question_not_updated", I18n.t("questions.flash.updated")) { @question.update_from_form(question_params) }
     redirect_to questions_path
   end
 
   def destroy
-    if @question.destroy
-      flash[:notice] = "Question Deleted"
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    write_flash(@question, "errors.training.question_not_deleted", I18n.t("questions.flash.deleted")) { @question.destroy }
     redirect_to questions_path
   end
 
@@ -94,7 +88,7 @@ class QuestionsController < AdminAreaController
     @image = @question.images.attachments.find(params[:id])
     @image.purge
     redirect_to edit_question_path(params[:question_id]),
-                notice: "Question image deleted"
+                notice: I18n.t("questions.flash.image_deleted")
   end
 
   private
@@ -119,13 +113,6 @@ class QuestionsController < AdminAreaController
 
   def set_question
     @question = Question.find(params[:id])
-  end
-
-  def preload_answer_texts
-    ActiveRecord::Associations::Preloader.new(
-      records: [@question],
-      associations: { answers: :rich_text_description }
-    ).call
   end
 
   def set_levels

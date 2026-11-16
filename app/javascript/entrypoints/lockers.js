@@ -1,21 +1,11 @@
 import { Tooltip } from "bootstrap";
-import TomSelect from "tom-select";
+import { oncePerElement, onEveryPageLoad } from "../src/on_page.js";
+import { pageTable } from "../src/page_table.js";
+import { newTomSelect } from "../src/tom_select.js";
 import DataTable from "datatables.net-bs5";
 import "datatables.net-select-bs5";
 import { csrfHeaders } from "../src/csrf";
-
-// Checkbox to toggle the student section on the form
-document.addEventListener("turbo:load", function () {
-  document
-    .querySelector("#locker_rental_requested_as")
-    ?.addEventListener("change", function () {
-      const repoSelect = document.querySelector("#repo-select");
-      if (repoSelect) {
-        repoSelect.hidden = !this.checked;
-        repoSelect.disabled = !this.checked;
-      }
-    });
-});
+import { reportFailure, requestJson } from "../src/request_error";
 
 // Handle grabbing the product gid on link paste
 export function handleLinkInput() {
@@ -52,109 +42,107 @@ export function validateRange() {
   const modal = document.querySelector("#newRangeLockerModal");
   if (!modal) return;
 
+  const createSet = requestedRange(modal);
+  if (!createSet) return;
+
+  const existing = existingSpecifiers(modal);
+  showLockerRanges(modal.querySelector("#newRangeLockersAlreadyPresent"), [
+    ...existing.intersection(createSet),
+  ]);
+  showLockerRanges(modal.querySelector("#newRangeLockersPossible"), [
+    ...createSet.difference(existing),
+  ]);
+}
+
+// A whole number as the server's Integer(text, 10) reads one: spaces around it,
+// an optional sign, an optional 0d prefix and digits, which single underscores
+// may group. Anything else, such as "1abc" or "1.5", is NaN.
+const WHOLE_NUMBER = /^\s*([+-]?)(?:0d)?(\d+(?:_\d+)*)\s*$/i;
+
+function wholeNumber(text) {
+  const match = WHOLE_NUMBER.exec(text);
+  return match ? Number(match[1] + match[2].replaceAll("_", "")) : NaN;
+}
+
+// The specifiers from the start field to the end field, or null while either
+// is not a whole number or the start is above the end.
+function requestedRange(modal) {
   const startInput = modal.querySelector("#newLockerRangeStart");
   const endInput = modal.querySelector("#newLockerRangeEnd");
-  if (!startInput || !endInput) return;
+  if (!startInput || !endInput) return null;
 
-  const rangeStart = parseInt(startInput.value);
-  const rangeEnd = parseInt(endInput.value);
+  const rangeStart = wholeNumber(startInput.value);
+  const rangeEnd = wholeNumber(endInput.value);
 
-  if (isNaN(rangeStart) || isNaN(rangeEnd) || rangeStart > rangeEnd) return;
+  if (isNaN(rangeStart) || isNaN(rangeEnd) || rangeStart > rangeEnd)
+    return null;
 
-  // Find all lockers present already
-  const currentLockers = new Set(
-    [...document.querySelectorAll("[data-locker-specifier]")].map(
-      (el) => el.dataset.lockerSpecifier,
-    ),
-  );
-
-  const createSet = new Set(
+  return new Set(
     Array.from({ length: rangeEnd - rangeStart + 1 }, (_, i) =>
       (rangeStart + i).toString(),
     ),
   );
+}
 
-  const lockersAlreadyThere = [...currentLockers.intersection(createSet)].sort(
-    (a, b) => a.length - b.length || a.localeCompare(b),
-  );
-  const newRangeLockersAlreadyPresent = document.querySelector(
-    "#newRangeLockersAlreadyPresent",
-  );
-  if (newRangeLockersAlreadyPresent) {
-    newRangeLockersAlreadyPresent.hidden = lockersAlreadyThere.length === 0;
-    if (lockersAlreadyThere.length > 0) {
-      const ul = newRangeLockersAlreadyPresent.querySelector("ul");
-      ul.replaceChildren();
-      const ranges = findContiguous(lockersAlreadyThere);
-      for (const range of ranges) {
-        const li = document.createElement("li");
-        li.textContent =
-          range[0] === range[1]
-            ? range[0]
-            : `Range from ${range[0]} to ${range[1]}`;
-        ul.appendChild(li);
-      }
-    }
-  }
+// The specifiers of every existing locker, which the page renders on the
+// modal. They are compared as text, as the server does: a range makes the
+// lockers "1", "2", ..., so a locker named "01" or "A1" is not one of them.
+function existingSpecifiers(modal) {
+  return new Set(JSON.parse(modal.dataset.lockerSpecifiers || "[]"));
+}
 
-  const lockersPossible = [...createSet.difference(currentLockers)].sort(
-    (a, b) => a.length - b.length || a.localeCompare(b),
-  );
-  const newRangeLockersPossible = document.querySelector(
-    "#newRangeLockersPossible",
-  );
-  if (newRangeLockersPossible) {
-    newRangeLockersPossible.hidden = lockersPossible.length === 0;
-    if (lockersPossible.length > 0) {
-      const ul = newRangeLockersPossible.querySelector("ul");
-      ul.replaceChildren();
-      const ranges = findContiguous(lockersPossible);
-      for (const range of ranges) {
-        const li = document.createElement("li");
-        li.textContent =
-          range[0] === range[1]
-            ? range[0]
-            : `Range from ${range[0]} to ${range[1]}`;
-        ul.appendChild(li);
-      }
-    }
-  }
+// Lists the specifiers as collapsed ranges in the list, or empties and hides
+// the list when there are none.
+function showLockerRanges(list, specifiers) {
+  if (!list) return;
+
+  list
+    .querySelector("ul")
+    .replaceChildren(...findContiguous(specifiers).map(rangeItem));
+  list.hidden = specifiers.length === 0;
+}
+
+function rangeItem([first, last]) {
+  const li = document.createElement("li");
+  li.textContent = first === last ? first : `Range from ${first} to ${last}`;
+  return li;
 }
 
 // Show a list of what's going to happen server-side when creating a range of lockers
-document.addEventListener("turbo:load", function () {
+const bindRangeInput = oncePerElement((input) =>
+  input.addEventListener("input", validateRange),
+);
+
+onEveryPageLoad(() => {
   const newRangeLockerModal = document.querySelector("#newRangeLockerModal");
-  if (newRangeLockerModal) {
-    newRangeLockerModal
-      .querySelector("#newLockerRangeStart")
-      ?.addEventListener("input", validateRange);
-    newRangeLockerModal
-      .querySelector("#newLockerRangeEnd")
-      ?.addEventListener("input", validateRange);
-  }
+  if (!newRangeLockerModal) return;
+  bindRangeInput(newRangeLockerModal.querySelector("#newLockerRangeStart"));
+  bindRangeInput(newRangeLockerModal.querySelector("#newLockerRangeEnd"));
 });
 
 // Display a summary of available locker sizes and the associated product variant
-document.addEventListener("turbo:load", function () {
-  document.querySelectorAll("select.locker-variant-select").forEach((el) => {
-    if (!el.tomselect) {
-      new TomSelect(el, {
-        render: {
-          option: function (data, escape) {
-            let itemtitle = escape(data.text);
-            let jsondata = data.data ? JSON.parse(data.data) : {};
-            let title = escape(jsondata.displayName || "");
-            let sku = escape(jsondata.sku || "");
-            let price = escape(jsondata.price || "");
-            return `<div>
+function renderVariantOption(data, escape) {
+  let itemtitle = escape(data.text);
+  let jsondata = (data.data && JSON.parse(data.data)) || {};
+  let title = escape(jsondata.displayName || "");
+  let sku = escape(jsondata.sku || "");
+  let price = escape(jsondata.price || "");
+  return `<div>
                     <span>${itemtitle}</span> <br />
                     <span><b>Display Name:</b> ${title}</span> <br />
                     <span><b>SKU:</b> <code>${sku}</code></span> <br />
                     <span><b>Price:</b> <code>${price}</code></span>
                   </div>`;
-          },
-        },
-      });
+}
+
+const bindLinkInput = oncePerElement((input) =>
+  input.addEventListener("input", handleLinkInput),
+);
+
+onEveryPageLoad(() => {
+  document.querySelectorAll("select.locker-variant-select").forEach((el) => {
+    if (!el.tomselect) {
+      newTomSelect(el, { render: { option: renderVariantOption } });
       // Match initial disabled state
       if (el.disabled && el.tomselect) {
         el.tomselect.disable();
@@ -162,195 +150,205 @@ document.addEventListener("turbo:load", function () {
     }
   });
 
-  const lockerProductLinkInput = document.querySelector("#shopifyProductLink");
-  if (lockerProductLinkInput) {
-    lockerProductLinkInput.addEventListener("input", handleLinkInput);
-  }
+  bindLinkInput(document.querySelector("#shopifyProductLink"));
 });
 
 // Inline table editing (Size, Type, and Notes)
-document.addEventListener("turbo:load", function () {
-  const lockerSizeSelects = document.querySelectorAll("[data-locker-size-for]");
-  const inlineEditInputs = document.querySelectorAll(".locker-inline-edit");
-  const lockerEditToggle = document.querySelector("#lockerEditToggle");
+const inlineEditToggle = () => document.querySelector("#lockerEditToggle");
 
-  // 1. AJAX handler for locker size/variant dropdown
-  lockerSizeSelects.forEach((select) => {
-    select.addEventListener("change", function () {
-      if (this.tomselect) this.tomselect.disable();
+// 1. AJAX handler for locker size/variant dropdown
+function saveLockerSize() {
+  if (this.tomselect) this.tomselect.disable();
 
-      const cell = this.closest("td");
-      const spinner = cell?.querySelector(".spinner-border");
-      const checkmark = cell?.querySelector(".fa-check, i");
-      if (spinner) spinner.hidden = false;
+  const cell = this.closest("td");
+  const spinner = cell?.querySelector(".spinner-border");
+  const checkmark = cell?.querySelector(".fa-check, i");
+  if (spinner) spinner.hidden = false;
 
-      const lockerId = this.dataset.lockerSizeFor;
-      const formData = new FormData();
-      formData.append(this.name, this.value);
+  const lockerId = this.dataset.lockerSizeFor;
+  const formData = new FormData();
+  formData.append(this.name, this.value);
 
-      fetch(`/lockers/${lockerId}`, {
-        method: "PATCH",
-        headers: csrfHeaders({ Accept: "application/json" }),
-        body: formData,
-      })
-        .then((response) => {
-          if (!response.ok) throw new Error("Failed to update size");
-          if (checkmark) {
-            checkmark.hidden = false;
-            setTimeout(() => {
-              checkmark.hidden = true;
-            }, 1500);
-          }
-        })
-        .catch((error) => {
-          console.error(error);
-          this.classList.add("is-invalid");
-          setTimeout(() => this.classList.remove("is-invalid"), 3000);
-        })
-        .finally(() => {
-          if (spinner) spinner.hidden = true;
-          if (this.tomselect && lockerEditToggle?.checked) {
-            this.tomselect.enable();
-          }
-        });
-    });
-  });
-
-  // 2. AJAX handler for Type (Audience) dropdown and Notes text field (handles both lockers and locker_rentals)
-  inlineEditInputs.forEach((input) => {
-    input.addEventListener("change", function () {
-      const lockerId = this.dataset.lockerId;
-      const rentalId = this.dataset.rentalId;
-
-      // Direct to locker_rentals if editing an assigned rental's staff notes, else to lockers
-      const url = rentalId
-        ? `/locker_rentals/${rentalId}`
-        : `/lockers/${lockerId}`;
-
-      const formData = new FormData();
-      formData.append(this.name, this.value);
-
-      fetch(url, {
-        method: "PATCH",
-        headers: csrfHeaders({ Accept: "application/json" }),
-        body: formData,
-      })
-        .then((response) => {
-          if (!response.ok) throw new Error("Failed to update note/details");
-          this.classList.add("is-valid");
-
-          // 1. Update the cell's data-search attribute so table searching works with the new text immediately
-          const td = this.closest("td");
-          if (td) {
-            td.setAttribute("data-search", this.value);
-            const table = document.querySelector("#locker_inventory_table");
-            if (table && DataTable.isDataTable(table)) {
-              new DataTable(table).cell(td).invalidate();
-            }
-          }
-
-          // 2. Update tooltip
-          const tooltipWrapper = this.closest('[data-bs-toggle="tooltip"]');
-          if (tooltipWrapper) {
-            tooltipWrapper.setAttribute("title", this.value || "No note");
-            const existingTooltip = Tooltip.getInstance(tooltipWrapper);
-            if (existingTooltip) existingTooltip.dispose();
-            new Tooltip(tooltipWrapper);
-          }
-
-          setTimeout(() => this.classList.remove("is-valid"), 1500);
-        })
-        .catch((error) => {
-          console.error(error);
-          this.classList.add("is-invalid");
-          setTimeout(() => this.classList.remove("is-invalid"), 3000);
-        });
-    });
-  });
-
-  // 3. Toggle switch to enable/disable all inline fields at once
-  if (lockerEditToggle) {
-    // Set initial state based on toggle switch
-    lockerSizeSelects.forEach((el) => {
-      if (el.tomselect) {
-        lockerEditToggle.checked
-          ? el.tomselect.enable()
-          : el.tomselect.disable();
-      } else {
-        el.disabled = !lockerEditToggle.checked;
+  requestJson(`/lockers/${lockerId}`, {
+    method: "PATCH",
+    headers: csrfHeaders({ Accept: "application/json" }),
+    body: formData,
+  })
+    .then(() => {
+      if (checkmark) {
+        checkmark.hidden = false;
+        setTimeout(() => {
+          checkmark.hidden = true;
+        }, 1500);
+      }
+    })
+    .catch((error) => {
+      reportFailure(error);
+      this.classList.add("is-invalid");
+      setTimeout(() => this.classList.remove("is-invalid"), 3000);
+    })
+    .finally(() => {
+      if (spinner) spinner.hidden = true;
+      if (this.tomselect && inlineEditToggle()?.checked) {
+        this.tomselect.enable();
       }
     });
-    inlineEditInputs.forEach((el) => (el.disabled = !lockerEditToggle.checked));
+}
 
-    lockerEditToggle.addEventListener("change", function () {
-      // Toggle Size Dropdowns (TomSelect)
-      lockerSizeSelects.forEach((el) => {
-        if (el.tomselect) {
-          this.checked ? el.tomselect.enable() : el.tomselect.disable();
-        } else {
-          el.disabled = !this.checked;
-        }
-      });
+// 2. AJAX handler for Type (Audience) dropdown and Notes text field (handles both lockers and locker_rentals)
+function saveInlineEdit() {
+  const lockerId = this.dataset.lockerId;
+  const rentalId = this.dataset.rentalId;
 
-      // Toggle Type dropdowns and Notes text inputs
-      inlineEditInputs.forEach((el) => {
-        el.disabled = !this.checked;
-      });
+  // Direct to locker_rentals if editing an assigned rental's staff notes, else to lockers
+  const url = rentalId ? `/locker_rentals/${rentalId}` : `/lockers/${lockerId}`;
+
+  const formData = new FormData();
+  formData.append(this.name, this.value);
+
+  requestJson(url, {
+    method: "PATCH",
+    headers: csrfHeaders({ Accept: "application/json" }),
+    body: formData,
+  })
+    .then(() => {
+      this.classList.add("is-valid");
+      refreshSearchText(this);
+      refreshTooltip(this);
+      setTimeout(() => this.classList.remove("is-valid"), 1500);
+    })
+    .catch((error) => {
+      reportFailure(error);
+      this.classList.add("is-invalid");
+      setTimeout(() => this.classList.remove("is-invalid"), 3000);
     });
+}
+
+// Update the cell's data-search attribute so table searching works with the new text immediately
+function refreshSearchText(input) {
+  const td = input.closest("td");
+  if (!td) return;
+  td.setAttribute("data-search", input.value);
+  const table = document.querySelector("#locker_inventory_table");
+  if (table && DataTable.isDataTable(table)) {
+    new DataTable(table).cell(td).invalidate();
+  }
+}
+
+function refreshTooltip(input) {
+  const tooltipWrapper = input.closest('[data-bs-toggle="tooltip"]');
+  if (!tooltipWrapper) return;
+  // dispose puts the old text back as the title, so set the new text after it
+  const existingTooltip = Tooltip.getInstance(tooltipWrapper);
+  if (existingTooltip) existingTooltip.dispose();
+  tooltipWrapper.setAttribute("title", input.value || "No note");
+  new Tooltip(tooltipWrapper);
+}
+
+// 3. Toggle switch to enable/disable all inline fields at once
+function setInlineEditing(enabled) {
+  // Toggle Size Dropdowns (TomSelect)
+  document.querySelectorAll("[data-locker-size-for]").forEach((el) => {
+    if (el.tomselect) {
+      enabled ? el.tomselect.enable() : el.tomselect.disable();
+    } else {
+      el.disabled = !enabled;
+    }
+  });
+
+  // Toggle Type dropdowns and Notes text inputs
+  document
+    .querySelectorAll(".locker-inline-edit")
+    .forEach((el) => (el.disabled = !enabled));
+}
+
+const bindSizeSelect = oncePerElement((select) =>
+  select.addEventListener("change", saveLockerSize),
+);
+const bindInlineEdit = oncePerElement((input) =>
+  input.addEventListener("change", saveInlineEdit),
+);
+const bindEditToggle = oncePerElement((toggle) =>
+  toggle.addEventListener("change", () => setInlineEditing(toggle.checked)),
+);
+
+onEveryPageLoad(() => {
+  document.querySelectorAll("[data-locker-size-for]").forEach(bindSizeSelect);
+  document.querySelectorAll(".locker-inline-edit").forEach(bindInlineEdit);
+
+  const lockerEditToggle = inlineEditToggle();
+  if (lockerEditToggle) {
+    // Set initial state based on toggle switch
+    setInlineEditing(lockerEditToggle.checked);
+    bindEditToggle(lockerEditToggle);
   }
 });
 
-// Initialize DataTable with select plugin
-document.addEventListener("turbo:load", function () {
+// The inventory table, with a select column, built when the page is loaded
+// and on every later Turbo load (see pageTable).
+onEveryPageLoad(() => {
+  const table = /** @type {HTMLTableElement} */ (
+    document.querySelector("#locker_inventory_table")
+  );
+  if (!table) return;
+  pageTable(table, {
+    language: {
+      search: "_INPUT_",
+      searchPlaceholder: table.dataset.searchPlaceholder,
+    },
+    columnDefs: [
+      {
+        orderable: false,
+        render: DataTable.render.select(),
+        targets: 0,
+      },
+    ],
+    select: {
+      style: "os",
+      selector: "td:first-child",
+    },
+    order: [[1, "asc"]],
+  });
+});
+
+// The bulk edit dialog lists the lockers selected in the inventory table
+function listSelectedLockers(table, list) {
+  list.replaceChildren();
+  const dt = new DataTable(table);
+  dt.rows({ selected: true })
+    .nodes()
+    .each((el) => {
+      const li = document.createElement("li");
+      li.textContent = el.cells[1].innerText;
+      list.appendChild(li);
+
+      const field = document.createElement("input");
+      field.type = "hidden";
+      field.name = "id[]";
+      field.value = el.dataset.lockerId;
+      list.appendChild(field);
+    });
+}
+
+const bindBulkEditModal = oncePerElement((modal) =>
+  modal.addEventListener("show.bs.modal", () =>
+    listSelectedLockers(
+      document.querySelector("#locker_inventory_table"),
+      document.querySelector("#lockerBulkEditList"),
+    ),
+  ),
+);
+
+onEveryPageLoad(() => {
   const locker_inventory_table = document.querySelector(
     "#locker_inventory_table",
   );
-  if (
-    locker_inventory_table &&
-    !DataTable.isDataTable(locker_inventory_table)
-  ) {
-    new DataTable(locker_inventory_table, {
-      language: {
-        search: "_INPUT_",
-        searchPlaceholder: "Search lockers, users, notes, status...",
-      },
-      columnDefs: [
-        {
-          orderable: false,
-          render: DataTable.render.select(),
-          targets: 0,
-        },
-      ],
-      select: {
-        style: "os",
-        selector: "td:first-child",
-      },
-      order: [[1, "asc"]],
-    });
-  }
-
   const lockerBulkEditList = document.querySelector("#lockerBulkEditList");
   const lockerBulkEditModal = document.querySelector("#lockerBulkEditModal");
 
   lockerBulkEditList?.replaceChildren();
 
   if (lockerBulkEditModal && locker_inventory_table) {
-    lockerBulkEditModal.addEventListener("show.bs.modal", () => {
-      lockerBulkEditList.replaceChildren();
-      const dt = new DataTable(locker_inventory_table);
-      dt.rows({ selected: true })
-        .nodes()
-        .each((el) => {
-          const li = document.createElement("li");
-          li.textContent = el.cells[1].innerText;
-          lockerBulkEditList.appendChild(li);
-
-          const field = document.createElement("input");
-          field.type = "hidden";
-          field.name = "id[]";
-          field.value = el.dataset.lockerId;
-          lockerBulkEditList.appendChild(field);
-        });
-    });
+    bindBulkEditModal(lockerBulkEditModal);
   }
 });

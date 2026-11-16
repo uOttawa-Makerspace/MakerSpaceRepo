@@ -19,6 +19,8 @@ class PiReader < ApplicationRecord
   # a rate-limit key is bounded.
   IDENTIFIER_MAX_LENGTH = 64
 
+  NORMALIZED_MAC_SQL = "lower(replace(regexp_replace(pi_mac_address, '^\\s+|\\s+$', '', 'g'), '-', ':'))"
+
   # "AA-BB-CC-DD-EE-FF " and "aa:bb:cc:dd:ee:ff" are the same reader.
   def self.normalize_mac(raw)
     return nil unless raw.is_a?(String)
@@ -40,7 +42,19 @@ class PiReader < ApplicationRecord
     mac = normalize_mac(raw)
     return nil unless mac
 
-    where("lower(replace(regexp_replace(pi_mac_address, '^\\s+|\\s+$', '', 'g'), '-', ':')) = ?", mac).order(Arel.sql("space_id IS NULL"), :id).first
+    where("#{NORMALIZED_MAC_SQL} = ?", mac).order(Arel.sql("space_id IS NULL"), :id).first
+  end
+
+  # The readers for many identifiers in one query (through the current scope, so a caller can preload), keyed by the identifier as
+  # given. Each one gets the reader find_by_mac would return; an identifier with no reader is absent.
+  def self.readers_by_mac(raws)
+    wanted = raws.to_h { |raw| [raw, normalize_mac(raw)] }.compact
+    return {} if wanted.empty?
+
+    found = {}
+    where("#{NORMALIZED_MAC_SQL} IN (?)", wanted.values.uniq)
+      .order(Arel.sql("space_id IS NULL"), :id).each { |reader| found[normalize_mac(reader.pi_mac_address)] ||= reader }
+    wanted.filter_map { |raw, mac| [raw, found[mac]] if found[mac] }.to_h
   end
 
   def pi_mac_with_location

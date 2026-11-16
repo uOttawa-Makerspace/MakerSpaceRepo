@@ -18,12 +18,10 @@ RSpec.describe RateLimitCounter, "across connections", type: :model do
     ready = Queue.new
     go = Queue.new
     workers = Array.new(threads) do
-      Thread.new do
-        ActiveRecord::Base.connection_pool.with_connection do
-          ready << true
-          go.pop(timeout: ThreadPause::PARKED_TIMEOUT)
-          Array.new(per_thread) { yield }
-        end
+      race_thread do
+        ready << true
+        go.pop(timeout: ThreadPause::PARKED_TIMEOUT)
+        Array.new(per_thread) { yield }
       end
     end
     ThreadPause.await_all(ready, threads)
@@ -60,18 +58,16 @@ RSpec.describe RateLimitCounter, "across connections", type: :model do
 
     holder_ready = Queue.new
     release = Queue.new
-    holder = Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection do |conn|
-        conn.transaction do
-          conn.execute("UPDATE rate_limit_counters SET count = 1, expires_at = now() + interval '1 hour' WHERE key = #{conn.quote(key)}")
-          holder_ready << true
-          release.pop(timeout: ThreadPause::PARKED_TIMEOUT)
-        end
+    holder = race_thread do |conn|
+      conn.transaction do
+        conn.execute("UPDATE rate_limit_counters SET count = 1, expires_at = now() + interval '1 hour' WHERE key = #{conn.quote(key)}")
+        holder_ready << true
+        release.pop(timeout: ThreadPause::PARKED_TIMEOUT)
       end
     end
     ThreadPause.await(holder_ready)
 
-    pruner = Thread.new { ActiveRecord::Base.connection_pool.with_connection { described_class.prune! } }
+    pruner = race_thread { described_class.prune! }
     deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 10
     until described_class.connection.select_value("SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND query LIKE 'DELETE FROM \"rate_limit_counters\"%'").to_i.positive?
       raise "prune! never blocked on the row lock" if Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
@@ -100,18 +96,16 @@ RSpec.describe RateLimitCounter, "across connections", type: :model do
 
     holder_ready = Queue.new
     release = Queue.new
-    holder = Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection do |conn|
-        conn.transaction do
-          conn.execute("UPDATE rate_limit_counters SET count = 1, expires_at = now() + interval '1 hour' WHERE key IN (#{revived.map { |k| conn.quote(k) }.join(', ')})")
-          holder_ready << true
-          release.pop(timeout: ThreadPause::PARKED_TIMEOUT)
-        end
+    holder = race_thread do |conn|
+      conn.transaction do
+        conn.execute("UPDATE rate_limit_counters SET count = 1, expires_at = now() + interval '1 hour' WHERE key IN (#{revived.map { |k| conn.quote(k) }.join(', ')})")
+        holder_ready << true
+        release.pop(timeout: ThreadPause::PARKED_TIMEOUT)
       end
     end
     ThreadPause.await(holder_ready)
 
-    pruner = Thread.new { ActiveRecord::Base.connection_pool.with_connection { described_class.prune! } }
+    pruner = race_thread { described_class.prune! }
     deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 10
     until described_class.connection.select_value("SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND query LIKE 'DELETE FROM \"rate_limit_counters\"%'").to_i.positive?
       raise "prune! never blocked on the row lock" if Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline

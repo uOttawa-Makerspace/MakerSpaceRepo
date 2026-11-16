@@ -2,7 +2,7 @@
   <%= form_for([:admin, @job_service_group]) do |f| %>
     <% if @job_service_group.errors.any? %>
       <div id="error_explanation">
-        <h2><%= pluralize(@job_service_group.errors.count, 'error') %> prohibited this service group from being saved:</h2>
+        <h2><%= t('admin_pages.job_settings.group_errors_heading', count: @job_service_group.errors.count) %></h2>
 
         <ul>
           <% @job_service_group.errors.full_messages.each do |message| %>
@@ -14,36 +14,36 @@
 
     <div class="text-center">
       <div class="col-lg-6 text-center mx-auto mb-3">
-        <%= f.label :name, 'Name of the Service Group' %>
+        <%= f.label :name, t('admin_pages.job_settings.service_group_name') %>
         <%= f.text_field :name, class: 'form-control', required: true %>
       </div>
 
       <div class="form-group col-lg-6 mx-auto mb-3">
-        <%= f.label :description, 'Description' %>
+        <%= f.label :description, t('admin_pages.common.description') %>
         <%= f.text_area :description, class: 'form-control' %>
       </div>
 
       <div class="form-group col-lg-6 mx-auto mb-3">
-        <%= f.label :job_type_id, 'Job Type' %>
+        <%= f.label :job_type_id, t('admin_pages.job_settings.job_type') %>
         <%= f.select :job_type_id, options_from_collection_for_select(JobType.all, :id, :name, @job_service_group.job_type_id.presence || ''), {}, class: 'form-control form-select' %>
       </div>
 
-      <div class="mb-3">
-        <%= f.label :text_field, 'Accept text-field input', required: true %>
+      <div class="mb-3" role="radiogroup" aria-labelledby="job_service_group_text_field_label">
+        <span id="job_service_group_text_field_label" class="d-inline-block"><%= t('admin_pages.job_settings.text_field_input') %></span>
 
         <div class="form-check form-check-inline">
           <%= f.radio_button :text_field, 'false', class: 'form-check-input' %>
-          <%= f.label :text_field, 'No', class: 'form-check-label', value: 'false' %>
+          <%= f.label :text_field, t('admin_pages.common.no'), class: 'form-check-label', value: false %>
         </div>
 
         <div class="form-check form-check-inline">
           <%= f.radio_button :text_field, 'true', class: 'form-check-input' %>
-          <%= f.label :text_field, 'Yes', class: 'form-check-label', value: 'true' %>
+          <%= f.label :text_field, t('admin_pages.common.yes'), class: 'form-check-label', value: true %>
         </div>
 
         <div class="form-check form-check-inline">
           <%= f.radio_button :text_field, 'option', class: 'form-check-input' %>
-          <%= f.label :text_field, 'Option', class: 'form-check-label', value: 'option' %>
+          <%= f.label :text_field, t('admin_pages.job_settings.option'), class: 'form-check-label', value: :option %>
         </div>
       </div>
 

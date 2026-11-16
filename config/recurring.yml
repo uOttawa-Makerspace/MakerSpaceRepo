@@ -19,6 +19,10 @@ shared: &shared
     class: TapBoxLogCleanupJob
     schedule: every day at 3am
 
+  kiosk_sign_event_cleanup:
+    class: KioskSignEventCleanupJob
+    schedule: every day at 3:15am
+
   prune_api_refresh_tokens:
     command: "ApiRefreshToken.prune!"
     schedule: every day at 3:30am
@@ -27,8 +31,9 @@ shared: &shared
     command: "RateLimitCounter.prune!"
     schedule: every 5 minutes
 
-  # Reclaims Shopify drafts no job order points at (orphans of a rollback after a Shopify create).
-  # Same code as `rake job_orders:sweep_orphan_drafts` (JobOrder::DraftSweep).
+  # Reclaims Shopify drafts no job order and no locker rental points at (orphans of a rollback or a crash after a
+  # Shopify create). The job-order part is the code of `rake job_orders:sweep_orphan_drafts` (JobOrder::DraftSweep);
+  # the locker part is LockerRental::DraftSweep.
   job_order_draft_sweep:
     class: JobOrderDraftSweepJob
     schedule: every hour at minute 42
@@ -38,6 +43,13 @@ shared: &shared
   dispatch_due_orders:
     class: DispatchDueOrdersJob
     schedule: every minute
+
+  # Reports any difference between the locker rentals' stored drafts and locker payments and the payment checkout
+  # records and payments ledger written beside them (LockerRental::PaymentRecordsCheck); changes nothing except
+  # recording the checkout of a stored draft whose status only Shopify can tell.
+  locker_payment_records_check:
+    class: LockerPaymentRecordsCheckJob
+    schedule: every day at 4:30am
 
   # Blanks the payload (customer data) of Shopify orders applied more than 90 days ago; the rows stay.
   purge_processed_order_payloads:
@@ -69,10 +81,28 @@ shared: &shared
     command: "LockerRental.notify_expired_rentals!"
     schedule: every day at 8:30am
 
+  # membership_expiry (MembershipExpiryJob, Membership::Expiry) is held: it is not scheduled until the pending
+  # duplicate membership checkouts are reviewed, because its first run would close every stale checkout at once.
+  # To turn it on, add this entry back here and flip the matching example in spec/config/recurring_schedule_spec.rb:
+  #   membership_expiry:
+  #     class: MembershipExpiryJob
+  #     schedule: every day at 4am
+
   # Keeps one Google Calendar push channel live (stops the old one); see GoogleCalendar::WebhookRegistrar.
   google_calendar_webhook:
     command: "GoogleCalendar::WebhookRegistrar.register!"
     schedule: every sunday at 3am
+
+  # Queues again Google Calendar pushes and removals of events that were never confirmed (GoogleCalendar::PendingChange).
+  google_calendar_resend:
+    class: GoogleCalendar::ResendJob
+    schedule: every 15 minutes
+
+  # Queues HelpFilingJob again for help requests that are not filed and mailed yet (a job that could not be queued, or
+  # that gave up); see Help.queue_unfinished.
+  help_filing_sweep:
+    class: HelpFilingSweepJob
+    schedule: every 15 minutes
 
   # Mails the maintenance address about failed and overdue background jobs, once each (JobAlert).
   job_alerts:

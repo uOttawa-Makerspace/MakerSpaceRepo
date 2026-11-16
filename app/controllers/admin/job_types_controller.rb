@@ -7,11 +7,7 @@ class Admin::JobTypesController < AdminAreaController
 
   def create
     @job_type = JobType.new(job_type_params)
-    if @job_type.save
-      flash[:notice] = "The Job Type has been created!"
-    else
-      flash[:alert] = "There was an error while creating the Job Type."
-    end
+    flash_write(@job_type, "job_types.not_created", I18n.t("admin_pages.job_settings.flash.job_type_created")) { @job_type.save }
     redirect_to settings_job_orders_path
   end
 
@@ -19,11 +15,7 @@ class Admin::JobTypesController < AdminAreaController
   end
 
   def update
-    if @job_type.update(job_type_params)
-      flash[:notice] = "The Job Type has been updated"
-    else
-      flash[:alert] = "Something went wrong while updating the Job Type"
-    end
+    flash_write(@job_type, "job_types.not_updated", I18n.t("admin_pages.job_settings.flash.job_type_updated")) { @job_type.update(job_type_params) }
     redirect_to settings_job_orders_path
   end
 

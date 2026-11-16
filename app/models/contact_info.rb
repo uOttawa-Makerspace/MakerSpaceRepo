@@ -7,4 +7,9 @@ class ContactInfo < ApplicationRecord
                                     attributes["target_en"].blank? ||
                                       attributes["target_fr"].blank?
                                   }
+
+  # Periods a visitor may see: those not hidden for the whole week.
+  def public_opening_hours
+    opening_hours.reject(&:hidden_closed_all_week?)
+  end
 end

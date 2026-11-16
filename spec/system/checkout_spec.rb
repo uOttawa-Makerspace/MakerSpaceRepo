@@ -68,11 +68,11 @@ RSpec.describe "Checkout", type: :system do
       find("#cart-button").click
       expect(page).to have_current_path(carts_path)
 
-      # the data-confirm prompt is handled by the delegated confirm handler in application.js
+      # the button is disabled until its confirmation controller connects, then asks before ordering
       accept_confirm { click_button "Confirm order" }
 
       expect(page).to have_current_path(orders_path)
-      expect(page).to have_text("Your Order was successfully processed.")
+      expect_flash("Your Order was successfully processed.")
       expect(page).to have_css("h2", text: "Your Orders")
       within("table.table") do
         expect(page).to have_link("Blinky robot")
@@ -92,7 +92,7 @@ RSpec.describe "Checkout", type: :system do
       find("#cart-button").click
       accept_confirm { click_button "Confirm order" }
 
-      expect(page).to have_text("Not enough Cc Points.")
+      expect_flash("Not enough CCs.")
       expect(user.orders.last.order_status.name).to eq("In progress")
       expect(user.orders.last.order_items.count).to eq(1)
       expect(user.get_total_cc).to eq(20) # a refusal writes no cache: the ledger balance is the truth

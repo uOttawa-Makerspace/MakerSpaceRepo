@@ -332,11 +332,17 @@ RSpec.describe "/api/v1/users", type: :request do
       expect(response).to have_http_status(:no_content)
     end
 
+    it "lets an admin assign the volunteer role" do
+      api_send :patch, "/api/v1/users/#{target.id}/role", { role: "volunteer" }, as: admin
+      expect(response).to have_http_status(:no_content)
+      expect(target.reload.role).to eq("volunteer")
+    end
+
     it "422s a missing, unknown or unassignable role" do
       api_send :patch, "/api/v1/users/#{target.id}/role", {}, as: admin
       expect(response).to have_http_status(:unprocessable_content)
       expect(error["code"]).to eq("parameter_missing")
-      %w[superuser volunteer].push(["admin"], 5).each do |bad|
+      %w[superuser].push(["admin"], 5).each do |bad|
         api_send :patch, "/api/v1/users/#{target.id}/role", { role: bad }, as: admin
         expect(response).to have_http_status(:unprocessable_content)
         expect(error["code"]).to eq("validation_failed")
@@ -406,7 +412,7 @@ RSpec.describe "/api/v1/users", type: :request do
 
     it "422s, changing nothing, when a membership cannot be saved" do
       target.programs.create!(program_type: Program::DEV_PROGRAM)
-      allow_any_instance_of(Program).to receive(:valid?).and_return(false)
+      allow_any_instance_of(Program).to receive(:destroy).and_return(false)
       api_send :put, "/api/v1/users/#{target.id}/programs", { development: false, volunteer: true }, as: staff
       expect(response).to have_http_status(:unprocessable_content)
       expect(error["code"]).to eq("validation_failed")

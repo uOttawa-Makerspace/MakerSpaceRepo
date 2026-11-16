@@ -1,117 +1,25 @@
 module CalendarHelper
-  def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil )
-    return [] if ics_url.blank?
+  # What reading a feed gave: its calendars (one holding the events, or none when the server gave no body) and
+  # whether the load failed: no body, a fetch or parse error, or a body with no calendar in it (a web page, say).
+  IcsFeed = Struct.new(:calendars, :failed, keyword_init: true) do
+    alias_method :failed?, :failed
+  end
 
-    background_color = color.presence || generate_color_from_id(ics_url.to_s)
-    group_id = Digest::MD5.hexdigest(ics_url.to_s)
+  # A date-only UNTIL: the series runs through the end of that day.
+  ICS_DATE_UNTIL = /UNTIL=(\d{8})(?![\dT])/
 
-    events = []
+  # The calendars of a feed (see ics_feed), without the failure flag.
+  def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil, window: CalendarWindow::ALL)
+    ics_feed(ics_url, name: name, color: color, window: window).calendars
+  end
 
-    begin
-      if ics_url.is_a? Pathname
-        response = File.read(ics_url) 
-        parsed_cals = ::Icalendar::Calendar.parse(response)
-      else
-        body = IcsFetcher.get(ics_url.to_s, timeout: 10)
-        return [] if body.nil?
-        parsed_cals = ::Icalendar::Calendar.parse(body)
-      end
+  # The rows the calendar pages draw for an imported calendar's entries in the window, repeating ones as a rule text.
+  def ics_feed(ics_url, name: "Unnamed Calendar", color: nil, window: CalendarWindow::ALL)
+    return IcsFeed.new(calendars: [], failed: false) if ics_url.blank?
 
-      events = parsed_cals.flat_map do |calendar|
-        # Group events by UID to handle recurrence-id
-        events_by_uid = calendar.events.group_by(&:uid)
-        
-        events_by_uid.flat_map do |uid, event_group|
-          main_event = event_group.find { |e| e.recurrence_id.nil? }
-          modified_instances = event_group.select { |e| e.recurrence_id.present? }
-          
-          results = []
-          
-          if main_event
-            start_time = safe_to_time(main_event.dtstart)
-            end_time = safe_to_time(main_event.dtend)
-            all_day = main_event.dtstart.is_a?(Icalendar::Values::Date)
-
-            next if main_event.rrule.empty? && end_time < (Time.now.utc - 2.months)
-
-            event_hash = {
-              id: main_event.uid,
-              groupId: group_id,
-              title: main_event.summary,
-              extendedProps: {
-                name: name,
-                description: main_event.description,
-              },
-              allDay: all_day,
-              display: 'auto',
-              start: start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
-              end: end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
-            }
-
-            rrule_obj = main_event.rrule&.first
-
-            if rrule_obj.present?
-              rrule_string_parts = []
-              
-              dtstart_toronto = start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
-              rrule_string_parts << "DTSTART:#{dtstart_toronto}"
-              
-              rrule_line = convert_rrule_to_string(rrule_obj)
-              rrule_string_parts << "RRULE:#{rrule_line}"
-              
-              all_exdates = main_event.exdate.map(&:value).flatten.map { |d| safe_to_time(d) }
-              
-              # Add recurrence-id dates from modified instances to exdates
-              modified_instances.each do |modified|
-                recurrence_time = safe_to_time(modified.recurrence_id)
-                all_exdates << recurrence_time if recurrence_time
-              end
-              
-              all_exdates.compact.uniq.each do |d|
-                exdate_str = d.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
-                rrule_string_parts << "EXDATE:#{exdate_str}"
-              rescue StandardError
-                # Skip invalid dates
-              end
-              
-              event_hash[:rrule] = rrule_string_parts.join("\n")
-              
-              duration_seconds = end_time.to_i - start_time.to_i
-              event_hash[:duration] = duration_seconds * 1000
-            end
-            
-            results << event_hash
-          end
-          
-          # Process modified instances as separate events
-          modified_instances.each do |modified|
-            start_time = safe_to_time(modified.dtstart)
-            end_time = safe_to_time(modified.dtend)
-            
-            next if end_time < (Time.now.utc - 2.months)
-            
-            results << {
-              id: "#{modified.uid}_#{safe_to_time(modified.recurrence_id)&.to_i}",
-              groupId: group_id,
-              title: modified.summary,
-              extendedProps: {
-                name: name,
-                description: modified.description,
-              },
-              allDay: modified.dtstart.is_a?(Icalendar::Values::Date),
-              start: start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
-              end: end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
-            }
-          end
-          
-          results
-        end.compact
-      end
-    rescue StandardError => e
-      Rails.logger.error("ICS parse error for #{ics_url}: #{e.inspect}")
-    end
-
-    [{ id: group_id, color: background_color, events: events }]
+    calendar = ImportedCalendar.load(ics_url.to_s, name: name, color: color.presence || generate_color_from_id(ics_url.to_s))
+    rows = window.entries(calendar.entries).map { |entry| ics_row(entry, calendar) }
+    IcsFeed.new(calendars: calendar.fetched? ? [{ id: calendar.id, color: calendar.color, events: rows }] : [], failed: calendar.failed?)
   end
 
   # COLOR HELPERS
@@ -165,122 +73,33 @@ module CalendarHelper
     (l1 + 0.05) / (l2 + 0.05)
   end
 
-  # RRULE HELPERS
-  def convert_rrule_to_string(rrule_obj)
-    parts = []
-    
-    parts << "FREQ=#{rrule_obj.frequency}" if rrule_obj.frequency
-    parts << "INTERVAL=#{rrule_obj.interval}" if rrule_obj.interval && rrule_obj.interval != 1
-    parts << "BYDAY=#{rrule_obj.by_day.join(',')}" if rrule_obj.by_day&.any?
-    parts << "BYMONTHDAY=#{rrule_obj.by_month_day.join(',')}" if rrule_obj.by_month_day&.any?
-    parts << "BYMONTH=#{rrule_obj.by_month.join(',')}" if rrule_obj.by_month&.any?
-    parts << "BYYEARDAY=#{rrule_obj.by_year_day.join(',')}" if rrule_obj.by_year_day&.any?
-    parts << "BYWEEKNO=#{rrule_obj.by_week_number.join(',')}" if rrule_obj.by_week_number&.any?
-    parts << "BYSETPOS=#{rrule_obj.by_set_position.join(',')}" if rrule_obj.by_set_position&.any?
-    
-    if rrule_obj.until
-      until_time = safe_to_time(rrule_obj.until)
-      parts << "UNTIL=#{until_time.utc.strftime('%Y%m%dT%H%M%SZ')}" if until_time
-    end
-    
-    parts << "COUNT=#{rrule_obj.count}" if rrule_obj.count
-    parts << "WKST=#{rrule_obj.week_start}" if rrule_obj.week_start
-    
-    parts.join(';')
-  end
-  
-  def date_formatted_recurrence_rule(event)
-    return unless event.recurrence_rule.present?
-    
-    rrule = event.recurrence_rule
-    rrule_parts = rrule.split(/[;\n]/).reject { |part| part.strip.start_with?('DTSTART') }
-    
-    # Convert EXDATE values to Toronto timezone
-    rrule_parts = rrule_parts.map do |part|
-      if part.strip.start_with?('EXDATE')
-        part.gsub(/(\d{8}T\d{6}Z?)/) do |datetime|
-          datetime.in_time_zone("America/Toronto").strftime("%Y%m%dT%H%M%S")
-        end
-      else
-        part
-      end
-    end
-    
-    rrule_without_dtstart = rrule_parts.join(';').gsub(/;EXDATE/, "\nEXDATE")
-    dtstart_toronto = event.start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
-    
-    "DTSTART:#{dtstart_toronto}\n#{rrule_without_dtstart}"
-  end
-  
-  def parse_rrule_and_dtstart(rule_string)
-    lines = RecurrenceExpansion.lines(rule_string)
-    rrule_line = lines.find { |l| l.start_with?("RRULE:") }&.sub("RRULE:", "")
-    dtstart_line = lines.find { |l| l.start_with?("DTSTART:") }&.sub("DTSTART:", "")
-
-    rest_of_lines = lines.reject { |l| l.start_with?("RRULE:", "DTSTART:") }
-
-    dtstart = dtstart_line.present? ? Time.parse(dtstart_line).utc : nil
-    
-    [rrule_line, dtstart, rest_of_lines]
+  # The data attribute of a calendar element: the calendar's words in the page's language, as JSON keyed by the
+  # names app/javascript/src/page_calendar.js reads.
+  def calendar_texts_data
+    { calendar_texts: t("calendar_texts").deep_transform_keys { |key| key.to_s.camelize(:lower) }.to_json }
   end
 
-  def add_exdate_to_rrule(rrule_str, date_to_exclude)
-    return rrule_str if rrule_str.blank? || date_to_exclude.blank?
+  private
 
-    exdate = date_to_exclude.strftime('%Y%m%dT%H%M%SZ')
-    "#{rrule_str}\nEXDATE:#{exdate}"
+  def ics_row(entry, calendar)
+    row = {
+      id: entry.key, groupId: calendar.id, title: entry.summary,
+      extendedProps: { name: calendar.name, description: entry.description },
+      allDay: entry.all_day, display: "auto", start: toronto_iso(entry.starts_at), end: toronto_iso(entry.ends_at)
+    }
+    row.merge!(ics_recurrence(entry)) if entry.series
+    row
   end
 
-  def combine_date_and_time(keep_date, keep_time)
-    keep_date.change(
-      hour: keep_time.hour,
-      min: keep_time.min,
-      sec: keep_time.sec
-    )
+  # The rule as the browser reads it: Toronto wall time throughout, a date UNTIL through the end of its day.
+  def ics_recurrence(entry)
+    text = RecurrenceRule.new(entry.series.rule, entry.starts_at).in_toronto_time.sub(ICS_DATE_UNTIL, 'UNTIL=\\1T235959')
+    recurrence = { rrule: text }
+    recurrence[:duration] = (entry.ends_at - entry.starts_at).to_i * 1000 if entry.ends_at > entry.starts_at
+    recurrence
   end
 
-  def remove_until_from_rrule(rrule_line)
-    rrule_line = rrule_line.gsub(/;UNTIL=[^;Z]*Z/, '') if rrule_line.include?('UNTIL=')
-    rrule_line
-  end
-
-  def safe_to_time(value)
-    return nil if value.nil?
-    if value.respond_to?(:to_time)
-      t = value.to_time
-      t = t.utc unless t.utc?
-      return t
-    end
-    Time.parse(value.to_s).utc # fallback
-  rescue StandardError
-    nil
-  end
-
-  def convert_to_js_rrule(openstruct_obj)
-    js_rrule = {}
-    
-    js_rrule[:freq] = openstruct_obj.frequency.downcase if openstruct_obj.frequency
-    
-    js_rrule[:interval] = openstruct_obj.interval if openstruct_obj.interval
-    
-    if openstruct_obj.by_day
-      js_rrule[:byweekday] = openstruct_obj.by_day.map do |day|
-        day.downcase[0..1] # maybe not needed but who knows anymore
-      end
-    end
-    
-    js_rrule[:until] = openstruct_obj.until if openstruct_obj.until
-    
-    js_rrule[:count] = openstruct_obj.count if openstruct_obj.count
-    
-    %w[by_second by_minute by_hour by_month_day by_year_day 
-      by_week_number by_month by_set_position].each do |field|
-      value = openstruct_obj.send(field)
-      js_rrule[field.to_sym] = value if value
-    end
-    
-    js_rrule[:wkst] = openstruct_obj.week_start if openstruct_obj.week_start
-    
-    js_rrule
+  def toronto_iso(time)
+    time.in_time_zone(RecurrenceRule::ZONE).strftime("%Y-%m-%dT%H:%M:%S")
   end
 end

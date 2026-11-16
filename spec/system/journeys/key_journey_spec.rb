@@ -5,7 +5,7 @@ require "rails_helper"
 # End-to-end key journey: a staff member fills the multi-step access key form,
 # submits it, an admin approves it from the key requests admin page, and the
 # requester sees the approved status.
-RSpec.describe "Journey: key request", type: :system, skip_bullet: true do
+RSpec.describe "Journey: key request", type: :system do
   let!(:space) { create(:space, name: "Key Space") }
   let!(:requester) { create(:user, :staff) }
   let!(:admin) { create(:user, :admin, name: "Alex Admin") }
@@ -43,7 +43,7 @@ RSpec.describe "Journey: key request", type: :system, skip_bullet: true do
       choose "key_request_read_agreement_true"
       click_button "Submit Form"
 
-      expect(page).to have_text("You have successfully submitted the key request form")
+      expect_flash("You have successfully submitted the key request form")
       expect(page).to have_text("Waiting for approval")
     end
     key_request = KeyRequest.find_by!(user: requester)
@@ -57,7 +57,7 @@ RSpec.describe "Journey: key request", type: :system, skip_bullet: true do
       click_button "Waiting for Approval" # accordion
       expect(page).to have_css("#collapseOne.show")
       click_button "Approve"
-      expect(page).to have_text("Successfully approved key request.")
+      expect_flash("Successfully approved key request.")
     end
     expect(key_request.reload.status).to eq("approved")
 

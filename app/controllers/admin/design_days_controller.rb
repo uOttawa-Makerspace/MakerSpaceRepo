@@ -3,9 +3,11 @@ class Admin::DesignDaysController < AdminAreaController
   # Sets url options for disk service to generate public urls
   include ActiveStorage::SetCurrent
 
+  before_action :load_current_design_day, only: :data
   before_action :make_variables, only: %i[show update data]
   skip_before_action :current_user, only: :data
   skip_before_action :ensure_admin, only: :data
+  skip_authorization only: :data, reason: "Public: the Design Day app reads the schedule without signing in"
 
   # This is a singular resource: create, index, delete are disabled.
   # only show and update are supported.
@@ -32,15 +34,20 @@ class Admin::DesignDaysController < AdminAreaController
           metadata: floorplan.blob.metadata.merge(floorplan_title: title)
         )
       end
-      flash[:notice] = 'Design day configuration updated'
+      flash[:notice] = I18n.t("admin_pages.design_days.flash.updated")
       redirect_to @design_day
     else
-      flash[:alert] = 'Failed to update configuration'
+      flash[:alert] = I18n.t("admin_pages.design_days.flash.not_updated")
       render :show, status: :unprocessable_content
     end
   end
 
   private
+
+  # The public read never creates the row.
+  def load_current_design_day
+    @design_day = DesignDay.current
+  end
 
   def make_variables
     @design_day ||= DesignDay.instance

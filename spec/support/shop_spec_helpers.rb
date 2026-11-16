@@ -20,7 +20,7 @@ module ShopSpecHelpers
   class FakeShopifyAdmin
     Response = Struct.new(:code, :body)
     attr_reader :calls
-    attr_accessor :draft_status, :delete_user_errors, :draft_missing, :delete_returns_nothing, :missing_ids, :invoice_url, :draft_id, :fully_paid, :user_errors, :metafields, :status, :draft_statuses, :draft_pages, :fixed_cursor, :lose_delete_race, :on_query
+    attr_accessor :draft_status, :delete_user_errors, :draft_missing, :delete_returns_nothing, :missing_ids, :invoice_url, :draft_id, :fully_paid, :user_errors, :metafields, :status, :draft_statuses, :draft_pages, :fixed_cursor, :lose_delete_race, :on_query, :draft_prices, :invoice_urls
 
     def initialize
       @calls = []
@@ -35,9 +35,18 @@ module ShopSpecHelpers
       @delete_returns_nothing = false
       @missing_ids = []
       @draft_status = "OPEN"
+      @invoice_urls = {} # draft gid => invoice URL (default @invoice_url)
+      @draft_prices = {} # draft gid => unit price of its first line, remembered from draftOrderCreate
       @draft_statuses = {} # draft gid => status, for the getDraftOrder answer (default @draft_status)
       @draft_pages = [] # the draftOrders listing: one Array of { "id", "status", "tags" } nodes per page
+      @created_tags = {} # draft gid => the tags draftOrderCreate sent
+      @created_ids = [] # the ids of the drafts draftOrderCreate made, in order
     end
+
+    # The tags draftOrderCreate sent for the draft `gid`.
+    def created_tags(gid) = @created_tags[gid]
+
+    attr_reader :created_ids
 
     # the ids passed to draftOrderDelete, in order
     def deleted_ids
@@ -49,7 +58,9 @@ module ShopSpecHelpers
       @on_query&.call(query, variables)
       return Response.new(@status, nil) unless @status == 200
 
-      if query.include?("jobOrderOpenDrafts")
+      if query.include?("paymentsOpenCheckout")
+        Response.new(200, { "data" => { "draftOrders" => { "nodes" => open_checkout_nodes } } })
+      elsif query.include?("shopifyOpenDrafts")
         index = variables[:after].to_s.delete_prefix("page-").then { |i| i.empty? ? 0 : i.to_i }
         more = @fixed_cursor ? true : index + 1 < @draft_pages.size
         Response.new(200, { "data" => { "draftOrders" => {
@@ -58,8 +69,13 @@ module ShopSpecHelpers
       elsif query.include?("NodeMetafields")
         Response.new(200, { "data" => { "node" => { "metafields" => { "edges" => @metafields.map { |m| { "node" => m } } } } } })
       elsif query.include?("draftOrderCreate")
+        @draft_prices[@draft_id] = variables.dig(:input, :lineItems, 0, :originalUnitPriceWithCurrency, :amount)
+        if @user_errors.empty?
+          @created_tags[@draft_id] = variables.dig(:input, :tags)
+          @created_ids << @draft_id
+        end
         Response.new(200, { "data" => { "draftOrderCreate" => {
-          "draftOrder" => (@user_errors.empty? ? { "id" => @draft_id } : nil), "userErrors" => @user_errors
+          "draftOrder" => (@user_errors.empty? ? { "id" => @draft_id, "invoiceUrl" => @invoice_urls.fetch(@draft_id, @invoice_url) } : nil), "userErrors" => @user_errors
         } } })
       elsif query.include?("draftOrderDelete") && @lose_delete_race
         id = variables.dig(:input, :id)
@@ -72,11 +88,31 @@ module ShopSpecHelpers
       elsif @draft_missing || @missing_ids.include?(variables&.dig(:id))
         Response.new(200, { "data" => { "draftOrder" => nil } })
       else
+        price = @draft_prices[variables[:id]]
+        line_items = price ? { "nodes" => [{ "originalUnitPriceSet" => { "shopMoney" => { "amount" => price } } }] } : { "nodes" => [] }
         Response.new(200, { "data" => { "draftOrder" => {
-          "id" => @draft_id, "invoiceUrl" => @invoice_url, "status" => @draft_statuses.fetch(variables[:id], @draft_status),
+          "id" => variables[:id], "invoiceUrl" => @invoice_urls.fetch(variables[:id], @invoice_url), "status" => @draft_statuses.fetch(variables[:id], @draft_status),
           "tags" => @draft_pages.flatten.find { |n| n["id"] == variables[:id] }&.fetch("tags", nil) || [],
+          "lineItems" => line_items,
           "order" => { "id" => "gid://shopify/Order/1", "fullyPaid" => @fully_paid }
         } } })
+      end
+    end
+  end
+
+  # The answer to the open checkout lookup: every draft made here or listed, as it stands now (the adapter checks the
+  # status and the tag again, as on a real search).
+  class FakeShopifyAdmin
+    private
+
+    def open_checkout_nodes
+      listed = @draft_pages.flatten.to_h { |n| [n["id"], n] }
+      @created_tags.each { |id, tags| listed[id] ||= { "id" => id, "status" => @draft_status, "tags" => tags } }
+      listed.values.filter_map do |node|
+        id = node["id"]
+        next if @missing_ids.include?(id) || deleted_ids.include?(id)
+
+        node.merge("status" => @draft_statuses.fetch(id, node["status"]), "invoiceUrl" => @invoice_urls.fetch(id, @invoice_url))
       end
     end
   end

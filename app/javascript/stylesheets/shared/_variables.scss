@@ -1,9 +1,15 @@
-// Brand orange, tuned for contrast (WCAG AA). $primary sits behind white text
-// (navbar, buttons, badges): 5.11:1. $primary-text is the orange used as text on
-// light backgrounds: 5.23:1 on white. $primary-text-dark is the text orange on
-// the dark theme (#212529): 5.48:1. $secondary is muted grey text and the
+// Brand orange. $primary is a fill (navbar, buttons, badges, active states). White
+// text on it is 4.04:1, which passes WCAG AA only as large text (3:1): see the
+// large-text rules in accessibility.scss. $primary-text is the darker orange used as
+// text on light backgrounds: 5.23:1 on white. $primary-text-dark is the text orange
+// on the dark theme (#212529): 5.48:1. $secondary is muted grey text and the
 // background of white-on-grey controls: 4.95:1 on white, 4.58:1 on $tertiary.
-$primary: #c93a1e;
+$primary: #e24829;
+// Smallest bold size that counts as large text (14pt): used for text on the orange.
+$large-text-size: 1.167rem;
+// Brand orange fill on the dark theme: the lightest shade of the $primary hue with
+// white text at 4.5:1 or more (4.53:1), so white text of any size passes WCAG AA.
+$primary-dark: #d93d1d;
 $primary-text: #c43c1f;
 $primary-text-dark: #ff6b4a;
 $secondary: #707070;

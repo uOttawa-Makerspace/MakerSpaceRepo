@@ -7,11 +7,7 @@ class Admin::JobOptionsController < AdminAreaController
 
   def create
     @job_option = JobOption.new(job_option_params)
-    if @job_option.save
-      flash[:notice] = "The option has been created!"
-    else
-      flash[:alert] = "There was an error while creating the option."
-    end
+    flash_write(@job_option, "job_options.not_created", I18n.t("admin_pages.job_settings.flash.option_created")) { @job_option.save }
     redirect_to settings_job_orders_path
   end
 
@@ -19,20 +15,12 @@ class Admin::JobOptionsController < AdminAreaController
   end
 
   def update
-    if @job_option.update(job_option_params)
-      flash[:notice] = "The Service Group has been updated"
-    else
-      flash[:alert] = "Something went wrong while updating the Service Group"
-    end
+    flash_write(@job_option, "job_options.not_updated", I18n.t("admin_pages.job_settings.flash.option_updated")) { @job_option.update(job_option_params) }
     redirect_to settings_job_orders_path
   end
 
   def destroy
-    if @job_option.destroy
-      flash[:notice] = "The option has been deleted successfully"
-    else
-      flash[:alert] = "An error occurred while deleting the option."
-    end
+    flash_write(@job_option, "job_options.not_deleted", I18n.t("admin_pages.job_settings.flash.option_deleted"), destroy: true) { @job_option.destroy }
     redirect_to settings_job_orders_path
   end
 

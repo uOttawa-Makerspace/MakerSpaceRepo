@@ -87,7 +87,7 @@ RSpec.describe "job_orders:sweep_orphan_drafts", type: :model do
     shopify.draft_pages = [nodes]
     stub_const("JobOrder::DraftSweep::MAX_DELETES", 1)
     allow(Rails.error).to receive(:report)
-    out, err, status = run_task
+    _out, err, status = run_task
 
     expect(shopify.deleted_ids).to be_empty
     expect(err).to include("NOTHING was deleted", "CONFIRM_MAX_DELETES=2")

@@ -1,6 +1,57 @@
 require "rails_helper"
 
 RSpec.describe TrainingSession, type: :model do
+  describe "editing once certifications are awarded" do
+    let(:open_session) { create(:training_session, level: "Beginner") }
+    let(:awarded_session) { create(:training_session_with_certifications, level: "Beginner").reload }
+    let(:other_training) { create(:training) }
+
+    def edit(session, attributes)
+      session.assign_attributes(attributes)
+      session.save(context: :session_edit)
+    end
+
+    it "does not apply the lock to writes that are not edits of the session" do
+      new_trainer = create(:user, :staff)
+      expect(awarded_session.update(user: new_trainer)).to be(true)
+      expect(awarded_session.reload.user).to eq(new_trainer)
+    end
+
+    it "is editable while no certification was awarded" do
+      expect(open_session).to be_editable
+      expect(edit(open_session, level: "Advanced", training: other_training)).to be(true)
+      expect(open_session.reload.level).to eq("Advanced")
+    end
+
+    it "is not editable once it awarded a certification, even a demoted one" do
+      expect(awarded_session).not_to be_editable
+      awarded_session.certifications.each { |cert| cert.update!(active: false) }
+      expect(awarded_session.reload).not_to be_editable
+    end
+
+    it "refuses a new training, level or instructor and keeps the stored values" do
+      before = awarded_session.attributes.slice("training_id", "level", "user_id")
+      expect(edit(awarded_session, level: "Advanced")).to be(false)
+      expect(awarded_session.errors.full_messages.to_sentence).to include("cannot be changed once the session has awarded")
+      expect(edit(awarded_session.reload, training: other_training)).to be(false)
+      expect(edit(awarded_session.reload, user: create(:user, :staff))).to be(false)
+      expect(awarded_session.reload.attributes.slice("training_id", "level", "user_id")).to eq(before)
+      expect(awarded_session.certifications.map(&:level).uniq).to eq(["Beginner"])
+    end
+
+    it "still accepts the other fields" do
+      expect(edit(awarded_session, course: "Some course")).to be(true)
+      expect(awarded_session.reload.course).to eq("Some course")
+    end
+
+    it "reports whether an attribute set touches a locked field" do
+      expect(awarded_session.locked_change?("level" => "Advanced")).to be(true)
+      expect(awarded_session.locked_change?("level" => "Beginner")).to be(false)
+      expect(awarded_session.locked_change?(course: "x")).to be(false)
+      expect(open_session.locked_change?("level" => "Advanced")).to be(false)
+    end
+  end
+
   describe "Association" do
     context "has_and_belong_to_many" do
       it { should have_and_belong_to_many(:users) }
@@ -32,17 +83,39 @@ RSpec.describe TrainingSession, type: :model do
     context "has_many" do
       it { should have_many(:certifications) }
       it { should have_many(:exams) }
-      it "dependent destroy: should destroy certifications if destroyed" do
+      it { should have_many(:awarded_certifications).dependent(:restrict_with_error) }
+      it { should have_many(:exams).dependent(:restrict_with_error) }
+      let(:deleted_refusal) { "This training session has awarded certifications or has exams, so it cannot be deleted." }
+
+      it "refuses to be deleted while it has certifications, keeping them" do
         training_session = create(:training_session_with_certifications)
-        expect { training_session.destroy }.to change {
-          Certification.count
-        }.by(-training_session.certifications.count)
+        expect { training_session.destroy }.not_to change { [TrainingSession.count, Certification.count] }
+        expect(training_session.errors.full_messages).to eq([deleted_refusal])
       end
-      it "dependent destroy: should destroy exams if destroyed" do
+      it "refuses to be deleted when its only certification is demoted" do
+        training_session = create(:training_session)
+        cert = create(:certification, training_session: training_session, training: training_session.training)
+        cert.update!(active: false)
+        expect { training_session.destroy }.not_to change { [TrainingSession.count, Certification.unscoped.count] }
+        expect(training_session.errors.full_messages).to eq([deleted_refusal])
+      end
+      it "refuses to be deleted while it has exams, keeping them" do
         training_session = create(:training_session_with_exams)
-        expect { training_session.destroy }.to change { Exam.count }.by(
-          -training_session.exams.count
-        )
+        expect { training_session.destroy }.not_to change { [TrainingSession.count, Exam.count] }
+        expect(training_session.errors.full_messages).to eq([deleted_refusal])
+      end
+      it "explains the refusal in French" do
+        training_session = create(:training_session_with_exams)
+        training_session.destroy
+        I18n.with_locale(:fr) do
+          expect(training_session.errors.full_messages).to eq(
+            ["Cette séance de formation a délivré des certifications ou a des examens, elle ne peut donc pas être supprimée."]
+          )
+        end
+      end
+      it "is deleted when it has no certifications or exams" do
+        training_session = create(:training_session)
+        expect { training_session.destroy }.to change(TrainingSession, :count).by(-1)
       end
     end
   end
@@ -173,12 +246,6 @@ RSpec.describe TrainingSession, type: :model do
       expect(TrainingSession.by_trainers(a.user_id)).to eq([a])
       expect(TrainingSession.by_training(b.training_id)).to eq([b])
     end
-
-    it "filter_by_attribute strips the search= prefix and matches the training name" do
-      a = create(:training_session, level: "Beginner")
-      create(:training_session, level: "Beginner")
-      expect(TrainingSession.joins(:training).filter_by_attribute("search=#{a.training.name_en.tr(' ', '+')}")).to eq([a])
-    end
   end
 
   describe "#certify_trainees! and the instructor" do
@@ -215,6 +282,111 @@ RSpec.describe TrainingSession, type: :model do
       result = session.certify_trainees!
       expect(result.self_skipped).to be(false)
       expect(Certification.where(user_id: student.id).count).to eq(1)
+    end
+  end
+
+  describe "opening a session" do
+    let(:space) { create(:space) }
+    let(:training) { create(:training, spaces: [space]) }
+    let(:staff) { create(:user, :staff) }
+    let(:admin) { create(:user, :admin) }
+    let(:attributes) { { user: staff, space: space, training: training, level: "Beginner" } }
+
+    it "saves a session whose training is offered in its space" do
+      session = TrainingSession.new(attributes)
+      expect(session.open_by(staff)).to be(true)
+      expect(session).to be_persisted
+    end
+
+    it "refuses a level that is not allowed, a training not offered in the space and a long course" do
+      session = TrainingSession.new(attributes.merge(level: "Wizard", training: create(:training), course: "x" * 256))
+      expect(session.open_by(staff)).to be(false)
+      expect(session.errors.map(&:type)).to include(:not_allowed, :not_offered_in_space, :too_long)
+      expect(session).not_to be_persisted
+    end
+
+    it "leaves these rules off when an existing session is edited or created without them" do
+      session = create(:training_session, user: staff, level: "Beginner")
+      expect(session.training.spaces).not_to include(session.space)
+      expect(session.update_roster({ "level" => "Advanced" }, added: [], dropped: [], by: staff)).to be_saved
+      expect(session.reload.level).to eq("Advanced")
+    end
+
+    it "lets an admin name any instructor and anyone else only themselves" do
+      session = TrainingSession.new(attributes)
+      expect(session.instructor_assignable_by?(admin)).to be(true)
+      expect(session.instructor_assignable_by?(staff)).to be(true)
+      expect(session.instructor_assignable_by?(create(:user, :staff))).to be(false)
+    end
+
+    it "saves nothing when the actor may not name the instructor" do
+      expect(TrainingSession.new(attributes).open_by(create(:user, :staff))).to be(false)
+      expect(TrainingSession.count).to eq(0)
+    end
+  end
+
+  describe "#update_roster" do
+    let(:trainer) { create(:user, :staff) }
+    let(:session) { create(:training_session, user: trainer, level: "Beginner") }
+    let(:kept) { create(:user) }
+    let(:dropped) { create(:user) }
+    let(:added) { create(:user) }
+
+    before { session.users << [kept, dropped] }
+
+    it "saves the fields, adds and removes users by username without duplicates, and links a course name" do
+      course = create(:course_name, name: "Intro")
+      result = session.update_roster(
+        { "level" => "Advanced", "course" => "Intro" },
+        added: [added.username, added.username, kept.username], dropped: [dropped.username], by: trainer
+      )
+      expect(result).to be_saved
+      session.reload
+      expect([session.level, session.course_name]).to eq(["Advanced", course])
+      expect(session.users).to contain_exactly(kept, added)
+    end
+
+    it "deactivates the dropped trainee's certification of the session and keeps the row" do
+      cert = create(:certification, user: dropped, training_session: session, training: session.training)
+      expect(session.update_roster({}, added: [], dropped: [dropped.username], by: trainer)).to be_saved
+      expect(Certification.unscoped.find(cert.id)).to have_attributes(active: false, demotion_staff: trainer)
+    end
+
+    it "lists the user whose certification could not be deactivated and still applies the rest" do
+      create(:certification, user: dropped, training_session: session, training: session.training)
+      allow_any_instance_of(Certification).to receive(:deactivate).and_return(false)
+      result = session.update_roster({}, added: [added.username], dropped: [dropped.username], by: trainer)
+      expect(result).to be_saved
+      expect(result.failed_certifications).to eq([dropped])
+      expect(session.reload.users).to contain_exactly(kept, added)
+    end
+
+    it "writes nothing when the session is invalid" do
+      cert = create(:certification, user: dropped, training_session: session, training: session.training)
+      result = session.update_roster({ "training_id" => 0 }, added: [added.username], dropped: [dropped.username], by: trainer)
+      expect(result).not_to be_saved
+      expect(session.errors).not_to be_empty
+      expect(session.reload.users).to contain_exactly(kept, dropped)
+      expect(Certification.find(cert.id)).to be_active
+    end
+  end
+
+  describe "#editable_by?" do
+    let(:trainer) { create(:user, :staff) }
+    let(:session) { create(:training_session, user: trainer) }
+
+    it "is true for the trainer and for an admin" do
+      expect(session.editable_by?(trainer)).to be(true)
+      expect(session.editable_by?(create(:user, :admin))).to be(true)
+    end
+
+    it "is false for other staff and for a guest" do
+      expect(session.editable_by?(create(:user, :staff))).to be(false)
+      expect(session.editable_by?(User.new)).to be(false)
+    end
+
+    it "is false for a guest when the session has no trainer" do
+      expect(build(:training_session, user: nil).editable_by?(User.new)).to be(false)
     end
   end
 end

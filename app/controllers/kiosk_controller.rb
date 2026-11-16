@@ -1,15 +1,17 @@
 class KioskController < ApplicationController
   layout false, only: :show # no layout
 
+  before_action :signed_in
   before_action :grant_access
 
   def index
-    @spaces = Space.pluck(:name, :id)
+    @spaces = current_user.workable_spaces.pluck(:name, :id)
   end
 
   def show
     @space = Space.find_by(id: params[:id])
-    redirect_to kiosk_index_path unless @space
+    return redirect_to kiosk_index_path unless @space
+    refuse_space unless current_user.can_work_in?(@space)
   end
 
   def edit
@@ -27,24 +29,13 @@ class KioskController < ApplicationController
     end
 
     return head :unprocessable_content if space.nil?
+    return refuse_space unless current_user.can_work_in?(space)
 
-    # Get last session (if it exists)
-    # session has not ended yet if last sign out time is in future
-    last_session = LabSession.where(space: space).active_for_user(visitor).last
     if params[:leaving]
-      # If last session hasn't ended yet, end it now.
-      last_session.sign_out if last_session
+      KioskSignEvent.sign_out(actor: current_user, visitor: visitor, space: space)
       flash[:notice] = "Signing out from #{space.name}, bye #{visitor.name}"
     elsif params[:entering]
-      # create unless last session is still active
-      unless last_session
-        LabSession.create(
-          user: visitor,
-          space_id: space.id,
-          sign_in_time: Time.zone.now,
-          sign_out_time: Time.zone.now + 8.hours
-        )
-      end
+      KioskSignEvent.sign_in(actor: current_user, visitor: visitor, space: space)
       flash[:notice] = "Signing in to #{space.name}, hello #{visitor.name}"
     end
 
@@ -52,6 +43,11 @@ class KioskController < ApplicationController
   end
 
   private
+
+  def refuse_space
+    flash[:alert] = I18n.t("errors.staff.space_not_assigned")
+    redirect_to kiosk_index_path
+  end
 
   def grant_access
     unless current_user.staff? || current_user.admin?

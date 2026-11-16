@@ -49,7 +49,7 @@ RSpec.describe OrdersController, type: :controller do
 
       it "should fail creating the order (cc money too low)" do
         post :create
-        expect(flash[:alert]).to eq("Not enough Cc Points.")
+        expect(flash[:alert]).to eq("Not enough CCs.")
         expect(response).to have_http_status(302)
       end
 
@@ -104,7 +104,7 @@ RSpec.describe OrdersController, type: :controller do
         ).by(-1)
         expect(response).to redirect_to orders_path
         expect(flash[:notice]).to eq(
-          "The order was deleted and the CC points returned to the user."
+          "The order was deleted and its CCs were given back to the user."
         )
       end
 
@@ -123,7 +123,7 @@ RSpec.describe OrdersController, type: :controller do
         ).by(-1)
         expect(response).to redirect_to orders_path
         expect(flash[:notice]).to eq(
-          "The order was deleted and the CC points returned to the user."
+          "The order was deleted and its CCs were given back to the user."
         )
       end
     end

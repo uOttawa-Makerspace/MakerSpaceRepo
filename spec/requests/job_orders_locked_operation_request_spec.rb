@@ -224,7 +224,7 @@ RSpec.describe "Job order locked operations", type: :request do
         late_reads << payload[:sql] if after_transition && payload[:sql].match?(/FROM "job_order_statuses"/)
       end
       ActiveSupport::Notifications.subscribed(counter, "sql.active_record") do
-        patch job_order_quote_path(order), params: { approved: "true", job_order: { staff_comments: "" } }
+        patch_quote order, { approved: "true", job_order: { staff_comments: "" } }
       end
 
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.quote_refused_paid"))
@@ -235,7 +235,7 @@ RSpec.describe "Job order locked operations", type: :request do
       order = quoted_order!(:paid)
       session_login!(staff)
       allow_any_instance_of(JobOrder).to receive(:lock!).and_raise(ActiveRecord::LockWaitTimeout)
-      patch job_order_quote_path(order), params: { approved: "true", job_order: { staff_comments: "" } }
+      patch_quote order, { approved: "true", job_order: { staff_comments: "" } }
 
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.busy"))
     end
@@ -310,7 +310,7 @@ RSpec.describe "Job order locked operations", type: :request do
       order = quoted_order!(:staff_approval)
       task = order.job_tasks.first
       session_login!(staff)
-      patch job_order_quote_path(order), params: { approved: "true", job_order: "x",
+      patch_quote order, { approved: "true", job_order: "x",
                                                    "job_task_quote_price_#{task.id}" => "12" }
 
       expect(response).to redirect_to(job_order_path(order.id))
@@ -320,7 +320,7 @@ RSpec.describe "Job order locked operations", type: :request do
     it "stores the staff comment when given" do
       order = quoted_order!(:staff_approval)
       session_login!(staff)
-      patch job_order_quote_path(order), params: { approved: "true", job_order: { staff_comments: "see notes" } }
+      patch_quote order, { approved: "true", job_order: { staff_comments: "see notes" } }
 
       expect(order.reload.staff_comments).to eq("see notes")
     end
@@ -344,17 +344,17 @@ RSpec.describe "Job order locked operations", type: :request do
     it "a refused re-quote with a comment creates no chat message and enqueues no job" do
       shopify.status = 502 # the old draft cannot be voided: the whole quote is refused
       session_login!(staff)
-      patch job_order_quote_path(quoted_for_chat), params: { approved: "true", user_comments: "new price",
+      patch_quote quoted_for_chat, { approved: "true", user_comments: "new price",
                                                              job_order: { staff_comments: "" } }
 
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.requote_draft_order_failed"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.requote_draft_order_failed", reference: error_reference))
       expect(ChatMessage.where(job_order_id: quoted_for_chat.id).pluck(:message)).to eq(["hello"])
       expect(jobs).to be_empty
     end
 
     it "a committed re-quote posts the comment (and its notification) after the commit" do
       session_login!(staff)
-      patch job_order_quote_path(quoted_for_chat), params: { approved: "true", user_comments: "new price",
+      patch_quote quoted_for_chat, { approved: "true", user_comments: "new price",
                                                              job_order: { staff_comments: "" } }
 
       expect(ChatMessage.where(job_order_id: quoted_for_chat.id).pluck(:message)).to eq(["hello", "new price"])
@@ -363,7 +363,7 @@ RSpec.describe "Job order locked operations", type: :request do
 
     it "a committed decline posts the comment as before" do
       session_login!(staff)
-      patch job_order_quote_path(quoted_for_chat), params: { approved: "false", user_comments: "no thanks" }
+      patch_quote quoted_for_chat, { approved: "false", user_comments: "no thanks" }
 
       expect(ChatMessage.where(job_order_id: quoted_for_chat.id).pluck(:message)).to eq(["hello", "no thanks"])
     end
@@ -381,11 +381,11 @@ RSpec.describe "Job order locked operations", type: :request do
       bad = JobTaskQuote.new.tap { |q| q.errors.add(:base, "<script>alert(1)</script> is not a price") }
       allow_any_instance_of(JobTaskQuote).to receive(:save!).and_raise(ActiveRecord::RecordInvalid.new(bad))
 
-      patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "5",
+      patch_quote order, { approved: "true", "job_task_quote_price_#{task.id}" => "5",
                                                    job_order: { staff_comments: "" } }
 
       expect(response).to redirect_to(job_order_path(order.id))
-      expect(flash[:alert]).to start_with(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to start_with(I18n.t("errors.job_orders.quote_invalid"))
       expect(flash[:alert]).to include("&lt;script&gt;alert(1)&lt;/script&gt; is not a price")
       expect(flash[:alert]).not_to include("<script>")
       expect(Rails.logger).to have_received(:info).with(/change_invalid.*is not a price/).once
@@ -429,7 +429,7 @@ RSpec.describe "Job order locked operations", type: :request do
       delete job_order_path(order)
 
       expect(response).to redirect_to(admin_job_orders_path)
-      expect(flash[:notice]).to eq("Job order deleted successfully.")
+      expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.deleted"))
       expect(order.reload.is_deleted).to be(true)
       expect(order.shopify_draft_order_id).to be_nil
       expect(shopify_ops).to eq(%w[draftOrderDelete])
@@ -451,7 +451,7 @@ RSpec.describe "Job order locked operations", type: :request do
       delete job_order_path(order)
 
       expect(response).to redirect_to(job_order_path(order))
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.delete_refused.draft_not_voidable"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.delete_refused.draft_not_voidable", reference: error_reference))
       expect(order.reload.is_deleted).to be(false)
       expect(order.shopify_draft_order_id).to eq(draft_id)
     end
@@ -463,7 +463,7 @@ RSpec.describe "Job order locked operations", type: :request do
       session_login!(admin)
       delete job_order_path(order)
 
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.delete_refused.draft_not_voidable"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.delete_refused.draft_not_voidable", reference: error_reference))
       expect(order.reload.is_deleted).to be(false)
     end
 
@@ -521,7 +521,7 @@ RSpec.describe "Job order locked operations", type: :request do
 
         delete job_order_path(order)
 
-        expect(flash[:notice]).to eq("Job order deleted successfully.")
+        expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.deleted"))
         expect(order.reload.is_deleted).to be(true)
         expect(order.shopify_draft_order_id).to eq(draft_id)
         expect(shopify_ops).to eq(%w[getDraftOrder])

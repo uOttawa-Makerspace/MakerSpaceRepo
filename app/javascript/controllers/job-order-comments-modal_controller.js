@@ -4,8 +4,15 @@ export default class extends Controller {
   static targets = ["id", "comments"];
 
   setCoHostContent(data) {
-    this.idTarget.innerHTML = data.id;
-    this.commentsTarget.innerHTML = data.comments.replace(/\n/g, "<br />");
+    this.idTarget.textContent = data.id;
+    const lines = data.comments.split("\n");
+    this.commentsTarget.replaceChildren(
+      ...lines.flatMap((line, index) =>
+        index === 0
+          ? [line]
+          : [document.createElement("br"), document.createTextNode(line)],
+      ),
+    );
   }
 
   open() {

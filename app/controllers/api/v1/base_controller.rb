@@ -12,11 +12,16 @@ module Api
     # session is never read or written.
     #
     # Errors are always `{error: {code:, message:, fields?:}}` with a real status:
-    # 400 bad_request, 406 not_acceptable, 401 unauthenticated, 403 forbidden, 404 not_found,
+    # 400 bad_request, 406 not_acceptable, 401 unauthenticated, 403 forbidden / space_not_assigned, 404 not_found,
     # 422 validation_failed / parameter_missing, 423 account_locked, 429 rate_limited,
     # 500 internal_error (see json_internal_errors).
+    # Every error also carries `reference`: the first 8 characters of the request id (X-Request-Id),
+    # which finds the request in the logs and in Airbrake.
     class BaseController < ActionController::API
       include RateLimitStore
+      include ErrorReporting
+      include Authorization
+      require_authorization
       # Unhandled errors answer with a JSON 500 (and are reported) everywhere except
       # test, where they must stay visible to specs. A request spec turns it on with
       # `Api::V1::BaseController.json_internal_errors = true`. Declared first: the
@@ -25,8 +30,7 @@ module Api
       rescue_from StandardError do |e|
         raise e unless json_internal_errors
 
-        Rails.logger.error("#{e.class}: #{e.message}\n#{e.backtrace&.first(15)&.join("\n")}")
-        Rails.error.report(e, handled: true, severity: :error, context: { source: "api_v1" })
+        report_unexpected(e, source: "api_v1")
         render_error(:internal_error, "Something went wrong", status: :internal_server_error)
       end
 
@@ -57,6 +61,8 @@ module Api
       # reach #route_not_found through the catch-all route; an unknown HTTP verb gets
       # Rails' default response.)
 
+      skip_authorization only: :route_not_found, reason: "Public: answers 404 for every unknown path"
+
       # Unknown /api/v1 paths (the catch-all route at the end of the namespace).
       def route_not_found
         render_error(:not_found, "Not found", status: :not_found)
@@ -75,7 +81,10 @@ module Api
       end
 
       def authenticate!
-        return if signed_in?
+        if signed_in?
+          record_authorization!(:authenticated)
+          return
+        end
 
         response.set_header("WWW-Authenticate", 'Bearer realm="makerepo"')
         render_error(:unauthenticated, "Authentication required", status: :unauthorized)
@@ -83,22 +92,43 @@ module Api
 
       def require_staff!
         authenticate!
-        return if performed? || current_user.staff?
+        return if performed?
 
-        render_error(:forbidden, "Not allowed", status: :forbidden)
+        if current_user.staff?
+          record_authorization!(:staff)
+        else
+          authorization_denied
+        end
       end
 
       def require_admin!
         authenticate!
-        return if performed? || current_user.admin?
+        return if performed?
 
+        if current_user.admin?
+          record_authorization!(:admin)
+        else
+          authorization_denied
+        end
+      end
+
+      def authorization_denied
         render_error(:forbidden, "Not allowed", status: :forbidden)
+      end
+
+      # Staff work only in the spaces User#can_work_in? allows (admins in any); the same rule as the staff dashboard.
+      # Renders the 403 and answers true when the space is refused; a missing space is left to the caller.
+      def refuse_unworkable_space(space)
+        return false if space.nil? || current_user.can_work_in?(space)
+
+        render_error(:space_not_assigned, "You are not assigned to that space", status: :forbidden)
+        true
       end
 
       def render_error(code, message, status:, fields: nil, **extra)
         body = { code: code.to_s, message: message }
         body[:fields] = fields if fields
-        render json: { error: body.merge(extra) }, status: status
+        render json: { error: body.merge(extra, reference: error_reference) }, status: status
       end
 
       def render_validation_errors(record)

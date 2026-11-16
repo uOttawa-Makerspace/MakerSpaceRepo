@@ -2,16 +2,18 @@
   <%= form_for(@job_order, url: job_order_quote_url(@job_order), html: { multipart: true }) do |f| %>
     <div class="modal-body">
       <%= hidden_field_tag :approved, true %>
+      <%= hidden_field_tag :status_row_id, @job_order.latest_status&.id %>
 
-      <% @job_order.job_tasks.each do |task| %>
+      <% option_prices = @job_order.quoted_option_prices %>
+      <% @job_order.tasks_for_quote.each do |task| %>
         <% job_task_quote = task.job_task_quote || task.build_job_task_quote %>
 
         <div class="card mb-4">
           <div class="card-header">
             <h5 class="m-0">
-              <%= task.title || "Task ##{task.id}" %>
+              <%= task.title || t(".task_number", id: task.id) %>
               <span class="ms-1 text-muted fs-6">
-                <%= task.job_type.name %>
+                <%= task.job_type&.name || t("job_orders.order.no_job_type") %>
                 <% if task.job_service.present? %>
                   -
                   <%= task.job_service.name %> (<%= task.job_service.job_service_group.name %>)
@@ -22,14 +24,14 @@
           <div class="card-body">
             <!-- Base Fee -->
             <div class="form-group">
-              <%= label_tag "job_task_quote_price_#{task.id}", "Base Fee (CAD)" %>
+              <%= label_tag "job_task_quote_price_#{task.id}", t(".base_fee") %>
               <div class="input-group mb-3">
                 <div class="input-group-prepend">
                   <span class="input-group-text">$</span>
                 </div>
                 <%= number_field_tag "job_task_quote_price_#{task.id}",
-                      (job_task_quote.price.presence || money_input_value(task.job_type.service_fee)),
-                      placeholder: 'value',
+                      (job_task_quote.price.presence || money_input_value(task.job_type&.service_fee)),
+                      placeholder: t(".value"),
                       step: '0.01', class: 'form-control money-input base-fee' %>
               </div>
             </div>
@@ -37,26 +39,27 @@
             <!-- Service -->
             <% if task.job_service.present? %>
               <% default_service_price = @job_order.user.internal? ? task.job_service.internal_price : task.job_service.external_price %>
+              <% service_unit = task.job_service.unit.presence || t(".unit") %>
               <div class="row">
                 <div class="col-md-6">
                   <div class="form-group">
-                    <%= label_tag "task_#{task.id}_service_qty", "Number of #{task.job_service.unit || 'unit'}" %>
+                    <%= label_tag "task_#{task.id}_service_qty", t(".service_quantity", unit: service_unit) %>
                     <%= number_field_tag "task_#{task.id}_service_qty",
                           (task.job_task_quote.service_quantity.presence || 0),
-                          placeholder: 'value', 
+                          placeholder: t(".value"), 
                           step: '0.01', class: 'form-control service-qty' %>
                   </div>
                 </div>
                 <div class="col-md-6">
                   <div class="form-group">
-                    <%= label_tag "task_#{task.id}_service_price", "Price per #{task.job_service.unit || 'unit'} (CAD)" %>
+                    <%= label_tag "task_#{task.id}_service_price", t(".service_price", unit: service_unit) %>
                     <div class="input-group mb-3">
                       <div class="input-group-prepend">
                         <span class="input-group-text">$</span>
                       </div>
                       <%= number_field_tag "task_#{task.id}_service_price",
                             (task.job_task_quote.service_price.presence || money_input_value(default_service_price)),
-                            placeholder: "value",
+                            placeholder: t(".value"),
                             step: '0.01', class: 'form-control money-input service-price' %>
                     </div>
                   </div>
@@ -66,16 +69,15 @@
 
             <!-- Options -->
             <% task.job_task_options.each do |option| %>
-              <% qt_option = job_task_quote.job_task_quote_options.find_or_initialize_by(job_option_id: option.job_option_id) %>
               <div class="form-group">
-                <%= label_tag "task_#{task.id}_option_price_#{option.job_option_id}", "#{option.job_option.name} (CAD)" %>
+                <%= label_tag "task_#{task.id}_option_price_#{option.job_option_id}", t(".option_price", name: option.job_option.name) %>
                 <div class="input-group mb-3">
                   <div class="input-group-prepend">
                     <span class="input-group-text">$</span>
                   </div>
                   <%= number_field_tag "task_#{task.id}_option_price_#{option.job_option_id}",
-                        (qt_option.price.presence || money_input_value(option.job_option.fee)),
-                        placeholder: 'value',
+                        (option_prices[[task.id, option.job_option_id]].presence || money_input_value(option.job_option.fee)),
+                        placeholder: t(".value"),
                         step: '0.01', class: 'form-control money-input option-price' %>
                 </div>
               </div>
@@ -83,7 +85,7 @@
 
             <!-- Staff Files -->
             <div class="form-group my-3">
-              <%= label_tag "task_#{task.id}_staff_files", 'Staff Files (GCode, PDF, etc.)' %>
+              <%= label_tag "task_#{task.id}_staff_files_", t(".staff_files") %>
               <%= file_field_tag "task_#{task.id}_staff_files[]", multiple: true, class: 'form-control inanimate mb-2' %>
             </div>
           </div>
@@ -93,20 +95,20 @@
       <!-- Line Items -->
       <div class="card mb-4">
         <div class="card-header">
-          <h5 class="m-0">Additional Line Items</h5>
+          <h5 class="m-0"><%= t(".line_items") %></h5>
         </div>
         <div class="card-body">
           <div id="line-items-container">
             <% @job_order.job_quote_line_items.each_with_index do |item, i| %>
               <div class="d-flex mb-2 gap-1 line-item">
-                <%= text_field_tag "job_quote_line_items[#{i}][description]", item.description, class: "form-control w-50", placeholder: "Description" %>
+                <%= text_field_tag "job_quote_line_items[#{i}][description]", item.description, class: "form-control w-50", placeholder: t(".description") %>
                 <div class="input-group w-25">
                   <span class="input-group-text">$</span>
                   <%= number_field_tag "job_quote_line_items[#{i}][price]", 
                       (item.price.presence || "0.00"),
                       step: "0.01", 
                       class: "form-control money-input line-item-price", 
-                      placeholder: "value" %>
+                      placeholder: t(".value") %>
                 </div>
                 <button class="btn btn-danger line-item-delete ms-2" type="button">
                   <i class="fa fa-trash"></i>
@@ -115,11 +117,11 @@
             <% end %>
           </div>
 
-          <button type="button" class="btn btn-outline-primary" id="new-line-item">New Line Item</button>
+          <button type="button" class="btn btn-outline-primary" id="new-line-item"><%= t(".new_line_item") %></button>
 
         <!-- template -->
           <div class="mb-2 gap-1 line-item" id="new-line-item-template" style="display: none;">
-            <%= text_field_tag "job_quote_line_items[__INDEX__][description]", nil, class: "form-control w-50", placeholder: "Description" %>
+            <%= text_field_tag "job_quote_line_items[__INDEX__][description]", nil, class: "form-control w-50", placeholder: t(".description") %>
             <div class="input-group w-25">
               <span class="input-group-text">$</span>
               <%= number_field_tag "job_quote_line_items[__INDEX__][price]", nil, step: "0.01", class: "form-control money-input line-item-price", placeholder: "0.00" %>
@@ -133,21 +135,21 @@
 
       <!-- User Comments -->
       <div class="form-group mb-3">
-        <%= f.label :user_comments, 'Comments for the user (will send as a chat)' %>
-        <%= text_field_tag :user_comments, nil, placeholder: 'I will need to add supports', class: 'form-control inanimate mb-2' %>
+        <%= label_tag :quote_user_comments, t(".user_comments") %>
+        <%= text_field_tag :user_comments, nil, id: 'quote_user_comments', placeholder: t(".user_comments_placeholder"), class: 'form-control inanimate mb-2' %>
       </div>
 
       <div class="form-group mb-3">
-        <%= f.label :staff_comments, 'Comments for the staff members' %>
-        <%= f.text_field :staff_comments, placeholder: 'Use the Raise 3D', class: 'form-control inanimate' %>
+        <%= f.label :staff_comments, t(".staff_comments") %>
+        <%= f.text_field :staff_comments, placeholder: t(".staff_comments_placeholder"), class: 'form-control inanimate' %>
       </div>
 
       <!-- Total Display -->
       <div class="alert alert-info text-end fw-bold" id="quote-total">
-        Total: $<span id="quote-total-value">0.00</span>
+        <%= t(".total_html", amount: tag.span(number_with_precision(0, precision: 2), id: "quote-total-value")) %>
       </div>
 
-      <%= f.submit 'Approve', class: 'btn btn-primary' %>
+      <%= f.submit t(".approve"), class: 'btn btn-primary' %>
     </div>
   <% end %>
 </div>

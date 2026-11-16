@@ -20,7 +20,7 @@
               <b>Select to what public you want this to appear</b> <br />
               <div class="d-inline-block text-start form-check">
                 <%= f.radio_button :public_goal, 'volunteer', style: 'display:inline', class: 'form-check-input' %>
-                <%= f.label :public_goal, 'Volunteers', style: 'display:inline', class: 'form-label' %>
+                <%= f.label :public_goal, 'Volunteers', value: 'volunteer', style: 'display:inline', class: 'form-label' %>
                 <br />
               </div>
             </div>
@@ -28,18 +28,18 @@
               <b>Select if this announcements is active</b> <br />
               <div class="d-inline-block text-start form-check">
                 <%= f.radio_button :active, true, style: 'display:inline', class: 'form-check-input' %>
-                <%= f.label :active, 'Yes', style: 'display:inline', class: 'form-label' %>
+                <%= f.label :active, 'Yes', value: true, style: 'display:inline', class: 'form-label' %>
                 <br />
                 <%= f.radio_button :active, false, style: 'display:inline', class: 'form-check-input' %>
-                <%= f.label :active, 'No', style: 'display:inline', class: 'form-label' %>
+                <%= f.label :active, 'No', value: false, style: 'display:inline', class: 'form-label' %>
                 <br />
               </div>
             </div>
             <div class="mb-3 col-md-4"></div>
-            <div class="mb-3 col-md-4 text-center">
-              <%= f.label :end_time, 'End Date (Optional)', class: 'form-label' %>
-              <%= f.text_field 'end_date', autocomplete: 'off', class: 'form-control mb-3', id: 'end_date' %>
-              <button class="btn btn-danger btn-sm" type="button" onclick="clearEndDate();">Clear End Date</button>
+            <div class="mb-3 col-md-4 text-center" data-controller="date-picker">
+              <%= f.label :end_date, 'End Date (Optional)', for: 'end_date', class: 'form-label' %>
+              <%= f.date_field :end_date, autocomplete: 'off', class: 'form-control mb-3', id: 'end_date', placeholder: 'Select date...', data: { date_picker_target: 'input' } %>
+              <button class="btn btn-danger btn-sm" type="button" data-action="date-picker#clear">Clear End Date</button>
             </div>
             <div class="col-md-4"></div>
             <div class="col-lg-12 text-center">

@@ -16,7 +16,7 @@ RSpec.describe "Admin CDEL reports", type: :request do
 
   let!(:world) do
     space = create(:space, name: "Cdel Space")
-    student = create(:user, :student, name: "Cora Student", email: "cora@example.test",
+    student = create(:user, :student, name: "Cora Student", email: "cora@uottawa.ca",
                      username: "corastudent", created_at: march_10)
     training = create(:training, name_en: "Cdel Training")
     session = create(:training_session, space: space, training: training,
@@ -40,7 +40,7 @@ RSpec.describe "Admin CDEL reports", type: :request do
         expect_admin_area_bounce(guest: role == :guest)
         get admin_cdel_reports_generate_path, params: range.merge(visitors: "Dump visitors")
         expect_admin_area_bounce(guest: role == :guest)
-        expect(response.body).not_to include("cora@example.test")
+        expect(response.body).not_to include("cora@uottawa.ca")
       end
     end
 
@@ -66,7 +66,7 @@ RSpec.describe "Admin CDEL reports", type: :request do
       expect(rows.first).to eq(%w[users.id users.name users.email users.identity users.student_id users.program
                                    spaces.name lab_sessions.sign_in_time lab_sessions.sign_out_time])
       expect(rows.size).to eq(2)
-      expect(rows[1][0..2]).to eq([world[:student].id.to_s, "Cora Student", "cora@example.test"])
+      expect(rows[1][0..2]).to eq([world[:student].id.to_s, "Cora Student", "cora@uottawa.ca"])
       expect(rows[1][6]).to eq("Cdel Space")
     end
 
@@ -88,7 +88,7 @@ RSpec.describe "Admin CDEL reports", type: :request do
       expect(rows.first).to eq(%w[users.id users.name users.email users.identity users.student_id users.program
                                    users.username users.created_at users.last_signed_in_time users.last_seen_at
                                    users.use users.how_heard_about_us users.confirmed])
-      data = rows.find { |r| r[2] == "cora@example.test" }
+      data = rows.find { |r| r[2] == "cora@uottawa.ca" }
       expect(data[4]).to eq(world[:student].student_id)
       expect(data[6]).to eq("corastudent")
     end
@@ -113,36 +113,71 @@ RSpec.describe "Admin CDEL reports", type: :request do
       expect(response.body).to be_empty
     end
 
-    it "a range report excludes records made on the end date itself" do
-      # the end date is a Date (midnight), so rows created later on the 'To' day fall outside the dump
-      create(:user, :student, email: "lastday@example.test", created_at: Time.utc(2026, 3, 31, 12))
-      get admin_cdel_reports_generate_path, params: range.merge(new_users: "x")
-      expect(csv_rows.map { |r| r[2] }).not_to include("lastday@example.test")
+    context "on a server in another time zone" do
+      around do |example|
+        server_zone = ENV.fetch("TZ", nil)
+        ENV["TZ"] = "Asia/Tokyo"
+        example.run
+      ensure
+        ENV["TZ"] = server_zone
+      end
+
+      it "a range report covers the whole From and To days in Toronto" do
+        # 21:00 on Feb 28 in Toronto is already March 1 in UTC
+        create(:user, :student, email: "eve@uottawa.ca", created_at: Time.zone.local(2026, 2, 28, 21))
+        create(:user, :student, email: "firstday@uottawa.ca", created_at: Time.zone.local(2026, 3, 1, 0, 30))
+        create(:user, :student, email: "lastday@uottawa.ca", created_at: Time.zone.local(2026, 3, 31, 23, 30))
+        create(:user, :student, email: "nextday@uottawa.ca", created_at: Time.zone.local(2026, 4, 1, 0, 30))
+        get admin_cdel_reports_generate_path, params: range.merge(new_users: "x")
+        emails = csv_rows.map { |r| r[2] }
+        expect(emails).to include("firstday@uottawa.ca", "lastday@uottawa.ca", "cora@uottawa.ca")
+        expect(emails).not_to include("eve@uottawa.ca", "nextday@uottawa.ca")
+      end
+
+      it "a semester report ends at the end of its last day in Toronto" do
+        # 23:30 on April 30 in Toronto is already May 1 in UTC
+        create(:lab_session, space: world[:space], user: world[:student],
+                             created_at: Time.zone.local(2026, 4, 30, 23, 30))
+        get admin_cdel_reports_generate_path,
+            params: { date_format: "semester", semester_term: "Winter", semester_year: "2026", visitors: "x" }
+        expect(csv_rows.size).to eq(3) # the header, the March 10 visit and the April 30 one
+      end
     end
 
-    it "range with a missing or unparseable date is a 500" do
-      # params[:start_date].to_date is not guarded, so a missing date (nil) or garbage raises instead of a 400/flash
+    it "range with a missing or unparseable date is a 400 naming the date" do
       get admin_cdel_reports_generate_path, params: { date_format: "range", end_date: "2026-03-31", visitors: "x" }
-      expect(response).to have_http_status(:internal_server_error)
-      get admin_cdel_reports_generate_path, params: range.merge(start_date: "garbage", visitors: "x")
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:bad_request)
+      expect(response.body).to eq("Failed to parse start date")
+      get admin_cdel_reports_generate_path, params: range.merge(end_date: "garbage", visitors: "x")
+      expect(response).to have_http_status(:bad_request)
+      expect(response.body).to eq("Failed to parse end date")
     end
 
-    it "no date_format or an unknown semester term: visitors/certifications dump EVERYTHING (nil..nil), new_users is a 500" do
-      # start_date/end_date return nil for a missing date_format or unknown term; visitors/certifications silently become unbounded dumps named 'dump--.csv', new_users raises on nil.to_date
-      get admin_cdel_reports_generate_path, params: { visitors: "x" }
-      expect(response).to have_http_status(:ok)
-      expect(response.headers["Content-Disposition"]).to include("CEED_visitors_dump--.csv")
-      expect(csv_rows.size).to eq(2)
+    it "an inverted range, or one outside the allowed years, is a 400" do
+      get admin_cdel_reports_generate_path, params: range.merge(start_date: "2026-04-01", visitors: "x")
+      expect(response).to have_http_status(:bad_request)
+      get admin_cdel_reports_generate_path, params: range.merge(start_date: "1990-01-01", visitors: "x")
+      expect(response).to have_http_status(:bad_request)
+    end
 
+    it "no date_format or an unknown semester term is a 400 for every report" do
+      %w[visitors certifications new_users].each do |report|
+        get admin_cdel_reports_generate_path, params: { report => "x" }
+        expect(response).to have_http_status(:bad_request), "#{report} without a date_format"
+        expect(response.body).to eq("Choose a semester or a date range")
+
+        get admin_cdel_reports_generate_path,
+            params: { date_format: "semester", semester_term: "Spring", semester_year: "2025", report => "x" }
+        expect(response).to have_http_status(:bad_request), "#{report} with an unknown term"
+        expect(response.body).to eq("Invalid term")
+      end
+    end
+
+    it "a semester year outside the allowed years is a 400" do
       get admin_cdel_reports_generate_path,
-          params: { date_format: "semester", semester_term: "Spring", semester_year: "2025", certifications: "x" }
-      expect(response).to have_http_status(:ok)
-      expect(response.headers["Content-Disposition"]).to include("CEED_certifications_dump--.csv")
-      expect(csv_rows.size).to eq(2)
-
-      get admin_cdel_reports_generate_path, params: { new_users: "x" }
-      expect(response).to have_http_status(:internal_server_error)
+          params: { date_format: "semester", semester_term: "Fall", semester_year: "0", visitors: "x" }
+      expect(response).to have_http_status(:bad_request)
+      expect(response.body).to eq("Invalid year")
     end
   end
 end

@@ -14,7 +14,7 @@
 - `/db`: contains the database schema and migration files
 
   - **Note**: `/db/schema.rb` should only be modified from migrations and should not be directly modified
-
+- `/config/routes.rb`: the HTTP routes entry point; it draws the area files in `/config/routes/` in order, then holds the user and repository catch-all routes, which must stay last
 - `/config/routes.rb`: contains all the HTTP routes within our app
 - `/config/recurring.yml`: the scheduled tasks, run by Solid Queue in the `worker` container
 - `/config/locales`: contains the english and french translation files used in certain parts of the app

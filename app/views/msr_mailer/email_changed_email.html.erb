@@ -1,18 +1,18 @@
 <% content_for :preheader do %>
-  Makerepo - Your email has been changed
+  <%= t(".preheader") %>
 <% end %>
 
 <% content_for :team_name do %>
-  The MakerRepo Team
+  <%= t("layouts.mailer.makerrepo_team") %>
 <% end %>
 
 <% content_for :why_received do %>
-  You have received this email because an email change has been done on your <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a> account.
+  <%= t(".why_received_html", site_link: link_to("makerepo.com", "https://makerepo.com", style: "text-decoration: underline; color: #999999; font-size: 12px; text-align: center;")) %>
 <% end %>
 
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.name %>,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t("msr_mailer.account.hello", name: @user.name) %></p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  Your email has been changed to the following email address : <%= @user.email %>. <br>
-  If you changed it, you don't have to do anything, you can start using your new email address. <br>
-  If you did not make that change, please contact <a href="mailto:uottawa.makerepo@gmail.com">uottawa.makerepo@gmail.com</a> as soon as possible so we can fix this issue.
+  <%= t(".changed_to", email: @user.email) %> <br>
+  <%= t(".if_you") %> <br>
+  <%= t(".if_not_html", contact: mail_to("uottawa.makerepo@gmail.com")) %>
 </p>

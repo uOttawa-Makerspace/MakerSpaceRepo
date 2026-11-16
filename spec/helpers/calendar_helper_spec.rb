@@ -4,8 +4,11 @@ RSpec.describe CalendarHelper, type: :helper do
   include ActiveSupport::Testing::TimeHelpers
 
   describe "#parse_ics_calendar" do
-    let(:path) do
-      Rails.root.join("spec/support/assets/MakerRepo Test Calendar_d1ee6078f7d085e62d99150ed598526f1ead2068937d30d9b3a93b48e4b17dc0@group.calendar.google.com.ics")
+    let(:path) { "https://calendar.example/maker.ics" }
+
+    before do
+      body = Rails.root.join("spec/support/assets/MakerRepo Test Calendar_d1ee6078f7d085e62d99150ed598526f1ead2068937d30d9b3a93b48e4b17dc0@group.calendar.google.com.ics").read
+      stub_request(:get, path).to_return(status: 200, body: body)
     end
 
     it "returns no calendars for a blank url" do
@@ -34,9 +37,9 @@ RSpec.describe CalendarHelper, type: :helper do
         )
         expect(event[:extendedProps]).to eq(name: "Maker", description: nil)
         expect(event).not_to have_key(:rrule)
-        # all-day dates are read as UTC midnight and rendered in Toronto
-        expect(event[:start]).to eq("2025-11-15T19:00:00")
-        expect(event[:end]).to eq("2025-11-16T19:00:00")
+        # all-day dates are calendar dates in Toronto
+        expect(event[:start]).to eq("2025-11-16T00:00:00")
+        expect(event[:end]).to eq("2025-11-17T00:00:00")
       end
     end
 
@@ -74,16 +77,51 @@ RSpec.describe CalendarHelper, type: :helper do
 
     around { |example| travel_to(Time.utc(2027, 1, 10, 12, 0)) { example.run } }
 
+    # The [message, context] of every problem reported (Rails.error) while the block runs.
+    def reported_ics_problems
+      reports = []
+      subscriber = Class.new { define_method(:report) { |error, handled:, severity:, context:, source:| reports << [error.message, context] } }.new
+      Rails.error.subscribe(subscriber)
+      begin
+        yield
+      ensure
+        Rails.error.unsubscribe(subscriber)
+      end
+      reports
+    end
+
     it "returns no calendar at all (not an empty one) when the fetch gives no body" do
       stub_request(:get, url).to_return(status: 404, body: "")
       expect(parse_ics_calendar(url)).to eq([])
     end
 
-    it "logs and returns no events for a body that is not a calendar" do
-      stub_request(:get, url).to_return(status: 200, body: "BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nBROKEN")
+    it "logs and returns no events for a body with a value that is not a date" do
+      stub_request(:get, url).to_return(status: 200, body: ics(vevent("bad", ["DTSTART:notadate", "SUMMARY:Bad"])))
       allow(Rails.logger).to receive(:error)
       expect(parse_ics_calendar(url).first[:events]).to eq([])
-      expect(Rails.logger).to have_received(:error).with(/ICS parse error for #{Regexp.escape(url)}/)
+      expect(Rails.logger).to have_received(:error).with(/ICS parse error for calendar\.example\b/)
+    end
+
+    it "logs only the host of a link, never its path or query" do
+      secret = "https://calendar.example/private/secret-token/feed.ics?key=abc"
+      stub_request(:get, secret).to_return(status: 200, body: ics(vevent("bad", ["DTSTART:notadate", "SUMMARY:Bad"])))
+      logged = []
+      allow(Rails.logger).to receive(:error) { |message| logged << message }
+      parse_ics_calendar(secret)
+      expect(logged).not_to be_empty
+      expect(logged.join).not_to match(/secret-token|key=abc|feed\.ics/)
+    end
+
+    it "reports a feed as failed when it cannot be fetched, is not a calendar, or cannot be read, but not when it is an empty calendar" do
+      stub_request(:get, url).to_return(status: 404, body: "")
+      expect(ics_feed(url, name: "x")).to be_failed
+      stub_request(:get, url).to_return(status: 200, body: "<html>sign in</html>")
+      expect(ics_feed(url, name: "x")).to be_failed
+      stub_request(:get, url).to_return(status: 200, body: ics(vevent("bad", ["DTSTART:notadate"])))
+      expect(ics_feed(url, name: "x")).to be_failed
+      stub_request(:get, url).to_return(status: 200, body: ics)
+      expect(ics_feed(url, name: "x")).not_to be_failed
+      expect(ics_feed(nil, name: "x")).not_to be_failed
     end
 
     it "uses the given name, and groups the calendar under the md5 of its URL" do
@@ -94,13 +132,37 @@ RSpec.describe CalendarHelper, type: :helper do
       expect(group[:events].first[:extendedProps]).to eq(name: "Hours", description: "Walk in")
     end
 
-    it "drops a single event that ended more than two months ago and keeps a recurring one" do
+    it "drops a single event that ended more than two months ago and keeps a series that has not ended" do
       body = ics(
         vevent("old", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Old"]),
-        vevent("rec", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Rec", "RRULE:FREQ=DAILY;COUNT=3"])
+        vevent("rec", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Rec", "RRULE:FREQ=DAILY"])
       )
       stub_request(:get, url).to_return(status: 200, body: body)
       expect(parse_ics_calendar(url).first[:events].map { |e| e[:id] }).to eq(["rec"])
+    end
+
+    it "drops a series whose last day or last counted occurrence was more than two months ago" do
+      body = ics(
+        vevent("until-old", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:A", "RRULE:FREQ=DAILY;UNTIL=20260810T150000Z"]),
+        vevent("count-old", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:B", "RRULE:FREQ=WEEKLY;COUNT=3"]),
+        vevent("until-recent", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:C", "RRULE:FREQ=DAILY;UNTIL=20261220T150000Z"]),
+        vevent("count-recent", ["DTSTART:20261201T150000Z", "DTEND:20261201T160000Z", "SUMMARY:D", "RRULE:FREQ=WEEKLY;COUNT=10"]),
+        vevent("count-straddles", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:E", "RRULE:FREQ=WEEKLY;COUNT=40"]),
+        vevent("count-huge", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:F", "RRULE:FREQ=YEARLY;COUNT=5000"]),
+        vevent("weekno", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:G", "RRULE:FREQ=WEEKLY;BYWEEKNO=3;COUNT=2"])
+      )
+      stub_request(:get, url).to_return(status: 200, body: body)
+      expect(parse_ics_calendar(url).first[:events].map { |e| e[:id] })
+        .to eq(%w[until-recent count-recent count-straddles count-huge weekno])
+    end
+
+    it "still lists a modified instance of a series that has ended when the instance is recent" do
+      body = ics(
+        vevent("rec", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Weekly", "RRULE:FREQ=WEEKLY;COUNT=3"]),
+        vevent("rec", ["RECURRENCE-ID:20260808T150000Z", "DTSTART:20270108T170000Z", "DTEND:20270108T180000Z", "SUMMARY:Moved"])
+      )
+      stub_request(:get, url).to_return(status: 200, body: body)
+      expect(parse_ics_calendar(url).first[:events].map { |e| e[:title] }).to eq(["Moved"])
     end
 
     it "turns a recurring event into an rrule string with DTSTART, the rule, the exdates and a duration in ms" do
@@ -113,7 +175,7 @@ RSpec.describe CalendarHelper, type: :helper do
       event = parse_ics_calendar(url).first[:events].first
       lines = event[:rrule].split("\n")
       expect(lines.first).to eq("DTSTART:20270105T100000")
-      expect(lines[1]).to start_with("RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH;UNTIL=20271231T000000Z")
+      expect(lines[1].delete_prefix("RRULE:").split(";")).to contain_exactly("FREQ=WEEKLY", "INTERVAL=2", "BYDAY=TU,TH", "UNTIL=20271230T190000")
       expect(lines.last).to eq("EXDATE:20270119T100000")
       expect(event[:duration]).to eq(90 * 60 * 1000)
     end
@@ -133,24 +195,44 @@ RSpec.describe CalendarHelper, type: :helper do
       expect(moved[:id]).to eq("rec_#{Time.utc(2027, 1, 12, 15).to_i}")
     end
 
-    it "drops the whole feed when one recurring event has no start (the error is logged, not raised)" do
+    it "leaves out an event that has no start, reports it, and still lists the other events" do
       body = ics(
         vevent("fine", ["DTSTART:20270115T150000Z", "DTEND:20270115T160000Z", "SUMMARY:Fine"]),
-        vevent("nostart", ["DTEND:20270115T160000Z", "SUMMARY:Broken", "RRULE:FREQ=DAILY;COUNT=2"])
+        vevent("nostart", ["DTEND:20270115T160000Z", "SUMMARY:Broken", "RRULE:FREQ=DAILY;COUNT=2"]),
+        vevent("nostart-single", ["DTEND:20270115T160000Z", "SUMMARY:Broken too"])
       )
       stub_request(:get, url).to_return(status: 200, body: body)
-      allow(Rails.logger).to receive(:error)
-      expect(parse_ics_calendar(url).first[:events]).to eq([])
-      expect(Rails.logger).to have_received(:error).with(/ICS parse error for #{Regexp.escape(url)}/)
+      events = nil
+      reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
+      expect(events.map { |e| e[:id] }).to eq(["fine"])
+      expect(reports.size).to eq(1)
+      expect(reports.first.last).to include(kinds: { "ICS event has no usable start" => 2 }, event_uids: %w[nostart nostart-single].map { |uid| Digest::SHA256.hexdigest(uid)[0, 12] },
+                                            calendar: Digest::MD5.hexdigest(url))
     end
 
-    it "gives a recurring event without an end no end time and a negative duration" do
+    # FullCalendar reads an end at the start as no end.
+    it "gives a recurring event without an end its start as end time and no duration" do
       body = ics(vevent("noend", ["DTSTART:20270115T150000Z", "SUMMARY:Open ended", "RRULE:FREQ=DAILY;COUNT=2"]))
       stub_request(:get, url).to_return(status: 200, body: body)
       event = parse_ics_calendar(url).first[:events].first
-      expect(event[:end]).to be_nil
+      expect(event[:end]).to eq("2027-01-15T10:00:00")
       expect(event[:start]).to eq("2027-01-15T10:00:00")
-      expect(event[:duration]).to eq(-Time.utc(2027, 1, 15, 15).to_i * 1000)
+      expect(event).not_to have_key(:duration)
+      expect(event[:rrule]).to start_with("DTSTART:20270115T100000")
+    end
+
+    it "keeps single events and modified instances without an end (an all-day one lasts its day), judging their age by the start" do
+      body = ics(
+        vevent("day", ["DTSTART;VALUE=DATE:20270112", "SUMMARY:All day"]),
+        vevent("old", ["DTSTART:20260801T150000Z", "SUMMARY:Old"]),
+        vevent("rec", ["DTSTART:20270105T150000Z", "DTEND:20270105T160000Z", "SUMMARY:Weekly", "RRULE:FREQ=WEEKLY;COUNT=4"]),
+        vevent("rec", ["RECURRENCE-ID:20270112T150000Z", "DTSTART:20270112T170000Z", "SUMMARY:Moved"]),
+        vevent("rec", ["RECURRENCE-ID:20260101T150000Z", "DTSTART:20260101T170000Z", "SUMMARY:Ancient"])
+      )
+      stub_request(:get, url).to_return(status: 200, body: body)
+      events = parse_ics_calendar(url).first[:events]
+      expect(events.map { |e| e[:title] }).to match_array(["All day", "Weekly", "Moved"])
+      expect(events.find { |e| e[:title] == "All day" }).to include(allDay: true, start: "2027-01-12T00:00:00", end: "2027-01-13T00:00:00")
     end
 
     it "lists a modified instance whose master event is not in the feed" do
@@ -158,6 +240,116 @@ RSpec.describe CalendarHelper, type: :helper do
       stub_request(:get, url).to_return(status: 200, body: body)
       events = parse_ics_calendar(url).first[:events]
       expect(events.map { |e| [e[:title], e[:allDay]] }).to eq([["Alone", true]])
+    end
+
+    it "leaves out a modified instance that has no start of its own, and reports it" do
+      body = ics(
+        vevent("rec", ["DTSTART:20270105T150000Z", "DTEND:20270105T160000Z", "SUMMARY:Weekly", "RRULE:FREQ=WEEKLY;COUNT=4"]),
+        vevent("rec", ["RECURRENCE-ID:20270112T150000Z", "DTEND:20270112T180000Z", "SUMMARY:No start"])
+      )
+      stub_request(:get, url).to_return(status: 200, body: body)
+      events = nil
+      reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
+      expect(events.map { |e| e[:title] }).to eq(["Weekly"])
+      expect(reports.map { |_, context| [context[:kinds], context[:event_uids]] }).to eq([[{ "ICS event has no usable start" => 1 }, [Digest::SHA256.hexdigest("rec")[0, 12]]]])
+    end
+
+    ["FREQ=WEEKLY;BYDAY=MO,TU,TH;COUNT=6", "FREQ=MONTHLY;BYDAY=1MO,-1FR;COUNT=6"].each do |rule|
+      it "lists #{rule} without reporting its weekday list" do
+        body = ics(vevent("days", ["DTSTART:20261201T150000Z", "DTEND:20261201T160000Z", "SUMMARY:Days", "RRULE:#{rule}"]))
+        stub_request(:get, url).to_return(status: 200, body: body)
+        events = nil
+        reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
+        expect(reports).to eq([])
+        expect(events.map { |e| e[:id] }).to eq(["days"])
+        expect(events.first[:rrule]).to include("BYDAY=#{rule[/BYDAY=([^;]+)/, 1]}")
+      end
+    end
+  end
+
+  describe "#parse_ics_calendar with all-day events" do
+    let(:url) { "https://calendar.example/all-day.ics" }
+
+    def ics(*vevents)
+      (["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//spec//EN"] + vevents.flatten + ["END:VCALENDAR"]).join("\r\n") + "\r\n"
+    end
+
+    def vevent(uid, lines)
+      ["BEGIN:VEVENT", "UID:#{uid}", "DTSTAMP:20260101T000000Z", *lines, "END:VEVENT"]
+    end
+
+    def events_for(body, now: Time.utc(2026, 10, 28, 16, 0))
+      stub_request(:get, url).to_return(status: 200, body: body)
+      travel_to(now) { parse_ics_calendar(url).first[:events] }
+    end
+
+    def in_process_zone(zone)
+      original = ENV["TZ"]
+      ENV["TZ"] = zone
+      yield
+    ensure
+      ENV["TZ"] = original
+    end
+
+    %w[UTC America/Toronto America/Vancouver].each do |zone|
+      context "when the process zone is #{zone}" do
+        around { |example| in_process_zone(zone) { example.run } }
+
+        it "keeps a single all-day date on that date, with the exclusive end on the next date" do
+          events = events_for(ics(vevent("one", ["DTSTART;VALUE=DATE:20261030", "DTEND;VALUE=DATE:20261031", "SUMMARY:Closed"])))
+          expect(events.first).to include(allDay: true, start: "2026-10-30T00:00:00", end: "2026-10-31T00:00:00")
+        end
+
+        it "keeps a multi-day all-day span on its dates, ending on the exclusive end date" do
+          events = events_for(ics(vevent("span", ["DTSTART;VALUE=DATE:20261030", "DTEND;VALUE=DATE:20261102", "SUMMARY:Break"])))
+          expect(events.first).to include(allDay: true, start: "2026-10-30T00:00:00", end: "2026-11-02T00:00:00")
+        end
+
+        it "keeps all-day dates on the days clocks change" do
+          body = ics(
+            vevent("spring", ["DTSTART;VALUE=DATE:20260308", "DTEND;VALUE=DATE:20260309", "SUMMARY:Spring"]),
+            vevent("fall", ["DTSTART;VALUE=DATE:20261101", "DTEND;VALUE=DATE:20261102", "SUMMARY:Fall"])
+          )
+          events = events_for(body, now: Time.utc(2026, 3, 1, 12, 0)).index_by { |e| e[:title].to_s }
+          expect(events["Spring"]).to include(start: "2026-03-08T00:00:00", end: "2026-03-09T00:00:00")
+          fall = events_for(body, now: Time.utc(2026, 10, 28, 12, 0)).index_by { |e| e[:title].to_s }["Fall"]
+          expect(fall).to include(start: "2026-11-01T00:00:00", end: "2026-11-02T00:00:00")
+        end
+
+        it "keeps the dates of a recurring all-day series, its exceptions and its end" do
+          body = ics(vevent("series", ["DTSTART;VALUE=DATE:20261030", "DTEND;VALUE=DATE:20261031", "SUMMARY:Weekly",
+                                       "RRULE:FREQ=WEEKLY;UNTIL=20261231", "EXDATE;VALUE=DATE:20261106"]))
+          event = events_for(body).first
+          expect(event[:start]).to eq("2026-10-30T00:00:00")
+          expect(event[:rrule]).to eq("DTSTART:20261030T000000\nRRULE:FREQ=WEEKLY;UNTIL=20261231T235959\nEXDATE:20261106T000000")
+        end
+
+        it "reads a floating time as Toronto wall-clock time" do
+          body = ics(vevent("floating", ["DTSTART:20261030T090000", "DTEND:20261030T100000", "SUMMARY:Open"]))
+          expect(events_for(body).first).to include(allDay: false, start: "2026-10-30T09:00:00", end: "2026-10-30T10:00:00")
+        end
+
+        it "reads floating times on the days clocks change as Toronto wall-clock time" do
+          spring = ics(vevent("spring", ["DTSTART:20260308T090000", "DTEND:20260308T170000", "SUMMARY:Spring"]))
+          expect(events_for(spring, now: Time.utc(2026, 3, 1, 12, 0)).first).to include(start: "2026-03-08T09:00:00", end: "2026-03-08T17:00:00")
+          fall = ics(vevent("fall", ["DTSTART:20261101T090000", "DTEND:20261101T170000", "SUMMARY:Fall"]))
+          expect(events_for(fall).first).to include(start: "2026-11-01T09:00:00", end: "2026-11-01T17:00:00")
+        end
+
+        it "keeps a floating recurring series, its exceptions and its end in Toronto wall-clock time" do
+          body = ics(vevent("series", ["DTSTART:20261030T090000", "DTEND:20261030T100000", "SUMMARY:Weekly",
+                                       "RRULE:FREQ=WEEKLY;UNTIL=20261231T235959", "EXDATE:20261106T090000"]))
+          event = events_for(body).first
+          expect(event[:start]).to eq("2026-10-30T09:00:00")
+          expect(event[:rrule]).to eq("DTSTART:20261030T090000\nRRULE:FREQ=WEEKLY;UNTIL=20261231T235959\nEXDATE:20261106T090000")
+          expect(event[:duration]).to eq(3_600_000)
+        end
+
+        it "leaves timed events on their own instant" do
+          body = ics(vevent("timed", ["DTSTART:20261030T150000Z", "DTEND:20261030T160000Z", "SUMMARY:Open"]))
+          expect(events_for(body).first).to include(allDay: false, start: "2026-10-30T11:00:00", end: "2026-10-30T12:00:00")
+        end
+      end
     end
   end
 
@@ -192,126 +384,26 @@ RSpec.describe CalendarHelper, type: :helper do
     end
   end
 
-  describe "#convert_rrule_to_string" do
-    it "joins every present part and leaves an interval of one out" do
-      rule = OpenStruct.new(frequency: "WEEKLY", interval: 1, by_day: %w[MO WE], by_month_day: [1, 2], by_month: [3],
-                            by_year_day: [100], by_week_number: [5], by_set_position: [-1],
-                            until: Time.utc(2027, 6, 1, 12), count: 5, week_start: "SU")
-      expect(convert_rrule_to_string(rule)).to eq(
-        "FREQ=WEEKLY;BYDAY=MO,WE;BYMONTHDAY=1,2;BYMONTH=3;BYYEARDAY=100;BYWEEKNO=5;BYSETPOS=-1;" \
-        "UNTIL=20270601T120000Z;COUNT=5;WKST=SU"
-      )
+  describe "#calendar_texts_data" do
+    def texts(locale)
+      JSON.parse(I18n.with_locale(locale) { calendar_texts_data }.fetch(:calendar_texts))
     end
 
-    it "writes an interval other than one and skips empty and missing parts" do
-      rule = OpenStruct.new(frequency: "DAILY", interval: 3, by_day: [], by_month_day: nil, until: nil, count: nil, week_start: nil)
-      expect(convert_rrule_to_string(rule)).to eq("FREQ=DAILY;INTERVAL=3")
-      expect(convert_rrule_to_string(OpenStruct.new)).to eq("")
+    it "gives the calendar its words in English, keyed by the names the script reads" do
+      english = texts(:en)
+
+      expect(english["hints"]).to eq("closeHint" => "Close", "timeHint" => "Time", "eventHint" => "Event", "navLinkHint" => "Go to $0")
+      expect(english["daysButtonHints"]).to eq("prev" => "Previous days", "next" => "Next days")
+      expect(english["publishDrafts"]).to eq("timeGridWeek" => "Publish This Week's Drafts", "dayGridMonth" => "Publish This Month's Drafts")
+      expect(english).to include("showMyShiftsOnly" => "Show My Shifts Only", "hours" => "{hours} hrs", "book" => "Book")
     end
 
-    it "leaves UNTIL out when it cannot be read as a time" do
-      unreadable = Object.new
-      def unreadable.to_s = "never"
-      expect(convert_rrule_to_string(OpenStruct.new(frequency: "DAILY", until: unreadable))).to eq("FREQ=DAILY")
-    end
-  end
+    it "gives them in French on a French page, with the same names" do
+      french = texts(:fr)
 
-  describe "#date_formatted_recurrence_rule" do
-    let(:start_time) { Time.utc(2027, 5, 5, 13, 0) }
-
-    it "is nil without a recurrence rule" do
-      expect(date_formatted_recurrence_rule(OpenStruct.new(recurrence_rule: nil))).to be_nil
-      expect(date_formatted_recurrence_rule(OpenStruct.new(recurrence_rule: ""))).to be_nil
-    end
-
-    it "rebuilds DTSTART in Toronto time and puts each EXDATE on its own line" do
-      event = OpenStruct.new(start_time: start_time,
-                             recurrence_rule: "DTSTART:20270505T130000Z\nRRULE:FREQ=WEEKLY;BYDAY=WE\nEXDATE:20270512T130000Z")
-      expect(date_formatted_recurrence_rule(event)).to eq("DTSTART:20270505T090000\nRRULE:FREQ=WEEKLY;BYDAY=WE\nEXDATE:20270512T090000")
-    end
-
-    it "keeps a rule without exdates as it is after the new DTSTART" do
-      event = OpenStruct.new(start_time: start_time, recurrence_rule: "RRULE:FREQ=DAILY;COUNT=2")
-      expect(date_formatted_recurrence_rule(event)).to eq("DTSTART:20270505T090000\nRRULE:FREQ=DAILY;COUNT=2")
-    end
-  end
-
-  describe "#parse_rrule_and_dtstart" do
-    it "splits the rule, the start (as UTC) and the other lines" do
-      rrule, dtstart, rest = parse_rrule_and_dtstart("DTSTART:20270505T130000Z\nRRULE:FREQ=DAILY\nEXDATE:20270506T130000Z")
-      expect(rrule).to eq("FREQ=DAILY")
-      expect(dtstart).to eq(Time.utc(2027, 5, 5, 13))
-      expect(rest).to eq(["EXDATE:20270506T130000Z"])
-    end
-
-    it "returns nil for a missing start or rule" do
-      rrule, dtstart, rest = parse_rrule_and_dtstart("EXDATE:20270506T130000Z")
-      expect([rrule, dtstart, rest]).to eq([nil, nil, ["EXDATE:20270506T130000Z"]])
-    end
-  end
-
-  describe "#add_exdate_to_rrule" do
-    it "appends the date as a UTC EXDATE line" do
-      expect(add_exdate_to_rrule("RRULE:FREQ=DAILY", Time.utc(2027, 5, 6, 13))).to eq("RRULE:FREQ=DAILY\nEXDATE:20270506T130000Z")
-    end
-
-    it "returns the rule untouched when either input is blank" do
-      expect(add_exdate_to_rrule("RRULE:FREQ=DAILY", nil)).to eq("RRULE:FREQ=DAILY")
-      expect(add_exdate_to_rrule(nil, Time.utc(2027, 5, 6))).to be_nil
-      expect(add_exdate_to_rrule("", Time.utc(2027, 5, 6))).to eq("")
-    end
-  end
-
-  describe "#combine_date_and_time" do
-    it "keeps the date and takes the clock time" do
-      result = combine_date_and_time(Time.utc(2027, 5, 6, 1, 2, 3), Time.utc(2020, 1, 1, 13, 45, 30))
-      expect(result).to eq(Time.utc(2027, 5, 6, 13, 45, 30))
-    end
-  end
-
-  describe "#remove_until_from_rrule" do
-    it "removes an UNTIL part ending in Z and leaves other rules alone" do
-      expect(remove_until_from_rrule("FREQ=DAILY;UNTIL=20270601T120000Z;COUNT=2")).to eq("FREQ=DAILY;COUNT=2")
-      expect(remove_until_from_rrule("FREQ=DAILY;COUNT=2")).to eq("FREQ=DAILY;COUNT=2")
-    end
-  end
-
-  describe "#safe_to_time" do
-    it "is nil for nil and for text that is not a time" do
-      expect(safe_to_time(nil)).to be_nil
-      expect(safe_to_time(Object.new.tap { |o| def o.to_time = raise("bad") })).to be_nil
-      unreadable = Object.new
-      def unreadable.to_s = "never"
-      expect(safe_to_time(unreadable)).to be_nil
-    end
-
-    it "returns UTC for a time, a non-UTC time and a date" do
-      expect(safe_to_time(Time.utc(2027, 1, 1, 5))).to eq(Time.utc(2027, 1, 1, 5))
-      zoned = Time.new(2027, 1, 1, 5, 0, 0, "-05:00")
-      expect(safe_to_time(zoned)).to eq(Time.utc(2027, 1, 1, 10))
-      expect(safe_to_time(zoned)).to be_utc
-      expect(safe_to_time(Date.new(2027, 1, 1)).utc?).to be(true)
-    end
-
-    it "parses a value that has no to_time" do
-      value = Object.new
-      def value.to_s = "2027-01-01 05:00:00 UTC"
-      expect(safe_to_time(value)).to eq(Time.utc(2027, 1, 1, 5))
-    end
-  end
-
-  describe "#convert_to_js_rrule" do
-    it "maps every present field to the JS rrule keys, shortening the weekdays to two letters" do
-      rule = OpenStruct.new(frequency: "WEEKLY", interval: 2, by_day: %w[MO WE], until: "2027-06-01", count: 4,
-                            by_hour: [9], by_month: [1], week_start: "SU")
-      expect(convert_to_js_rrule(rule)).to eq(
-        freq: "weekly", interval: 2, byweekday: %w[mo we], until: "2027-06-01", count: 4,
-        by_hour: [9], by_month: [1], wkst: "SU"
-      )
-    end
-
-    it "is empty for a rule with nothing set" do
-      expect(convert_to_js_rrule(OpenStruct.new)).to eq({})
+      expect(french.keys).to match_array(texts(:en).keys)
+      expect(french["hints"]).to include("closeHint" => "Fermer", "navLinkHint" => "Aller au $0")
+      expect(french).to include("showMyShiftsOnly" => "Afficher seulement mes quarts", "book" => "Réserver")
     end
   end
 end

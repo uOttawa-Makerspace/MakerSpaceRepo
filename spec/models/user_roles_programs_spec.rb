@@ -26,6 +26,43 @@ RSpec.describe User do
     end
   end
 
+  describe "#change_role! cable disconnect" do
+    let(:calls) { [] }
+
+    before do
+      allow(ActionCable.server.remote_connections).to receive(:where) do |current_user:|
+        double("remote").tap { |remote| allow(remote).to receive(:disconnect) { calls << current_user.id } }
+      end
+    end
+
+    it "closes the connections of a staff member or admin demoted below staff, once" do
+      staff = create(:user, :staff)
+      staff.change_role!("regular_user")
+      expect(calls).to eq([staff.id])
+    end
+
+    it "does not close them on a promotion or a change between staff and admin" do
+      user = create(:user, :regular_user)
+      %w[staff admin staff].each { |role| user.change_role!(role) }
+      expect(calls).to be_empty
+    end
+
+    it "closes them after the outer transaction commits, and not when it rolls back" do
+      kept = create(:user, :staff)
+      undone = create(:user, :staff)
+      User.transaction do
+        kept.change_role!("regular_user")
+        expect(calls).to be_empty
+      end
+      expect(calls).to eq([kept.id])
+      User.transaction do
+        undone.change_role!("regular_user")
+        raise ActiveRecord::Rollback
+      end
+      expect(calls).to eq([kept.id])
+    end
+  end
+
   describe "#sync_programs!" do
     let(:user) { create(:user) }
 
@@ -33,6 +70,90 @@ RSpec.describe User do
       user.programs.create!(program_type: Program::TEAMS)
       expect(user.sync_programs!(development: true, volunteer: true)).to match_array([Program::DEV_PROGRAM, Program::VOLUNTEER, Program::TEAMS])
       expect(user.sync_programs!(development: false, volunteer: true, teams: false)).to eq([Program::VOLUNTEER])
+    end
+  end
+
+  describe ".promote_to_staff!" do
+    it "promotes a regular user and leaves staff and admin roles alone" do
+      regular = create(:user, :regular_user)
+      admin = create(:user, :admin)
+      staff = create(:user, :staff)
+      User.promote_to_staff!([regular.id, admin.id, staff.id])
+      expect([regular, admin, staff].map { |u| u.reload.role }).to eq(%w[staff admin staff])
+    end
+
+    it "promotes a user whose role is empty" do
+      blank = create(:user, :regular_user)
+      User.where(id: blank.id).update_all(role: nil)
+      User.promote_to_staff!([blank.id])
+      expect(blank.reload.role).to eq("staff")
+    end
+
+    it "leaves a user who became admin since they were loaded as an admin" do
+      stale = create(:user, :regular_user)
+      User.where(id: stale.id).update_all(role: "admin")
+      expect { User.promote_to_staff!([stale.id]) }.not_to raise_error
+      expect(stale.reload.role).to eq("admin")
+    end
+  end
+
+  describe ".delete_account! actor check" do
+    it "refuses when the actor was demoted after the actor was loaded" do
+      actor = create(:user, :admin)
+      create(:user, :admin)
+      target = create(:user, :regular_user)
+      stale_actor = User.find(actor.id)
+      actor.update_column(:role, "regular_user")
+
+      expect { User.delete_account!(target, actor: stale_actor) }.to raise_error(User::NotAdminError)
+      expect(target.reload.deleted).to be(false)
+    end
+
+    it "refuses when there is no actor" do
+      create(:user, :admin)
+      target = create(:user, :regular_user)
+
+      expect { User.delete_account!(target, actor: nil) }.to raise_error(User::NotAdminError)
+      expect(target.reload.deleted).to be(false)
+    end
+
+    it "deletes when the actor is still an admin" do
+      actor = create(:user, :admin)
+      target = create(:user, :regular_user)
+
+      expect(User.delete_account!(target, actor: actor)).to be(true)
+    end
+
+    it "removes the deleted user's uOEng record and no other user's" do
+      actor = create(:user, :admin)
+      target = create(:user, :regular_user)
+      other = create(:user, :regular_user)
+      [target, other].each { |u| UoengProfile.create!(user: u, source: "email", checked_at: Time.current) }
+
+      User.delete_account!(target, actor: actor)
+
+      expect(UoengProfile.where(user: target)).to be_empty
+      expect(UoengProfile.where(user: other).count).to eq(1)
+    end
+
+    it "keeps the uOEng record when a later step of the deletion fails" do
+      actor = create(:user, :admin)
+      target = create(:user, :regular_user)
+      UoengProfile.create!(user: target, source: "email", checked_at: Time.current)
+      allow(target).to receive(:soft_delete!).and_raise(ActiveRecord::StatementInvalid, "write failed")
+
+      expect { User.delete_account!(target, actor: actor) }.to raise_error(ActiveRecord::StatementInvalid)
+      expect(UoengProfile.where(user: target).count).to eq(1)
+      expect(target.reload.deleted).to be(false)
+    end
+
+    it "keeps the uOEng record when the deletion is refused" do
+      create(:user, :admin)
+      target = create(:user, :regular_user)
+      UoengProfile.create!(user: target, source: "email", checked_at: Time.current)
+
+      expect { User.delete_account!(target, actor: nil) }.to raise_error(User::NotAdminError)
+      expect(UoengProfile.where(user: target).count).to eq(1)
     end
   end
 
@@ -56,20 +177,21 @@ RSpec.describe User do
       expect(user.programs.reload.pluck(:program_type)).to eq([Program::VOLUNTEER])
     end
 
-    it "rolls back an earlier leave when a later join is invalid" do
+    it "rolls back an earlier leave when a later join fails" do
       user = create(:user)
       user.programs.create!(program_type: Program::DEV_PROGRAM)
-      allow_any_instance_of(Program).to receive(:valid?).and_return(false)
-      expect { user.sync_programs!(development: false, volunteer: true) }.to raise_error(ActiveRecord::RecordInvalid)
+      allow(Program).to receive(:join).and_raise(ActiveRecord::StatementInvalid, "boom")
+      expect { user.sync_programs!(development: false, volunteer: true) }.to raise_error(ActiveRecord::StatementInvalid)
       expect(user.programs.reload.pluck(:program_type)).to eq([Program::DEV_PROGRAM])
     end
   end
 
   describe ".text_search" do
-    it "does not escape wildcards (legacy staff dashboard behaviour)" do
+    it "matches wildcard characters in the query literally" do
       u = create(:user, name: "Wild Card")
-      expect(User.text_search("%")).to include(u)
-      expect(User.text_search(User.sanitize_sql_like("%"))).not_to include(u)
+      pct = create(:user, name: "100% Real")
+      expect(User.text_search("%")).to contain_exactly(pct)
+      expect(User.text_search("_")).not_to include(u)
     end
   end
 end

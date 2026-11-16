@@ -14,12 +14,7 @@ class Admin::SpacesController < AdminAreaController
 
   def create
     space = Space.new(space_params)
-    if space.save
-      flash[:notice] = "Space created successfully!"
-    else
-      flash[:alert] = "Something went wrong."
-    end
-
+    flash_write(space, "spaces.not_created", t("admin_area.spaces.flash.created")) { space.save_with_popular_hours }
     redirect_back(fallback_location: root_path)
   end
 
@@ -33,9 +28,9 @@ class Admin::SpacesController < AdminAreaController
       sub_space.approval_required =
         params[:approval_required] == "1"
       sub_space.save
-      flash[:notice] = "Sub Space created!"
+      flash[:notice] = t("admin_area.spaces.flash.sub_space_created")
     else
-      flash[:alert] = "Please enter a name for the sub space"
+      flash[:alert] = t("admin_area.spaces.flash.sub_space_name_missing")
     end
     redirect_back(fallback_location: root_path)
   end
@@ -43,11 +38,10 @@ class Admin::SpacesController < AdminAreaController
   def delete_sub_space
     if params[:id].present?
       subspace = SubSpace.find(params[:id])
-      SubSpaceBooking.where(sub_space: subspace).find_each(&:destroy_with_status!)
-      if subspace.delete
-        flash[:notice] = "Sub Space deleted!"
+      if subspace.destroy
+        flash[:notice] = t("admin_area.spaces.flash.sub_space_deleted")
       else
-        flash[:alert] = "Something went wrong."
+        flash[:alert] = subspace.errors.full_messages.to_sentence
       end
     end
     @sub_spaces =
@@ -61,16 +55,12 @@ class Admin::SpacesController < AdminAreaController
     return unless params[:id].present?
       subspace = SubSpace.find(params[:id])
       if ContactInfo.where(space_id: subspace.space.id).blank?
-        flash[
-          :alert
-        ] = "Please add contact information for the associated space disabling automatic booking."
+        flash[:alert] = t("admin_area.spaces.flash.contact_info_missing")
         redirect_back(fallback_location: root_path)
         return
       end
       subspace.update(approval_required: !subspace.approval_required)
-      flash[
-        :notice
-      ] = "Aproval for #{subspace.name} is now #{subspace.approval_required ? "manual" : "automatic"}"
+      flash[:notice] = t(subspace.approval_required ? "admin_area.spaces.flash.approval_manual" : "admin_area.spaces.flash.approval_automatic", name: subspace.name)
       redirect_back(
         fallback_location:
           edit_admin_space_path(id: params[:space_id], anchor: "sub_space_area")
@@ -82,9 +72,7 @@ class Admin::SpacesController < AdminAreaController
     return unless params[:id].present?
       subspace = SubSpace.find(params[:id])
       subspace.update(default_public: !subspace.default_public)
-      flash[
-        :notice
-      ] = "Bookings in #{subspace.name} are #{subspace.default_public ? "public" : "private"} by default"
+      flash[:notice] = t(subspace.default_public ? "admin_area.spaces.flash.bookings_public" : "admin_area.spaces.flash.bookings_private", name: subspace.name)
       redirect_back(
         fallback_location:
           edit_admin_space_path(id: params[:space_id], anchor: "sub_space_area")
@@ -103,18 +91,15 @@ class Admin::SpacesController < AdminAreaController
     @unknown_readers_more = unknown.size - @unknown_readers.size
     admins = User.where(role: "admin").order("LOWER(name) ASC")
     @admin_options = admins.map { |admin| [admin.name, admin.id] }
-    @admin_options.unshift(["Select an Admin", -1])
-
-    return if @space = Space.find(params[:id])
-      flash[:alert] = "Not Found"
-      redirect_back(fallback_location: root_path)
-    
+    @admin_options.unshift([t("admin_area.spaces.edit.select_admin"), -1])
+    @space = Space.find(params[:id])
+    count_training_records
   end
 
   def update_name
     @space = Space.find(params[:space_id])
     if @space.update(name: params[:name])
-      flash[:notice] = "Space Name updated !"
+      flash[:notice] = t("admin_area.spaces.flash.name_updated")
     else
       flash[:alert] = space_name_error
     end
@@ -125,25 +110,19 @@ class Admin::SpacesController < AdminAreaController
     @space = Space.find(params[:space_id])
     max_capacity = params[:max_capacity].to_i
     max_capacity = nil if max_capacity.zero? # 0 is no limit
-    if @space.update(max_capacity: max_capacity)
-      flash[:notice] = "Space Capacity updated!"
-    else
-      flash[:alert] = "Failed to update space capacity."
-    end
+    flash_write(@space, "spaces.capacity_not_updated", t("admin_area.spaces.flash.capacity_updated")) { @space.update(max_capacity: max_capacity) }
     redirect_back(fallback_location: root_path)
   end
 
   def update_keycode
     @space = Space.find(params[:space_id])
-    return unless @space.update(keycode: params[:keycode])
-      flash[:notice] = "Space keycode updated!"
-      redirect_back(fallback_location: root_path)
-    
+    flash_write(@space, "spaces.keycode_not_updated", t("admin_area.spaces.flash.keycode_updated")) { @space.update(keycode: params[:keycode]) }
+    redirect_back(fallback_location: root_path)
   end
 
   def add_space_manager
     if params[:space_manager_id].to_i == -1
-      flash[:alert] = "Please select an admin"
+      flash[:alert] = t("admin_area.spaces.flash.select_admin")
       redirect_back(fallback_location: admin_spaces_path)
       return
     end
@@ -153,11 +132,7 @@ class Admin::SpacesController < AdminAreaController
     space_manager_join =
       SpaceManagerJoin.new(user_id: @space_manager.id, space_id: @space.id)
 
-    if space_manager_join.save
-      flash[:notice] = "Successfully added space manager"
-    else
-      flash[:alert] = "Failed to add space manager"
-    end
+    flash_write(space_manager_join, "spaces.manager_not_added", t("admin_area.spaces.flash.manager_added")) { space_manager_join.save }
     redirect_to admin_spaces_path
   end
 
@@ -168,107 +143,57 @@ class Admin::SpacesController < AdminAreaController
     if !@space_manager_join.nil?
       @space_manager_join.destroy
       redirect_to admin_spaces_path,
-                  notice: "Successfully removed space manager"
+                  notice: t("admin_area.spaces.flash.manager_removed")
     else
-      flash[:alert] = "Cannot find space manager"
+      flash[:alert] = t("admin_area.spaces.flash.manager_missing")
       redirect_back(fallback_location: root_path)
     end
   end
 
   def set_max_booking_duration
     if params[:max_hours].present? && params[:sub_space_id].present?
-      SubSpace.find(params[:sub_space_id]).update!(
-        maximum_booking_duration:
-          params[:max_hours].to_i == -1 ? nil : params[:max_hours].to_i
-      )
-      flash[:notice] = "Max booking duration updated!"
-      redirect_to edit_admin_space_path(
-                    id: params[:space_id],
-                    anchor: "sub_space_area"
-                  )
-      return
+      return update_sub_space_limit(:maximum_booking_duration, params[:max_hours], t("admin_area.spaces.flash.max_duration_updated"))
     end
     if params[:max_weekly_hours].present? && params[:sub_space_id].present?
-      SubSpace.find(params[:sub_space_id]).update!(
-        maximum_booking_hours_per_week:
-          (
-            if params[:max_weekly_hours].to_i == -1
-              nil
-            else
-              params[:max_weekly_hours].to_i
-            end
-          )
+      return(
+        update_sub_space_limit(
+          :maximum_booking_hours_per_week,
+          params[:max_weekly_hours],
+          t("admin_area.spaces.flash.max_weekly_updated")
+        )
       )
-      flash[:notice] = "Max weekly booking duration updated!"
-      redirect_to edit_admin_space_path(
-                    id: params[:space_id],
-                    anchor: "sub_space_area"
-                  )
-      return
     end
-    flash[:alert] = "Something went wrong."
+    flash[:alert] = I18n.t("errors.admin.spaces.booking_limit_missing")
     redirect_to edit_admin_space_path(id: params[:space_id])
   end
 
   def set_max_automatic_approval_hour
     if params[:auto_approve_hours].present? && params[:sub_space_id].present?
-      SubSpace.find(params[:sub_space_id]).update!(
-        max_automatic_approval_hour:
-          (
-            if params[:auto_approve_hours].to_i == -1
-              nil
-            else
-              params[:auto_approve_hours].to_i
-            end
-          )
+      return(
+        update_sub_space_limit(
+          :max_automatic_approval_hour,
+          params[:auto_approve_hours],
+          t("admin_area.spaces.flash.max_auto_updated")
+        )
       )
-      flash[:notice] = "Max automatic approval duration updated!"
-      redirect_to edit_admin_space_path(
-                    id: params[:space_id],
-                    anchor: "sub_space_area"
-                  )
-      return
     end
-    flash[:alert] = "Something went wrong."
+    flash[:alert] = I18n.t("errors.admin.spaces.approval_limit_missing")
     redirect_to edit_admin_space_path(id: params[:space_id])
   end
 
   def destroy
     space = Space.find(params[:id])
     if params[:admin_input] == space.name.upcase
-      if space.destroy_admin_id.present? && space.destroy_admin_id != @user.id
-        # The pi readers are detached only if the space is really deleted. A refusal (the space still has
-        # history it must not lose) is the model's, so its errors say why; the pending request is cleared.
-        deleted = Space.transaction do
-          PiReader.where(space_id: space.id).update_all(space_id: nil)
-          space.destroy || raise(ActiveRecord::Rollback)
-        end
-        if deleted
-          flash[:notice] = "Space deleted!"
-        else
-          space.update_columns(destroy_admin_id: nil)
-          flash[:alert] = space.errors.full_messages.to_sentence.presence || "The space could not be deleted."
-        end
-      elsif (refusals = space.deletion_refusals).any?
-        # Said at the first request, so nobody waits for a second admin to be told, and no request is recorded.
-        space.update_columns(destroy_admin_id: nil) if space.destroy_admin_id.present?
-        flash[:alert] = refusals.to_sentence
-      elsif space.update(
-          destroy_admin_id: @user.id
-        )
-        flash[
-          :notice
-        ] = "The destroy request has been submitted, a second admin will need to approve it for the space to be destroyed."
-      end
+      advance_space_deletion(space)
     else
-      flash[:alert] = "Invalid Input"
+      flash[:alert] = I18n.t("errors.admin.spaces.confirmation_mismatch")
     end
     redirect_to admin_spaces_path
   end
 
   def update_staff_needed_calendars
     unless params[:space_id].present?
-      flash[:alert] = "An error occurred while trying to add/remove the calendar URLs, please try again later."
+      flash[:alert] = I18n.t("errors.admin.spaces.calendar_space_missing")
       return redirect_back(fallback_location: root_path)
     end
 
@@ -279,7 +204,7 @@ class Admin::SpacesController < AdminAreaController
 
     open_hours_count = calendar_roles.count { |r| r == "open_hours" }
     if open_hours_count > 1
-      flash[:alert] = "Only one calendar can be assigned the 'open_hours' role."
+      flash[:alert] = t("admin_area.spaces.flash.one_open_hours")
       return redirect_back(fallback_location: root_path)
     end
 
@@ -300,11 +225,11 @@ class Admin::SpacesController < AdminAreaController
         end
       end
     rescue ActiveRecord::RecordInvalid => e
-      flash[:alert] = "Calendars were not saved (nothing changed): #{e.record.errors.full_messages.join(', ')}"
+      flash[:alert] = validation_message(e.record, "failed_saves.calendars")
       return redirect_back(fallback_location: root_path)
     end
 
-    flash[:notice] = "Calendars updated successfully."
+    flash[:notice] = t("admin_area.spaces.flash.calendars_updated")
     redirect_back(fallback_location: root_path)
   end
 
@@ -313,11 +238,11 @@ class Admin::SpacesController < AdminAreaController
     old_name = sub_space.name
 
     if params[:name].blank?
-      flash[:alert] = "Sub Space name cannot be blank."
+      flash[:alert] = t("admin_area.spaces.flash.sub_space_name_blank")
     elsif sub_space.update(name: params[:name])
-      flash[:notice] = "You've successfully renamed '#{old_name}' to '#{sub_space.name}'."
+      flash[:notice] = t("admin_area.spaces.flash.sub_space_renamed", old: old_name, new: sub_space.name)
     else
-      flash[:alert] = "Failed to rename sub space: #{sub_space.errors.full_messages.join(', ')}"
+      flash[:alert] = validation_message(sub_space, "errors.admin.spaces.sub_space_not_renamed")
     end
 
     redirect_back(
@@ -326,6 +251,63 @@ class Admin::SpacesController < AdminAreaController
   end
 
   private
+
+  # A second admin's confirmation deletes the space; otherwise this admin's request is recorded, unless the space
+  # has history it must not lose, which is said at once (so nobody waits for a second admin to be told). A request
+  # that does not save says why.
+  def advance_space_deletion(space)
+    if space.destroy_admin_id.present? && space.destroy_admin_id != @user.id
+      confirm_space_deletion(space)
+    elsif (refusals = space.deletion_refusals).any?
+      refuse_space_deletion_request(space, refusals)
+    elsif space.update(destroy_admin_id: @user.id)
+      flash[:notice] = t("admin_area.spaces.flash.destroy_requested")
+    else
+      flash[:alert] = validation_message(space, "errors.admin.spaces.deletion_not_requested")
+    end
+  end
+
+  # The pi readers are detached only if the space is really deleted. A refusal (the space still has
+  # history it must not lose) is the model's, so its errors say why; the pending request is cleared.
+  def confirm_space_deletion(space)
+    deleted = Space.transaction do
+      PiReader.where(space_id: space.id).update_all(space_id: nil)
+      space.destroy || raise(ActiveRecord::Rollback)
+    end
+    if deleted
+      flash[:notice] = t("admin_area.spaces.flash.deleted")
+    else
+      space.update_columns(destroy_admin_id: nil)
+      flash[:alert] = validation_message(space, "errors.admin.spaces.not_deleted")
+    end
+  end
+
+  # No request is recorded, and one pending from before the history appeared is cleared.
+  def refuse_space_deletion_request(space, refusals)
+    space.update_columns(destroy_admin_id: nil) if space.destroy_admin_id.present?
+    flash[:alert] = refusals.to_sentence
+  end
+
+  # Sessions and active certifications of each training offered in the space, over every space,
+  # counted in two queries for the trainings table.
+  def count_training_records
+    training_ids = @space.trainings.select(:id)
+    @session_counts = TrainingSession.reorder(nil).where(training_id: training_ids).group(:training_id).count
+    @certification_counts = Certification.joins(:training_session).where(training_sessions: { training_id: training_ids })
+                                         .group("training_sessions.training_id").count
+  end
+
+  # Sets one hours limit of a sub space from the submitted text: a whole number of hours, or -1 to remove the limit.
+  def update_sub_space_limit(attribute, text, notice)
+    unless text.to_s.match?(/\A(-1|\d+)\z/)
+      flash[:alert] = I18n.t("errors.admin.spaces.limit_not_whole_number")
+      return redirect_to edit_admin_space_path(id: params[:space_id])
+    end
+    hours = text.to_i
+    SubSpace.find(params[:sub_space_id]).update!(attribute => hours == -1 ? nil : hours)
+    flash[:notice] = notice
+    redirect_to edit_admin_space_path(id: params[:space_id], anchor: "sub_space_area")
+  end
 
   def space_name_error
     kind = @space.errors.of_kind?(:name, :blank) ? "blank" : "taken"

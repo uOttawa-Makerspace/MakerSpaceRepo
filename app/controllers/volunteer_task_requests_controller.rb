@@ -84,15 +84,15 @@ class VolunteerTaskRequestsController < SessionsController
 
   def create_request
     volunteer_task = VolunteerTask.find(params[:id])
-    unless volunteer_task.volunteer_task_joins.active.exists?(user_id: current_user.id)
-      flash[:alert] = "You must be assigned to this task to submit it."
+    unless volunteer_task.volunteer_task_joins.joined.exists?(user_id: current_user.id)
+      flash[:alert] = I18n.t("volunteer_area.flash.request_not_assigned")
       return redirect_back(fallback_location: root_path)
     end
     if VolunteerTaskRequest
          .where(volunteer_task_id: volunteer_task.id, user_id: current_user.id)
          .where("approval IS NULL OR approval = ?", true)
          .exists?
-      flash[:alert] = "You have already sent a request for this task."
+      flash[:alert] = I18n.t("volunteer_area.flash.request_already_sent")
       return redirect_back(fallback_location: root_path)
     end
     volunteer_task_request = VolunteerTaskRequest.new(
@@ -105,71 +105,72 @@ class VolunteerTaskRequestsController < SessionsController
         volunteer_task.id,
         volunteer_task_request.user_id
       ).deliver
-      flash[:notice] = "You've sent a request. No further action is needed."
+      flash[:notice] = I18n.t("volunteer_area.flash.request_sent")
     else
-      flash[:alert] = "Something went wrong. Please try it again."
+      flash[:alert] = validation_message(volunteer_task_request, "errors.volunteer.task_requests.not_created")
     end
     redirect_back(fallback_location: root_path)
   end
 
   def update_approval
     volunteer_task_request = VolunteerTaskRequest.find(params[:id])
-    result = nil
-    volunteer_task_request.with_lock do
-      if volunteer_task_request.approval == true &&
-           ActiveModel::Type::Boolean.new.cast(params[:approval]) == true
-        result = :already_approved
-      elsif volunteer_task_request.update(approval: params[:approval])
-        if volunteer_task_request.approval
-          volunteer_task_request.volunteer_task_join&.update(active: false)
-          volunteer_task = volunteer_task_request.volunteer_task
-          volunteer_id = volunteer_task_request.user_id
-          volunteer = volunteer_task_request.user
-
-          # The award is paid at most once per user and task, whatever the
-          # approval history (CC money rows are only created by this path).
-          unless CcMoney.exists?(user_id: volunteer_id, volunteer_task_id: volunteer_task.id)
-            volunteer.update_wallet
-            CcMoney.create_cc_money_from_approval(
-              volunteer_task.id,
-              volunteer_id,
-              volunteer_task.cc
-            )
-            volunteer.update_wallet
-            VolunteerHour.create_volunteer_hour_from_approval(
-              volunteer_task.id,
-              volunteer_id,
-              volunteer_task.hours,
-              volunteer_task_request.created_at
-            )
-          end
-        end
-        result = :updated
-      else
-        result = :failed
-      end
-    end
+    result = apply_approval(volunteer_task_request)
 
     case result
     when :already_approved
-      flash[:notice] = "Task request was already approved"
+      flash[:notice] = I18n.t("volunteer_area.flash.request_already_approved")
     when :updated
       MsrMailer.send_notification_for_task_request_update(
         volunteer_task_request.id
       ).deliver
-      flash[:notice] = "Task request updated"
+      flash[:notice] = I18n.t("volunteer_area.flash.request_updated")
+    when :unchanged
+      flash[:notice] = I18n.t("volunteer_area.flash.request_unchanged")
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = validation_message(volunteer_task_request, "errors.volunteer.task_requests.not_updated")
     end
     redirect_to volunteer_task_requests_path
   end
 
   private
 
-  def ensure_staff
-    return if current_user.staff?
+  # Applies the staff decision under the request's row lock and says what happened. The award is paid inside
+  # the lock; the caller sends mail afterwards, only when the approval really changed.
+  def apply_approval(volunteer_task_request)
+    volunteer_task_request.with_lock do
+      next :already_approved if already_approved?(volunteer_task_request)
+      next :failed unless volunteer_task_request.update(approval: params[:approval])
 
-    flash[:alert] = "You cannot access this area."
+      award_approval(volunteer_task_request) if volunteer_task_request.approval
+      volunteer_task_request.saved_change_to_approval? ? :updated : :unchanged
+    end
+  end
+
+  def already_approved?(volunteer_task_request)
+    volunteer_task_request.approval == true && ActiveModel::Type::Boolean.new.cast(params[:approval]) == true
+  end
+
+  # Completes the join and pays the volunteer's wallet and hours (see VolunteerTaskRequest#pay_award).
+  def award_approval(volunteer_task_request)
+    complete_join(volunteer_task_request)
+    volunteer_task_request.pay_award
+  end
+
+  # Completes the requester's joined row. A row that ended after the lookup (the volunteer left at the
+  # same moment) has nothing left to complete, and the approval carries on.
+  def complete_join(volunteer_task_request)
+    volunteer_task_request.volunteer_task_join&.finish!(:completed, by: current_user)
+  rescue VolunteerTaskJoin::NotJoined
+    nil
+  end
+
+  def ensure_staff
+    if current_user.staff?
+      record_authorization!(:staff)
+      return
+    end
+
+    flash[:alert] = I18n.t("volunteer_area.flash.no_access")
     redirect_to root_path
   end
 end

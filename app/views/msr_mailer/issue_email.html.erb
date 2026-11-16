@@ -1,36 +1,36 @@
 <% content_for :preheader do %>
-    Makerepo - Issue Report Received
+    <%= t(".preheader") %>
 <% end %>
 
 <% content_for :team_name do %>
-    The MakerRepo Team
+    <%= t("layouts.mailer.makerrepo_team") %>
 <% end %>
 
 <% content_for :why_received do %>
-    You have received this email because you submitted an issue on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+    <%= t(".why_received") %> <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
 <% end %>
 
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @name %>,
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t("msr_mailer.account.hello", name: @name) %>
     <br />
-    We have received the following help request from you:
+    <%= t(".received") %>
 </p>
 
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-    New issue reported by <b><%= @name %></b>:
+    <%= t(".reported_by_html", name: tag.b(@name)) %>
     <% if @account %>
         <br />
-        <b>Account: </b> <%= @account.name %> (<%= @account.username %>, <%= @account.email %>)
+        <b><%= t(".account") %> </b> <%= @account.name %> (<%= @account.username %>, <%= @account.email %>)
     <% end %>
     <% if @share_email %>
         <br />
-        <b>Contact email: </b> <%= @contact_email %>
+        <b><%= t(".contact_email") %> </b> <%= @contact_email %>
     <% end %>
     <br />
-    Subject: <b><%= @subject %></b> <br>
+    <%= t(".subject_line_html", subject: tag.b(@subject)) %> <br>
     <%= @comments %>
 
     <% if @app_version.present? %>
         <br>
-        App Version: <%= @app_version %>
+        <%= t(".app_version", version: @app_version) %>
     <% end %>
 </p>

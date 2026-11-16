@@ -1,5 +1,6 @@
 fr:
   discount_codes:
+    store_name: "MakerStore"
     index:
       # %{store_link} = link to the MakerStore
       title_html: "Vous pouvez utiliser ces rabais au %{store_link}"
@@ -24,7 +25,6 @@ fr:
       # %{cost} = number of CCs the coupon costs
       coupon_price: "Prix du coupon: %{cost} CC"
       redeem: "Échanger"
-      confirm: "Êtes-vous certain de vouloir échanger %{cost} CC contre ce coupon? Ceci est irréversible."
       empty:
         title: "Désolé, il n'y a pas de coupons disponibles en ce moment."
         # %{email_link} = mailto link to the MakerRepo email

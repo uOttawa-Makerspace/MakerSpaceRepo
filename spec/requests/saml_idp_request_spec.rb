@@ -41,7 +41,7 @@ RSpec.describe "SAML IdP", type: :request do
   end
 
   def c18_form_action
-    Nokogiri::HTML(response.body).at_css("form")&.[]("action")
+    Nokogiri::HTML(response.body).at_css("form:not([action='/locale'])")&.[]("action")
   end
 
   # Decodes the SAMLResponse hidden field of the saml_post page.
@@ -442,6 +442,80 @@ RSpec.describe "SAML IdP", type: :request do
       end
     end
 
+    context "a service provider marked staff_only (the wiki server)" do
+      let(:wiki_server_acs) { "https://wiki-server.makerepo.com/saml/acs" }
+
+      def post_wiki_server(user_record)
+        post "/saml/auth", params: { SAMLRequest: authn_request(issuer: "wiki-server.makerepo.com", acs: wiki_server_acs),
+                                     RelayState: "rs1", submit: "sign_in", username: user_record.username, password: password }
+      end
+
+      it "is the only staff_only entry in the registry" do
+        issuers = ["wiki.makerepo.com", "https://en.wiki.makerepo.com/simplesamlphp", "https://fr.wiki.makerepo.com/simplesamlphp",
+                   "rooms.makerepo.com", "print.makerepo.com", "wiki-server.makerepo.com", "wikijs.makerepo.com",
+                   "sedt-wikijs.makerepo.com", "staff-wikijs.makerepo.com"]
+        staff_only = issuers.select { |issuer| SamlIdp.config.service_provider.finder.call(issuer)[:staff_only] }
+        expect(staff_only).to eq(["wiki-server.makerepo.com"])
+      end
+
+      it "refuses a non-staff user with the notice page, building no assertion and embedding no SAMLResponse" do
+        expect_any_instance_of(SamlIdpController).not_to receive(:encode_response)
+        post_wiki_server(user)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("you are not habilitated to login to the wiki",
+                                         "Please note that you can still use the wiki without logging in.")
+        expect(response.body).not_to include("SAMLResponse")
+        expect(c18_form_action).to be_nil
+      end
+
+      it "refuses a volunteer the same way" do
+        volunteer = create(:user, :volunteer, password: BCrypt::Password.create(password))
+        post_wiki_server(volunteer)
+        expect(response.body).to include("you are not habilitated to login to the wiki")
+        expect(response.body).not_to include("SAMLResponse")
+      end
+
+      it "still signs a staff user in with a signed assertion for the wiki server" do
+        staff = create(:user, :staff, password: BCrypt::Password.create(password))
+        post_wiki_server(staff)
+        expect(c18_form_action).to eq(wiki_server_acs)
+        doc = Nokogiri::XML(c18_saml_response_xml)
+        doc.remove_namespaces!
+        expect(doc.at_xpath("//Assertion/Signature")).to be_present
+        expect(doc.at_xpath("//Assertion/Conditions/AudienceRestriction/Audience").text).to eq("wiki-server.makerepo.com")
+        expect(doc.at_xpath("//Assertion/Subject/NameID").text).to eq(staff.id.to_s)
+        expect(response.body).not_to include("habilitated")
+      end
+
+      it "still signs an admin in" do
+        admin = create(:user, :admin, password: BCrypt::Password.create(password))
+        post_wiki_server(admin)
+        expect(c18_saml_response_xml).to be_present
+        expect(response.body).not_to include("habilitated")
+      end
+
+      {
+        "wiki.makerepo.com" => "https://en.wiki.makerepo.com/saml/acs",
+        "https://en.wiki.makerepo.com/simplesamlphp" => "https://en.wiki.makerepo.com/saml/acs",
+        "https://fr.wiki.makerepo.com/simplesamlphp" => "https://fr.wiki.makerepo.com/saml/acs",
+        "rooms.makerepo.com" => "https://rooms.makerepo.com/users/auth/saml/callback",
+        "print.makerepo.com" => "https://print.makerepo.com/saml/acs",
+        "wikijs.makerepo.com" => "https://wikijs.makerepo.com/login/258365f7-0b23-403c-817a-5d1ca2be771f/callback",
+        "sedt-wikijs.makerepo.com" => "https://sedt-wikijs.makerepo.com/login/f0ee7ebd-2077-4a5d-aff0-553705102005/callback",
+        "staff-wikijs.makerepo.com" => "https://staff-wikijs.makerepo.com/login/c62ffc7e-7a59-4e3a-8f78-9d07bedafa30/callback"
+      }.each do |issuer, acs|
+        it "still gives a non-staff user an assertion for #{issuer}" do
+          post "/saml/auth", params: { SAMLRequest: authn_request(issuer: issuer, acs: acs), RelayState: "rs1",
+                                       submit: "sign_in", username: user.username, password: password }
+          expect(c18_form_action).to eq(acs)
+          doc = Nokogiri::XML(c18_saml_response_xml)
+          doc.remove_namespaces!
+          expect(doc.at_xpath("//Assertion/Conditions/AudienceRestriction/Audience").text).to eq(issuer)
+          expect(response.body).not_to include("habilitated")
+        end
+      end
+    end
+
     context "submit=current_user" do
       it "signed in: issues a signed assertion for the session user" do
         signed_in = c18_sign_in(:staff)
@@ -452,6 +526,7 @@ RSpec.describe "SAML IdP", type: :request do
         doc.remove_namespaces!
         expect(doc.at_xpath("//Assertion/Subject/NameID").text).to eq(signed_in.id.to_s)
         expect(c18_saml_attributes(c18_saml_response_xml)["groups"]).to eq(["Staff Readonly"])
+        expect(session[:user_id]).to eq(signed_in.id) # an AuthnRequest keeps the session
       end
 
       it "guest: no assertion; the login page is shown again without an error message" do
@@ -660,6 +735,73 @@ RSpec.describe "SAML IdP", type: :request do
           %(<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ) +
             %(ID="#{id}" Version="2.0" IssueInstant="2026-03-10T15:00:00Z">#{lead}<saml:Issuer>#{issuer}</saml:Issuer>) +
             %(<saml:NameID>#{name_id}</saml:NameID>#{inner}</samlp:LogoutRequest>)
+        end
+
+        # A staff_only SP's LogoutRequest is answered for every signed-in user: "use this
+        # account" posts the LogoutResponse and ends the session; "logout" signs them out
+        # to the login page.
+        context "a signed LogoutRequest from the staff_only wiki server" do
+          def post_wiki_server_logout(role, submit: "current_user")
+            c18_sign_in(role)
+            unsigned = logout_xml("", issuer: "wiki-server.makerepo.com")
+            request = saml_deflate(logout_xml(signature_for(unsigned, "_lo1"), issuer: "wiki-server.makerepo.com"))
+            original = SamlIdp.config.service_provider.finder
+            SamlIdp.config.service_provider.finder = lambda do |id|
+              original.call(id)&.merge(cert: cert_b64, fingerprint: "aa:bb",
+                                       assertion_consumer_logout_service_url: "https://wiki-server.makerepo.com/saml/logout")
+            end
+            post "/saml/auth", params: { SAMLRequest: request, submit: submit }
+          ensure
+            SamlIdp.config.service_provider.finder = original
+          end
+
+          # Only sign-in requests are refused for a non-staff user; a logout request is
+          # answered and ends the MakerRepo session, as for staff.
+          it "answers a non-staff user's 'use this account' with a LogoutResponse and signs them out" do
+            post_wiki_server_logout(:regular)
+            expect(response).to have_http_status(:ok)
+            expect(response.body).not_to include("habilitated")
+            expect(c18_form_action).to eq("https://wiki-server.makerepo.com/saml/logout")
+            logout_response = Nokogiri::XML(c18_saml_response_xml).remove_namespaces!.root
+            expect(logout_response.name).to eq("LogoutResponse")
+            expect(logout_response["InResponseTo"]).to eq("_lo1")
+            expect(session[:user_id]).to be_nil
+          end
+
+          it "signs a non-staff user out to the login page on submit=logout" do
+            post_wiki_server_logout(:regular, submit: "logout")
+            expect(response).to have_http_status(:ok)
+            expect(session[:user_id]).to be_nil
+            expect(response.body).to include('value="sign_in"')
+            expect(response.body).not_to include("habilitated", "SAMLResponse")
+          end
+
+          it "answers a staff user's 'use this account' with a LogoutResponse posted to the SP's logout URL" do
+            post_wiki_server_logout(:staff)
+            expect(response).to have_http_status(:ok)
+            expect(c18_form_action).to eq("https://wiki-server.makerepo.com/saml/logout")
+            logout_response = Nokogiri::XML(c18_saml_response_xml).remove_namespaces!.root
+            expect(logout_response.name).to eq("LogoutResponse")
+            expect(logout_response["InResponseTo"]).to eq("_lo1")
+            expect(logout_response["Destination"]).to eq("https://wiki-server.makerepo.com/saml/logout")
+            expect(logout_response.at_xpath("Status/StatusCode")["Value"]).to eq("urn:oasis:names:tc:SAML:2.0:status:Success")
+          end
+
+          it "signs the user out of MakerRepo once the LogoutResponse is built" do
+            post_wiki_server_logout(:staff)
+            expect(c18_saml_response_xml).to include("LogoutResponse")
+            expect(session[:user_id]).to be_nil
+            get "/saml/auth", params: { SAMLRequest: authn_request }
+            expect(response.body).to include('value="sign_in"')
+            expect(response.body).not_to include('value="current_user"')
+          end
+
+          # The controller base64-encodes the gem's LogoutResponse for the POST binding,
+          # so a gem release that encodes it already must fail here, not double-encode.
+          it "relies on the gem returning the signed LogoutResponse as XML" do
+            xml = SamlIdp::LogoutResponseBuilder.new("r1", "https://idp.test", "https://sp.test/logout", "_lo1", OpenSSL::Digest::SHA256).signed
+            expect(xml).to start_with("<LogoutResponse")
+          end
         end
 
         it "accepts a LogoutRequest whose root element is signed (control for the wrapping examples)" do
@@ -884,6 +1026,7 @@ RSpec.describe "SAML IdP", type: :request do
         spoofed = authn_request(issuer: "wikijs.makerepo.com", acs: "https://evil.example.com/steal")
         post "/saml/auth", params: { SAMLRequest: spoofed, submit: "current_user" }
         expect(c18_form_action).to eq(wikijs_acs)
+        expect(Nokogiri::HTML(response.body).css("form").size).to eq(1) # the auto-submitted form is the only one
       end
 
       it "refuses with 403 when the SP config requires a signed request and the request is not signed" do

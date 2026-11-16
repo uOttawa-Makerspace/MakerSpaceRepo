@@ -1,6 +1,6 @@
 <div class="card home-card hide-on-mobile" id="home-skills">
     <div class="card-body">
-        <h2 class="d-inline me-3"><%= t('home.skills.header') %></h2><%= link_to t('home.show_all'), "#{user_path(@user.username)}#profile-skills" %>
+        <h2 class="d-inline me-3"><%= t('home.skills.header') %></h2><%= link_to t('home.show_all'), "#{user_path(@user.username)}#profile-skills", class: "text-decoration-underline" %>
         <div>
             <% if @user_skills.empty? %>
                 <p><%= t('home.skills.no_skills') %></p>

@@ -2,7 +2,7 @@
 
 class Comment < ApplicationRecord
   belongs_to :user, optional: true
-  belongs_to :repository, optional: true
+  belongs_to :repository, -> { including_hidden }, optional: true
   has_many :upvotes, dependent: :destroy
 
 

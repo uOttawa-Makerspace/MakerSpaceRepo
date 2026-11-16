@@ -127,6 +127,15 @@ RSpec.describe "JobTasks gaps", type: :request do
       expect(task.reload.job_task_options.first.option_file).to be_attached
     end
 
+    it "prefixes the stored name of an option file with JMTS, once" do
+      params = { step: "3", job_task: { job_task_options_attributes: [{ job_option_id: option.id, option_file: FilesTestHelper.stl }] } }
+      patch job_order_job_task_path(order, task), params: params
+      expect(task.reload.job_task_options.first.option_file.filename.to_s).to eq("JMTS_#{FilesTestHelper.stl_name}")
+
+      patch job_order_job_task_path(order, task), params: { step: "3", job_task: { job_task_options_attributes: [{ job_option_id: option.id }] } }
+      expect(task.reload.job_task_options.first.option_file.filename.to_s).to eq("JMTS_#{FilesTestHelper.stl_name}")
+    end
+
     it "shows a deleted option on step 3 only while it is still selected by the task" do
       option.update!(is_deleted: true)
       other_option # stays selectable
@@ -248,24 +257,22 @@ RSpec.describe "JobTasks gaps", type: :request do
       get job_order_path(order)
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include("Add Another Task")
-      expect(response.body).not_to include("Are you sure you want to delete this task?")
+      expect(response.body).not_to include(I18n.t("confirmations.job_orders.delete_task"))
 
       session_login!(owner)
       get job_order_path(order)
       expect(response.body).to include("Add Another Task")
-      expect(response.body).to include("Are you sure you want to delete this task?")
+      expect(response.body).to include(I18n.t("confirmations.job_orders.delete_task"))
     end
 
-    # numbering falls back to the row count, so deleting an early
-    # task makes the next one reuse an existing title.
-    it "produces a duplicate 'Task #2' title after deleting Task #1 from [#1, #2]" do
+    it "numbers the next task after the highest existing one when an early task was deleted" do
       order = order_with_task!
       order.job_tasks.create!(title: "Task #2")
       session_login!(owner)
       delete job_order_job_task_path(order, order.job_tasks.find_by!(title: "Task #1"))
 
       post job_order_job_tasks_path(order)
-      expect(order.reload.job_tasks.order(:id).pluck(:title)).to eq(["Task #2", "Task #2"])
+      expect(order.reload.job_tasks.order(:id).pluck(:title)).to eq(["Task #2", "Task #3"])
     end
 
     it "refuses staff deleting a task, lets an admin" do

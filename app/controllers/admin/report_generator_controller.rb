@@ -12,6 +12,10 @@ class Admin::ReportGeneratorController < AdminAreaController
   layout 'admin_area'
   require 'date'
 
+  rescue_from ReportPeriod::Invalid do |error|
+    render plain: error.message, status: :bad_request
+  end
+
   def index
     @report_types = [
       ['Certifications', :certifications],
@@ -72,55 +76,8 @@ class Admin::ReportGeneratorController < AdminAreaController
   # generate report as an html graph
   # This is a button on the page btw
   def generate
-    range_type = params[:range_type]
-    term = params[:term]
-    year = params[:year]
+    period = chosen_period
     type = params[:type]
-
-    case range_type
-    when 'semester'
-      unless year && (year.to_i > 0)
-        render plain: 'Invalid year', status: :bad_request
-        return
-      end
-
-      year = year.to_i
-
-      case term
-      when 'winter'
-        start_date = DateTime.new(year, 1, 1).beginning_of_day
-        end_date = DateTime.new(year, 4, 30).end_of_day
-      when 'summer'
-        start_date = DateTime.new(year, 5, 1).beginning_of_day
-        end_date = DateTime.new(year, 8, 31).end_of_day
-      when 'fall'
-        start_date = DateTime.new(year, 9, 1).beginning_of_day
-        end_date = DateTime.new(year, 12, 31).end_of_day
-      else
-        render plain: 'Invalid term', status: :bad_request
-        return
-      end
-    when 'date_range'
-      begin
-        start_date = Date.parse(params[:from_date]).to_datetime.beginning_of_day
-      rescue Date::Error, TypeError
-        render plain: 'Failed to parse start date', status: :bad_request
-        return
-      end
-
-      begin
-        end_date = Date.parse(params[:to_date]).to_datetime.end_of_day
-      rescue Date::Error, TypeError
-        render plain: 'Failed to parse end date', status: :bad_request
-        return
-      end
-    when 'all_time'
-      start_date = nil
-      end_date = nil
-    else
-      render plain: 'Invalid range type', status: :bad_request
-      return
-    end
 
     unless %w[
              visitors
@@ -138,37 +95,23 @@ class Admin::ReportGeneratorController < AdminAreaController
       return
     end
 
-    # reload page but with GET params
+    # reload page but with GET params: the picked days, which the index and
+    # the spreadsheet both read as whole days in the application time zone
     # the index template renders parameters if present
     redirect_to admin_report_generator_index_path(
-                  start_date: start_date,
-                  end_date: end_date,
+                  start_date: period&.first_day,
+                  end_date: period&.last_day,
                   report_type: type,
                   anchor: 'report',
-                  range_type: range_type, # save selection params
-                  term: term, # Semester params
-                  year: year
+                  range_type: params[:range_type], # save selection params
+                  term: params[:term], # Semester params
+                  year: params[:year]
                 ),
                 notice: "Successfully generated #{type.gsub('_', ' ')} report"
   end
 
   def generate_spreadsheet
-    start_date =
-      (
-        if params[:start_date].nil?
-          DateTime.new(2015, 06, 01).beginning_of_day
-        else
-          Date.parse(params[:start_date]).to_datetime
-        end
-      )
-    end_date =
-      (
-        if params[:end_date].nil?
-          DateTime.now
-        else
-          Date.parse(params[:end_date]).to_datetime
-        end
-      )
+    start_date, end_date = spreadsheet_window
     type = params[:type]
 
     case type
@@ -212,23 +155,48 @@ class Admin::ReportGeneratorController < AdminAreaController
 
   private
 
+  # From the start of the first day to the end of the last. Without a first day
+  # the report starts on 1 June 2015, and without a last day it ends now.
+  def spreadsheet_window
+    period =
+      ReportPeriod.parse(
+        params[:start_date] || '2015-06-01',
+        params[:end_date] || Date.current.to_s
+      )
+    window = period.window
+    [window.begin, params[:end_date].nil? ? Time.current : window.end]
+  end
+
+  # The period of the chosen range type; nil for all time.
+  def chosen_period
+    case params[:range_type]
+    when 'semester'
+      ReportPeriod.semester(params[:term], params[:year])
+    when 'date_range'
+      ReportPeriod.parse(params[:from_date], params[:to_date])
+    when 'all_time'
+      nil
+    else
+      raise ReportPeriod::Invalid, 'Invalid range type'
+    end
+  end
+
   # Each function below corresponds to a report type
   # We collect the data in the controller
 
+  # Without picked days the report covers all time.
   def set_date_specified
     @date_specified = params[:start_date].present? && params[:end_date].present?
+    @period =
+      (ReportPeriod.parse(params[:start_date], params[:end_date]) if @date_specified)
+    @report_window = @period ? @period.window : (nil..nil)
   end
 
   def new_users
     @users =
       (
         if @date_specified
-          # params gives everything as space
-          # passing this as a string CHANGES the result
-          ReportGenerator.get_new_users(
-            params[:start_date].to_date,
-            params[:end_date].to_date
-          )
+          ReportGenerator.get_new_users(@report_window.begin, @report_window.end)
         else
           User.including_deleted
         end
@@ -240,15 +208,14 @@ class Admin::ReportGeneratorController < AdminAreaController
       (
         if @date_specified
           Certification.where(
-            created_at: params[:start_date]..params[:end_date]
+            created_at: @report_window
           )
         else
           Certification.all
         end
       )
         .includes(:space)
-        .includes(training_session: %i[course_name training])
-        .includes(training: [:skill])
+        .includes(training_session: [:course_name, { training: :skill }])
     @space_count = {}
     @space_count['unknown'] = 0
 
@@ -258,6 +225,8 @@ class Admin::ReportGeneratorController < AdminAreaController
     @skill_count = {}
 
     @training_count = {}
+
+    preload_project_trainings(@certs)
 
     # For each certification in our database
     @certs.each do |cert|
@@ -289,7 +258,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       end
 
       # Count by skill and name
-      skill_name = cert.training.skill.name
+      skill_name, training_name = training_labels(cert)
       if !@skill_count.has_key?(skill_name)
         @skill_count[skill_name] = 1
       else
@@ -297,7 +266,6 @@ class Admin::ReportGeneratorController < AdminAreaController
       end
 
       # get cert training topic (?)
-      training_name = cert.training.name_en
       if !@training_count.has_key?(training_name)
         @training_count[training_name] = 1
       else
@@ -311,12 +279,12 @@ class Admin::ReportGeneratorController < AdminAreaController
       (
         if @date_specified
           TrainingSession.where(
-            created_at: params[:start_date]..params[:end_date]
+            created_at: @report_window
           )
         else
           TrainingSession.all
         end
-      ).includes(:training, :space, :user)
+      ).includes(:training, :space)
 
     @training_sessions = @training_sessions.unscope(:order)
 
@@ -354,7 +322,7 @@ class Admin::ReportGeneratorController < AdminAreaController
     @repos =
       (
         if @date_specified
-          Repository.where(created_at: params[:start_date]..params[:end_date])
+          Repository.where(created_at: @report_window)
         else
           Repository.all
         end
@@ -382,14 +350,13 @@ class Admin::ReportGeneratorController < AdminAreaController
   end
 
   def visitors
-    @lab_sessions =
-      (
-        if @date_specified
-          LabSession.where(created_at: params[:start_date]..params[:end_date])
-        else
-          LabSession.all
-        end
-      ).includes(:user)
+    visits =
+      if @date_specified
+        LabSession.where(created_at: @report_window)
+      else
+        LabSession.all
+      end
+    @lab_sessions = visits.includes(:user)
 
     @space_total_count = {}
     @space_unique_count = {}
@@ -399,7 +366,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       if @date_specified
         lab_session_count =
           lab_session_count.where(
-            created_at: params[:start_date]..params[:end_date]
+            created_at: @report_window
           )
       end
 
@@ -412,52 +379,29 @@ class Admin::ReportGeneratorController < AdminAreaController
     @identity_total_count = {}
     @identity_unique_count = {}
 
-    @faculty_total_count = {}
-    @faculty_unique_count = {}
-
     @lab_sessions.each do |lab_session|
-      if lab_session.user.present?
-        faculty = lab_session.user.faculty
-        identity = lab_session.user.identity
-      else
-        faculty = 'unknown'
-        identity = 'unknown'
-      end
+      identity = lab_session.user.present? ? lab_session.user.identity : 'unknown'
 
       if !@identity_total_count.has_key?(identity)
         @identity_total_count[identity] = 1
       else
         @identity_total_count[identity] += 1
       end
+    end
 
-      if !@faculty_total_count.has_key?(faculty)
-        @faculty_total_count[faculty] = 1
+    visitor_users = User.including_deleted.where(id: @lab_sessions.pluck(:user_id).uniq)
+    visitor_users.each do |user|
+      identity = user.identity
+
+      if !@identity_unique_count.has_key?(identity)
+        @identity_unique_count[identity] = 1
       else
-        @faculty_total_count[faculty] += 1
+        @identity_unique_count[identity] += 1
       end
     end
 
-    all_users = @lab_sessions.pluck(:user_id).uniq
-    User
-      .including_deleted
-      .where(id: all_users)
-      .each do |user|
-        next if user.nil?
-        faculty = user.faculty
-        identity = user.identity
-
-        if !@identity_unique_count.has_key?(identity)
-          @identity_unique_count[identity] = 1
-        else
-          @identity_unique_count[identity] += 1
-        end
-
-        if !@faculty_unique_count.has_key?(faculty)
-          @faculty_unique_count[faculty] = 1
-        else
-          @faculty_unique_count[faculty] += 1
-        end
-      end
+    @faculty_total_count = visits.count_by_shown_faculty
+    @faculty_unique_count = visitor_users.count_by_shown_faculty
     @identity_total_count = @identity_total_count.transform_keys(&:humanize)
     @identity_unique_count = @identity_unique_count.transform_keys(&:humanize)
   end
@@ -468,7 +412,7 @@ class Admin::ReportGeneratorController < AdminAreaController
     lab_sessions =
       (
         if @date_specified
-          LabSession.where(created_at: params[:start_date]..params[:end_date])
+          LabSession.where(created_at: @report_window)
         else
           LabSession.all
         end
@@ -481,7 +425,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       sessions =
         if @date_specified
           space.lab_sessions.where(
-            created_at: params[:start_date]..params[:end_date]
+            created_at: @report_window
           )
         else
           space.lab_sessions
@@ -495,11 +439,11 @@ class Admin::ReportGeneratorController < AdminAreaController
     @project_kits =
       (
         if @date_specified
-          ProjectKit.where(created_at: params[:start_date]..params[:end_date])
+          ProjectKit.where(created_at: @report_window)
         else
           ProjectKit.all
         end
-      )
+      ).includes(:proficient_project, :user)
 
     @pp_hash = {}
 
@@ -518,64 +462,81 @@ class Admin::ReportGeneratorController < AdminAreaController
       (
         if @date_specified
           TrainingSession.where(
-            created_at: params[:start_date]..params[:end_date]
+            created_at: @report_window
           )
         else
           TrainingSession.all
         end
-      ).includes(:users, :user, :trainings)
-    @spaces = Space.order(name: :asc).includes(:certifications)
+      )
+    @spaces = Space.order(name: :asc)
+    @certifications_by_space = certifications_by_space(@spaces)
 
-    total_certs = {}
-    total_sessions = {}
-    @monthly_average = {}
+    @monthly_average = monthly_attendee_averages(report_days)
+  end
 
-    (1..12).each do |m|
-      month_name = Date::MONTHNAMES[m]
-      total_certs[month_name] = 0
-      total_sessions[month_name] = 0
-    end
+  # The certificates of the report window for each space, as { space id => certificates }, in the order the report
+  # lists them: oldest training session first.
+  def certifications_by_space(spaces)
+    Certification
+      .joins(:training_session)
+      .where(training_sessions: { space_id: spaces.map(&:id) }, created_at: @report_window)
+      .preload(:user, training_session: %i[user training])
+      .order('training_sessions.updated_at ASC, certifications.id ASC')
+      .group_by { |certification| certification.training_session.space_id }
+  end
 
+  # Every day of the report: the picked days, else 2015-06-01 to today.
+  def report_days
     if @date_specified
-      (params[:start_date].to_datetime..params[:end_date].to_datetime)
-        .select { |date| date.day == 1 }
-        .map do |date|
-          month_name = date.end_of_month.strftime('%B')
-          certs =
-            Certification.where(
-              created_at: date.beginning_of_month..date.end_of_month
-            )
-          total_certs[month_name] += certs.count
-          total_sessions[month_name] += certs
-            .pluck(:training_session_id)
-            .uniq
-            .count
-        end
-    else
-      (DateTime.new(2015, 06, 01).beginning_of_day..DateTime.now)
-        .select { |date| date.day == 1 }
-        .map do |date|
-          month_name = date.end_of_month.strftime('%B')
-          certs =
-            Certification.where(
-              created_at: date.beginning_of_month..date.end_of_month
-            )
-          total_certs[month_name] += certs.count
-          total_sessions[month_name] += certs
-            .pluck(:training_session_id)
-            .uniq
-            .count
-        end
+      return @report_window.begin.to_date..@report_window.end.to_date
     end
 
-    (1..12).each do |m|
-      month_name = Date::MONTHNAMES[m]
-      if total_certs[month_name] != 0
-        @monthly_average[month_name] = (
-          total_certs[month_name].to_f / total_sessions[month_name]
-        )
-      end
+    Date.new(2015, 6, 1)..Date.current
+  end
+
+  # Certificates per training session for each month the days overlap that
+  # has certificates, in the application time zone, named with its year
+  # ("March 2026"). A month the days only partly cover counts the
+  # certificates inside the report window.
+  def monthly_attendee_averages(days)
+    months = days.map(&:beginning_of_month).uniq
+    months.each_with_object({}) do |month, averages|
+      certs = certifications_in_month(month)
+      count = certs.count
+      next if count.zero?
+
+      sessions = certs.pluck(:training_session_id).uniq.count
+      averages[month.strftime('%B %Y')] = count.to_f / sessions
     end
+  end
+
+  # The training a certificate was earned for: its session's, else its
+  # proficient project's.
+  def certificate_training(cert)
+    cert.training_session&.training ||
+      cert.proficient_project_session&.proficient_project&.training
+  end
+
+  # Certificates earned through a proficient project have no session, so
+  # their training is loaded through the project, for those alone.
+  def preload_project_trainings(certs)
+    sessionless = certs.reject(&:training_session)
+    ActiveRecord::Associations::Preloader.new(
+      records: sessionless,
+      associations: { proficient_project_session: { proficient_project: { training: :skill } } }
+    ).call
+  end
+
+  # The skill and training names a certificate counts under, "unknown" for
+  # one whose training cannot be found.
+  def training_labels(cert)
+    training = certificate_training(cert)
+    [training&.skill&.name || "unknown", training&.name_en || "unknown"]
+  end
+
+  def certifications_in_month(month)
+    certs = Certification.where(created_at: month.in_time_zone.all_month)
+    @date_specified ? certs.where(created_at: @report_window) : certs
   end
 
   def popular_hours
@@ -583,21 +544,21 @@ class Admin::ReportGeneratorController < AdminAreaController
     @spaces = Space.all.order(name: :asc)
     @weekdays = Date::DAYNAMES
 
-    return unless @date_specified
+    unless @date_specified
+      @popular_hours_by_space = PopularHour.where(space: @spaces).order(day: :asc, hour: :asc).group_by(&:space_id)
+      return
+    end
     @info =
       PopularHour.popular_hours_per_period(
-        params[:start_date].to_date,
-        params[:end_date].to_date
+        @period.first_day,
+        @period.last_day
       )
-    params[:report_type] = 'popular_hours_per_period'
   end
 
+  # Without picked days the visits of all time are counted, and the list of
+  # weekend days is left out.
   def frequent_visitors
-    @weekends =
-      (params[:start_date].to_datetime..params[:end_date].to_datetime)
-        .select { |day| day.saturday? || day.sunday? }
-        .map(&:all_day)
-
+    @weekends = weekend_days
     @lab_sessions =
       Space.all.map do |space|
         [
@@ -607,24 +568,35 @@ class Admin::ReportGeneratorController < AdminAreaController
             .strict_loading
             .joins(:user)
             .where(
-              created_at:
-                params[:start_date].to_datetime..params[:end_date].to_datetime,
+              created_at: @report_window,
               space: space
             )
             .group(:user)
             .order('count(users.id) desc')
             .limit(20)
             .count,
-          # Weekend only
+          # Weekend only, by the weekday in the application time zone
           LabSession
             .strict_loading
             .joins(:user)
-            .where(created_at: @weekends, space: space)
+            .where(created_at: @report_window, space: space)
+            .where(
+              "EXTRACT(DOW FROM (lab_sessions.created_at AT TIME ZONE 'UTC') AT TIME ZONE ?) IN (0, 6)",
+              Time.zone.tzinfo.name
+            )
             .group(:user)
             .order('count(users.id) desc')
             .limit(20)
             .count
         ]
       end
+  end
+
+  def weekend_days
+    return unless @period
+
+    (@period.first_day..@period.last_day).select do |day|
+      day.saturday? || day.sunday?
+    end
   end
 end

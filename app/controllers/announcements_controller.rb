@@ -2,6 +2,7 @@
 
 class AnnouncementsController < StaffAreaController
   layout "staff_area"
+  skip_authorization only: :dismiss, reason: "#{Authorization::ROLLOUT_PENDING}dismiss is outside the staff gate and only records the current user's own dismissal"
   before_action :set_announcement, only: %i[show edit update destroy]
   before_action :build_announcement, only: :create
   before_action :ensure_announcement_access, only: %i[show edit]
@@ -20,12 +21,11 @@ class AnnouncementsController < StaffAreaController
   end
 
   def dismiss
-    return head(:no_content) unless signed_in?
+    return head(:unauthorized) unless signed_in?
 
-    AnnouncementDismiss.create(
-      announcement_id: params[:announcement_id],
-      user_id: current_user.id
-    )
+    announcement = Announcement.find(params[:announcement_id])
+    AnnouncementDismiss.dismiss(announcement, by: current_user)
+    head :no_content
   end
 
   def edit
@@ -33,29 +33,22 @@ class AnnouncementsController < StaffAreaController
 
   def create
     @announcement.user_id = current_user.id
-    if @announcement.save!
-      redirect_to announcements_path
-      flash[
-        :notice
-      ] = "You've successfully created an announcement for #{@announcement.public_goal.capitalize}"
+    if @announcement.save
+      redirect_to announcements_path,
+                  notice: t("admin_pages.announcements.flash.created", audience: t(@announcement.public_goal, scope: "admin_pages.announcements.audiences"))
+    else
+      redirect_to new_announcement_path,
+                  alert: validation_message(@announcement, "errors.announcements.not_created")
     end
   end
 
   def update
-    if @announcement.update(announcement_params)
-      flash[:notice] = "Announcement updated"
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    write_flash(@announcement, "errors.announcements.not_updated", "Announcement updated") { @announcement.update(announcement_params) }
     redirect_to announcements_path
   end
 
   def destroy
-    if @announcement.destroy
-      flash[:notice] = "Announcement Deleted"
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    write_flash(@announcement, "errors.announcements.not_deleted", "Announcement Deleted") { @announcement.destroy }
     redirect_to announcements_path
   end
 

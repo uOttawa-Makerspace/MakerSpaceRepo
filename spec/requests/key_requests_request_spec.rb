@@ -2,7 +2,7 @@ require "rails_helper"
 
 # Chunk 15: KeyRequestsController (wizard staff / Teams members fill in to
 # request a physical key). Gate `ensure_staff_or_teams_program`: staff, admin
-# or Teams-program members; guests and everyone else go to root with
+# or Teams-program members; guests go to the sign-in page, everyone else to root with
 # "You cannot access this area.". The wizard is an in-place status machine:
 # in_progress -> (step 6) waiting_for_approval -> (admin) approved.
 RSpec.describe "Key requests", type: :request do
@@ -35,7 +35,7 @@ RSpec.describe "Key requests", type: :request do
       steps: -> { get key_request_steps_path(1, step: 1) }
     }
     paths.each do |name, call|
-      %i[guest regular volunteer].each do |role|
+      %i[regular volunteer].each do |role|
         it "#{name}: bounces a #{role} to root" do
           sign_in_as(role)
           instance_exec(&call)
@@ -43,6 +43,18 @@ RSpec.describe "Key requests", type: :request do
           expect(flash[:alert]).to eq("You cannot access this area.")
         end
       end
+    end
+
+    paths.each do |name, call|
+      it "#{name}: sends a guest to the sign-in page" do
+        instance_exec(&call)
+        expect(response.location).to start_with("http://www.example.com/login")
+      end
+    end
+
+    it "remembers the page a guest asked for" do
+      get key_requests_path
+      expect(response).to redirect_to(login_path(back_to: key_requests_path))
     end
 
     it "does not persist a request created by a guest or regular user" do
@@ -100,7 +112,7 @@ RSpec.describe "Key requests", type: :request do
     it "re-renders new with an alert on invalid data (status 200)" do
       expect { post key_requests_path, params: { key_request: valid_attrs.merge(phone_number: "abc") } }.not_to change(KeyRequest, :count)
       expect(response).to have_http_status(:ok)
-      expect(flash[:alert]).to eq("Something went wrong while trying to submit the form.")
+      expect(flash[:alert]).to start_with("The key request was not started. Phone number")
     end
 
     it "refuses a second request with a notice" do
@@ -144,7 +156,7 @@ RSpec.describe "Key requests", type: :request do
     it "redirects back one step with an alert when the update is invalid" do
       patch key_request_steps_path(key_request_id: kr.id, step: 3), params: { key_request: { phone_number: "bad" } }
       expect(response).to redirect_to(key_request_steps_path(key_request_id: kr.id, step: 2))
-      expect(flash[:alert]).to eq("An error occured while saving the key request at step 3: Failed to update key request")
+      expect(flash[:alert]).to start_with("This step of the key request was not saved. Phone number")
     end
 
     it "a GET never writes: submitted fields are ignored and step 6 does not submit" do
@@ -172,7 +184,7 @@ RSpec.describe "Key requests", type: :request do
     it "does not submit step 6 until every question is answered" do
       patch key_request_steps_path(key_request_id: kr.id, step: 6)
       expect(response).to redirect_to(key_request_steps_path(key_request_id: kr.id, step: 1))
-      expect(flash[:alert]).to eq("There was an error when submitting your key request form. Please make sure you fill in all the required fields.")
+      expect(flash[:alert]).to start_with("The key request was not submitted. Fill in every required field. Question 1")
       expect(kr.reload.status).to eq("in_progress")
     end
 
@@ -205,13 +217,40 @@ RSpec.describe "Key requests", type: :request do
       end
     end
 
-    it "lets the owner edit again after an admin denies the request" do
-      kr.update!(answers.merge(read_lab_rules: true, read_policies: true, read_agreement: true, status: :waiting_for_approval))
-      kr.update!(status: :in_progress)
-      patch key_request_steps_path(key_request_id: kr.id, step: 1), params: { key_request: { phone_number: "613-555-4444" } }
-      expect(kr.reload.phone_number).to eq("613-555-4444")
-      get key_request_path(kr.id)
-      expect(response.body).to include("Edit Request")
+    context "after an admin denied the request" do
+      before do
+        kr.update!(answers.merge(read_lab_rules: true, read_policies: true, read_agreement: true, status: :waiting_for_approval))
+        kr.deny("Supervisor must be a professor")
+      end
+
+      it "shows the owner the denied badge, the reason and the edit link" do
+        get key_request_path(kr.id)
+        doc = Nokogiri::HTML(response.body)
+        expect(doc.css("span.badge.bg-danger").text.squish).to eq("Denied")
+        expect(response.body).to include("Supervisor must be a professor", "Edit Request")
+      end
+
+      it "says no reason was given when there is none" do
+        kr.update!(denial_reason: nil)
+        get key_request_path(kr.id)
+        expect(response.body).to include("No reason was given.")
+      end
+
+      it "lets the owner edit the request" do
+        patch key_request_steps_path(key_request_id: kr.id, step: 1), params: { key_request: { phone_number: "613-555-4444" } }
+        expect(kr.reload).to have_attributes(phone_number: "613-555-4444", status: "denied", denial_reason: "Supervisor must be a professor")
+      end
+
+      it "resubmits for approval, clearing the reason" do
+        patch key_request_steps_path(key_request_id: kr.id, step: 6)
+        expect(response).to redirect_to(key_request_path(kr.id))
+        expect(kr.reload).to have_attributes(status: "waiting_for_approval", denial_reason: nil)
+      end
+
+      it "sends the owner of a denied request to the request page from the index" do
+        get key_requests_path
+        expect(response).to redirect_to(key_request_path(kr.id))
+      end
     end
 
     # :status is not permitted on steps, so the requester cannot self-approve

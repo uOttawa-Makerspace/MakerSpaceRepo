@@ -1,6 +1,4 @@
 class Admin::KeysController < AdminAreaController
-  HOLDER_NOT_APPROVED_MESSAGE = "The key holder must have an approved key request."
-
   before_action :set_key,
                 only: %i[
                   show
@@ -30,10 +28,10 @@ class Admin::KeysController < AdminAreaController
     if @key.hands_out_by_edit?
       redirect_to admin_keys_path, alert: Key::HAND_OUT_REFUSAL
     elsif @key.save
-      flash[:notice] = "Successfully created key."
+      flash[:notice] = I18n.t("admin_pages.keys.flash.created")
       redirect_to admin_keys_path
     else
-      flash[:alert] = "Something went wrong while creating the key."
+      flash[:alert] = validation_message(@key, "errors.admin.keys.not_created")
       redirect_to new_admin_key_path
     end
   end
@@ -59,20 +57,15 @@ class Admin::KeysController < AdminAreaController
 
   def update
     @key.update_from_edit!(key_params)
-    redirect_to admin_keys_path, notice: "The key was successfully updated."
+    redirect_to admin_keys_path, notice: I18n.t("admin_pages.keys.flash.updated")
   rescue Key::StateError => e
     redirect_to admin_keys_path, alert: e.message
-  rescue ActiveRecord::RecordInvalid
-    redirect_to edit_admin_key_path,
-                alert: "Something went wrong while updating the key."
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to edit_admin_key_path, alert: validation_message(e.record, "errors.admin.keys.not_updated")
   end
 
   def destroy
-    if @key.destroy
-      flash[:notice] = "Successfully deleted key."
-    else
-      flash[:alert] = "Something went wrong while trying to delete the key."
-    end
+    flash_write(@key, "keys.not_deleted", I18n.t("admin_pages.keys.flash.deleted"), destroy: true) { @key.destroy }
     redirect_to admin_keys_path
   end
 
@@ -88,50 +81,49 @@ class Admin::KeysController < AdminAreaController
   end
 
   def assign_key
-    user = User.find(params[:key][:user_id])
+    user = User.find_by(id: params[:key][:user_id])
+
+    if user.nil?
+      redirect_to admin_keys_path, alert: [I18n.t("errors.admin.keys.not_assigned"), I18n.t("errors.admin.keys.holder_not_found")].join(" ") and return
+    end
 
     unless holder_approved?(user)
-      redirect_to admin_keys_path, alert: HOLDER_NOT_APPROVED_MESSAGE and return
+      redirect_to admin_keys_path, alert: I18n.t("admin_pages.keys.flash.holder_not_approved") and return
     end
 
     @key.assign_to!(user, key_params, params[:deposit_amount])
-    redirect_to admin_keys_path, notice: "Successfully assigned key"
+    redirect_to admin_keys_path, notice: I18n.t("admin_pages.keys.flash.assigned")
   rescue ActiveRecord::RecordInvalid, Key::StateError => e
     redirect_to admin_keys_path,
-                alert: failure_message("assign the key", e)
+                alert: failure_message("not_assigned", e)
   end
 
   def revoke_key
-    @key.revoke!(params[:deposit_return_date]&.to_date)
-    redirect_to admin_keys_path, notice: "Successfully revoked key"
+    @key.revoke!(deposit_return_date_param)
+    redirect_to admin_keys_path, notice: I18n.t("admin_pages.keys.flash.revoked")
   rescue ActiveRecord::RecordInvalid, Key::StateError => e
     redirect_to admin_keys_path,
-                alert: failure_message("revoke the key", e)
+                alert: failure_message("not_revoked", e)
   end
 
   def requests
-    @key_requests = KeyRequest.includes(:space, :display_user, :display_supervisor).order(created_at: :asc)
+    @key_requests = KeyRequest.includes(:space, :display_supervisor, display_user: { key_certification: KeyCertification::FILE_ATTACHMENTS })
+                              .order(created_at: :asc)
   end
 
   def approve_key_request
-    if @key_request.status_waiting_for_approval? &&
-         @key_request.update(status: :approved)
-      redirect_to requests_admin_keys_path,
-                  notice: "Successfully approved key request."
-    else
-      redirect_to requests_admin_keys_path,
-                  alert: "Something went wrong while approving the key request."
+    answer_key_request("request_not_approved", I18n.t("admin_pages.keys.flash.request_approved")) do
+      @key_request.update(status: :approved)
     end
   end
 
   def deny_key_request
-    if @key_request.status_waiting_for_approval? &&
-         @key_request.update(status: :in_progress)
-      redirect_to requests_admin_keys_path,
-                  notice: "Successfully denied key request."
-    else
-      redirect_to requests_admin_keys_path,
-                  alert: "Something went wrong while denying the key request."
+    answer_key_request("request_not_denied", I18n.t("admin_pages.keys.flash.request_denied")) do
+      denied = @key_request.deny(params[:denial_reason])
+      if denied
+        KeyRequestMailer.send_key_request_denied(@key_request.id, @key_request.denial_reason).deliver_later
+      end
+      denied
     end
   end
 
@@ -150,42 +142,60 @@ class Admin::KeysController < AdminAreaController
     )
   end
 
+  # The posted deposit return date, or nil when none was given. An unreadable date is refused before
+  # anything is changed.
+  def deposit_return_date_param
+    params[:deposit_return_date]&.to_date
+  rescue Date::Error
+    raise Key::StateError, I18n.t("errors.admin.keys.deposit_return_date_invalid")
+  end
+
   def request_label(key_request)
     if key_request.blank?
-      " (No request form)"
+      I18n.t("admin_pages.keys.no_request_form")
     elsif key_request.status_waiting_for_approval?
-      " (Request form awaiting approval)"
+      I18n.t("admin_pages.keys.request_awaiting")
     else
       ""
     end
   end
 
   def holder_approved?(user)
-    user&.key_request&.status_approved? || false
+    user.key_request&.status_approved? || false
   end
 
-  def failure_message(action, error)
+  # Only a request that is still waiting can be approved or denied.
+  def answer_key_request(failure_key, notice, &change)
+    if @key_request.status_waiting_for_approval?
+      flash_write(@key_request, "keys.#{failure_key}", notice, &change)
+    else
+      flash[:alert] = I18n.t("errors.admin.keys.request_not_waiting")
+    end
+    redirect_to requests_admin_keys_path
+  end
+
+  def failure_message(key, error)
     detail =
       if error.is_a?(ActiveRecord::RecordInvalid)
         error.record.errors.full_messages.to_sentence
       else
         error.message
       end
-    "Something went wrong while trying to #{action}: #{detail}"
+    [I18n.t("errors.admin.keys.#{key}"), detail].join(" ")
   end
 
   def set_key
     key_id = params[:id].present? ? params[:id] : params[:key_id]
     @key = Key.find_by(id: key_id)
 
-    redirect_to admin_keys_path, alert: "The key id was not found." if @key.nil?
+    redirect_to admin_keys_path, alert: I18n.t("admin_pages.keys.flash.key_not_found") if @key.nil?
   end
 
   def set_key_request
     @key_request = KeyRequest.find_by(id: params[:id])
 
     if @key_request.nil?
-      redirect_to admin_keys_path, alert: "The key request id was not found."
+      redirect_to admin_keys_path, alert: I18n.t("admin_pages.keys.flash.request_not_found")
     end
   end
 end

@@ -1,3 +1,5 @@
+import { reportFailure, requestText } from "../src/request_error";
+
 document
   .getElementById("training_id_field")
   ?.addEventListener("change", generate_badge_acquired);
@@ -21,18 +23,15 @@ async function generate_badge_acquired() {
   });
 
   try {
-    const response = await fetch(
+    const text = await requestText(
       `/proficient_projects/generate_acquired_badge?${params.toString()}`,
-      {
-        headers: { Accept: "text/plain, text/html" },
-      },
+      { headers: { Accept: "text/plain, text/html" } },
     );
 
-    if (response.ok) {
-      const text = await response.text();
-      badgeContainer.innerHTML = `<p>${text}</p>`;
-    }
+    const paragraph = document.createElement("p");
+    paragraph.textContent = text;
+    badgeContainer.replaceChildren(paragraph);
   } catch (error) {
-    console.error("Error generating badge:", error);
+    reportFailure(error);
   }
 }

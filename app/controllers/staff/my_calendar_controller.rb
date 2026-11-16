@@ -5,15 +5,16 @@ class Staff::MyCalendarController < StaffAreaController
     @spaces = Space.all.where(
       id: StaffSpace.where(user_id: current_user.id).pluck(:space_id)
     )
-    @space_id = current_user.space_id || @spaces.first.id
+    # Only a space the page offers can be selected; a stored space the user is no longer assigned to is skipped.
+    @space_id = (@spaces.find_by(id: current_user.space_id) || @spaces.first)&.id
   end
 
   def json
-    return render json: { error: "Space ID is required" }, status: :bad_request if params[:id].blank?
+    return render_calendar_error(:space_required, :bad_request) if params[:id].blank?
 
     # Staff read the schedule of the spaces they are assigned to (the spaces the page offers); admins read any.
     unless current_user.admin? || StaffSpace.exists?(user_id: current_user.id, space_id: params[:id])
-      return render json: { error: "You are not assigned to this space" }, status: :forbidden
+      return render_calendar_error(:space_not_assigned, :forbidden)
     end
 
     events = Event.where(space_id: params[:id], draft: false)
@@ -28,22 +29,24 @@ class Staff::MyCalendarController < StaffAreaController
     end
     
     # Date range
-    start_date = params[:start].present? ? Time.zone.parse(params[:start]) : Time.zone.now - 3.months
-    end_date = params[:end].present? ? Time.zone.parse(params[:end]) : Time.zone.now + 3.months
+    start_date, end_date = date_range
+    return render_calendar_error(:invalid_date, :bad_request) if start_date.nil?
+    return render_calendar_error(:range_too_long, :unprocessable_content) if Event.feed_range_too_long?(start_date, end_date)
+
     formatted_events = []
     
+    # Single events outside the date range are left out before anything is read from them.
+    events = events.select { |event| event.recurrence_rule.present? || (event.start_time >= start_date && event.end_time <= end_date) }
+    preload_assignments(events)
+
     events.each do |event|
-      
       if event.recurrence_rule.present?
         # Expand recurring events
         expanded = expand_recurring_event(event, start_date, end_date)
         formatted_events.concat(expanded)
       else
-        # Single events within date range
-        if event.start_time >= start_date && event.end_time <= end_date
-          formatted_events << format_event(event)
-          Rails.logger.info "Added single event #{event.id}"
-        end
+        formatted_events << format_event(event)
+        Rails.logger.info "Added single event #{event.id}"
       end
     end
 
@@ -52,42 +55,51 @@ class Staff::MyCalendarController < StaffAreaController
 
   private
 
+  # The parsed time, nil when the param is absent; ArgumentError when it is not a date.
+  def parse_range_param(value)
+    return if value.blank?
+
+    Time.zone.parse(value) || raise(ArgumentError)
+  end
+
+  # [start, end], both nil when a bound is not a date; a missing end is 50 days after the start (or now), a missing start the longest span before the end.
+  def date_range
+    start_date = parse_range_param(params[:start])
+    end_date = parse_range_param(params[:end]) || (start_date || Time.zone.now) + 50.days
+    [start_date || end_date - Event::MAX_FEED_RANGE, end_date]
+  rescue ArgumentError
+    [nil, nil]
+  end
+
+  def render_calendar_error(cause, status)
+    render json: { error: I18n.t("errors.staff.my_calendar.#{cause}"), reference: error_reference }, status: status
+  end
+
   def expand_recurring_event(event, start_date, end_date)
-    require 'ice_cube'
-    
-    expanded_events = []
-    
-    begin
-      # Bounded: rules stored before validation existed (e.g. MINUTELY)
-      # must not pin a worker. Same caps as the /api/v1 shifts serializer.
-      found = RecurrenceExpansion.occurrences(
-        event.recurrence_rule, event.start_time, start_date, end_date,
-        Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT
-      )
-
-      # Calculate duration
-      duration = event.end_time - event.start_time
-
-      found.occurrences.each do |occurrence|
-        occurrence_end = occurrence + duration
-
-        formatted_event = format_event(event, occurrence, occurrence_end)
-        # Create unique ID using timestamp to avoid collisions
-        formatted_event[:id] = "event-#{event.id}-#{occurrence.to_i}"
-
-        expanded_events << formatted_event
-      end
-
-    rescue => e
-      # Report it (event id only), then fall back: return the
-      # original event if within date range
-      Rails.error.report(e, handled: true, context: { event_id: event.id })
-      if event.start_time >= start_date && event.end_time <= end_date
-        expanded_events << format_event(event)
-      end
+    # Bounded: rules stored before validation existed (e.g. MINUTELY)
+    # must not pin a worker. Same caps as the /api/v1 shifts serializer.
+    found = RecurringSeries.for_record(event).occurrences_starting_in(
+      start_date..end_date, limit: Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT
+    )
+    found.occurrences.map do |occurrence|
+      # The occurrence's own start in the id keeps ids unique within the series.
+      format_event(event, occurrence.starts_at, occurrence.ends_at).merge(id: "event-#{event.id}-#{occurrence.starts_at.to_i}")
     end
-    
-    expanded_events
+  rescue => e
+    # Report it (event id only), then fall back: return the
+    # original event if within date range
+    report_unexpected(e, event_id: event.id)
+    event.start_time >= start_date && event.end_time <= end_date ? [format_event(event)] : []
+  end
+
+  # The assignments (and the staff behind them) of the events that are about to be formatted.
+  def preload_assignments(events)
+    ActiveRecord::Associations::Preloader.new(records: events, associations: { event_assignments: :user }).call
+  end
+
+  # Each staff member's colour in the requested space, read once per request.
+  def space_colors
+    @space_colors ||= StaffSpace.where(space_id: params[:id]).order(id: :desc).pluck(:user_id, :color).to_h
   end
 
   def format_event(event, start_time = nil, end_time = nil)
@@ -102,7 +114,7 @@ class Staff::MyCalendarController < StaffAreaController
 
     background = if event.event_assignments.any?
       "linear-gradient(to right, #{event.event_assignments.map.with_index do |ea, i|
-        c = StaffSpace.find_by(user_id: ea.user_id, space_id: params[:id])&.color || '#3788d8'
+        c = space_colors[ea.user_id] || '#3788d8'
         s = (100.0 / event.event_assignments.size) * i
         e = (100.0 / event.event_assignments.size) * (i + 1)
         "#{c} #{s}%, #{c} #{e}%"

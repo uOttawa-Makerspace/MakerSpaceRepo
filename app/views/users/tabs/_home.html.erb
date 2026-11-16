@@ -7,13 +7,21 @@
         <span class="col-md-2"><%= t('.email') %></span>
         <span class="text-secondary col-md-10"><%= @repo_user.email %></span>
         <span class="col-md-2"><%= t('.faculty') %></span>
-        <span class="text-secondary col-md-10"> <%= @repo_user.faculty.presence || '-' %></span>
+        <span class="text-secondary col-md-10"> <%= @repo_user.shown_faculty.presence || '-' %></span>
         <span class="col-md-2"><%= t('.program') %></span>
         <span class="text-secondary col-md-10"><%= @repo_user.program.presence || '-' %></span>
         <span class="col-md-2"><%= t('.year_of_study') %></span>
-        <span class="text-secondary col-md-10"><%= @repo_user.year_of_study.presence || '-' %></span>
+        <span class="text-secondary col-md-10"><%= @repo_user.current_year_of_study.presence || '-' %></span>
         <span class="col-md-2"><%= t('.identity') %></span>
         <span class="text-secondary col-md-10"><%= @repo_user.identity.present? ? @repo_user.identity.humanize : '-' %></span>
+        <% if (uoeng = @repo_user.uoeng_profile) %>
+            <span class="col-md-2"><%= t('.uoeng_record') %></span>
+            <span class="text-secondary col-md-10" data-test="uoeng-record">
+                <%= [uoeng.program_code, uoeng.level && t(uoeng.level, scope: 'users.identity_readable.identities'),
+                     uoeng.full_time && t('.full_time'), uoeng.current_semester && t('.current_semester')].compact_blank.join(' · ').presence || '-' %>
+                (<%= t('.checked_at', date: l(uoeng.checked_at.to_date, format: :long)) %>)
+            </span>
+        <% end %>
     <% end %>
 
 </div>

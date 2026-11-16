@@ -1,33 +1,32 @@
 <% content_for :preheader do %>
-  Makerepo - Job Order Approval
+  <%= t(".preheader") %>
 <% end %>
 
 <% content_for :team_name do %>
-  The MakerRepo Team
+  <%= t("layouts.mailer.makerrepo_team") %>
 <% end %>
 
 <% content_for :why_received do %>
-  Vous avez reçu ce courriel parce qu'une commande a été approuvée sur <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+  <%= t(".why_received_html", locale: :fr, site_link: tag.a("makerepo.com", href: "https://makerepo.com", style: "text-decoration: underline; color: #999999; font-size: 12px; text-align: center;")) %>
   <br>
-  You have received this email because a Job Order was approved on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+  <%= t(".why_received_html", locale: :en, site_link: tag.a("makerepo.com", href: "https://makerepo.com", style: "text-decoration: underline; color: #999999; font-size: 12px; text-align: center;")) %>
 <% end %>
 
 <!-- FRENCH SECTION -->
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Bonjour,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t("job_order_mailer.hello", locale: :fr) %></p>
 
 <% if @reminder %>
   <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-    Ceci est un rappel que les administrateurs ont approuvé une commande. Veuillez consulter le devis et l'approuver ou le refuser.
+    <%= t(".reminder", locale: :fr) %>
   </p>
 <% end %>
 
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  Votre commande numéro #<%= @job_order.id %> a été approuvée. Consultez la 
-  <a href="<%= user_magic_approval_job_orders_url(token: @hash) %>">page de la commande</a> pour approuver ou refuser le devis.
+  <%= t(".approved_html", id: @job_order.id, link: link_to(t(".page_link", locale: :fr), user_magic_approval_job_orders_url(token: @hash)), locale: :fr) %>
 </p>
 
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  <strong>Prix :</strong><br>
+  <strong><%= t(".pricing", locale: :fr) %></strong><br>
   <% @job_order.job_tasks.each do |task| %>
     - <%= task.title %>
     <% if task.job_service.present? %>
@@ -43,54 +42,60 @@
 
     : 
     <% if total_task_price > 0 %>
-      CAD <%= number_to_currency(total_task_price, locale: :fr) %>
-      <small>(frais de base de <%= number_to_currency(base_fee, locale: :fr) %> plus
+      <%= t(".amount", amount: number_to_currency(total_task_price, locale: :fr), locale: :fr) %>
+      <small>(<%= t(".base_fee", amount: number_to_currency(base_fee, locale: :fr), locale: :fr) %>
         <% if task.job_task_quote&.service_quantity.present? %>
-          <%= "#{task.job_task_quote.service_quantity || 0} #{task.job_service&.unit.presence || 'unité'}" %>
+          <%= number_with_delimiter(task.job_task_quote.service_quantity, delimiter: "", locale: :fr) %> <%= task.job_service&.unit.presence || t(".unit", locale: :fr) %>
           ×
           <%= number_to_currency(task.job_task_quote.service_price || 0, locale: :fr) %>
         <% end %>)</small>
     <% else %>
-      Prix en attente
+      <%= t(".pending", locale: :fr) %>
     <% end %>
     <br>
 
     <% task.job_task_options.each do |opt| %>
       &nbsp;&nbsp;• <%= opt.job_option.name %>
-      : CAD <%= number_to_currency(task.job_task_quote&.job_task_quote_options&.find_by(job_option_id: opt.job_option.id)&.price || 0, locale: :fr) %>
+      : <%= t(".amount", amount: number_to_currency(task.job_task_quote&.price_for_option(opt.job_option_id) || 0, locale: :fr), locale: :fr) %>
       <br>
     <% end %>
   <% end %>
 
   <% if @job_order.job_quote_line_items.any? %>
-    <strong>Articles détaillés :</strong><br>
+    <strong><%= t(".line_items", locale: :fr) %></strong><br>
     <% @job_order.job_quote_line_items.each do |item| %>
-      - <%= item.description %>: CAD <%= number_to_currency(item.price, locale: :fr) %>
+      - <%= item.description %>: <%= t(".amount", amount: number_to_currency(item.price, locale: :fr), locale: :fr) %>
       <br>
     <% end %>
   <% end %>
 
-  <strong>Total général :</strong> CAD <%= number_to_currency(@job_order.total_price, locale: :fr) %>
+  <strong><%= t(".grand_total", locale: :fr) %></strong> <%= t(".amount", amount: number_to_currency(@job_order.total_price, locale: :fr), locale: :fr) %>
 </p>
+
+<% if @user_comments %>
+  <div style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+    <strong><%= t("job_order_mailer.quote_notes", locale: :fr) %></strong>
+    <%= simple_format(h(@user_comments), {}, sanitize: false) %>
+  </div>
+<% end %>
 
 <!-- ENGLISH SECTION -->
 <hr style="margin: 25px 0; border: none; border-top: 1px solid #dddddd;">
 
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t("job_order_mailer.hello", locale: :en) %></p>
 
 <% if @reminder %>
   <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-    This is a reminder that admins have approved a Job Order. Please review the quote and approve or deny it.
+    <%= t(".reminder", locale: :en) %>
   </p>
 <% end %>
 
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  Your Job Order with ID #<%= @job_order.id %> has been approved. Check the 
-  <a href="<%= user_magic_approval_job_orders_url(token: @hash) %>">Job Order page</a> to approve or deny the quote.
+  <%= t(".approved_html", id: @job_order.id, link: link_to(t(".page_link", locale: :en), user_magic_approval_job_orders_url(token: @hash)), locale: :en) %>
 </p>
 
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  <strong>Pricing:</strong><br>
+  <strong><%= t(".pricing", locale: :en) %></strong><br>
   <% @job_order.job_tasks.each do |task| %>
     - <%= task.title %>
     <% if task.job_service.present? %>
@@ -106,35 +111,42 @@
 
     : 
     <% if total_task_price > 0 %>
-      CAD <%= number_to_currency(total_task_price, locale: :en) %>
-      <small>(base fee of <%= number_to_currency(base_fee, locale: :en) %> plus
+      <%= t(".amount", amount: number_to_currency(total_task_price, locale: :en), locale: :en) %>
+      <small>(<%= t(".base_fee", amount: number_to_currency(base_fee, locale: :en), locale: :en) %>
         <% if task.job_task_quote&.service_quantity.present? %>
-          <%= "#{task.job_task_quote.service_quantity || 0} #{task.job_service&.unit.presence || 'unit'}" %>
+          <%= number_with_delimiter(task.job_task_quote.service_quantity, delimiter: "", locale: :en) %> <%= task.job_service&.unit.presence || t(".unit", locale: :en) %>
           ×
           <%= number_to_currency(task.job_task_quote.service_price || 0, locale: :en) %>
         <% end %>)</small>
     <% else %>
-      Pending pricing
+      <%= t(".pending", locale: :en) %>
     <% end %>
     <br>
 
     <% task.job_task_options.each do |opt| %>
       &nbsp;&nbsp;• <%= opt.job_option.name %>
-      : CAD <%= number_to_currency(task.job_task_quote&.job_task_quote_options&.find_by(job_option_id: opt.job_option.id)&.price || 0, locale: :en) %>
+      : <%= t(".amount", amount: number_to_currency(task.job_task_quote&.price_for_option(opt.job_option_id) || 0, locale: :en), locale: :en) %>
       <br>
     <% end %>
   <% end %>
 
   <% if @job_order.job_quote_line_items.any? %>
-    <strong>Line items:</strong><br>
+    <strong><%= t(".line_items", locale: :en) %></strong><br>
     <% @job_order.job_quote_line_items.each do |item| %>
-      - <%= item.description %>: CAD <%= number_to_currency(item.price, locale: :en) %>
+      - <%= item.description %>: <%= t(".amount", amount: number_to_currency(item.price, locale: :en), locale: :en) %>
       <br>
     <% end %>
   <% end %>
 
-  <strong>Grand Total:</strong> CAD <%= number_to_currency(@job_order.total_price, locale: :en) %>
+  <strong><%= t(".grand_total", locale: :en) %></strong> <%= t(".amount", amount: number_to_currency(@job_order.total_price, locale: :en), locale: :en) %>
 </p>
+
+<% if @user_comments %>
+  <div style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+    <strong><%= t("job_order_mailer.quote_notes", locale: :en) %></strong>
+    <%= simple_format(h(@user_comments), {}, sanitize: false) %>
+  </div>
+<% end %>
 
 <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
   <tbody>
@@ -144,7 +156,7 @@
           <tbody>
             <tr>
               <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; border-radius: 5px; text-align: center; background-color: #e55426ff;" valign="top" align="center" bgcolor="#e55426ff">
-                <a href="<%= user_magic_approval_job_orders_url(token: @hash) %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;">Voir / See Order</a>
+                <a href="<%= user_magic_approval_job_orders_url(token: @hash) %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;"><%= t(".button", locale: :fr) %> / <%= t(".button", locale: :en) %></a>
               </td>
             </tr>
           </tbody>

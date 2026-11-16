@@ -33,7 +33,7 @@ RSpec.describe AddBookingStatusToSubSpaceBookings, :booking_clock do
   # Bookings with the three statuses, in the old shape (no column).
   def old_shape_bookings
     bookings = [pending, approved, declined].map do |status|
-      create(:sub_space_booking).tap { |booking| booking.change_status!(status) }
+      create(:sub_space_booking, :with_old_status_row, booking_status: status)
     end
     migrate(:down)
     bookings

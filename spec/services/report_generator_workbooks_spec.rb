@@ -11,8 +11,8 @@ RSpec.describe ReportGenerator do
   include ActiveSupport::Testing::TimeHelpers
 
   let(:march_10) { Time.utc(2026, 3, 10, 15, 0, 0) }
-  let(:from) { DateTime.new(2026, 3, 1) }
-  let(:to) { DateTime.new(2026, 3, 31) }
+  let(:from) { Time.zone.local(2026, 3, 1) }
+  let(:to) { Time.zone.local(2026, 3, 31) }
 
   # { sheet name => rows }, each row without its trailing empty cells.
   def grid(package)
@@ -26,8 +26,26 @@ RSpec.describe ReportGenerator do
     rows.slice_when { |a, _| a.empty? }.map { |b| b.reject(&:empty?) }
   end
 
+  # Runs the example with the server's local zone set away from the
+  # application zone (Toronto), so a time printed in the server's zone shows.
+  def self.on_a_server_in_another_zone
+    around do |example|
+      server_zone = ENV.fetch("TZ", nil)
+      ENV["TZ"] = "Asia/Tokyo"
+      example.run
+    ensure
+      ENV["TZ"] = server_zone
+    end
+  end
+
   def student(name, **attrs)
     create(:user, :student, name: name, created_at: march_10, **attrs)
+  end
+
+  # The user's uOEng record, with the faculty code uOEng gave and the faculty it maps to (nil for a
+  # code the app does not know).
+  def uoeng_record(user, faculty_code, faculty)
+    UoengProfile.create!(user: user, faculty_code: faculty_code, faculty: faculty, source: "email", checked_at: march_10)
   end
 
   describe ".generate_visitors_report" do
@@ -81,6 +99,33 @@ RSpec.describe ReportGenerator do
       )
     end
 
+    it "keeps a French faculty other than Génie as stored and leaves a missing faculty blank" do
+      gamma = create(:space, name: "Gamma")
+      %w[Éducation Education].each do |name|
+        user = student("Ed #{name}")
+        user.update_columns(faculty: name)
+        create(:lab_session, space: gamma, user: user, created_at: march_10)
+      end
+      nobody = student("No Faculty")
+      nobody.update_columns(faculty: nil)
+      create(:lab_session, space: gamma, user: nobody, created_at: march_10)
+      b = blocks(grid(described_class.generate_visitors_report(from, to))["Gamma"])
+      expect(b[4].drop(1)).to contain_exactly(["Éducation", 1, nil, 1], ["Education", 1, nil, 1], [nil, 1, nil, 1])
+      expect(b[5].drop(1).map { |row| row[5] }).to contain_exactly("Éducation", "Education", nil)
+    end
+
+    it "shows visitors with a missing identity as None and a blank one blank" do
+      gamma = create(:space, name: "Gamma")
+      { "Nil Identity" => nil, "Blank Identity" => "" }.each do |name, identity|
+        user = student(name)
+        user.update_columns(identity: identity)
+        create(:lab_session, space: gamma, user: user, created_at: march_10)
+      end
+      b = blocks(grid(described_class.generate_visitors_report(from, to))["Gamma"])
+      expect(b[2].drop(1)).to contain_exactly(["None", 1, nil, 1], [nil, 1, nil, 1])
+      expect(b[5].drop(1).map(&:first)).to contain_exactly("None", nil)
+    end
+
     it "a space sheet repeats the tables for that space only" do
       b = blocks(sheets["Beta"])
       expect(b[1]).to eq([["Report for Beta"]])
@@ -90,6 +135,31 @@ RSpec.describe ReportGenerator do
       expect(b[6].drop(1)).to contain_exactly(
         ["Other Departments", 1, nil, 1, nil, "Doctorate"], ["Other Departments", 1, nil, 1, nil, "Masters"]
       )
+    end
+
+    context "when some visitors have a uOEng record" do
+      before do
+        vera = student("Vera Verified", faculty: "Arts", gender: "Female")
+        uoeng_record(vera, "GENIE", "Engineering")
+        uma = student("Uma Unmapped", faculty: "Science", gender: "Female")
+        uoeng_record(uma, "XYZ", nil)
+        [vera, vera, uma].each { |user| create(:lab_session, space: beta, user: user, created_at: march_10) }
+      end
+
+      it "counts a visitor under the uOEng faculty when there is one, otherwise under their own, with the same totals" do
+        b = blocks(sheets["Report"])
+        expect(sheets["Report"][5..6]).to eq([["CEED-Wide unique visitors", 6], ["CEED-Wide total visitors", 8]])
+        expect(b[4].drop(1)).to contain_exactly(
+          ["None", 1, nil, 1], ["Engineering", 2, nil, 4], ["Science", 2, nil, 2], ["Arts", 1, nil, 1]
+        )
+        expect(b[5].drop(1)).to contain_exactly(
+          ["Community member", 1, nil, 1, nil, "None"], ["Undergrad", 2, nil, 4, nil, "Engineering"],
+          ["Undergrad", 2, nil, 2, nil, "Science"], ["Undergrad", 1, nil, 1, nil, "Arts"]
+        )
+        expect(blocks(sheets["Beta"])[4].drop(1)).to contain_exactly(
+          ["Science", 2, nil, 2], ["Arts", 1, nil, 1], ["Engineering", 1, nil, 2]
+        )
+      end
     end
 
     it "Programs sheet strips leading non-word characters and files blank programs under None" do
@@ -114,7 +184,9 @@ RSpec.describe ReportGenerator do
     let(:laser) { create(:training, name_en: "Laser", name: "Laser") }
     let(:saw) { create(:training, name_en: "Saw", name: "Saw") }
 
-    it "summarises per training, then lists every session with its instructor, local time and attendee count" do
+    on_a_server_in_another_zone
+
+    it "summarises per training, then lists every session with its instructor, Toronto time and attendee count" do
       teacher = create(:user, :staff, name: "Ina Instructor")
       busy = create(:training_session, space: alpha, training: laser, user: teacher, course: "MCG1", created_at: march_10)
       busy.users << create(:user, name: "A One") << create(:user, name: "B Two")
@@ -129,16 +201,18 @@ RSpec.describe ReportGenerator do
       expect(rows[7]).to eq([])
       expect(rows[8]).to eq(%w[Training Level Course Instructor Date Facility] + ["Attendee Count"])
       expect(rows[9..]).to contain_exactly(
-        ["Laser", "Beginner", "MCG1", "Ina Instructor", march_10.localtime.strftime("%Y-%m-%d %H:%M"), "Alpha", 2],
-        ["Saw", "Beginner", nil, "Ina Instructor", (march_10 + 1.day).localtime.strftime("%Y-%m-%d %H:%M"), "Alpha", 1]
+        ["Laser", "Beginner", "MCG1", "Ina Instructor", "2026-03-10 11:00", "Alpha", 2],
+        ["Saw", "Beginner", nil, "Ina Instructor", "2026-03-11 11:00", "Alpha", 1]
       )
     end
 
-    it "counts a session nobody attended as one attendee" do
+    it "counts no attendees for a session nobody attended" do
       create(:training_session, space: alpha, training: laser, created_at: march_10)
+      create(:training_session, space: alpha, training: laser, created_at: march_10 + 1.hour)
+        .users << create(:user)
       rows = grid(described_class.generate_trainings_report(from, to))["Report"]
-      expect(rows[5]).to eq(["Laser", 1, 1])
-      expect(rows.last.last).to eq(1)
+      expect(rows[5]).to eq(["Laser", 2, 1])
+      expect(rows[8..].map(&:last)).to contain_exactly(0, 1)
     end
 
     it "leaves the facility blank for a session without a space" do
@@ -197,8 +271,8 @@ RSpec.describe ReportGenerator do
       )
     end
 
-    it "the Unknown sheet holds the sessions without a space and its title ends in nothing" do
-      expect(sheets["Unknown"][1]).to eq(["Certifications granted in "])
+    it "the Unknown sheet holds the sessions without a space and its title says Unknown" do
+      expect(sheets["Unknown"][1]).to eq(["Certifications granted in Unknown"])
       expect(sheets["Unknown"][7..]).to eq(
         [["Laser", 0, 0, 0, 0, 0, 0], ["Saw", 0, 0, 1, 1, 1, 1], ["Total", 0, 0, 1, 1, 1, 1]]
       )
@@ -225,16 +299,23 @@ RSpec.describe ReportGenerator do
   end
 
   describe ".generate_new_users_report" do
+    on_a_server_in_another_zone
+
+    let(:new_users_header) do
+      ["Name", "Username", "Email", "Gender", "Identity", "Faculty", "Year of Study", "Student ID", "Joined on",
+       "Student number"]
+    end
+
     before do
       gina = student("Gina Genie", gender: "Female")
-      gina.update_columns(faculty: "Génie", email: "gina@example.test", username: "gina")
+      gina.update_columns(faculty: "Génie", email: "gina@uottawa.ca", username: "gina")
       cam = create(:user, name: "Cam Community", created_at: march_10, gender: "Male",
-                          email: "cam@example.test", username: "cam")
+                          email: "cam@uottawa.ca", username: "cam")
       cam.update_columns(faculty: "", program: "", year_of_study: nil)
       student("Mo Master", program: "Master of Arts", faculty: "Arts", gender: "Male",
-                           email: "mo@example.test", username: "mo")
+                           email: "mo@uottawa.ca", username: "mo")
       student("Phil Doc", program: "PhD Physics", faculty: "Science", gender: "Other",
-                          email: "phil@example.test", username: "phil")
+                          email: "phil@uottawa.ca", username: "phil")
       create(:user, name: "Early Bird", created_at: Time.utc(2026, 2, 1))
     end
 
@@ -244,23 +325,27 @@ RSpec.describe ReportGenerator do
       expect(sheets.keys).to eq(%w[Demographics Faculties Report])
     end
 
-    it "Demographics: total, year of study (a blank year counts as 0), level and gender" do
+    it "Demographics: total, year of study (a missing year as Unknown), level and gender" do
       rows = sheets["Demographics"]
       expect(rows[0..9]).to eq(
         [["New Users Breakdown"], ["From", "2026-03-01"], ["To", "2026-03-31"], [],
-         ["Total new users", 4], [], ["Year of Study"], [0, 1], [2020, 3], []]
+         ["Total new users", 4], [], ["Year of Study"], [2020, 3], ["Unknown", 1], []]
       )
       expect(rows[10]).to eq(["Level of Study"])
       expect(rows[11..12]).to contain_exactly(["Undergrad", 3], ["Community member", 1])
       expect(rows[13..]).to eq([[], ["Gender"], ["Female", 1], ["Male", 2], ["Other", 1]])
     end
 
-    it "Faculties: faculties other than Engineering and None collapse into one blank row" do
-      rows = sheets["Faculties"]
-      faculty = blocks(rows)[1]
+    it "Faculties: Génie counted as Engineering, a blank one as None, every other faculty as stored" do
+      student("Eli Engineer").update_columns(faculty: "Engineering")
+      student("Edna Educ").update_columns(faculty: "Éducation")
+      student("Ed Educ").update_columns(faculty: "Education")
+      faculty = blocks(grid(described_class.generate_new_users_report(from, to))["Faculties"])[1]
       expect(faculty.first(2)).to eq([["By Faculty"], ["Faculty", "New Users"]])
-      # Arts and Science both land on a nil key, so the table shows one blank row with a count of 1
-      expect(faculty[2..]).to contain_exactly([nil, 1], ["None", 1], ["Engineering", 1], ["Total", 4])
+      # the rows add up to the total
+      expect(faculty[2..]).to contain_exactly(
+        ["Arts", 1], ["Science", 1], ["None", 1], ["Engineering", 2], ["Éducation", 1], ["Education", 1], ["Total", 7]
+      )
     end
 
     it "Faculties: departments by level, then programs ordered by count, a blank program as Blank - No Program" do
@@ -278,21 +363,78 @@ RSpec.describe ReportGenerator do
       )
     end
 
-    it "Report: identity counts as stored, then a user table whose Joined on column is empty" do
+    it "Report: identity counts as stored, then the user table in the columns it has always had" do
       rows = sheets["Report"]
       expect(rows.first(3)).to eq([["New Users"], ["From", "2026-03-01"], ["To", "2026-03-31"]])
       expect(rows).to include(["Overview"], ["undergrad", 3], ["community_member", 1])
-      header = rows.index(["Name", "Username", "Email", "Gender", "Identity", "Faculty", "Year of Study", "Student ID", "Joined on"])
-      expect(header).to be_present
+      header = rows.index { |r| r.first == "Name" }
+      # the readers load these columns by position: the first nine headers are
+      # as they have always been, the join date sits in the eighth column, and
+      # the student number is added after them
+      expect(rows[header]).to eq(new_users_header)
       body = rows[(header + 1)..]
       expect(body.size).to eq(4)
-      # the data rows have one value fewer than the header: the join date sits under Student ID
-      gina = body.find { |r| r.first == "Gina Genie" }
-      expect(gina).to eq(["Gina Genie", "gina", "gina@example.test", "Female", "undergrad", "Génie", 2020,
-                          march_10.localtime.strftime("%Y-%m-%d %H:%M")])
-      cam = body.find { |r| r.first == "Cam Community" }
-      expect(cam).to eq(["Cam Community", "cam", "cam@example.test", "Male", "community_member", nil, nil,
-                         march_10.localtime.strftime("%Y-%m-%d %H:%M")])
+      gina = User.find_by(username: "gina")
+      expect(body.find { |r| r.first == "Gina Genie" }).to eq(
+        ["Gina Genie", "gina", "gina@uottawa.ca", "Female", "undergrad", "Génie", 2020,
+         "2026-03-10 11:00", nil, gina.student_id]
+      )
+      expect(body.find { |r| r.first == "Cam Community" }).to eq(
+        ["Cam Community", "cam", "cam@uottawa.ca", "Male", "community_member", nil, nil, "2026-03-10 11:00"]
+      )
+    end
+
+    context "when some new users have a uOEng record" do
+      before do
+        uoeng_record(student("Vera Verified", faculty: "Arts", username: "vera"), "GENIE", "Engineering")
+        uoeng_record(student("Uma Unmapped", faculty: "Science", username: "uma"), "XYZ", nil)
+      end
+
+      let(:book) { grid(described_class.generate_new_users_report(from, to)) }
+
+      it "Faculties: counts a user under the uOEng faculty when there is one, otherwise under their own, with the same total" do
+        faculty = blocks(book["Faculties"])[1]
+        expect(faculty[2..]).to contain_exactly(
+          ["Arts", 1], ["Science", 2], ["None", 1], ["Engineering", 2], ["Total", 6]
+        )
+        expect(book["Demographics"][4]).to eq(["Total new users", 6])
+      end
+
+      it "Report: the Faculty column shows the uOEng faculty when there is one, otherwise the user's own, under the same headers" do
+        rows = book["Report"]
+        header = rows.index(new_users_header)
+        body = rows[(header + 1)..]
+        expect(body.size).to eq(6)
+        expect(body.to_h { |r| [r[1], r[5]] }).to eq(
+          "gina" => "Génie", "cam" => nil, "mo" => "Arts", "phil" => "Science", "vera" => "Engineering", "uma" => "Science"
+        )
+      end
+    end
+
+    it "Report: a student number keeps its leading zero" do
+      student("Zed Zero", student_id: "012345678")
+      rows = grid(described_class.generate_new_users_report(from, to))["Report"]
+      expect(rows.find { |r| r.first == "Zed Zero" }.last).to eq("012345678")
+    end
+
+    it "Demographics: each year of study keeps its own count, in year order" do
+      { "Alumni" => 2, "N/A" => 1, "" => 1, "10" => 1, "2" => 2, "1" => 1 }.each do |year, count|
+        count.times { student("Year #{year}").update_columns(year_of_study_entered: year) }
+      end
+      rows = grid(described_class.generate_new_users_report(from, to))["Demographics"]
+      years = blocks(rows)[2]
+      expect(years).to eq(
+        [["Year of Study"], [1, 1], [2, 2], [10, 1], [2020, 3], ["Alumni", 2], ["N/A", 1], ["Unknown", 2]]
+      )
+    end
+
+    it "shows a missing identity as None on Demographics and as stored on Report" do
+      student("Ivy Unknown").update_columns(identity: nil)
+      student("Bea Blank").update_columns(identity: "")
+      book = grid(described_class.generate_new_users_report(from, to))
+      expect(book["Demographics"]).to include(["None", 1])
+      expect(book["Report"].find { |row| row.first == "Ivy Unknown" }[4]).to be_nil
+      expect(book["Report"].find { |row| row.first == "Bea Blank" }[4]).to be_blank
     end
 
     it "includes soft-deleted users and excludes users outside the range" do
@@ -304,16 +446,18 @@ RSpec.describe ReportGenerator do
       empty = grid(described_class.generate_new_users_report(DateTime.new(2019, 1, 1), DateTime.new(2019, 1, 2)))
       expect(empty["Demographics"]).to include(["Total new users", 0])
       expect(empty["Faculties"]).to include(["Total", 0])
-      expect(empty["Report"].last).to eq(["Name", "Username", "Email", "Gender", "Identity", "Faculty", "Year of Study", "Student ID", "Joined on"])
+      expect(empty["Report"].last).to eq(new_users_header)
     end
   end
 
   describe ".generate_training_attendees_report" do
+    on_a_server_in_another_zone
+
     let!(:alpha) { create(:space, name: "Alpha") }
     let(:laser) { create(:training, name_en: "Laser", name: "Laser") }
 
     let(:teacher) { create(:user, :staff, name: "Ina Instructor") }
-    let(:lena) { create(:user, name: "Lena Learner", email: "lena@example.test") }
+    let(:lena) { create(:user, :student, name: "Lena Learner", email: "lena@uottawa.ca", student_id: "012345678") }
 
     def attend(user, session, at)
       create(:certification, user: user, training_session: session, training: session.training, created_at: at)
@@ -322,67 +466,144 @@ RSpec.describe ReportGenerator do
     it "lists attendees, then monthly and weekly averages of attendees per session" do
       session = create(:training_session, space: alpha, training: laser, user: teacher, course: "MCG1", created_at: march_10)
       attend(lena, session, march_10)
-      attend(create(:user, name: "Max Mate", email: "max@example.test"), session, march_10)
+      attend(create(:user, name: "Max Mate", email: "max@uottawa.ca"), session, march_10)
       rows = grid(described_class.generate_training_attendees_report(from, to))["Report - Alpha"]
       expect(rows.first(5)).to eq(
         [["Training Attendees - Alpha"], ["From", "2026-03-01"], ["To", "2026-03-31"], [],
          ["Student ID", "Name", "Email Address", "Certification Type", "Certification Date", "Instructor", "Course",
-          "Facility"]]
+          "Facility", "Student number"]]
       )
-      stamp = session.created_at.strftime("%Y-%m-%d %H:%M")
-      # the rows lack a Student ID value, so every column sits one to the left of its header
+      stamp = "2026-03-10 11:00" # Toronto time
+      # the readers load these columns by position: each line starts under the
+      # first header, as it always has, and the student number (leading zero
+      # kept) follows the eight original columns
       expect(rows[5..6]).to contain_exactly(
-        ["Lena Learner", "lena@example.test", "Laser", stamp, "Ina Instructor", "MCG1", "Alpha"],
-        ["Max Mate", "max@example.test", "Laser", stamp, "Ina Instructor", "MCG1", "Alpha"]
+        ["Lena Learner", "lena@uottawa.ca", "Laser", stamp, "Ina Instructor", "MCG1", "Alpha", nil, "012345678"],
+        ["Max Mate", "max@uottawa.ca", "Laser", stamp, "Ina Instructor", "MCG1", "Alpha"]
       )
-      expect(rows[8..9]).to eq([%w[Month March], ["Month average of attendees per sessions", 2]])
+      expect(rows[8..9]).to eq([["Month", "March"], ["Month average of attendees per sessions", 2]])
       expect(rows[11]).to eq(
         ["Week", "2026-02-23 to 2026-03-01", "2026-03-02 to 2026-03-08", "2026-03-09 to 2026-03-15",
-         "2026-03-16 to 2026-03-22", "2026-03-23 to 2026-03-29"]
+         "2026-03-16 to 2026-03-22", "2026-03-23 to 2026-03-29", "2026-03-30 to 2026-04-05"]
       )
-      expect(rows[12]).to eq(["Week average of attendees per sessions", 0, 0, 2, 0, 0])
+      expect(rows[12]).to eq(["Week average of attendees per sessions", 0, 0, 2, 0, 0, 0])
     end
 
-    it "a month without certificates averages 0, and the average is a whole number" do
+    it "a month without certificates averages 0.0, and averages have one decimal place" do
       first = create(:training_session, space: alpha, training: laser, created_at: march_10)
       second = create(:training_session, space: alpha, training: laser, created_at: march_10 + 1.day)
       attend(lena, first, march_10)
       attend(create(:user), first, march_10)
       attend(create(:user), second, march_10 + 1.day)
-      rows = grid(described_class.generate_training_attendees_report(from, DateTime.new(2026, 4, 30)))["Report - Alpha"]
+      package = described_class.generate_training_attendees_report(from, Time.zone.local(2026, 4, 30))
+      rows = grid(package)["Report - Alpha"]
       month = rows.index { |r| r.first == "Month" }
-      expect(rows[month]).to eq(%w[Month March April])
-      # 3 certificates over 2 sessions is 1 (integer division); April has none
-      expect(rows[month + 1]).to eq(["Month average of attendees per sessions", 1, 0])
+      expect(rows[month]).to eq(["Month", "March", "April"])
+      # 3 certificates over 2 sessions; April has none
+      expect(rows[month + 1]).to eq(["Month average of attendees per sessions", 1.5, 0.0])
+      expect(rows[month + 1].drop(1)).to all(be_a(Float))
+      styles = package.workbook.styles
+      averages = package.workbook.worksheets.first.rows.select { |r| r.cells.first&.value.to_s.include?("average") }
+      expect(averages.size).to eq(2)
+      formats = averages.flat_map { |r| r.to_a.drop(1) }.map do |cell|
+        num_fmt_id = styles.cellXfs[cell.style].numFmtId
+        styles.numFmts.find { |f| f.numFmtId == num_fmt_id }&.formatCode
+      end
+      expect(formats).to all(eq("0.0"))
     end
 
-    it "a custom range that starts after the 1st leaves its first month out of the monthly header" do
+    it "a custom range has a column for every month it overlaps, the partial ones at both ends included" do
+      march = create(:training_session, space: alpha, training: laser, created_at: march_10)
+      attend(lena, march, march_10)
+      april = create(:training_session, space: alpha, training: laser, created_at: Time.utc(2026, 4, 10, 15))
+      attend(lena, april, Time.utc(2026, 4, 10, 15))
+      attend(create(:user), april, Time.utc(2026, 4, 10, 15))
+      rows = grid(described_class.generate_training_attendees_report(Time.zone.local(2026, 3, 5), Time.zone.local(2026, 4, 20)))
+      sheet = rows["Report - Alpha"]
+      month = sheet.index(["Month", "March", "April"])
+      expect(month).to be_present
+      expect(sheet[month + 1]).to eq(["Month average of attendees per sessions", 1, 2])
+    end
+
+    it "names each month without its year, as it always has, so a range over a year repeats a month name" do
+      session = create(:training_session, space: alpha, training: laser, created_at: Time.utc(2027, 1, 15, 15))
+      attend(lena, session, Time.utc(2027, 1, 15, 15))
+      sheet = grid(described_class.generate_training_attendees_report(Time.zone.local(2026, 12, 1), Time.zone.local(2027, 12, 31)))["Report - Alpha"]
+      month = sheet.index { |r| r.first == "Month" }
+      expect(sheet[month]).to eq(["Month", "December", *Date::MONTHNAMES.drop(1)])
+      expect(sheet[month + 1]).to eq(["Month average of attendees per sessions", 0.0, 1.0, *[0.0] * 11])
+    end
+
+    it "a range within one month has that month's column, and a column for every week it overlaps" do
       session = create(:training_session, space: alpha, training: laser, created_at: march_10)
       attend(lena, session, march_10)
-      rows = grid(described_class.generate_training_attendees_report(DateTime.new(2026, 3, 5), DateTime.new(2026, 3, 20)))
-      sheet = rows["Report - Alpha"]
-      expect(sheet).to include(["Month"], ["Month average of attendees per sessions"])
-      expect(sheet.index(["Week", "2026-03-02 to 2026-03-08", "2026-03-09 to 2026-03-15", "2026-03-16 to 2026-03-22"])).to be_present
+      sheet = grid(described_class.generate_training_attendees_report(Time.zone.local(2026, 3, 5), Time.zone.local(2026, 3, 20)))["Report - Alpha"]
+      expect(sheet).to include(["Month", "March"], ["Month average of attendees per sessions", 1])
+      expect(sheet).to include(
+        ["Week", "2026-03-02 to 2026-03-08", "2026-03-09 to 2026-03-15", "2026-03-16 to 2026-03-22"],
+        ["Week average of attendees per sessions", 0, 1, 0]
+      )
     end
 
-    it "weeks start at the start date, so days after the last weekly step are not in the header" do
+    it "the last days of the range fall in the week that holds them" do
       session = create(:training_session, space: alpha, training: laser, created_at: Time.utc(2026, 4, 29, 12))
       attend(lena, session, Time.utc(2026, 4, 29, 12))
-      sheet = grid(described_class.generate_training_attendees_report(from, DateTime.new(2026, 4, 30)))["Report - Alpha"]
+      sheet = grid(described_class.generate_training_attendees_report(from, Time.zone.local(2026, 4, 30)))["Report - Alpha"]
       week = sheet.find { |r| r.first == "Week" }
-      expect(week.last).to eq("2026-04-20 to 2026-04-26")
-      expect(sheet.last).to eq(["Week average of attendees per sessions"] + [0] * (week.size - 1))
+      expect(week.last).to eq("2026-04-27 to 2026-05-03")
+      expect(sheet.last).to eq(["Week average of attendees per sessions"] + [0] * (week.size - 2) + [1])
     end
 
-    it "a session without a space gets its own sheet named with a trailing dash" do
+    it "puts a certificate made just after local midnight on April 1 in April, across the March clock change" do
+      session = create(:training_session, space: alpha, training: laser, created_at: march_10)
+      attend(lena, session, Time.zone.local(2026, 4, 1, 0, 30))
+      attend(create(:user), session, Time.zone.local(2026, 3, 31, 23, 30))
+      package = described_class.generate_training_attendees_report(Time.zone.local(2026, 3, 1), Time.zone.local(2026, 4, 30))
+      rows = grid(package)["Report - Alpha"]
+      month = rows.index { |r| r.first == "Month" }
+      expect(rows[month]).to eq(["Month", "March", "April"])
+      expect(rows[month + 1]).to eq(["Month average of attendees per sessions", 1.0, 1.0])
+    end
+
+    it "leaves out a certificate earned through a project, which has no training session" do
+      session = create(:training_session, space: alpha, training: laser, created_at: march_10)
+      attend(lena, session, march_10)
+      cert = create(:certification, user: lena, training_session: nil, created_at: march_10)
+      create(:proficient_project_session, certification: cert, user: lena,
+                                          proficient_project: create(:proficient_project), level: "Beginner")
+      rows = grid(described_class.generate_training_attendees_report(from, to))
+      expect(rows.keys).to eq(["Report - Alpha"])
+      expect(rows["Report - Alpha"][5..].count { |r| r[0] == "Lena Learner" }).to eq(1)
+    end
+
+    it "labels a session with no training or no instructor Unknown" do
+      session = create(:training_session, space: alpha, training: laser, user: teacher, created_at: march_10)
+      attend(lena, session, march_10)
+      session.update_columns(training_id: nil, user_id: nil)
+      rows = grid(described_class.generate_training_attendees_report(from, to))["Report - Alpha"]
+      expect(rows[5]).to eq(["Lena Learner", "lena@uottawa.ca", "Unknown",
+                             session.created_at.in_time_zone("America/Toronto").strftime("%Y-%m-%d %H:%M"),
+                             "Unknown", session.course, "Alpha", nil, "012345678"])
+    end
+
+    it "labels a certificate with no user Unknown" do
+      session = create(:training_session, space: alpha, training: laser, user: teacher, course: "MCG1", created_at: march_10)
+      cert = attend(lena, session, march_10)
+      cert.update_columns(user_id: nil)
+      rows = grid(described_class.generate_training_attendees_report(from, to))["Report - Alpha"]
+      expect(rows[5]).to eq(["Unknown", nil, "Laser", "2026-03-10 11:00", "Ina Instructor", "MCG1", "Alpha"])
+    end
+
+    it "a session without a space gets its own sheet named for an unknown space" do
       session = create(:training_session, space: alpha, training: laser, created_at: march_10)
       session.update_columns(space_id: nil)
       attend(lena, session, march_10)
       rows = grid(described_class.generate_training_attendees_report(from, to))
-      expect(rows.keys).to eq(["Report - "])
-      expect(rows["Report - "].first).to eq(["Training Attendees - "])
-      expect(rows["Report - "][5]).to eq(["Lena Learner", "lena@example.test", "Laser",
-                                          session.created_at.strftime("%Y-%m-%d %H:%M"), session.user.name])
+      expect(rows.keys).to eq(["Report - Unknown"])
+      expect(rows["Report - Unknown"].first).to eq(["Training Attendees - Unknown"])
+      expect(rows["Report - Unknown"][5]).to eq(["Lena Learner", "lena@uottawa.ca", "Laser",
+                                          session.created_at.strftime("%Y-%m-%d %H:%M"), session.user.name,
+                                          nil, nil, nil, "012345678"])
     end
   end
 
@@ -442,31 +663,62 @@ RSpec.describe ReportGenerator do
       rows = grid(described_class.generate_peak_hours_report(to, from))["Sheet1"]
       expect(rows).to eq([["Visitors by Hour"], ["From", "2026-03-31"], ["To", "2026-03-01"], [], ["Date"]])
     end
+
+    context "on a server in another time zone" do
+      on_a_server_in_another_zone
+
+      it "counts each visit under its hour and day in Toronto time" do
+        create(:lab_session, sign_in_time: march_10, created_at: march_10)
+        create(:lab_session, sign_in_time: Time.utc(2026, 3, 11, 2, 15), created_at: march_10)
+        rows = grid(described_class.generate_peak_hours_report(DateTime.new(2026, 3, 10), DateTime.new(2026, 3, 11).end_of_day))["Sheet1"]
+        # 15:00 UTC is 11:00 in Toronto, and 02:15 UTC on the 11th is 22:15 on the 10th
+        expect(rows[4]).to eq(["Date", *(11..22).map { |h| "%02i:00" % h }])
+        expect(rows[5]).to eq(["2026-03-10", 1, *[0] * 10, 1])
+        expect(rows[6]).to eq(["2026-03-11", *[0] * 12])
+      end
+
+      it "lists the days from the From date to the To date, for a range that ends now in the Toronto evening" do
+        # 21:00 in Toronto is 01:00 UTC on the next day
+        rows = grid(described_class.generate_peak_hours_report(DateTime.new(2026, 3, 9), Time.zone.local(2026, 3, 10, 21)))["Sheet1"]
+        expect(rows[2]).to eq(%w[To 2026-03-10])
+        expect(rows[5..]).to eq([["2026-03-09"], ["2026-03-10"]])
+      end
+
+      it "counts only the visits of the listed days in Toronto, so every hour column belongs to a listed day" do
+        # 01:00 UTC on the 10th is 21:00 on the 9th in Toronto, before the first
+        # listed day; 02:00 UTC on the 11th is 22:00 on the 10th
+        create(:lab_session, sign_in_time: Time.utc(2026, 3, 10, 1), created_at: march_10)
+        create(:lab_session, sign_in_time: march_10, created_at: march_10)
+        create(:lab_session, sign_in_time: Time.utc(2026, 3, 11, 2), created_at: march_10)
+        rows = grid(described_class.generate_peak_hours_report(DateTime.new(2026, 3, 10), DateTime.new(2026, 3, 10).end_of_day))["Sheet1"]
+        expect(rows[4]).to eq(["Date", *(11..22).map { |h| "%02i:00" % h }])
+        expect(rows[5..]).to eq([["2026-03-10", 1, *[0] * 10, 1]])
+      end
+
+      it "adds up the visits of the hour that repeats when daylight saving time ends" do
+        # 05:30 and 06:30 UTC on 2026-11-01 are both 01:30 in Toronto (EDT, then EST)
+        create(:lab_session, sign_in_time: Time.utc(2026, 11, 1, 5, 30))
+        create(:lab_session, sign_in_time: Time.utc(2026, 11, 1, 6, 30))
+        rows = grid(described_class.generate_peak_hours_report(DateTime.new(2026, 11, 1), DateTime.new(2026, 11, 1).end_of_day))["Sheet1"]
+        expect(rows[4..]).to eq([%w[Date 01:00], ["2026-11-01", 2]])
+      end
+    end
   end
 
   describe ".generate_space_present_users_report" do
-    it "stamps the report with the current time and lists nobody when the space is empty" do
-      # the stamp is DateTime.now, i.e. the process zone: pin it to UTC for this example
-      previous_zone = ENV["TZ"]
-      ENV["TZ"] = "UTC"
-      begin
-        travel_to(Time.utc(2026, 3, 10, 15, 30, 45)) do
-          space = create(:space)
-          rows = grid(described_class.generate_space_present_users_report(space.id))["Report"]
-          expect(rows).to eq([["Present Users"], ["Date", "2026-03-10 15:30:45"], [], %w[Name Email]])
-        end
-      ensure
-        ENV["TZ"] = previous_zone
+    on_a_server_in_another_zone
+
+    it "stamps the report with the current time in Toronto and lists nobody when the space is empty" do
+      # 03:30:45 UTC on the 11th is still the evening of the 10th in Toronto
+      travel_to(Time.utc(2026, 3, 11, 3, 30, 45)) do
+        space = create(:space)
+        rows = grid(described_class.generate_space_present_users_report(space.id))["Report"]
+        expect(rows).to eq([["Present Users"], ["Date", "2026-03-10 23:30:45"], [], %w[Name Email]])
       end
     end
   end
 
   describe "helpers no action calls" do
-    it "sum_by_key adds one key over a list of hashes" do
-      expect(described_class.sum_by_key([{ a: 1 }, { a: 2 }, { a: 4 }], :a)).to eq(7)
-      expect(described_class.sum_by_key([], :a)).to eq(0)
-    end
-
     it "title writes a bold underlined row; table_header writes a bold row" do
       package = Axlsx::Package.new
       package.workbook.add_worksheet(name: "S") do |sheet|
@@ -475,62 +727,6 @@ RSpec.describe ReportGenerator do
         described_class.push_hash(sheet, { "k" => 1 })
       end
       expect(grid(package)["S"]).to eq([["T"], %w[A B], ["k", 1]])
-    end
-
-    describe ".get_visitors" do
-      let(:alpha) { create(:space, name: "Alpha") }
-
-      it "returns an empty tally when nobody signed in during the range" do
-        expect(described_class.get_visitors(from, to)).to eq(
-          unique: 0, total: 0, spaces: {}, identities: {}, faculties: {}, genders: {}
-        )
-      end
-
-      it "tallies unique visitors and visits by space, identity, faculty and gender" do
-        ids = { "undergrad" => "Undergraduate", "grad" => "Graduate", "faculty_member" => "Faculty Member",
-                "staff_member" => "Staff Member", "community_member" => "Community Member", "mystery" => "Unknown" }
-        ids.each_key do |identity|
-          user = create(:user, gender: "Male")
-          user.update_columns(identity: identity, faculty: identity == "undergrad" ? "" : "Arts")
-          create(:lab_session, space: alpha, user: user, sign_in_time: march_10)
-        end
-        again = User.find_by(identity: "undergrad")
-        beta = create(:space, name: "Beta")
-        twin = create(:user, gender: "Female")
-        twin.update_columns(identity: "undergrad", faculty: "Arts")
-        create(:lab_session, space: beta, user: twin, sign_in_time: march_10)
-        create(:lab_session, space: alpha, user: again, sign_in_time: march_10 + 1.hour)
-        create(:lab_session, space: alpha, user: again, sign_in_time: Time.utc(2026, 5, 1))
-        tally = described_class.get_visitors(from, to)
-        expect(tally[:unique]).to eq(7)
-        expect(tally[:total]).to eq(8)
-        expect(tally[:identities].keys).to match_array(ids.values)
-        expect(tally[:identities]["Undergraduate"]).to eq(
-          unique: 2, total: 3, faculties: { "Unknown" => { unique: 1, total: 2 }, "Arts" => { unique: 1, total: 1 } }
-        )
-        expect(tally[:faculties]).to eq("Unknown" => { unique: 1, total: 2 }, "Arts" => { unique: 6, total: 6 })
-        expect(tally[:genders]).to eq("Male" => { unique: 6, total: 7 }, "Female" => { unique: 1, total: 1 })
-        expect(tally[:spaces].keys).to eq(%w[Alpha Beta])
-        expect(tally[:spaces]["Alpha"].slice(:unique, :total)).to eq(unique: 6, total: 7)
-        expect(tally[:spaces]["Beta"].slice(:unique, :total)).to eq(unique: 1, total: 1)
-        expect(tally[:spaces]["Alpha"][:genders]).to eq("Male" => { unique: 6, total: 7 })
-        expect(tally[:spaces]["Alpha"][:faculties]["Arts"]).to eq(unique: 5, total: 5)
-      end
-    end
-
-    describe ".get_new_projects" do
-      it "gives one row per repository with both a category and equipment, the equipment name shadowing the category name" do
-        repo = create(:repository, created_at: march_10)
-        create(:category, repository: repo, name: "Cat")
-        create(:equipment, repository: repo, name: "Eq1")
-        create(:equipment, repository: repo, name: "Eq2")
-        no_equipment = create(:repository, created_at: march_10)
-        create(:category, repository: no_equipment, name: "Lonely")
-        rows = described_class.get_new_projects(from, to).to_a
-        expect(rows.map { |r| [r["id"], r["created_month"], r["created_year"], r["share_type"], r["name"]] }).to contain_exactly(
-          [repo.id, "03", "2026", "public", "Eq1"], [repo.id, "03", "2026", "public", "Eq2"]
-        )
-      end
     end
   end
 end

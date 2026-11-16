@@ -1,4 +1,5 @@
 // app/javascript/entrypoints/volunteer_task_requests.js
+import { reportFailure, requestText } from "../src/request_error";
 
 function debounce(func, wait) {
   let timeout;
@@ -29,25 +30,31 @@ document.addEventListener("turbo:load", function () {
     });
   });
 
+  // Replaces the results list with the server's rendered HTML for the search.
+  function showResults(path, param, value, listClass) {
+    requestText(`${path}?${param}=${encodeURIComponent(value)}`, {
+      headers: { Accept: "text/html" },
+    })
+      .then((html) => {
+        const target = reqContainer.querySelector(listClass);
+        if (target) target.innerHTML = html;
+      })
+      .catch(reportFailure);
+  }
+
   // 2. Debounced search for Pending Requests
   const pendingSearch = document.getElementById("search_pending");
   if (pendingSearch) {
-    const searchPendingDebounced = debounce((val) => {
-      fetch(
-        `/volunteer_task_requests/search_pending?search_pending=${encodeURIComponent(val)}`,
-        {
-          headers: { Accept: "text/html" },
-        },
-      )
-        .then((res) => res.text())
-        .then((html) => {
-          const target = reqContainer.querySelector(".pending-requests");
-          if (target) target.innerHTML = html;
-        })
-        .catch((err) =>
-          console.error("Error searching pending requests:", err),
-        );
-    }, 300);
+    const searchPendingDebounced = debounce(
+      (val) =>
+        showResults(
+          "/volunteer_task_requests/search_pending",
+          "search_pending",
+          val,
+          ".pending-requests",
+        ),
+      300,
+    );
 
     pendingSearch.addEventListener("input", (e) =>
       searchPendingDebounced(e.target.value),
@@ -57,22 +64,16 @@ document.addEventListener("turbo:load", function () {
   // 3. Debounced search for Processed History
   const processedSearch = document.getElementById("search_processed");
   if (processedSearch) {
-    const searchProcessedDebounced = debounce((val) => {
-      fetch(
-        `/volunteer_task_requests/search_processed?search_processed=${encodeURIComponent(val)}`,
-        {
-          headers: { Accept: "text/html" },
-        },
-      )
-        .then((res) => res.text())
-        .then((html) => {
-          const target = reqContainer.querySelector(".processed-requests");
-          if (target) target.innerHTML = html;
-        })
-        .catch((err) =>
-          console.error("Error searching processed requests:", err),
-        );
-    }, 300);
+    const searchProcessedDebounced = debounce(
+      (val) =>
+        showResults(
+          "/volunteer_task_requests/search_processed",
+          "search_processed",
+          val,
+          ".processed-requests",
+        ),
+      300,
+    );
 
     processedSearch.addEventListener("input", (e) =>
       searchProcessedDebounced(e.target.value),

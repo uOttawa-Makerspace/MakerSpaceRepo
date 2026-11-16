@@ -37,6 +37,9 @@ en:
       approve: "Approve"
       decline: "Decline"
       delete: "Delete"
+      clear_semester: "Clear semester"
+      clear_semester_confirm: "Clear the active semester of this project proposal?"
+      semester_cleared: "The semester was cleared."
 
     document_project: Document project
     create_revision: Create Revision
@@ -144,6 +147,9 @@ fr:
       approve: "Approuver"
       decline: "Désapprouver"
       delete: "Supprimer"
+      clear_semester: "Retirer le semestre"
+      clear_semester_confirm: "Retirer le semestre actif de cette proposition de projet?"
+      semester_cleared: "Le semestre a été retiré."
 
     document_project: Documenter un projet
     create_revision: Créer une révision

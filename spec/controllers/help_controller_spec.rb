@@ -29,7 +29,7 @@ RSpec.describe HelpController, type: :controller do
                    comments: 'HELP !!!'
                  }
                }
-        }.to have_enqueued_mail(MsrMailer, :issue_email_to_team)
+        }.to have_enqueued_job(HelpFilingJob)
         expect(flash[:notice]).not_to be nil
         expect(response).to redirect_to help_path
       end

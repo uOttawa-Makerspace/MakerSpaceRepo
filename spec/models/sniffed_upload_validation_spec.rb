@@ -63,6 +63,37 @@ RSpec.describe SniffedUploadValidation do
     expect(proposal.sniffed_upload_problems(:project_files, nil)).not_to be_empty
   end
 
+  it "sniffed_upload_problems ignores the file name for a rule without name fallback" do
+    text_named_png = content_named_upload("photo.png", content: "just some text", type: "image/png")
+    I18n.with_locale(:en) do
+      expect(create(:user).sniffed_upload_problems(:avatar, text_named_png))
+        .to eq(["photo.png has a file type that is not allowed (application/octet-stream)"])
+    end
+  end
+
+  it "sniffed_upload_problems accepts a fixed size limit as well as a callable one" do
+    rule = { allow: nil, deny: nil, max_size: 4, name_fallback: true, if: nil, unless: nil }
+    allow(proposal).to receive(:sniffed_upload_rules).and_return(project_files: [rule])
+    I18n.with_locale(:en) do
+      expect(proposal.sniffed_upload_problems(:project_files, content_named_upload("five.txt", content: "hello")))
+        .to eq(["five.txt is too large (maximum is 4 Bytes)"])
+    end
+  end
+
+  it "words the problems of an incoming upload in the request language" do
+    exe = content_named_upload("evil.exe", content: "MZ" + ("\x00" * 200))
+    big = content_named_upload("big.txt", content: "hello")
+    allow(big).to receive(:size).and_return(10.gigabytes)
+    english = I18n.with_locale(:en) { proposal.sniffed_upload_problems(:project_files, exe) }
+    french = I18n.with_locale(:fr) { proposal.sniffed_upload_problems(:project_files, exe) }
+    expect(english).to eq(["evil.exe has a file type that is not allowed (application/x-dosexec)"])
+    expect(french).to eq(["evil.exe a un type de fichier non autorisé (application/x-dosexec)"])
+    expect(I18n.with_locale(:fr) { proposal.sniffed_upload_problems(:project_files, big) }.first)
+      .to match(/\Abig\.txt est trop volumineux \(maximum : /)
+    expect(I18n.with_locale(:en) { proposal.sniffed_upload_problems(:project_files, big) }.first)
+      .to match(/\Abig\.txt is too large \(maximum is /)
+  end
+
   it "turns a storage-service error while sniffing into a validation error, not an exception" do
     allow_any_instance_of(ActiveStorage::Service::DiskService).to receive(:download_chunk).and_raise(ActiveStorage::IntegrityError, "InvalidRange")
     expect(Rails.error).to receive(:report).with(instance_of(ActiveStorage::IntegrityError), hash_including(handled: true))

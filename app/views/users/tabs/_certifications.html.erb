@@ -54,6 +54,12 @@
 <!-- Manually handles AJAX functionality that isn't working, not sure if good workaround in the long run but it works --->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        var texts = document.documentElement.dataset;
+        // The toast listener in src/toast.js shows the message.
+        function showFailure(message) {
+            document.dispatchEvent(new CustomEvent('toast:show', { detail: { message: message, type: 'error' } }));
+        }
+
         document.querySelectorAll('.demote-button').forEach(function(button) {
             button.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -64,11 +70,24 @@
                         'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'text/javascript',
                     }
-                }).then(response => response.text())
-                    .then(data => {
-                        eval(data);
-                    })
-                    .catch(error => console.error('Error:', error));
+                }).then(function (response) {
+                    return response.text().then(function (text) {
+                        return { ok: response.ok, text: text, requestId: response.headers.get('X-Request-Id') };
+                    });
+                }).then(function (answer) {
+                    if (!answer.ok) {
+                        var reference = answer.requestId ? ' [' + answer.requestId.slice(0, 8) + ']' : '';
+                        return showFailure(texts.requestFailed + reference);
+                    }
+                    try {
+                        eval(answer.text);
+                    } catch (error) {
+                        console.error(error);
+                        showFailure(texts.requestFailed);
+                    }
+                }, function () {
+                    showFailure(texts.requestNetwork);
+                });
             });
         });
     });

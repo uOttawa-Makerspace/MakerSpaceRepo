@@ -1,0 +1,23 @@
+<%# locals: key (titles/legalcode key), adapt (bool), terms (locale keys under licenses.terms), legalcode (url) %>
+<section id="help">
+  <div class="title"><%= t("licenses.titles.#{key}") %></div>
+
+  <div class="sub-title"><%= t('licenses.page.free_to') %></div>
+
+  <b><%= t('licenses.freedoms.share.label') %></b> — <%= t('licenses.freedoms.share.text') %><br><br>
+  <% if adapt %>
+    <b><%= t('licenses.freedoms.adapt.label') %></b> — <%= t('licenses.freedoms.adapt.text') %><br><br>
+  <% end %>
+  <%= t('licenses.page.revoke') %>
+
+  <div class="sub-title"><%= t('licenses.page.under_terms') %></div>
+
+  <% (terms + %w[no_restrictions]).each_with_index do |term, i| %>
+    <b><%= t("licenses.terms.#{term}.label") %></b> — <%= t("licenses.terms.#{term}.text") %><% unless i == terms.size %><br><br><% end %>
+  <% end %>
+
+  <br><br>
+
+  <%= link_to t('licenses.page.formal'), legalcode %>
+
+</section>

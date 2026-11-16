@@ -12,6 +12,7 @@ RSpec.describe "Localized model error messages" do
     end
   end
 
+
   def messages_after_save(record, locale)
     I18n.with_locale(locale) do
       record.errors.clear
@@ -64,8 +65,8 @@ RSpec.describe "Localized model error messages" do
   end
 
   it "localizes the coupon price message" do
-    expect_messages(CouponCode.new(cc_cost: -1), :cc_cost, "must be a number of CC points (0 or more)",
-                    "doit être un nombre de points CC (0 ou plus)")
+    expect_messages(CouponCode.new(cc_cost: -1), :cc_cost, "must be a number of CCs (0 or more)",
+                    "doit être un nombre de CC (0 ou plus)")
   end
 
   describe Program do
@@ -141,6 +142,16 @@ RSpec.describe "Localized model error messages" do
                     "Une question doit avoir exactement une bonne réponse", :question_form)
   end
 
+  it "localizes the question answer text message" do
+    question = Question.new(answers: [Answer.new(correct: true)])
+    expect_messages(question, :base, "Every answer needs a description", "Chaque réponse doit avoir une description", :question_form)
+  end
+
+  it "localizes the question answer count message" do
+    question = Question.new(answers: [Answer.new(correct: true, description: "Only")])
+    expect_messages(question, :base, "A question needs at least two answers", "Une question doit avoir au moins deux réponses", :question_form)
+  end
+
   it "localizes the quick access link messages" do
     admin = create(:user, :admin)
     QuickAccessLink.create!(user: admin, name: "Faq", path: "/faq")
@@ -165,7 +176,7 @@ RSpec.describe "Localized model error messages" do
       rental.state = :active
       expect_messages(rental, :state,
                       "cannot change from cancelled except back to awaiting payment, or to active by staff",
-                      "ne peut pas passer de « Terminée » à un autre état, sauf pour revenir à « Attendre le paiement » ou pour passer à « Actif » par le personnel")
+                      "ne peut pas passer de « Terminée » à un autre état, sauf pour revenir à « En attente de paiement » ou pour passer à « Actif » par le personnel")
     end
   end
 
@@ -192,13 +203,6 @@ RSpec.describe "Localized model error messages" do
     token.expires_at = token.family_expires_at + 1.day
     expect_messages(token, :expires_at, "must not be after the family cap",
                     "ne doit pas dépasser la limite de la famille de jetons")
-  end
-
-  it "localizes the help submission message" do
-    allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return({ number: nil })
-    attrs = { name: "Pat", email: "pat@example.test", subject: "A long enough subject", comments: "Something broke" }
-    expect(messages_after_save(Help.new(attrs), :en)).to include("Internal error while submitting issue.")
-    expect(messages_after_save(Help.new(attrs), :fr)).to include("Erreur interne lors de la soumission du problème.")
   end
 
   it "localizes the booking time and volunteer photo messages" do
@@ -278,7 +282,20 @@ RSpec.describe "Localized model error messages" do
                       "Project title is already in use.", "Le titre du projet est déjà utilisé.")
       expect_messages(Repository.new(share_type: "private"), :password,
                       "Password is required for private projects", "Un mot de passe est requis pour les projets privés")
-      expect_messages(Repository.new, :photos, "Must have between 1 and 5 photos", "Doit avoir entre 1 et 5 photos")
+      expect_messages(Repository.new, :photos, "Must have between 1 and 10 photos", "Doit avoir entre 1 et 10 photos")
+    end
+  end
+
+  describe Photo do
+    it "localizes the size limit message" do
+      photo = Photo.new(image: { io: StringIO.new("x"), filename: "a.png", content_type: "image/png" })
+      photo.image.blob.byte_size = Photo::MAX_IMAGE_SIZE + 1
+      photo.valid?
+      expect(photo.errors[:image]).to include("is larger than 10 MB")
+      I18n.with_locale(:fr) do
+        photo.valid?
+        expect(photo.errors[:image]).to include("dépasse 10 MB")
+      end
     end
   end
 

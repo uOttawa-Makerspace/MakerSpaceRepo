@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -61,6 +61,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["announcement_id"], name: "index_announcement_dismisses_on_announcement_id"
+    t.index ["user_id", "announcement_id"], name: "index_announcement_dismisses_on_user_id_and_announcement_id", unique: true
     t.index ["user_id"], name: "index_announcement_dismisses_on_user_id"
   end
 
@@ -81,6 +82,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.integer "question_id"
     t.datetime "updated_at", precision: nil, null: false
     t.index ["question_id"], name: "index_answers_on_question_id"
+  end
+
+  create_table "api_idempotency_keys", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "key", limit: 255, null: false
+    t.string "request_digest", null: false
+    t.integer "response_status", null: false
+    t.jsonb "response_body", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "key"], name: "index_api_idempotency_keys_on_user_id_and_key", unique: true
   end
 
   create_table "api_refresh_tokens", force: :cascade do |t|
@@ -141,19 +153,42 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.datetime "updated_at", precision: nil, null: false
   end
 
+  create_table "cc_money_claim_email_resends", force: :cascade do |t|
+    t.integer "admin_id", null: false
+    t.integer "cc_money_id", null: false
+    t.datetime "created_at", null: false
+    t.string "email", null: false
+    t.index ["admin_id"], name: "index_cc_money_claim_email_resends_on_admin_id"
+    t.index ["cc_money_id"], name: "index_cc_money_claim_email_resends_on_cc_money_id"
+  end
+
+  create_table "cc_money_email_corrections", force: :cascade do |t|
+    t.integer "cc_money_id", null: false
+    t.integer "admin_id", null: false
+    t.string "old_email"
+    t.string "new_email", null: false
+    t.datetime "created_at", null: false
+    t.index ["admin_id"], name: "index_cc_money_email_corrections_on_admin_id"
+    t.index ["cc_money_id"], name: "index_cc_money_email_corrections_on_cc_money_id"
+  end
+
   create_table "cc_moneys", id: :serial, force: :cascade do |t|
     t.integer "cc"
+    t.integer "claim_token_generation", default: 0, null: false
     t.datetime "created_at", precision: nil, null: false
     t.integer "discount_code_id"
+    t.boolean "legacy_duplicate", default: false, null: false
     t.boolean "linked", default: true
     t.integer "order_id"
     t.integer "proficient_project_id"
+    t.string "purchaser_email"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
     t.integer "volunteer_task_id"
     t.index ["discount_code_id"], name: "index_cc_moneys_on_discount_code_id"
     t.index ["order_id"], name: "index_cc_moneys_on_order_id"
     t.index ["proficient_project_id"], name: "index_cc_moneys_on_proficient_project_id"
+    t.index ["user_id", "volunteer_task_id"], name: "index_cc_moneys_on_user_and_task_award", unique: true, where: "((volunteer_task_id IS NOT NULL) AND (NOT legacy_duplicate))"
     t.index ["user_id"], name: "index_cc_moneys_on_user_id"
     t.index ["volunteer_task_id"], name: "index_cc_moneys_on_volunteer_task_id"
   end
@@ -210,6 +245,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.index ["space_id"], name: "index_contact_infos_on_space_id"
   end
 
+  create_table "counter_recount_corrections", force: :cascade do |t|
+    t.string "column_name", null: false
+    t.datetime "created_at", null: false
+    t.integer "new_value", null: false
+    t.integer "old_value"
+    t.bigint "row_id", null: false
+    t.datetime "run_at", null: false
+    t.string "table_name", null: false
+    t.index ["table_name", "row_id"], name: "index_counter_recount_corrections_on_table_name_and_row_id"
+    t.check_constraint "table_name::text = ANY (ARRAY['repositories'::character varying, 'comments'::character varying]::text[])", name: "counter_recount_corrections_table_name_check"
+  end
+
   create_table "coupon_codes", force: :cascade do |t|
     t.integer "cc_cost", null: false
     t.string "code"
@@ -243,6 +290,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.boolean "is_live"
     t.string "sheet_key"
     t.boolean "show_floorplans", default: true
+    t.index "(true)", name: "index_design_days_single_row", unique: true
   end
 
   create_table "discount_codes", id: :serial, force: :cascade do |t|
@@ -303,11 +351,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.string "title"
     t.bigint "training_id"
     t.datetime "updated_at", null: false
+    t.bigint "updated_by_id"
     t.index ["course_name_id"], name: "index_events_on_course_name_id"
     t.index ["created_by_id"], name: "index_events_on_created_by_id"
     t.index ["space_id", "draft"], name: "idx_events_on_space_and_draft"
     t.index ["space_id", "start_time", "end_time"], name: "idx_events_on_space_and_times"
     t.index ["training_id"], name: "index_events_on_training_id"
+    t.index ["updated_by_id"], name: "index_events_on_updated_by_id"
   end
 
   create_table "exam_questions", id: :serial, force: :cascade do |t|
@@ -374,10 +424,37 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.index ["channel_id"], name: "index_google_calendar_channels_on_channel_id", unique: true
   end
 
-  create_table "helps", force: :cascade do |t|
+  create_table "google_calendar_pending_changes", force: :cascade do |t|
+    t.string "action", null: false
+    t.integer "attempts", default: 0, null: false
+    t.string "calendar_id"
     t.datetime "created_at", null: false
-    t.string "gh_issue_number"
+    t.bigint "event_id"
+    t.string "google_event_id"
+    t.bigint "shadowing_hour_id"
     t.datetime "updated_at", null: false
+    t.index ["action", "event_id", "google_event_id", "shadowing_hour_id"], name: "index_google_calendar_pending_changes_identity", unique: true, nulls_not_distinct: true
+    t.check_constraint "action::text = 'shadow_push'::text AND shadowing_hour_id IS NOT NULL AND event_id IS NULL OR action::text <> 'shadow_push'::text AND shadowing_hour_id IS NULL AND event_id IS NOT NULL", name: "google_calendar_pending_changes_subject_check"
+    t.check_constraint "action::text = ANY (ARRAY['push'::character varying, 'remove'::character varying, 'shadow_push'::character varying]::text[])", name: "google_calendar_pending_changes_action_check"
+  end
+
+  create_table "helps", force: :cascade do |t|
+    t.string "app_version"
+    t.datetime "created_at", null: false
+    t.string "email"
+    t.datetime "filed_at"
+    t.datetime "filing_claimed_at"
+    t.string "gh_issue_number"
+    t.datetime "mailed_at"
+    t.datetime "mailing_claimed_at"
+    t.string "name"
+    t.integer "resends", default: 0, null: false
+    t.boolean "share_email"
+    t.string "source"
+    t.string "subject"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.index ["user_id"], name: "index_helps_on_user_id"
   end
 
   create_table "job_options", force: :cascade do |t|
@@ -557,6 +634,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.decimal "price", precision: 10, scale: 2
     t.datetime "updated_at", null: false
     t.index ["job_option_id"], name: "index_job_task_quote_options_on_job_option_id"
+    t.index ["job_task_quote_id", "job_option_id"], name: "index_job_task_quote_options_on_quote_and_option", unique: true
     t.index ["job_task_quote_id"], name: "index_job_task_quote_options_on_job_task_quote_id"
   end
 
@@ -630,6 +708,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
 
   create_table "key_requests", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.text "denial_reason"
     t.string "emergency_contact"
     t.string "emergency_contact_phone_number"
     t.string "emergency_contact_relation"
@@ -704,6 +783,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.index ["user_id"], name: "index_lab_sessions_on_user_id"
   end
 
+  create_table "kiosk_sign_events", force: :cascade do |t|
+    t.bigint "actor_id", null: false
+    t.bigint "visitor_id", null: false
+    t.bigint "space_id", null: false
+    t.string "action", null: false
+    t.datetime "created_at", null: false
+    t.index ["actor_id"], name: "index_kiosk_sign_events_on_actor_id"
+    t.index ["created_at"], name: "index_kiosk_sign_events_on_created_at"
+    t.index ["space_id"], name: "index_kiosk_sign_events_on_space_id"
+    t.index ["visitor_id"], name: "index_kiosk_sign_events_on_visitor_id"
+    t.check_constraint "action::text = ANY (ARRAY['sign_in'::character varying, 'sign_out'::character varying]::text[])", name: "kiosk_sign_events_action_check"
+  end
+
   create_table "learning_module_tracks", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "learning_module_id"
@@ -776,6 +868,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.string "shopify_order_id", null: false
     t.string "status", null: false
     t.datetime "updated_at", null: false
+    t.bigint "ledger_entry_id"
+    t.datetime "reversed_at"
+    t.index ["ledger_entry_id"], name: "index_locker_payments_on_ledger_entry_id", unique: true
     t.index ["locker_rental_id"], name: "index_locker_payments_held_on_locker_rental_id", where: "((status)::text = 'held'::text)"
     t.index ["locker_rental_id"], name: "index_locker_payments_on_locker_rental_id"
     t.index ["resolved_by_id"], name: "index_locker_payments_on_resolved_by_id"
@@ -797,7 +892,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.datetime "notified_of_cancellation_at"
     t.datetime "owned_until"
     t.datetime "paid_at"
-    t.string "preferred_locker"
     t.bigint "preferred_locker_id"
     t.bigint "rented_by_id"
     t.string "requested_as"
@@ -836,6 +930,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.index ["specifier"], name: "index_lockers_on_specifier"
   end
 
+  create_table "membership_duplicate_closures", force: :cascade do |t|
+    t.datetime "closed_at", default: -> { "now()" }, null: false
+    t.bigint "kept_membership_id", null: false
+    t.bigint "membership_id", null: false
+    t.datetime "marked_updated_at", null: false
+    t.string "previous_status", null: false
+    t.datetime "previous_updated_at", null: false
+    t.datetime "restored_at"
+    t.string "shopify_draft_order_id"
+    t.index ["kept_membership_id"], name: "index_membership_duplicate_closures_on_kept_membership_id"
+    t.index ["membership_id"], name: "index_membership_duplicate_closures_open", unique: true, where: "(restored_at IS NULL)"
+  end
+
   create_table "membership_tiers", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "duration", null: false
@@ -853,7 +960,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.bigint "membership_tier_id"
     t.string "shopify_draft_order_id"
     t.datetime "start_date"
-    t.string "status", default: "paid"
+    t.string "status", default: "pending"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["membership_tier_id"], name: "index_memberships_on_membership_tier_id"
@@ -931,6 +1038,52 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
     t.index ["user_id"], name: "index_orders_on_user_id"
+  end
+
+  create_table "payment_checkout_backfills", primary_key: "payment_checkout_id", id: :bigint, default: nil, force: :cascade do |t|
+    t.bigint "locker_rental_id", null: false
+    t.string "provider_id", null: false
+    t.string "status", null: false
+    t.datetime "filled_at", precision: nil, default: -> { "now()" }, null: false
+  end
+
+  create_table "payment_checkouts", force: :cascade do |t|
+    t.string "reference_type", null: false
+    t.bigint "reference_id", null: false
+    t.date "term"
+    t.string "provider", null: false
+    t.string "provider_id"
+    t.string "status", default: "open", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["provider", "provider_id"], name: "index_payment_checkouts_on_provider_and_provider_id", unique: true
+    t.index ["reference_type", "reference_id"], name: "index_payment_checkouts_on_reference"
+    t.index ["reference_type", "reference_id"], name: "index_payment_checkouts_one_open_per_reference", unique: true, where: "((status)::text = 'open'::text)"
+    t.check_constraint "status::text <> 'paid'::text OR provider_id IS NOT NULL", name: "payment_checkouts_paid_has_provider_id_check"
+    t.check_constraint "status::text = ANY (ARRAY['open'::character varying, 'paid'::character varying, 'void'::character varying]::text[])", name: "payment_checkouts_status_check"
+  end
+
+  create_table "payment_ledger_backfills", primary_key: "payment_ledger_entry_id", id: :bigint, default: nil, force: :cascade do |t|
+    t.bigint "locker_payment_id", null: false
+    t.string "kind", null: false
+    t.datetime "filled_at", precision: nil, default: -> { "now()" }, null: false
+  end
+
+  create_table "payment_ledger_entries", force: :cascade do |t|
+    t.string "provider", null: false
+    t.string "provider_ref", null: false
+    t.decimal "amount", precision: 10, scale: 2
+    t.string "kind", null: false
+    t.bigint "reversed_entry_id"
+    t.virtual "reversed_entry_kind", type: :string, as: "\nCASE\n    WHEN (reversed_entry_id IS NOT NULL) THEN 'payment'::text\n    ELSE NULL::text\nEND", stored: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["id", "provider", "provider_ref", "kind"], name: "index_payment_ledger_entries_reversal_target", unique: true
+    t.index ["provider", "provider_ref"], name: "index_payment_ledger_entries_one_payment_per_provider_ref", unique: true, where: "((kind)::text = 'payment'::text)"
+    t.index ["reversed_entry_id"], name: "index_payment_ledger_entries_on_reversed_entry_id", unique: true
+    t.check_constraint "(kind::text = 'reversal'::text) = (reversed_entry_id IS NOT NULL)", name: "payment_ledger_entries_reversal_has_entry_check"
+    t.check_constraint "amount IS NULL OR amount >= 0::numeric", name: "payment_ledger_entries_amount_check"
+    t.check_constraint "kind::text = ANY (ARRAY['payment'::character varying, 'reversal'::character varying]::text[])", name: "payment_ledger_entries_kind_check"
   end
 
   create_table "photos", id: :serial, force: :cascade do |t|
@@ -1044,7 +1197,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
   create_table "printer_sessions", id: :serial, force: :cascade do |t|
     t.datetime "created_at", precision: nil, null: false
     t.boolean "in_use", default: false
-    t.integer "printer_id"
+    t.integer "printer_id", null: false
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
     t.index ["printer_id"], name: "index_printer_sessions_on_printer_id"
@@ -1129,6 +1282,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.string "program_type"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.index ["user_id", "program_type"], name: "index_programs_on_user_id_and_program_type", unique: true
     t.index ["user_id"], name: "index_programs_on_user_id"
   end
 
@@ -1232,6 +1386,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.index ["expires_at"], name: "index_rate_limit_counters_on_expires_at"
   end
 
+  create_table "recurrence_rule_rewrites", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "migration_version", null: false
+    t.text "new_rule", null: false
+    t.text "old_rule", null: false
+    t.bigint "record_id", null: false
+    t.string "table_name", null: false
+    t.index ["table_name", "record_id", "migration_version"], name: "index_recurrence_rule_rewrites_once", unique: true
+  end
+
   create_table "recurring_bookings", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -1274,12 +1438,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
     t.string "youtube_link"
+    t.integer "hidden_reason"
     t.index ["category"], name: "index_repositories_on_category", opclass: :gin_trgm_ops, using: :gin
     t.index ["description"], name: "index_repositories_on_description", opclass: :gin_trgm_ops, using: :gin
     t.index ["make_id"], name: "index_repositories_on_make_id"
     t.index ["project_proposal_id"], name: "index_repositories_on_project_proposal_id"
     t.index ["title"], name: "index_repositories_on_title", opclass: :gin_trgm_ops, using: :gin
+    t.index ["user_id", "title"], name: "index_repositories_on_user_id_and_title", unique: true
     t.index ["user_id"], name: "index_repositories_on_user_id"
+    t.check_constraint "hidden_reason IS NULL OR deleted IS TRUE", name: "repositories_hidden_reason_only_when_hidden"
   end
 
   create_table "repositories_users", id: false, force: :cascade do |t|
@@ -1296,6 +1463,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.integer "volunteer_task_id"
     t.index ["training_id"], name: "index_require_trainings_on_training_id"
     t.index ["volunteer_task_id"], name: "index_require_trainings_on_volunteer_task_id"
+  end
+
+  create_table "restored_rows", force: :cascade do |t|
+    t.datetime "archived_at", default: -> { "now()" }, null: false
+    t.integer "category_option_id"
+    t.text "migration_version", null: false
+    t.text "name"
+    t.bigint "parent_id", null: false
+    t.text "parent_type", null: false
+    t.bigint "row_id", null: false
+    t.datetime "row_updated_at"
+    t.text "table_name", null: false
   end
 
   create_table "rfids", id: :serial, force: :cascade do |t|
@@ -1358,22 +1537,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.datetime "updated_at", null: false
   end
 
-  create_table "solid_cache_entries", force: :cascade do |t|
-    t.integer "byte_size", null: false
-    t.datetime "created_at", null: false
-    t.binary "key", null: false
-    t.bigint "key_hash", null: false
-    t.binary "value", null: false
-    t.index ["byte_size"], name: "index_solid_cache_entries_on_byte_size"
-    t.index ["key_hash", "byte_size"], name: "index_solid_cache_entries_on_key_hash_and_byte_size"
-    t.index ["key_hash"], name: "index_solid_cache_entries_on_key_hash", unique: true
-  end
-
   create_table "space_manager_joins", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.bigint "space_id"
+    t.bigint "space_id", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id"
+    t.bigint "user_id", null: false
     t.index ["space_id"], name: "index_space_manager_joins_on_space_id"
     t.index ["user_id"], name: "index_space_manager_joins_on_user_id"
   end
@@ -1385,6 +1553,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.integer "max_capacity"
     t.string "name"
     t.datetime "updated_at", precision: nil, null: false
+    t.index "lower((name)::text)", name: "index_spaces_on_lower_name", unique: true
   end
 
   create_table "spaces_trainings", id: false, force: :cascade do |t|
@@ -1443,6 +1612,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.index ["space_id", "user_id"], name: "idx_staff_spaces_space_user"
+    t.index ["user_id", "space_id"], name: "index_staff_spaces_on_user_id_and_space_id", unique: true
     t.index ["user_id"], name: "index_staff_spaces_on_user_id"
   end
 
@@ -1579,6 +1749,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.index ["user_id"], name: "index_training_sessions_users_on_user_id"
   end
 
+  create_table "training_skill_list_changes", force: :cascade do |t|
+    t.bigint "training_id", null: false
+    t.string "column_name", null: false
+    t.text "old_value", null: false
+    t.text "new_value", null: false
+    t.datetime "changed_at", default: -> { "now()" }, null: false
+    t.datetime "restored_at"
+    t.index ["training_id", "column_name"], name: "index_training_skill_list_changes_on_training_and_column"
+  end
+
   create_table "trainings", id: :serial, force: :cascade do |t|
     t.datetime "created_at", precision: nil, null: false
     t.string "description_en"
@@ -1596,11 +1776,31 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
   end
 
   create_table "uni_programs", id: false, force: :cascade do |t|
+    t.boolean "active", default: true, null: false
     t.string "department", null: false
     t.string "faculty", null: false
     t.string "level", null: false
     t.string "program", null: false
+    t.index ["program", "level", "faculty"], name: "index_uni_programs_on_program_level_faculty_active", unique: true, where: "active"
     t.index ["program"], name: "index_uni_programs_on_program"
+  end
+
+  create_table "uoeng_profiles", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "emplid"
+    t.string "faculty_code"
+    t.string "faculty"
+    t.string "program_code"
+    t.string "level"
+    t.boolean "full_time"
+    t.boolean "current_semester"
+    t.datetime "checked_at", null: false
+    t.string "source", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_uoeng_profiles_on_user_id", unique: true
+    t.check_constraint "level::text = ANY (ARRAY['undergrad'::character varying, 'grad'::character varying]::text[])", name: "uoeng_profiles_level_known"
+    t.check_constraint "source::text = ANY (ARRAY['student_number'::character varying, 'email'::character varying]::text[])", name: "uoeng_profiles_source_known"
   end
 
   create_table "upvotes", id: :serial, force: :cascade do |t|
@@ -1619,12 +1819,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.string "comments"
     t.datetime "created_at", null: false
     t.date "date"
+    t.datetime "decided_at"
+    t.bigint "decided_by_id"
     t.string "identity"
+    t.text "reason"
     t.bigint "staff_id"
+    t.string "status", default: "pending", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["decided_by_id"], name: "index_user_booking_approvals_on_decided_by_id"
     t.index ["staff_id"], name: "index_user_booking_approvals_on_staff_id"
+    t.index ["status"], name: "index_user_booking_approvals_on_status"
     t.index ["user_id"], name: "index_user_booking_approvals_on_user_id"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'approved'::character varying, 'declined'::character varying, 'revoked'::character varying]::text[])", name: "user_booking_approvals_status_check"
   end
 
   create_table "users", id: :serial, force: :cascade do |t|
@@ -1650,6 +1857,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.string "identity"
     t.datetime "last_seen_at", precision: nil
     t.datetime "last_signed_in_time", precision: nil
+    t.string "locale"
     t.boolean "locked", default: false
     t.datetime "locked_until", precision: nil
     t.string "name"
@@ -1668,11 +1876,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.citext "username"
     t.integer "wallet", default: 0
     t.string "year_of_study"
+    t.string "year_of_study_entered"
+    t.string "year_of_study_set_by", default: "entered", null: false
+    t.date "year_of_study_set_on", default: -> { "((now() AT TIME ZONE 'America/New_York'::text))::date" }, null: false
     t.index "lower((email)::text)", name: "index_users_on_lowercase_email", unique: true
     t.index "lower((username)::text)", name: "index_users_on_lowercase_username", unique: true
     t.index ["name"], name: "index_users_on_name", opclass: :gin_trgm_ops, using: :gin
     t.index ["space_id"], name: "index_users_on_space_id"
     t.index ["username"], name: "index_users_on_username", opclass: :gin_trgm_ops, using: :gin
+    t.check_constraint "locale::text = ANY (ARRAY['en'::character varying, 'fr'::character varying]::text[])", name: "users_locale_supported"
+    t.check_constraint "year_of_study_set_by::text = ANY (ARRAY['entered'::character varying, 'backfill_last_run'::character varying, 'backfill_marked_inactive'::character varying]::text[])", name: "users_year_of_study_set_by_known"
   end
 
   create_table "videos", id: :serial, force: :cascade do |t|
@@ -1698,11 +1911,36 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id", null: false
     t.integer "volunteer_task_id", null: false
+    t.index ["user_id", "volunteer_task_id", "date_of_task", "total_time"], name: "index_volunteer_hours_on_pending_submission", unique: true, where: "(approval IS NULL)"
     t.index ["user_id"], name: "index_volunteer_hours_on_user_id"
     t.index ["volunteer_task_id"], name: "index_volunteer_hours_on_volunteer_task_id"
   end
 
   add_check_constraint "volunteer_hours", "date_of_task IS NOT NULL", name: "volunteer_hours_date_of_task_present_check", validate: false
+
+  create_table "volunteer_task_join_duplicate_endings", force: :cascade do |t|
+    t.bigint "volunteer_task_join_id", null: false
+    t.bigint "kept_join_id", null: false
+    t.string "old_state", null: false
+    t.boolean "old_active"
+    t.datetime "old_state_changed_at"
+    t.bigint "old_state_changed_by_id"
+    t.datetime "old_updated_at", null: false
+    t.string "new_state", null: false
+    t.datetime "ended_at", default: -> { "now()" }, null: false
+    t.datetime "restored_at"
+    t.index ["volunteer_task_join_id"], name: "index_join_duplicate_endings_on_join_id"
+  end
+
+  create_table "volunteer_task_join_state_changes", force: :cascade do |t|
+    t.bigint "volunteer_task_join_id", null: false
+    t.string "old_state", null: false
+    t.datetime "old_state_changed_at"
+    t.string "new_state", null: false
+    t.datetime "changed_at", default: -> { "now()" }, null: false
+    t.datetime "restored_at"
+    t.index ["volunteer_task_join_id"], name: "index_join_state_changes_on_join_id"
+  end
 
   create_table "volunteer_task_joins", id: :serial, force: :cascade do |t|
     t.boolean "active", default: true
@@ -1711,8 +1949,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.integer "user_id"
     t.string "user_type", default: "Volunteer"
     t.integer "volunteer_task_id"
+    t.string "state", default: "joined", null: false
+    t.datetime "state_changed_at"
+    t.bigint "state_changed_by_id"
+    t.index ["state_changed_by_id"], name: "index_volunteer_task_joins_on_state_changed_by_id"
+    t.index ["volunteer_task_id", "user_id"], name: "index_volunteer_task_joins_on_task_and_user_when_joined", unique: true, where: "((state)::text = 'joined'::text)"
     t.index ["user_id"], name: "index_volunteer_task_joins_on_user_id"
     t.index ["volunteer_task_id"], name: "index_volunteer_task_joins_on_volunteer_task_id"
+    t.index ["volunteer_task_id", "state"], name: "index_volunteer_task_joins_on_volunteer_task_id_and_state"
+    t.check_constraint "state::text = ANY (ARRAY['joined'::character varying, 'completed'::character varying, 'left'::character varying, 'removed'::character varying]::text[])", name: "volunteer_task_joins_state_check"
   end
 
   create_table "volunteer_task_requests", id: :serial, force: :cascade do |t|
@@ -1768,10 +2013,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
   add_foreign_key "announcement_dismisses", "users"
   add_foreign_key "announcements", "users"
   add_foreign_key "answers", "questions"
+  add_foreign_key "api_idempotency_keys", "users", on_delete: :cascade
   add_foreign_key "api_refresh_tokens", "users", on_delete: :cascade
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "project_proposals"
   add_foreign_key "categories", "repositories"
+  add_foreign_key "cc_money_claim_email_resends", "cc_moneys", on_delete: :restrict
+  add_foreign_key "cc_money_claim_email_resends", "users", column: "admin_id", on_delete: :restrict
+  add_foreign_key "cc_money_email_corrections", "cc_moneys", on_delete: :restrict
+  add_foreign_key "cc_money_email_corrections", "users", column: "admin_id", on_delete: :restrict
   add_foreign_key "cc_moneys", "discount_codes"
   add_foreign_key "cc_moneys", "orders"
   add_foreign_key "cc_moneys", "proficient_projects"
@@ -1796,12 +2046,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
   add_foreign_key "events", "spaces"
   add_foreign_key "events", "trainings", on_delete: :nullify
   add_foreign_key "events", "users", column: "created_by_id"
+  add_foreign_key "events", "users", column: "updated_by_id"
   add_foreign_key "exam_questions", "exams"
   add_foreign_key "exam_questions", "questions", on_delete: :nullify
   add_foreign_key "exam_responses", "answers", on_delete: :nullify
   add_foreign_key "exam_responses", "exam_questions", on_delete: :nullify
   add_foreign_key "exams", "training_sessions"
   add_foreign_key "exams", "users"
+  add_foreign_key "google_calendar_pending_changes", "shadowing_hours", on_delete: :cascade
+  add_foreign_key "helps", "users", on_delete: :nullify
   add_foreign_key "job_options_types", "job_options"
   add_foreign_key "job_options_types", "job_types"
   add_foreign_key "job_order_options", "job_options"
@@ -1846,12 +2099,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
   add_foreign_key "keys", "users", column: "supervisor_id"
   add_foreign_key "lab_sessions", "spaces"
   add_foreign_key "lab_sessions", "users"
+  add_foreign_key "kiosk_sign_events", "spaces"
+  add_foreign_key "kiosk_sign_events", "users", column: "actor_id"
+  add_foreign_key "kiosk_sign_events", "users", column: "visitor_id"
   add_foreign_key "learning_module_tracks", "learning_modules"
   add_foreign_key "learning_module_tracks", "users"
   add_foreign_key "learning_modules", "trainings"
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
   add_foreign_key "locker_payments", "locker_rentals"
+  add_foreign_key "locker_payments", "payment_ledger_entries", column: "ledger_entry_id"
   add_foreign_key "locker_payments", "users", column: "resolved_by_id"
   add_foreign_key "locker_rentals", "course_names", on_delete: :nullify
   add_foreign_key "locker_rentals", "lockers"
@@ -1866,6 +2123,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
   add_foreign_key "order_items", "proficient_projects"
   add_foreign_key "orders", "order_statuses"
   add_foreign_key "orders", "users"
+  add_foreign_key "payment_ledger_entries", "payment_ledger_entries", column: ["reversed_entry_id", "provider", "provider_ref", "reversed_entry_kind"], primary_key: ["id", "provider", "provider_ref", "kind"], name: "fk_payment_ledger_entries_reversed_entry"
   add_foreign_key "photos", "learning_modules"
   add_foreign_key "photos", "proficient_projects"
   add_foreign_key "photos", "project_proposals"
@@ -1935,7 +2193,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
   add_foreign_key "sub_space_bookings", "booking_statuses"
   add_foreign_key "sub_space_bookings", "recurring_bookings"
   add_foreign_key "sub_space_bookings", "sub_space_booking_statuses"
-  add_foreign_key "sub_space_bookings", "sub_spaces", on_delete: :cascade
+  add_foreign_key "sub_space_bookings", "sub_spaces", on_delete: :restrict
   add_foreign_key "sub_space_bookings", "users"
   add_foreign_key "sub_space_bookings", "users", column: "approved_by_id"
   add_foreign_key "sub_spaces", "spaces"
@@ -1952,9 +2210,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
   add_foreign_key "training_sessions_users", "users"
   add_foreign_key "trainings", "skills"
   add_foreign_key "trainings", "spaces"
+  add_foreign_key "uoeng_profiles", "users", on_delete: :cascade
   add_foreign_key "upvotes", "comments"
   add_foreign_key "upvotes", "users"
   add_foreign_key "user_booking_approvals", "users"
+  add_foreign_key "user_booking_approvals", "users", column: "decided_by_id", on_delete: :nullify
   add_foreign_key "user_booking_approvals", "users", column: "staff_id"
   add_foreign_key "users", "spaces"
   add_foreign_key "videos", "learning_modules"
@@ -1962,6 +2222,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
   add_foreign_key "volunteer_hours", "users"
   add_foreign_key "volunteer_hours", "volunteer_tasks"
   add_foreign_key "volunteer_task_joins", "users"
+  add_foreign_key "volunteer_task_joins", "users", column: "state_changed_by_id", on_delete: :nullify
   add_foreign_key "volunteer_task_joins", "volunteer_tasks"
   add_foreign_key "volunteer_task_requests", "users"
   add_foreign_key "volunteer_task_requests", "volunteer_tasks"
@@ -1969,4 +2230,52 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
   add_foreign_key "volunteer_tasks", "users"
   add_foreign_key "walk_in_safety_sheets", "spaces"
   add_foreign_key "walk_in_safety_sheets", "users"
+
+  create_view "reporting_user_years", sql_definition: <<-SQL
+      SELECT users.id AS user_id,
+          CASE
+              WHEN ((moves.n = 0) OR (users.year_of_study_entered IS NULL) OR ((users.year_of_study_entered)::text = 'Alumni'::text)) THEN users.year_of_study_entered
+              WHEN (((entered.year >= (1)::numeric) AND (entered.year <= (7)::numeric)) AND ((entered.year + (moves.n)::numeric) <= (8)::numeric)) THEN (((entered.year + (moves.n)::numeric))::text)::character varying
+              ELSE 'Alumni'::character varying
+          END AS year_of_study,
+      users.year_of_study_entered,
+      users.year_of_study_set_on,
+      users.year_of_study_set_by
+     FROM (((users
+       CROSS JOIN LATERAL ( SELECT ((users.created_at AT TIME ZONE 'UTC'::text) AT TIME ZONE 'America/New_York'::text) AS created,
+              ((now() AT TIME ZONE 'America/New_York'::text))::date AS today) here)
+       CROSS JOIN LATERAL ( SELECT
+                  CASE
+                      WHEN ((users.identity)::text = ANY ((ARRAY['grad'::character varying, 'undergrad'::character varying, 'international_grad'::character varying, 'international_undergrad'::character varying])::text[])) THEN GREATEST(0, ((((EXTRACT(year FROM here.today))::integer -
+                      CASE
+                          WHEN (EXTRACT(month FROM here.created) > EXTRACT(month FROM here.today)) THEN 1
+                          ELSE 0
+                      END) - GREATEST(((EXTRACT(year FROM users.year_of_study_set_on))::integer +
+                      CASE
+                          WHEN (EXTRACT(month FROM here.created) > EXTRACT(month FROM users.year_of_study_set_on)) THEN 0
+                          ELSE 1
+                      END), ((EXTRACT(year FROM here.created))::integer + 1))) + 1))
+                      ELSE 0
+                  END AS n) moves)
+       CROSS JOIN LATERAL ( SELECT COALESCE(("substring"((users.year_of_study_entered)::text, '^[0-9]+'::text))::numeric, (0)::numeric) AS year) entered);
+  SQL
+
+  execute <<~'SQL'
+    CREATE OR REPLACE FUNCTION public.payment_ledger_entries_append_only()
+     RETURNS trigger
+     LANGUAGE plpgsql
+    AS $function$
+    BEGIN
+      RAISE EXCEPTION 'payment_ledger_entries is append-only: % refused', TG_OP;
+    END;
+    $function$
+  SQL
+
+  execute <<~'SQL'
+    CREATE TRIGGER payment_ledger_entries_no_change BEFORE DELETE OR UPDATE ON public.payment_ledger_entries FOR EACH ROW EXECUTE FUNCTION payment_ledger_entries_append_only()
+  SQL
+
+  execute <<~'SQL'
+    CREATE TRIGGER payment_ledger_entries_no_truncate BEFORE TRUNCATE ON public.payment_ledger_entries FOR EACH STATEMENT EXECUTE FUNCTION payment_ledger_entries_append_only()
+  SQL
 end

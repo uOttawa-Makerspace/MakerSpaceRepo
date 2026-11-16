@@ -9,7 +9,7 @@ class ChatMessagesController < SessionsController
     @chat_message = order.post_chat_message(chat_message_params[:message], current_user)
 
     return if @chat_message.persisted?
-      flash[:error] = "Failed to send message: #{@chat_message.errors.full_messages.join(', ')}"    
+      flash[:error] = validation_message(@chat_message, "failed_saves.chat_message")    
   end
 
   def index

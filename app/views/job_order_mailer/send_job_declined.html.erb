@@ -1,27 +1,27 @@
 <% content_for :preheader do %>
-  Makerepo - Job Order Declined
+  <%= t(".preheader") %>
 <% end %>
 
 <% content_for :team_name do %>
-  The MakerRepo Team
+  <%= t("layouts.mailer.makerrepo_team") %>
 <% end %>
 
 <% content_for :why_received do %>
-  You have received this email because a Job Order has been declined on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+  <%= t(".why_received_html", site_link: tag.a("makerepo.com", href: "https://makerepo.com", style: "text-decoration: underline; color: #999999; font-size: 12px; text-align: center;")) %>
 <% end %>
 
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t("job_order_mailer.hello") %></p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  Admins have declined a Job order with ID #<%= @job_order.id %>.
+  <%= t(".body", id: @job_order.id) %>
 </p>
 
 <% if @job_order.user_comments.present? %>
   <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-    Please see for the following comments from admins for more details: <br/>
+    <%= t(".comments") %> <br/>
     <span style="font-style: italic"><%= @job_order.user_comments %></span>
   </p>
 <% end %>
 
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  If you require any further assistance or have question about the current declined order, please contact us at <a href="mailto:makerspace@uottawa.ca">makerspace@uottawa.ca</a>. Please include the Job Order ID #<%= @job_order.id %> in your email.
+  <%= t(".contact_html", contact: mail_to("makerspace@uottawa.ca"), id: @job_order.id) %>
 </p>

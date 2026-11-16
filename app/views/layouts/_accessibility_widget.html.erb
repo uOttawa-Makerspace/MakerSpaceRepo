@@ -1,0 +1,6 @@
+<%# Third-party accessibility widget, for visitors and members only (accessibility_widget?). The controller loads it
+    after the page has loaded and ignores a failure. %>
+<% if accessibility_widget? %>
+<div hidden data-controller="userway" data-action="turbo:before-render@document->userway#keepWidget" data-userway-src-value="https://cdn.userway.org/widget.js" data-userway-account-value="va12Fyrpbl"></div>
+<noscript><div id="noscript-warning">Please ensure Javascript is enabled for purposes of <a href="https://userway.org">website accessibility</a></div></noscript>
+<% end %>

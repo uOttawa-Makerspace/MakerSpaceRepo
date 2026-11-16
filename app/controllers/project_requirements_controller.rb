@@ -9,11 +9,7 @@ class ProjectRequirementsController < ProficientProjectsController
         required_project_id: params[:required_project_id]
       )
 
-    if project_requirement.save
-      flash[:notice] = "Required project added."
-    else
-      flash[:alert] = "Something went wrong. Try again."
-    end
+    write_flash(project_requirement, "errors.training.project_requirement_not_added", "Required project added.") { project_requirement.save }
     redirect_to proficient_project_path(@proficient_project.id)
   end
 

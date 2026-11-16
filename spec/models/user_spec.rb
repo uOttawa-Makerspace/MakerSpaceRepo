@@ -148,6 +148,9 @@ RSpec.describe User, type: :model do
     end
 
     context "identity" do
+      # A new account with a uOttawa email may choose any identity (see user_uottawa_affiliation_spec.rb).
+      subject { build(:user) }
+
       it { should validate_presence_of(:identity) }
       it { should_not allow_value("Something else").for(:identity) }
       it do
@@ -174,33 +177,6 @@ RSpec.describe User, type: :model do
 
         expect(User.key_assignable).to include(staff, admin, requester)
         expect(User.key_assignable).not_to include(bystander)
-      end
-    end
-
-    context "#created_at_month" do
-      it "should return users created in the specified month" do
-        # Test a specific month to avoid conflicts
-        test_date = Date.new(2020, 5, 15)
-        
-        expect {
-          10.times { create(:user, :regular_user, created_at: test_date) }
-        }.to change { User.created_at_month(test_date.month).count }.by(10)
-      end
-    end
-
-    context "#not_created_this_year" do
-      it "should return users not created this year" do
-        expect {
-          2.times { create(:user, :regular_user, created_at: 3.years.ago) }
-        }.to change { User.not_created_this_year.count }.by(2)
-      end
-    end
-
-    context "#created_this_year" do
-      it "should return users created this year" do
-        expect {
-          14.times { create(:user, :regular_user, created_at: Date.today) }
-        }.to change { User.created_this_year.count }.by(14)
       end
     end
 
@@ -561,6 +537,18 @@ RSpec.describe User, type: :model do
         create(:training_requirement, :"3d_printing", level: "Beginner")
         expect(user.has_requirements?(TrainingRequirement.all)).to be_falsey
       end
+
+      it "gives the same answers from the held training levels read once" do
+        user = create(:user, :regular_user)
+        cert = create(:certification, :"3d_printing", user_id: user.id, level: "Beginner")
+        met = create(:training_requirement, :"3d_printing", training_id: cert.training.id, level: "Beginner")
+        unmet = create(:training_requirement, :"3d_printing", training_id: cert.training.id, level: "Intermediate")
+        held = user.held_training_levels
+
+        expect(held).to eq(Set[[cert.training.id, "Beginner"]])
+        expect(user.has_requirements?([met], held)).to be(true)
+        expect(user.has_requirements?([met, unmet], held)).to be(false)
+      end
     end
   end
 
@@ -621,6 +609,86 @@ RSpec.describe User, type: :model do
       clone = build(:user, :regular_user, username: gone.username.upcase, email: gone.email)
       expect(clone).not_to be_valid
       expect(clone.errors.attribute_names).to include(:username, :email)
+    end
+  end
+
+  describe "#can_work_in?" do
+    let(:assigned) { create(:space) }
+    let(:elsewhere) { create(:space) }
+    let(:staff) { create(:user, :staff).tap { |u| StaffSpace.create!(user: u, space: assigned) } }
+
+    it "lets staff work in the spaces they are assigned to and no other" do
+      expect(staff.can_work_in?(assigned)).to be(true)
+      expect(staff.can_work_in?(elsewhere)).to be(false)
+    end
+
+    it "does not let a saved space alone count: staff must still be assigned to it" do
+      staff.update_columns(space_id: elsewhere.id)
+      expect(staff.can_work_in?(elsewhere)).to be(false)
+    end
+
+    it "lets an admin with no assignments work in any space" do
+      expect(create(:user, :admin).can_work_in?(elsewhere)).to be(true)
+    end
+  end
+
+  describe "#current_space" do
+    let!(:first_space) { create(:space) }
+    let!(:second_space) { create(:space) }
+    let(:staff) { create(:user, :staff) }
+
+    it "is the saved space when the user may work in it" do
+      [second_space, first_space].each { |s| StaffSpace.create!(user: staff, space: s) }
+      staff.update_columns(space_id: second_space.id)
+      expect(staff.current_space).to eq(second_space)
+    end
+
+    it "is the lowest-id assigned space when none is saved, or the saved one is not assigned" do
+      [second_space, first_space].each { |s| StaffSpace.create!(user: staff, space: s) }
+      expect(staff.current_space).to eq(first_space)
+      staff.update_columns(space_id: create(:space).id)
+      expect(staff.current_space).to eq(first_space)
+    end
+
+    it "is nil for staff with no assignments, even with a saved space" do
+      staff.update_columns(space_id: first_space.id)
+      expect(staff.current_space).to be_nil
+    end
+
+    it "is the lowest-id space for an admin with no saved space" do
+      expect(create(:user, :admin).current_space).to eq(Space.order(:id).first)
+    end
+  end
+
+  describe "#assign_spaces!" do
+    let(:kept) { create(:space) }
+    let(:dropped) { create(:space) }
+    let(:staff) { create(:user, :staff).tap { |u| [kept, dropped].each { |s| StaffSpace.create!(user: u, space: s) } } }
+
+    it "adds the missing spaces and removes the others" do
+      added = create(:space)
+      staff.assign_spaces!([kept.id, added.id])
+      expect(staff.staff_spaces.pluck(:space_id)).to contain_exactly(kept.id, added.id)
+    end
+
+    it "clears the saved space when it is a removed one" do
+      staff.update_columns(space_id: dropped.id)
+      staff.assign_spaces!([kept.id])
+      expect(staff.reload.space_id).to be_nil
+    end
+
+    it "keeps a saved space that stays assigned" do
+      staff.update_columns(space_id: kept.id)
+      staff.assign_spaces!([kept.id])
+      expect(staff.reload.space_id).to eq(kept.id)
+    end
+
+    it "keeps an admin's saved space, since admins work in any space" do
+      admin = create(:user, :admin)
+      StaffSpace.create!(user: admin, space: dropped)
+      admin.update_columns(space_id: dropped.id)
+      admin.assign_spaces!([])
+      expect(admin.reload.space_id).to eq(dropped.id)
     end
   end
 
@@ -1018,6 +1086,18 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe "#printer_sessions_in_use" do
+    it "lists only this user's sessions still in use, oldest first, with their printer names" do
+      u = create(:user, :regular_user)
+      create(:printer_session, user: u, printer: create(:printer, :UM2P_02), in_use: true)
+      create(:printer_session, user: u, printer: create(:printer, :UM3_01), in_use: false)
+      create(:printer_session, printer: create(:printer, :RPL2_02), in_use: true)
+      create(:printer_session, user: u, printer: create(:printer, :RPL2_01), in_use: true)
+
+      expect(u.printer_sessions_in_use.map { |session| session.printer.name }).to eq(["UM2P - 02", "RPL2 - 01"])
+    end
+  end
+
   describe "#lock_account! / #record_failed_attempt! (never shorten a lock)" do
     let(:u) { create(:user, :regular_user) }
 
@@ -1157,6 +1237,26 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe "#save_unless_email_taken" do
+    it "answers nil and saves nothing when the email was taken between validation and the insert" do
+      existing = create(:user)
+      newcomer = build(:user, email: existing.email)
+      allow(newcomer).to receive(:valid?).and_return(true)
+
+      expect { expect(newcomer.save_unless_email_taken).to be_nil }.not_to change(User.unscoped, :count)
+    end
+
+    it "re-raises a unique violation that is not about the email and creates no account" do
+      existing = create(:user)
+      newcomer = build(:user, username: existing.username.upcase)
+      allow(newcomer).to receive(:valid?).and_return(true)
+
+      expect { newcomer.save_unless_email_taken }.to raise_error(ActiveRecord::RecordNotUnique, /username/)
+      expect(User.unscoped.where("lower(username) = ?", existing.username.downcase).count).to eq(1)
+      expect(newcomer).not_to be_persisted
+    end
+  end
+
   describe ".email_shape_error" do
     it "names the problem for a malformed address, in the current locale" do
       expect(User.email_shape_error("not-an-address")).to be_present
@@ -1166,6 +1266,140 @@ RSpec.describe User, type: :model do
     it "accepts a well-formed address and does not apply the provider-typo hint" do
       expect(User.email_shape_error("someone@example.com")).to be_nil
       expect(User.email_shape_error("someone@gmial.com")).to be_nil
+    end
+  end
+
+  describe ".identity_label" do
+    it "humanizes the stored identity, keeps a blank one blank and shows a missing one as None" do
+      expect(User.identity_label("community_member")).to eq("Community member")
+      expect(User.identity_label("")).to eq("")
+      expect(User.identity_label(nil)).to eq("None")
+    end
+  end
+
+  describe ".faculty_label" do
+    it "shows Génie as Engineering and a blank faculty as None, and every other value as stored" do
+      expect(User.faculty_label("Génie")).to eq("Engineering")
+      expect(User.faculty_label("Éducation")).to eq("Éducation")
+      expect(User.faculty_label("Education")).to eq("Education")
+      expect(User.faculty_label("Unlisted")).to eq("Unlisted")
+      expect(User.faculty_label("")).to eq("None")
+      expect(User.faculty_label(nil)).to be_nil
+    end
+  end
+
+  describe "private profile section audiences" do
+    let(:owner) { create(:user, :regular_user) }
+    let(:other) { create(:user, :regular_user) }
+    let(:staff) { create(:user, :staff) }
+    let(:admin) { create(:user, :admin) }
+    let(:guest) { User.new }
+
+    it "shows keys to staff and admins only" do
+      expect([guest, other, owner].map { |v| owner.keys_visible_to?(v) }).to all(be(false))
+      expect([staff, admin].map { |v| owner.keys_visible_to?(v) }).to all(be(true))
+    end
+
+    it "shows lockers to the owner, staff and admins" do
+      expect([guest, other].map { |v| owner.lockers_visible_to?(v) }).to all(be(false))
+      expect([owner, staff, admin].map { |v| owner.lockers_visible_to?(v) }).to all(be(true))
+    end
+
+    it "shows the CC balance to the owner, staff and admins" do
+      expect([guest, other].map { |v| owner.cc_balance_visible_to?(v) }).to all(be(false))
+      expect([owner, staff, admin].map { |v| owner.cc_balance_visible_to?(v) }).to all(be(true))
+    end
+
+    it "shows roles to admins only" do
+      expect([guest, other, owner, staff].map { |v| owner.roles_visible_to?(v) }).to all(be(false))
+      expect(owner.roles_visible_to?(admin)).to be(true)
+    end
+
+    it "shows key certifications to admins, and to staff or teams members on their own profile" do
+      expect([guest, other, owner, staff].map { |v| owner.key_certification_visible_to?(v) }).to all(be(false))
+      expect(owner.key_certification_visible_to?(admin)).to be(true)
+      expect(staff.key_certification_visible_to?(staff)).to be(true)
+      owner.programs.create!(program_type: Program::TEAMS)
+      expect(owner.key_certification_visible_to?(owner)).to be(true)
+      expect(owner.key_certification_visible_to?(other)).to be(false)
+    end
+  end
+
+  describe "progress in a training" do
+    let(:user) { create(:user, :regular_user) }
+    let(:training) { create(:training) }
+
+    def certify(level, session_level: level, training: self.training)
+      session = create(:training_session, training: training, level: session_level)
+      create(:certification, user: user, training: training, training_session: session, level: level)
+    end
+
+    it "is nothing for a training the user has not started" do
+      expect(user.certified_level(training.id)).to be_nil
+      expect(user.training_standing(training.id)).to be_nil
+      expect(user.recommended_levels(training.id)).to eq(%w[Beginner])
+      expect(user.highest_badge(training)).to be_nil
+    end
+
+    it "is Newbie once a learning module of the training is completed or one of its projects awarded" do
+      create(:learning_module_track, :completed, user: user, learning_module: create(:learning_module, training: training))
+      other = create(:training)
+      create(:order_item, :awarded, proficient_project: create(:proficient_project, training: other), order: create(:order, user: user))
+      unfinished = create(:training)
+      create(:learning_module_track, user: user, learning_module: create(:learning_module, training: unfinished))
+
+      expect([training, other, unfinished].map { |t| user.training_standing(t.id) }).to eq(["Newbie", "Newbie", nil])
+    end
+
+    it "is the highest certified level, with the levels counted up to it and the badge from the highest session" do
+      certify("Beginner")
+      intermediate = certify("Intermediate")
+      other = create(:training)
+      certify("Beginner", training: other)
+
+      expect(user.certified_level(training.id)).to eq("Intermediate")
+      expect(user.training_standing(training.id)).to eq("Intermediate")
+      expect(user.recommended_levels(training.id)).to eq(%w[Beginner Intermediate])
+      expect(user.highest_badge(training)).to eq(intermediate)
+      expect(user.recommended_levels(other.id)).to eq(%w[Beginner])
+      expect(user.recommended_levels(create(:training).id)).to eq(%w[Beginner])
+    end
+
+    it "counts Advanced as all three levels" do
+      certify("Advanced")
+
+      expect(user.recommended_levels(training.id)).to eq(%w[Beginner Intermediate Advanced])
+    end
+
+    it "takes the badge from the session level while the standing comes from the certification level" do
+      from_beginner_session = certify("Advanced", session_level: "Beginner")
+      from_advanced_session = certify("Beginner", session_level: "Advanced")
+
+      expect(user.certified_level(training.id)).to eq("Advanced")
+      expect(user.highest_badge(training)).to eq(from_advanced_session)
+      expect(user.highest_badge(training)).not_to eq(from_beginner_session)
+    end
+
+    it "reflects a certification added after the progress was read once reload is called" do
+      expect(user.training_standing(training.id)).to be_nil
+      expect(user.highest_badge(training)).to be_nil
+      expect(user.recommended_levels(training.id)).to eq(%w[Beginner])
+      cert = certify("Advanced")
+
+      expect(user.training_standing(training.id)).to be_nil
+      user.reload
+
+      expect(user.training_standing(training.id)).to eq("Advanced")
+      expect(user.highest_badge(training)).to eq(cert)
+      expect(user.recommended_levels(training.id)).to eq(%w[Beginner Intermediate Advanced])
+      expect(user.held_training_levels).to eq(Set[[training.id, "Advanced"]])
+    end
+
+    it "leaves out a deactivated certification" do
+      certify("Advanced").update!(active: false)
+
+      expect(user.training_standing(training.id)).to be_nil
+      expect(user.highest_badge(training)).to be_nil
     end
   end
 end

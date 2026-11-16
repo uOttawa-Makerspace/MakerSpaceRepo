@@ -65,7 +65,7 @@ RSpec.describe Admin::KeysController, type: :controller do
                }
              }
         expect(flash[:alert]).to eq(
-          "Something went wrong while creating the key."
+          "The key was not created. Space A space is required"
         )
       end
     end
@@ -303,7 +303,7 @@ RSpec.describe Admin::KeysController, type: :controller do
               }
 
         expect(flash[:alert]).to eq(
-          "Something went wrong while trying to assign the key: Only a key in inventory can be assigned."
+          "The key was not assigned. Only a key in inventory can be assigned."
         )
         expect(KeyTransaction.count).to eq(0)
         expect(Key.last.status).to eq("unknown")
@@ -403,7 +403,7 @@ RSpec.describe Admin::KeysController, type: :controller do
               }
 
         expect(flash[:alert]).to eq(
-          "Something went wrong while trying to revoke the key: Only a held key can be revoked."
+          "The key was not revoked. Only a held key can be revoked."
         )
       end
     end
@@ -475,7 +475,7 @@ RSpec.describe Admin::KeysController, type: :controller do
         patch :approve_key_request, params: { id: kr.id }
 
         expect(flash[:alert]).to eq(
-          "Something went wrong while approving the key request."
+          "This key request is no longer waiting for approval, so it was left as it is."
         )
         expect(KeyRequest.last.status).to eq("in_progress")
       end
@@ -506,7 +506,7 @@ RSpec.describe Admin::KeysController, type: :controller do
         patch :deny_key_request, params: { id: kr.id }
 
         expect(flash[:notice]).to eq("Successfully denied key request.")
-        expect(KeyRequest.last.status).to eq("in_progress")
+        expect(KeyRequest.last.status).to eq("denied")
       end
 
       it "should not deny key requests that are not awaiting for approval" do
@@ -523,7 +523,7 @@ RSpec.describe Admin::KeysController, type: :controller do
         patch :deny_key_request, params: { id: kr.id }
 
         expect(flash[:alert]).to eq(
-          "Something went wrong while denying the key request."
+          "This key request is no longer waiting for approval, so it was left as it is."
         )
         expect(KeyRequest.last.status).to eq("approved")
       end

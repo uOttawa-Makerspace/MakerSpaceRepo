@@ -22,7 +22,7 @@ RSpec.describe KeyCertificationsController, type: :controller do
         sc = create(:key_certification, user_id: @other_user.id)
 
         get :show, params: { id: sc.id }
-        expect(response).to redirect_to users_path(@user.username)
+        expect(response).to redirect_to user_path(@user.username)
         expect(flash[:alert]).to eql("You cannot access this page")
       end
     end

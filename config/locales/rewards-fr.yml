@@ -1,6 +1,16 @@
 fr:
   rewards:
+    redeem:
+      # %{name} = name of the account the CCs were added to
+      added: "Les CC ont été ajoutés au compte de %{name}"
+    link_cc_to_user:
+      title: "Ajouter des CC à votre compte"
+      # %{email} = the signed-in user's email address
+      body: "Vous ne pouvez ajouter ces CC qu'une seule fois. Ils seront ajoutés à votre compte (%{email}), qui doit être le compte avec lequel l'achat a été fait."
+      submit: "Ajouter les CC"
+      cancel: "Annuler"
     index:
+      store_name: "MakerStore"
       title: "Les Crédits du CGEC"
       subtitle: "Gagnez des CC en participant à la communauté du CGEC et échangez-les contre des récompenses en magasin."
       wallet:
@@ -50,6 +60,8 @@ fr:
       activity:
         title: "Votre activité CC récente"
         date: "Date"
+        # %{amount} = signed number of CCs, for example +5 or -3
+        amount: "%{amount} CC"
         credits: "CC"
       faq:
         title: "Foire aux questions"

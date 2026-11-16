@@ -20,5 +20,14 @@ FactoryBot.define do
     ensure
       booking.allow_past_start = nil
     end
+
+    # A booking made before the old status table stopped being written: it has an old status row and
+    # points at it.
+    trait :with_old_status_row do
+      after(:create) do |booking|
+        row = SubSpaceBookingStatus.create!(sub_space_booking: booking, booking_status: booking.booking_status)
+        booking.update_column(:sub_space_booking_status_id, row.id)
+      end
+    end
   end
 end

@@ -10,19 +10,19 @@
         </div>
         <div class="col border-end">
             <div class="input-group">
-                <%= fs.label :start, 'From', class: 'input-group-text' %>
+                <%= fs.label :start, t('admin_pages.design_days.from'), class: 'input-group-text' %>
                 <%= fs.time_field :start, class: 'form-control', include_seconds: false %>
-                <%= fs.label :end, "until", class: 'input-group-text' %>
+                <%= fs.label :end, t('admin_pages.design_days.until'), class: 'input-group-text' %>
                 <%= fs.time_field :end, class: 'form-control', include_seconds: false %>
             </div>
         </div>
         <div class="col">
-            <%= fs.label :title_en, "English title of event", class: 'form-label', hidden: true %>
-            <%= fs.text_field :title_en, placeholder: 'English title', class: 'form-control' %>
+            <%= fs.label :title_en, t('admin_pages.design_days.title_en_label'), class: 'form-label', hidden: true %>
+            <%= fs.text_field :title_en, placeholder: t('admin_pages.design_days.title_en_placeholder'), class: 'form-control' %>
         </div>
         <div class="col">
-            <%= fs.label :title_fr, "French title of event", class: 'form-label', hidden: true %>
-            <%= fs.text_field :title_fr, placeholder: 'French title', class: 'form-control' %>
+            <%= fs.label :title_fr, t('admin_pages.design_days.title_fr_label'), class: 'form-label', hidden: true %>
+            <%= fs.text_field :title_fr, placeholder: t('admin_pages.design_days.title_fr_placeholder'), class: 'form-control' %>
         </div>
         <div class="col-auto">
             <%= fs.check_box :_destroy, class: 'btn-check', aria: { label: t('common.delete') }, checked: false, autocomplete: 'off', include_hidden: false, data: { delete_template: '' } %>

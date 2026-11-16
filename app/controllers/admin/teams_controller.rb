@@ -53,7 +53,7 @@ class Admin::TeamsController < AdminAreaController
     captain = User.find_by(id: params[:captain])
 
     if captain.nil?
-      redirect_to new_admin_team_path, alert: "Please select a captain"
+      redirect_to new_admin_team_path, alert: I18n.t("admin_pages.teams.flash.select_captain")
     else
       if @team.save
         TeamMembership.create(
@@ -61,10 +61,10 @@ class Admin::TeamsController < AdminAreaController
           team_id: @team.id,
           role: :captain
         )
-        redirect_to admin_teams_path, notice: "Successfully created team"
+        redirect_to admin_teams_path, notice: I18n.t("admin_pages.teams.flash.created")
       else
         redirect_to new_admin_team_path,
-                    alert: "Something went wrong while creating the team"
+                    alert: validation_message(@team, "errors.admin.teams.not_created")
       end
     end
   end
@@ -74,7 +74,7 @@ class Admin::TeamsController < AdminAreaController
     if tm.nil?
       return(
         redirect_to edit_admin_team_path,
-                    alert: "Please select a captain who is a member of the team."
+                    alert: I18n.t("admin_pages.teams.flash.captain_not_member")
       )
     end
 
@@ -86,25 +86,19 @@ class Admin::TeamsController < AdminAreaController
         tm.update(role: :captain)
       end
 
-      redirect_to admin_teams_path, notice: "Successfully updated team"
+      redirect_to admin_teams_path, notice: I18n.t("admin_pages.teams.flash.updated")
     else
       redirect_to edit_admin_team_path,
-                  alert: "Something went wrong when trying to update the team."
+                  alert: validation_message(@team, "errors.admin.teams.not_updated")
     end
   end
 
   def add_member
-    tm =
-      TeamMembership.new(
-        user_id: @member.id,
-        team_id: @team.id,
-        role: params[:role]
-      )
-
-    if tm.save
-      flash[:notice] = "Successfully added user."
+    if TeamMembership.roles.key?(params[:role])
+      tm = TeamMembership.new(user_id: @member.id, team_id: @team.id, role: params[:role])
+      flash_write(tm, "teams.member_not_added", I18n.t("admin_pages.teams.flash.member_added")) { tm.save }
     else
-      flash[:alert] = "Something went wrong while trying to add the user."
+      flash[:alert] = I18n.t("errors.admin.teams.role_unknown")
     end
 
     redirect_to admin_team_path(@team.id)
@@ -114,12 +108,12 @@ class Admin::TeamsController < AdminAreaController
     tm = @team.team_memberships.where(user_id: @member.id).first
 
     if tm.nil?
-      flash[:alert] = "Couldn't find the user in the team."
+      flash[:alert] = I18n.t("admin_pages.teams.flash.member_not_in_team")
     elsif tm.role_captain?
-      flash[:alert] = "You can't remove the captain."
+      flash[:alert] = I18n.t("admin_pages.teams.flash.captain_not_removable")
     else
       tm.destroy
-      flash[:notice] = "Successfully removed the member from the team."
+      flash[:notice] = I18n.t("admin_pages.teams.flash.member_removed")
     end
 
     redirect_to admin_team_path(@team.id)
@@ -129,14 +123,12 @@ class Admin::TeamsController < AdminAreaController
     tm = @team.team_memberships.where(user_id: @member.id).first
 
     if tm.nil?
-      flash[:alert] = "Couldn't find the user in the team."
+      flash[:alert] = I18n.t("admin_pages.teams.flash.member_not_in_team")
     elsif tm.role_regular_member?
       tm.update(role: :lead)
-      flash[:notice] = "Successfully promoted member."
+      flash[:notice] = I18n.t("admin_pages.teams.flash.member_promoted")
     else
-      flash[
-        :alert
-      ] = "Something went wrong while promoting the team member. You can only promote regular team members."
+      flash[:alert] = I18n.t("errors.admin.teams.cannot_promote")
     end
 
     redirect_to admin_team_path(@team.id)
@@ -146,14 +138,12 @@ class Admin::TeamsController < AdminAreaController
     tm = @team.team_memberships.where(user_id: @member.id).first
 
     if tm.nil?
-      flash[:alert] = "Couldn't find the user in the team."
+      flash[:alert] = I18n.t("admin_pages.teams.flash.member_not_in_team")
     elsif tm.role_lead?
       tm.update(role: :regular_member)
-      flash[:notice] = "Successfully demoted member."
+      flash[:notice] = I18n.t("admin_pages.teams.flash.member_demoted")
     else
-      flash[
-        :alert
-      ] = "Something went wrong while demoting the team member. You can only demote team leads."
+      flash[:alert] = I18n.t("errors.admin.teams.cannot_demote")
     end
 
     redirect_to admin_team_path(@team.id)
@@ -168,12 +158,12 @@ class Admin::TeamsController < AdminAreaController
   def set_team
     @team = Team.find_by(id: params[:id])
 
-    redirect_to admin_teams_path, alert: "Could not find team" if @team.nil?
+    redirect_to admin_teams_path, alert: I18n.t("admin_pages.teams.flash.team_not_found") if @team.nil?
   end
 
   def set_team_member
     @member = User.find_by(id: params[:member_id])
 
-    redirect_to admin_teams_path, alert: "Couldn't find member" if @member.nil?
+    redirect_to admin_teams_path, alert: I18n.t("admin_pages.teams.flash.member_not_found") if @member.nil?
   end
 end

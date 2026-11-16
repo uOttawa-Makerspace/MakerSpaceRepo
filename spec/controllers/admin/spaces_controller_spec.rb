@@ -82,7 +82,7 @@ RSpec.describe Admin::SpacesController, type: :controller do
           post :create, params: { space_params: { name: "" } }
         }.to change(Space, :count).by(0)
         expect(response).to have_http_status(302)
-        expect(flash[:alert]).to eq("Something went wrong.")
+        expect(flash[:alert]).to start_with("The space was not created. ")
       end
     end
   end
@@ -198,7 +198,7 @@ RSpec.describe Admin::SpacesController, type: :controller do
             delete :destroy, params: { id: target.id, space_id: target.id, admin_input: target.name.upcase }
           end.not_to change(Space, :count)
 
-          expect(flash[:alert]).to eq("Cannot delete record because dependent lab sessions exist")
+          expect(flash[:alert]).to eq("The space was not deleted. Cannot delete record because dependent lab sessions exist")
           expect(target.reload.destroy_admin_id).to be_nil
         end
 
@@ -265,7 +265,7 @@ RSpec.describe Admin::SpacesController, type: :controller do
                    admin_input: "WRONG_NAME"
                  }
         }.to change(Space, :count).by(0)
-        expect(flash[:alert]).to eq("Invalid Input")
+        expect(flash[:alert]).to eq("The text you typed does not match the space name, so nothing was deleted.")
         expect(response).to redirect_to admin_spaces_path
       end
     end

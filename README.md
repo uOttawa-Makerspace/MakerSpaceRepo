@@ -117,6 +117,25 @@ Then visit http://localhost:3000 to view the home page locally.
 
 **NOTE:** You'll receive a lot of AWS errors because you're accessing production images using development credentials.
 
+### Background jobs in development
+
+Development does not use the same job backend as staging and production.
+
+- **Development** sets `config.active_job.queue_adapter = :async` (`config/environments/development.rb`). A job queued with `perform_later` runs on a thread inside the process that queued it (the web server or the console). Nothing is written to the queue database, there is no retry after a restart, and a job still running when the process stops is lost. `config/recurring.yml` has no `development` block, so no scheduled task runs on its own.
+- **Staging and production** use Solid Queue (`config/application.rb`). Jobs are stored in the queue database and run by the `worker` container (`bundle exec rake solid_queue:start`), which also runs the schedule in `config/recurring.yml`.
+- **Tests** use the `:test` adapter (`config/environments/test.rb`).
+
+The Solid Queue supervisor that `Procfile.dev` (the `worker` line) and Puma (with `SOLID_QUEUE_IN_PUMA=true`, as the devcontainer sets) start in development has nothing to run while the adapter is `:async`.
+
+To run a scheduled task by hand, open a console (`bin/rails console`) and call `perform_now` on the task's `class:` from `config/recurring.yml`, or paste its `command:`.
+
+To try a change against Solid Queue itself (retries, concurrency limits, the `/solid_queue` dashboard):
+
+1. Create the queue database once: `bin/rails db:prepare` (it loads `db/queue_schema.rb` into `makerspacerepo_queue_development`).
+2. In your local copy only, change the adapter line in `config/environments/development.rb` to `:solid_queue`. Do not commit that change.
+3. Start the supervisor with `bin/jobs` (or the `worker` line of `Procfile.dev`), and start the web server as usual.
+4. To run scheduled tasks too, copy the tasks you need into a `development:` block in `config/recurring.yml`, locally and uncommitted.
+
 ## Deployment
 
 Deployment is handled by Docker Compose through the `CI & Deploy` GitHub Actions workflow (`.github/workflows/main.yml`). After the tests and security checks pass, the workflow builds the Docker image, publishes it to GitHub Container Registry, then connects to the server over SSH, copies the matching `docker-compose.staging.yml` or `docker-compose.production.yml`, pulls the new image and restarts the containers. Pushing to the `staging` branch deploys to the staging server. Pushing to the `master` branch deploys to the production server.

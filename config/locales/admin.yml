@@ -1,6 +1,38 @@
 en:
+  confirm_delete:
+    training_session: "Delete this training session? This is refused while it has certifications or exams."
+    training: "Delete this training? This is refused while it has training sessions or proficient projects."
   # These are used in the navbar and in page titles, headers
   admin:
+    users:
+      invalid_parameters: "Invalid parameters!"
+      search_query_missing: "Enter a name or email to search."
+      show:
+        active: "Account active"
+        deactivated_on: "Account deactivated on %{date}"
+        deactivate: "Deactivate account"
+        reactivate: "Reactivate account"
+      activation:
+        deactivated: "Account deactivated."
+        reactivated: "Account reactivated."
+        already_deactivated: "Account was already deactivated."
+        already_active: "Account was already active."
+        self_refused: "You cannot deactivate your own account."
+    retired_programs:
+      heading: "Retired programs"
+      note: "Left out of the last import. They are no longer offered on the sign-up and profile forms; users who chose them keep them."
+      program: "Program"
+      level: "Level"
+      faculty: "Faculty"
+    cc_money_claim_email:
+      last_resend: "Last sent to %{email} by %{admin} on %{at}"
+    cc_money_purchase_email:
+      corrected: "The purchase email for %{cc} CC was changed to %{email} and the claim link was sent there. Earlier links no longer work."
+      heading: "Correct the purchase email"
+      placeholder: "Correct email"
+      submit: "Correct and send"
+      last_correction: "Changed from %{old} to %{new} by %{admin} on %{at}"
+      no_old_email: "(none recorded)"
     general: "General"
     lockers: "Lockers"
     settings: "Settings"
@@ -23,7 +55,33 @@ en:
     shifts: "Shifts"
     time_periods: "Time Periods"
     calendar: "Calendar"
-    calendar_staff_load_error: "The staff availability could not be loaded, so events cannot be added. Please reload the page."
+    calendar_staff_load_error: "The staff availability could not be loaded, so the staff are listed without it. Please reload the page."
+    # The admin calendar page around the calendar (admin/calendar/index, _sidebar and _colors).
+    calendar_page:
+      heading: "Admin Calendar"
+      intro_html: "View unavailabilities and imported calendars, add and manage events (shifts, trainings, meetings, etc.), then publish for staff to see on %{work_calendar} and the synced Google Calendar. Assigned staff availability is based solely on staff set unavailabilities, not admin set events."
+      work_calendar: "their work calendar"
+      space: "Space"
+      go: "Go"
+      add_event: "+ Add Event"
+      confirm_publish: "Confirm Publish"
+      confirm_delete: "Confirm Delete"
+      copy_events: "Copy Events"
+      events_and_unavailabilities: "Events / Unavailabilities"
+      all_staff: "All Staff"
+      no_unavailabilities: "%{name} (0 unavailabilities)"
+      events: "Events"
+      # The event types an event can have; a type not listed here shows its stored name.
+      event_types:
+        shift: "Shift"
+        training: "Training"
+        meeting: "Meeting"
+        other: "Other"
+      imported_calendars: "Imported Calendars"
+      no_calendars: "No calendars found"
+      staff_colors: "Staff Colors"
+      choose_color: "Choose your color"
+      refresh: "Refresh Calendar"
     keys: "Keys"
     key_requests: "Key Requests"
     key_transactions: "Key Transactions"
@@ -41,6 +99,7 @@ en:
       desc_fr: "Certificate Description (French)"
       los_en: "List of Skills (English)"
       los_fr: "List of Skills (French)"
+      remove_skill: "Remove skill"
       spaces: "Spaces"
       create: "Create Training"
       update: "Update Training"
@@ -50,7 +109,39 @@ en:
         one: "%{count} error prevented this contact info from being saved:"
         other: "%{count} errors prevented this contact info from being saved:"
 fr:
+  confirm_delete:
+    training_session: "Supprimer cette séance de formation? Impossible tant qu'elle a des certifications ou des examens."
+    training: "Supprimer cette formation? Impossible tant qu'elle a des séances de formation ou des projets de compétence."
   admin:
+    users:
+      invalid_parameters: "Paramètres invalides!"
+      search_query_missing: "Saisissez un nom ou un courriel à rechercher."
+      show:
+        active: "Compte actif"
+        deactivated_on: "Compte désactivé le %{date}"
+        deactivate: "Désactiver le compte"
+        reactivate: "Réactiver le compte"
+      activation:
+        deactivated: "Compte désactivé."
+        reactivated: "Compte réactivé."
+        already_deactivated: "Le compte était déjà désactivé."
+        already_active: "Le compte était déjà actif."
+        self_refused: "Vous ne pouvez pas désactiver votre propre compte."
+    retired_programs:
+      heading: "Programmes retirés"
+      note: "Absents du dernier import. Ils ne sont plus offerts dans les formulaires d'inscription et de profil; les personnes qui les ont choisis les conservent."
+      program: "Programme"
+      level: "Niveau"
+      faculty: "Faculté"
+    cc_money_claim_email:
+      last_resend: "Dernier envoi à %{email} par %{admin} le %{at}"
+    cc_money_purchase_email:
+      corrected: "L'adresse courriel de l'achat de %{cc} CC a été changée pour %{email} et le lien de réclamation y a été envoyé. Les liens précédents ne fonctionnent plus."
+      heading: "Corriger l'adresse de l'achat"
+      placeholder: "Adresse corrigée"
+      submit: "Corriger et envoyer"
+      last_correction: "Changée de %{old} à %{new} par %{admin} le %{at}"
+      no_old_email: "(aucune enregistrée)"
     contact_infos:
       errors_heading:
         one: "%{count} erreur a empêché l'enregistrement de cette fiche de contact :"
@@ -77,7 +168,31 @@ fr:
     shifts: "Horaires"
     time_periods: "Périodes"
     calendar: "Calendrier"
-    calendar_staff_load_error: "La disponibilité du personnel n'a pas pu être chargée; il est donc impossible d'ajouter des événements. Veuillez recharger la page."
+    calendar_staff_load_error: "La disponibilité du personnel n'a pas pu être chargée; le personnel est donc listé sans elle. Veuillez recharger la page."
+    calendar_page:
+      heading: "Calendrier de l'administration"
+      intro_html: "Consultez les indisponibilités et les calendriers importés, ajoutez et gérez des événements (quarts, formations, réunions, etc.), puis publiez-les pour que le personnel les voie dans %{work_calendar} et dans l'agenda Google synchronisé. La disponibilité du personnel affecté repose uniquement sur les indisponibilités saisies par le personnel, et non sur les événements créés par l'administration."
+      work_calendar: "son calendrier de travail"
+      space: "Espace"
+      go: "Afficher"
+      add_event: "+ Ajouter un événement"
+      confirm_publish: "Confirmer la publication"
+      confirm_delete: "Confirmer la suppression"
+      copy_events: "Copier des événements"
+      events_and_unavailabilities: "Événements / indisponibilités"
+      all_staff: "Tout le personnel"
+      no_unavailabilities: "%{name} (aucune indisponibilité)"
+      events: "Événements"
+      event_types:
+        shift: "Quart"
+        training: "Formation"
+        meeting: "Réunion"
+        other: "Autre"
+      imported_calendars: "Calendriers importés"
+      no_calendars: "Aucun calendrier trouvé"
+      staff_colors: "Couleurs du personnel"
+      choose_color: "Choisissez votre couleur"
+      refresh: "Actualiser le calendrier"
     keys: "Clés"
     key_requests: "Demandes de clés"
     key_transactions: "Transactions de clés"
@@ -87,7 +202,7 @@ fr:
     teams: "Équipes"
     uni_programs: "Programmes Universitaires"
     training:
-      title: "Nouvelle entraînement"
+      title: "Nouvelle formation"
       name_en: "Nom en anglais:"
       name_fr: "Nom en français:"
       skill: "Type de compétence:"
@@ -95,7 +210,8 @@ fr:
       desc_fr: "Description du certificat (français)"
       los_en: "Liste des compétences (anglais)"
       los_fr: "Liste des compétences (français)"
+      remove_skill: "Retirer la compétence"
       spaces: "Espaces"
-      create: "Créer une entraînement"
-      update: "Réviser entraînement"
-      delete: "Effacer"
+      create: "Créer la formation"
+      update: "Mettre à jour la formation"
+      delete: "Supprimer"

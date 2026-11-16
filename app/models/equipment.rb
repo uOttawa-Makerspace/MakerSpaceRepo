@@ -1,3 +1,3 @@
 class Equipment < ApplicationRecord
-  belongs_to :repository, optional: true
+  belongs_to :repository, -> { including_hidden }, optional: true
 end

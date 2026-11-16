@@ -74,8 +74,7 @@ RSpec.describe "Printers", type: :request do
   describe "admin: index, add_printer, remove_printer" do
     before { sign_in_as(:admin) }
 
-    # N+1 pinned
-    it "renders index with printer models labelled with short forms", skip_bullet: true do
+    it "renders index with printer models labelled with short forms" do
       get printers_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Ultimaker 2+ (UM2P)")
@@ -101,16 +100,24 @@ RSpec.describe "Printers", type: :request do
       expect(response).to redirect_to(printers_path)
     end
 
-    it "removes a printer (and its sessions)" do
-      create(:printer_session, printer: um2p)
-      expect { post remove_printer_printers_path, params: { remove_printer: um2p.id } }.to change(Printer, :count).by(-1).and change(PrinterSession, :count).by(-1)
+    it "removes a printer that has no sessions or issues" do
+      expect { post remove_printer_printers_path, params: { remove_printer: um2p.id } }.to change(Printer, :count).by(-1)
+      expect(response).to redirect_to(printers_path)
       expect(flash[:notice]).to eq("Printer removed successfully!")
     end
 
-    it "500s removing a printer that has printer issues (FK violation)" do
+    it "keeps a printer that has sessions, and its sessions, and says why" do
+      create(:printer_session, printer: um2p)
+      expect { post remove_printer_printers_path, params: { remove_printer: um2p.id } }.not_to change { [Printer.count, PrinterSession.count] }
+      expect(flash[:notice]).to be_nil
+      expect(flash[:alert]).to eq("The printer was not removed. This printer has sessions or issues and cannot be removed.")
+    end
+
+    it "keeps a printer that has printer issues, and its issues, and says why" do
       create(:printer_issue, printer: um2p)
-      expect { post remove_printer_printers_path, params: { remove_printer: um2p.id } }.not_to change(Printer, :count)
-      expect(response).to have_http_status(:internal_server_error)
+      expect { post remove_printer_printers_path, params: { remove_printer: um2p.id } }.not_to change { [Printer.count, PrinterIssue.count] }
+      expect(response).to redirect_to(printers_path)
+      expect(flash[:alert]).to eq("The printer was not removed. This printer has sessions or issues and cannot be removed.")
     end
 
     it "alerts when no printer is selected for removal" do
@@ -118,16 +125,16 @@ RSpec.describe "Printers", type: :request do
       expect(flash[:alert]).to eq("Please select a Printer.")
     end
 
-    # remove_printer reports success for an unknown id (destroy_all on an empty relation)
-    it "reports success even for an unknown printer id" do
-      post remove_printer_printers_path, params: { remove_printer: 0 }
-      expect(flash[:notice]).to eq("Printer removed successfully!")
+    it "alerts that the printer no longer exists for an unknown printer id" do
+      expect { post remove_printer_printers_path, params: { remove_printer: 0 } }.not_to change(Printer, :count)
+      expect(flash[:notice]).to be_nil
+      expect(flash[:alert]).to eq(I18n.t("errors.printers.printer_not_found"))
     end
 
-    # remove_printer with no remove_printer param (nil != "") runs destroy_all on where(id: nil), a silent no-op reported as success
-    it "treats a missing remove_printer param as a successful removal" do
+    it "asks for a printer when the remove_printer param is missing" do
       expect { post remove_printer_printers_path }.not_to change(Printer, :count)
-      expect(flash[:notice]).to eq("Printer removed successfully!")
+      expect(flash[:notice]).to be_nil
+      expect(flash[:alert]).to eq("Please select a Printer.")
     end
   end
 
@@ -154,29 +161,72 @@ RSpec.describe "Printers", type: :request do
       expect(um2p.reload.number).to eq("01")
     end
 
-    # update uses find_by(...).update so an unknown printer id raises NoMethodError (500) instead of 404
-    it "500s for an unknown printer id" do
+    it "answers not found for an unknown printer id" do
       sign_in_as(:staff)
       patch printer_path(0), params: { printer: { maintenance: true } }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:not_found)
     end
   end
 
   describe "staff pages" do
     before { sign_in_as(:staff) }
 
-    # N+1 pinned
-    it "renders staff_printers and staff_printers_updates", skip_bullet: true do
+    it "renders staff_printers and staff_printers_updates" do
       get staff_printers_printers_path
       expect(response).to have_http_status(:ok)
       get staff_printers_updates_printers_path
       expect(response).to have_http_status(:ok)
     end
 
-    it "printer_data redirects HTML to root and returns nested JSON" do
+    describe "staff_printers_updates rows" do
+      let(:type) { um2p.printer_type }
+      let(:printers) { [um2p, create(:printer, number: "02", printer_type: type), create(:printer, number: "10", printer_type: type)] }
+      let(:alice) { create(:user, :regular_user) }
+      let(:bob) { create(:user, :regular_user) }
+
+      before do
+        printers
+        create(:printer_session, printer: printers[0], user: bob, in_use: false, created_at: 2.days.ago)
+        create(:printer_session, printer: printers[0], user: alice, in_use: true, created_at: 1.hour.ago)
+        create(:printer_session, printer: printers[2], user: bob, in_use: false)
+        create(:printer_issue, :nozzle_clogged, printer: printers[0])
+        create(:printer_issue, :nozzle_clogged, printer: printers[0])
+        create(:printer_issue, :bed_issue, :inactive, printer: printers[0])
+        create(:printer_issue, printer: printers[2], summary: "Something else")
+      end
+
+      def rows
+        Nokogiri::HTML(response.body).css("table.table-0 tbody tr").map { |tr| tr.css("td").map { |td| td.text.squish } }
+      end
+
+      it "lists each printer with its last user, in-use state and active issues" do
+        get staff_printers_updates_printers_path
+        expect(rows.map(&:first)).to eq(printers.map(&:name))
+        expect(rows[0][1]).to eq(alice.username)
+        expect(rows[0][3]).to eq("Yes")
+        expect(rows[0][4]).to include("(2) Nozzle clogged")
+        expect(rows[0][4]).not_to include("Bed issue")
+        expect(rows[1][1..3]).to eq(%w[------- ------- No])
+        expect(rows[2][1..3]).to eq(%w[------- ------- No])
+        expect(rows[2][4]).to include("(1) Other")
+      end
+
+      it "reads printers, sessions and issues in a number of queries that does not grow with the printers" do
+        few = selects_on("printers", "printer_sessions", "printer_issues") { get staff_printers_updates_printers_path }.size
+        (20..23).map { |n| create(:printer, number: n.to_s, printer_type: type) }.each do |printer|
+          create(:printer_session, printer: printer, user: alice, in_use: true)
+          create(:printer_issue, printer: printer)
+        end
+        many = selects_on("printers", "printer_sessions", "printer_issues") { get staff_printers_updates_printers_path }.size
+        expect(many).to eq(few)
+        expect(many).to be <= 4
+      end
+    end
+
+    it "printer_data refuses a plain page request and returns nested JSON" do
       create(:printer_issue, printer: um2p)
       get printer_data_printers_path
-      expect(response).to redirect_to(root_path)
+      expect(response).to have_http_status(:not_acceptable)
       get printer_data_printers_path(format: :json)
       expect(response).to have_http_status(:ok)
       row = json.find { |t| t["id"] == um2p.printer_type_id }
@@ -184,10 +234,19 @@ RSpec.describe "Printers", type: :request do
       expect(row["printers"]).to eq([{ "id" => um2p.id, "number" => "01", "maintenance" => false, "has_issues" => true }])
     end
 
-    # last_user_assigned_to_printer raises NoMethodError (500) as soon as any printer has no session
-    it "500s when a printer has never had a session" do
+    it "leaves out printers that have never had a session" do
+      user = create(:user, :regular_user)
+      PrinterSession.create!(printer: um3, user: user, in_use: true)
       get last_user_assigned_to_printer_printers_path
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq(um3.id.to_s => { "id" => user.id, "username" => user.username, "name" => user.name })
+    end
+
+    it "leaves out a printer whose last session has no user" do
+      PrinterSession.create!(printer: um2p, user: nil, in_use: false)
+      get last_user_assigned_to_printer_printers_path
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq({})
     end
 
     it "maps printer ids to the last session user when every printer has one" do
@@ -212,11 +271,11 @@ RSpec.describe "Printers", type: :request do
       patch link_printer_to_user_printers_path(format: format), params: { printer: { printer_id: um2p.id, user_id: user_id } }
     end
 
-    # link_printer_to_user renders the FlashHash as JSON, which serialises as an array of [key, message] pairs rather than an object
+    # JSON replies are an object keyed by notice or alert; an alert answers 400
     it "creates an in_use session and replies 200 JSON" do
       expect { link(user.id) }.to change(PrinterSession, :count).by(1)
       expect(response).to have_http_status(:ok)
-      expect(json).to eq([["notice", "Printer Session Created"]])
+      expect(json).to eq("notice" => "Printer Session Created")
       expect(PrinterSession.last).to have_attributes(printer_id: um2p.id, user_id: user.id, in_use: true)
     end
 
@@ -230,14 +289,15 @@ RSpec.describe "Printers", type: :request do
     it "clears the current user" do
       link(user.id)
       link("clear")
-      expect(json).to eq([["notice", "Cleared the user."]])
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq("notice" => "Cleared the user.")
       expect(PrinterSession.last.in_use).to be false
     end
 
     it "400s with an alert when the user is blank" do
       link("")
       expect(response).to have_http_status(:bad_request)
-      expect(json).to eq([["alert", "Please add both printer and user."]])
+      expect(json).to eq("alert" => "Please add both printer and user.")
     end
 
     it "refuses array values for printer and user ids without creating a session or running them as SQL" do
@@ -247,10 +307,10 @@ RSpec.describe "Printers", type: :request do
       expect do
         patch link_printer_to_user_printers_path(format: :json), params: { printer: { printer_id: um2p.id, user_id: ["1=1"] } }
         expect(response).to have_http_status(:bad_request)
-        expect(json).to eq([["alert", "Please add both printer and user."]])
+        expect(json).to eq("alert" => "Please add both printer and user.")
         patch link_printer_to_user_printers_path(format: :json), params: { printer: { printer_id: ["1=1"], user_id: user.id } }
         expect(response).to have_http_status(:bad_request)
-        expect(json).to eq([["alert", "Please add both printer and user."]])
+        expect(json).to eq("alert" => "Please add both printer and user.")
       end.not_to change(PrinterSession, :count)
       expect(statements.grep(/WHERE \(1=1\)/)).to be_empty
     ensure
@@ -262,7 +322,21 @@ RSpec.describe "Printers", type: :request do
         patch link_printer_to_user_printers_path(format: :json), params: { printer: { printer_id: um2p.id, user_id: { a: "1" } } }
       end.not_to change(PrinterSession, :count)
       expect(response).to have_http_status(:bad_request)
-      expect(json).to eq([["alert", "Please add both printer and user."]])
+      expect(json).to eq("alert" => "Please add both printer and user.")
+    end
+
+    it "refuses an unknown printer or user with its own alert and creates nothing" do
+      expect do
+        patch link_printer_to_user_printers_path(format: :json), params: { printer: { printer_id: 0, user_id: user.id } }
+        expect(response).to have_http_status(:bad_request)
+        expect(json).to eq("alert" => I18n.t("errors.printers.printer_not_found"))
+        link(0)
+        expect(response).to have_http_status(:bad_request)
+        expect(json).to eq("alert" => I18n.t("errors.printers.user_not_found"))
+        patch link_printer_to_user_printers_path(format: :json), params: { printer: { printer_id: 0, user_id: "clear" } }
+        expect(response).to have_http_status(:bad_request)
+        expect(json).to eq("alert" => I18n.t("errors.printers.printer_not_found"))
+      end.not_to change(PrinterSession, :count)
     end
 
     it "redirects HTML requests to the staff printers page" do
@@ -270,10 +344,30 @@ RSpec.describe "Printers", type: :request do
       expect(response).to redirect_to(staff_printers_printers_path)
     end
 
-    # clearing a printer that never had a session raises NoMethodError (500) because last_session is nil
-    it "500s when clearing a printer that has no session" do
-      link("clear")
-      expect(response).to have_http_status(:internal_server_error)
+    it "replies with only its own message when an earlier redirect left a message pending" do
+      link("", format: :html)
+      link(user.id)
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq("notice" => "Printer Session Created")
+    end
+
+    it "leaves no message for the next page after a JSON reply" do
+      link(user.id)
+      get root_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("Printer Session Created")
+    end
+
+    it "keeps the message of an HTML request for the next page that shows messages" do
+      link(user.id, format: :html)
+      get root_path
+      expect(response.body).to include("Printer Session Created")
+    end
+
+    it "clearing a printer that has no session changes nothing and replies 200" do
+      expect { link("clear") }.not_to change(PrinterSession, :count)
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq("notice" => "Cleared the user.")
     end
   end
 
@@ -328,10 +422,11 @@ RSpec.describe "Printers", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    # with an unrecognised sent_from nothing is rendered or redirected (implicit missing template, 204/500)
-    it "has no response branch for an unknown sent_from" do
+    it "redirects to the staff printers page for an unknown or missing sent_from" do
       send_msg(from: "other")
-      expect(response.status).to be_in([204, 500])
+      expect(response).to redirect_to(staff_printers_printers_url)
+      send_msg(from: nil)
+      expect(response).to redirect_to(staff_printers_printers_url)
     end
   end
 end
