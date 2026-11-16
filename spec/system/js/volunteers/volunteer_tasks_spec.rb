@@ -29,30 +29,13 @@ RSpec.describe "Volunteer task pages", type: :system, skip_bullet: true do
       expect(page).to have_css(".task-item-card-col", count: 2)
     end
 
-    # Visits the index again with Turbo, then goes back to the cached copy and
-    # waits until the page script has run over it.
-    def leave_and_restore
-      page.execute_script("Turbo.visit(#{volunteer_tasks_path(revisit: 1).to_json})")
-      expect(page).to have_current_path(/revisit=1/)
-      expect(page).to have_css(".task-item-card-col", count: 2)
-      # Set only after the forward visit has loaded, so it marks the load of
-      # the restored page; it runs after the page script's own handler.
-      page.execute_script(<<~JS)
-        document.addEventListener("turbo:load", () => {
-          document.documentElement.dataset.restoredLoad = "done";
-        }, { once: true });
-      JS
-      page.go_back
-      expect(page).to have_css("html[data-restored-load='done']", visible: :all)
-    end
-
     def pick_category(text)
       find("#categoryFilter + .ts-wrapper .ts-control").click
       find(".ts-dropdown .option", text: text, exact_text: true).click
     end
 
     it "keeps one working picker per filter select on a page restored from the Turbo cache" do
-      leave_and_restore
+      leave_and_restore(volunteer_tasks_path)
 
       %w[spaceFilter categoryFilter certFilter].each do |id|
         expect(page).to have_css("##{id} ~ .ts-wrapper", count: 1, visible: :all)
@@ -68,7 +51,7 @@ RSpec.describe "Volunteer task pages", type: :system, skip_bullet: true do
       fill_in "taskSearchInput", with: "MURAL"
       pick_category(I18n.t("volunteer_area.tasks.categories.events"))
       expect(page).to have_css(".task-item-card-col", count: 1)
-      leave_and_restore
+      leave_and_restore(volunteer_tasks_path)
 
       expect(page).to have_field("taskSearchInput", with: "MURAL")
       expect(page).to have_css("#categoryFilter + .ts-wrapper .ts-control .item",
