@@ -1,3 +1,6 @@
 <%# One language choice of the header: a form post, so a page visit never changes saved data. %>
-<%= button_to t('name', locale:), locale_path, method: :patch, class: css,
-      params: { locale:, return_to: request.path + (request.query_parameters.except('locale').presence&.then { |q| "?#{q.to_query}" } || '') } %>
+<%= button_to locale_path, method: :patch, class: css,
+      params: { locale:, return_to: request.path + (request.query_parameters.except('locale').presence&.then { |q| "?#{q.to_query}" } || '') } do %>
+  <i class="fa-solid fa-language" aria-hidden="true"></i>
+  <%= tag.span t('name', locale:), class: local_assigns[:label_class] %>
+<% end %>

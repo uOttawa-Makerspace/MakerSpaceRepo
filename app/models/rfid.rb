@@ -4,10 +4,11 @@ class Rfid < ApplicationRecord
 
   belongs_to :user, optional: true
   scope :recent_unset, -> { where(user: nil).order("updated_at desc") }
-  # Unlinked cards, newest first, last tapped on a reader in a space the user may work in (User#workable_spaces:
-  # every space for an admin, the assigned spaces for staff, none otherwise).
+  # Unlinked cards, newest first, last tapped on a reader of the space the user works in now (User#current_space);
+  # every space for an admin. Staff see only their current space's taps, not every lab's.
   scope :unlinked_for, lambda { |user|
-    recent_unset.where(mac_address: PiReader.where(space: user.workable_spaces).select(:pi_mac_address))
+    spaces = user.admin? ? Space.all : Space.where(id: user.current_space&.id)
+    recent_unset.where(mac_address: PiReader.where(space: spaces).select(:pi_mac_address))
   }
   # Uniqueness is the unique index's job (find_or_create_card handles the conflict).
   validates :card_number, presence: true

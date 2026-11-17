@@ -33,21 +33,16 @@ RSpec.describe "/api/v1/spaces/:id/presence", type: :request do
   end
 
   describe "a space the staff member is not assigned to" do
-    def expect_space_not_assigned
-      expect(response).to have_http_status(:forbidden)
-      expect(error).to include("code" => "space_not_assigned", "message" => "You are not assigned to that space")
-    end
-
-    it "403s staff reading, signing in or signing out there, writing nothing" do
+    it "lets staff read, sign in and sign out there" do
       in_space(visitor, unassigned_space)
       api_get "/api/v1/spaces/#{unassigned_space.id}/presence", as: staff
-      expect_space_not_assigned
+      expect(response).to have_http_status(:ok)
       expect { api_send :post, "/api/v1/spaces/#{unassigned_space.id}/presence", { username: regular.username }, as: staff }
-        .not_to change(LabSession, :count)
-      expect_space_not_assigned
+        .to change(LabSession, :count).by(1)
+      expect(response).to have_http_status(:no_content)
       api_send :delete, "/api/v1/spaces/#{unassigned_space.id}/presence/#{visitor.username}", as: staff
-      expect_space_not_assigned
-      expect(LabSession.where(user: visitor, space: unassigned_space).active.count).to eq(1)
+      expect(response).to have_http_status(:no_content)
+      expect(LabSession.where(user: visitor, space: unassigned_space).active.count).to eq(0)
     end
 
     it "lets an admin with no assignments read, sign in and sign out there" do
@@ -57,18 +52,6 @@ RSpec.describe "/api/v1/spaces/:id/presence", type: :request do
       expect(response).to have_http_status(:no_content)
       api_send :delete, "/api/v1/spaces/#{unassigned_space.id}/presence/#{visitor.username}", as: admin
       expect(response).to have_http_status(:no_content)
-    end
-
-    it "403s staff in a saved space they are no longer assigned to: listing, sign-in and sign-out stay refused" do
-      in_space(visitor, unassigned_space)
-      staff.update_columns(space_id: unassigned_space.id)
-      api_get "/api/v1/spaces/#{unassigned_space.id}/presence", as: staff
-      expect_space_not_assigned
-      api_send :post, "/api/v1/spaces/#{unassigned_space.id}/presence", { username: regular.username }, as: staff
-      expect_space_not_assigned
-      api_send :delete, "/api/v1/spaces/#{unassigned_space.id}/presence/#{visitor.username}", as: staff
-      expect_space_not_assigned
-      expect(LabSession.where(user: visitor, space: unassigned_space).active.count).to eq(1)
     end
   end
 

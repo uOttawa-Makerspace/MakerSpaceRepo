@@ -1,6 +1,6 @@
 # Presence API
 
-Who is in a space, and signing people in and out. Replaces `GET /staff_dashboard.json` (`space`, `space_users`), `PUT /staff_dashboard/add_users` and `PUT /staff_dashboard/remove_users` for the React app. Conventions and error format: `README.md`. All endpoints need `Authorization: Bearer <access_token>` and a staff or admin account (S). `:id` is the numeric space id (a non-numeric id is the generic JSON 404). Staff may use only a space they are assigned to, or the space they already hold (`users.space_id`); admins any space. Any other space is a 403 `space_not_assigned` ("You are not assigned to that space") on every endpoint below, and nothing is written.
+Who is in a space, and signing people in and out. Replaces `GET /staff_dashboard.json` (`space`, `space_users`), `PUT /staff_dashboard/add_users` and `PUT /staff_dashboard/remove_users` for the React app. Conventions and error format: `README.md`. All endpoints need `Authorization: Bearer <access_token>` and a staff or admin account (S). `:id` is the numeric space id (a non-numeric id is the generic JSON 404). Staff and admins may use any space.
 
 A user is "in" a space while they have a lab session there whose `sign_out_time` is in the future (the rule `Space#signed_in_users` uses). Soft-deleted accounts never appear.
 
@@ -39,7 +39,6 @@ A user is "in" a space while they have a lab session there whose `sign_out_time`
 | Status    | `error.code`                    | When                                                 |
 | --------- | ------------------------------- | ---------------------------------------------------- |
 | 401 / 403 | `unauthenticated` / `forbidden` | No token / not staff                                 |
-| 403       | `space_not_assigned`            | Staff (non-admin) named a space they may not work in |
 | 404       | `not_found`                     | Unknown space                                        |
 
 ## POST /api/v1/spaces/:id/presence
@@ -51,7 +50,6 @@ Request: `{ "username": "jdoe" }` (case-insensitive). Signs the user in: one lab
 | Status    | `error.code`                    | When                                                                                                |
 | --------- | ------------------------------- | --------------------------------------------------------------------------------------------------- |
 | 401 / 403 | `unauthenticated` / `forbidden` | No token / not staff                                                                                |
-| 403       | `space_not_assigned`            | Staff (non-admin) named a space they may not work in                                                |
 | 404       | `not_found`                     | Unknown or soft-deleted user, or unknown space (legacy ignored an unknown username and answered ok) |
 | 422       | `parameter_missing`             | `username` absent                                                                                   |
 
@@ -64,5 +62,4 @@ Signs the user out: every unexpired lab session the user has in THIS space gets 
 | Status    | `error.code`                    | When                                                 |
 | --------- | ------------------------------- | ---------------------------------------------------- |
 | 401 / 403 | `unauthenticated` / `forbidden` | No token / not staff                                 |
-| 403       | `space_not_assigned`            | Staff (non-admin) named a space they may not work in |
 | 404       | `not_found`                     | Unknown or soft-deleted user, or unknown space       |

@@ -15,11 +15,6 @@ RSpec.describe "Kiosks", type: :request do
     sign_in_as(role).tap { |user| StaffSpace.create!(user: user, space: space) if role == :staff }
   end
 
-  def expect_refused_space
-    expect(response).to redirect_to(kiosk_index_path)
-    expect(flash[:alert]).to eq("You are not assigned to that space.")
-  end
-
   def expect_bounced
     expect(response).to redirect_to(root_path)
     expect(flash[:alert]).to eq("You cannot access this area.")
@@ -77,38 +72,23 @@ RSpec.describe "Kiosks", type: :request do
     let!(:elsewhere) { create(:space) }
     let(:staff) { sign_in_assigned(:staff) }
 
-    it "lists only the spaces staff may work in, and every space for an admin" do
+    it "lists every space for staff and for an admin" do
       staff
       get kiosk_index_path
-      expect(response.body).to include(space.name)
-      expect(response.body).not_to include(elsewhere.name)
+      expect(response.body).to include(space.name, elsewhere.name)
       sign_in_as(:admin)
       get kiosk_index_path
       expect(response.body).to include(space.name, elsewhere.name)
     end
 
-    it "refuses to open its kiosk page, even when it is their saved space" do
-      staff.update_columns(space_id: elsewhere.id)
-      get kiosk_path(elsewhere.id)
-      expect_refused_space
-    end
-
-    it "refuses to sign anyone in or out there, writing nothing" do
+    it "lets staff open its kiosk page and sign people in and out there" do
       staff
-      LabSession.create!(user: visitor, space: elsewhere, sign_in_time: 1.hour.ago, sign_out_time: 5.hours.from_now)
-      expect do
-        post kiosk_sign_email_path(elsewhere.id), params: { visitor: visitor.username, entering: "true" }
-        expect_refused_space
-        post kiosk_sign_email_path(elsewhere.id), params: { visitor: visitor.username, leaving: "true" }
-        expect_refused_space
-      end.not_to change { [LabSession.count, KioskSignEvent.count] }
-      expect(LabSession.where(user: visitor, space: elsewhere).active.count).to eq(1)
-    end
-
-    it "refuses with the French message for a French-speaking staff member" do
-      staff.update_columns(locale: "fr")
       get kiosk_path(elsewhere.id)
-      expect(flash[:alert]).to eq("Vous n'êtes pas affecté à cet espace.")
+      expect(response).to have_http_status(:ok)
+      expect { post kiosk_sign_email_path(elsewhere.id), params: { visitor: visitor.username, entering: "true" } }
+        .to change { LabSession.where(user: visitor, space: elsewhere).active.count }.by(1)
+      post kiosk_sign_email_path(elsewhere.id), params: { visitor: visitor.username, leaving: "true" }
+      expect(LabSession.where(user: visitor, space: elsewhere).active.count).to eq(0)
     end
 
     it "lets an admin with no assignments open it and sign people in" do

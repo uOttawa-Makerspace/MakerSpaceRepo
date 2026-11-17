@@ -37,7 +37,7 @@ RSpec.describe "Homepage", type: :system do
 
   def expect_public_chrome
     # Navbar
-    expect(page).to have_css("nav.navbar.navbar-expand-xxxl")
+    expect(page).to have_css("nav.navbar.navbar-expand-xl")
     expect(page).to have_css("a.navbar-brand", text: "MakerRepo")
     within("nav.navbar") do
       expect(page).to have_css("a.nav-link", text: "Home", visible: :all)

@@ -110,11 +110,10 @@ RSpec.describe "Theme colour contrast" do
     expect(css_declarations(".btn.btn-outline-primary")).to include("--bs-btn-color" => "var(--primary-text)")
   end
 
-  it "expands the main navbar only from 1600px, where its 14pt links fit" do
-    expect(compiled_css).to match(/@media \(width>=1600px\)\{\.navbar-expand-xxxl\{/)
+  it "expands the main navbar from 1200px and shows some items as icons up to 1600px" do
     header = Rails.root.join("app/views/layouts/_header.html.erb").read
-    expect(header).to include("navbar-expand-xxxl")
-    expect(header).not_to match(/navbar-expand-xl|d-xl-|px-xl-/)
+    expect(header).to include("navbar-expand-xl")
+    expect(compiled_css).to match(/@media \(width>=1200px\) and \(width<=1599\.98px\)\{\.navbar \.navbar-compact-label\{clip:\s*rect\(0, 0, 0, 0\)/)
   end
 end
 
