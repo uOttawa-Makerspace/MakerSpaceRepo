@@ -95,6 +95,22 @@ describe("job order tables", () => {
     expect(exemptPageFromCache).toHaveBeenCalledTimes(1);
   });
 
+  it("opens on the submitted column, newest first, wherever that column is", () => {
+    const admin = load(
+      "/job_orders",
+      `<table class='table'><thead><tr><th></th><th></th><th>User</th><th>ID</th>
+       <th data-sort-default="desc">Submitted</th><th>Type</th></tr></thead></table>`,
+    );
+    expect(admin.options.order).toEqual([[4, "desc"]]);
+
+    const client = load(
+      "/job_orders",
+      `<table class='table'><thead><tr><th>Chats</th><th>User</th><th>ID</th>
+       <th data-sort-default="desc">Submitted</th></tr></thead></table>`,
+    );
+    expect(client.options.order).toEqual([[3, "desc"]]);
+  });
+
   it("builds every job order table of the page", () => {
     load(
       "/job_orders",
