@@ -30,8 +30,8 @@ RSpec.describe "Job Orders browser flow", type: :system do
   end
 
   it "guides the Ready-to-Make choice from landing to wizard step 1" do
-    # Production has no "Ready to Make" job type: the card is offered anyway and starts a typeless order.
-    JobType.where(name: JobType::READY_TO_MAKE).delete_all
+    # Production has no "Ready to Make" job type (nor does seed_job_types!): the card is offered anyway and starts a
+    # typeless order.
     log_in_as(user, to: landing_job_orders_path)
 
     click_link "Start a Job Order"

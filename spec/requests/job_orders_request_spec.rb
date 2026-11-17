@@ -418,6 +418,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     it "shows the Ready to Make card with its type when the type exists" do
       http_login!(owner)
       seed_job_types!
+      JobType.create!(name: JobType::READY_TO_MAKE, description: "r")
       get new_job_orders_path
       expect(response.body).to include(I18n.t("job_orders.new.ready_to_make.title"))
       expect(response.body).to include(%(value="#{JobType.ready_to_make.id}"))
@@ -427,7 +428,6 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       http_login!(owner)
       seed_job_statuses!
       seed_job_types!
-      JobType.where(name: "Ready to Make").delete_all
       get new_job_orders_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(I18n.t("job_orders.new.ready_to_make.title"))
