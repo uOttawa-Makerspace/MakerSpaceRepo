@@ -24,6 +24,17 @@ function removeDateFilter() {
   if (index !== -1) DataTable.ext.search.splice(index, 1);
 }
 
+// The order a table opens in: newest submitted first, by the header marked
+// data-sort-default, so orders sit at their real dates whatever their ids
+// (imported print orders have higher ids than newer orders). A table without
+// that header opens on its fourth column, newest first.
+export function defaultOrder(table) {
+  const headers = [...table.querySelectorAll("thead th")];
+  const index = headers.findIndex((th) => th.dataset.sortDefault);
+  if (index === -1) return [[3, "desc"]];
+  return [[index, headers[index].dataset.sortDefault]];
+}
+
 // Builds each job order table of the page and, on the admin page, the filters
 // of its one table. Tables already built are left as they are, with the
 // filters they were given.
@@ -31,7 +42,7 @@ onEveryPageLoad(() => {
   const [dt] = [...document.querySelectorAll(".table:not(.notDataTable)")]
     .map((table) =>
       pageTable(table, {
-        order: [[3, "desc"]], // sorts by id on /admin and submitted date on client view
+        order: defaultOrder(table),
         pageLength: 25,
       }),
     )
