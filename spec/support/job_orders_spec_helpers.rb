@@ -44,13 +44,13 @@ module JobOrderSpecHelpers
       )
   end
 
-  # JobType names shipped by db/migrate/20220206202756_create_job_types.rb.
+  # JobType names shipped by db/migrate/20220206202756_create_job_types.rb. Production has no "Ready to Make" type,
+  # so it is not seeded here: a spec that needs one creates it.
   def seed_job_types!
     {
       "3D Print" => "Submit a file to be 3D Printed in our MakerSpace",
       "Laser Cut" => "Submit a file to be Laser Cutted in our MakerSpace",
-      "Design Services" => "Create the design you want with the help of our employees",
-      "Ready to Make" => "Bring a design that is ready for production"
+      "Design Services" => "Create the design you want with the help of our employees"
     }.each do |name, description|
       next if JobType.find_by(name: name)
 

@@ -32,4 +32,19 @@ RSpec.describe "Assigning staff from the admin job order list", type: :system do
     expect(older.reload.assigned_staff).to eq(staffer)
     expect(newer.reload.assigned_staff).to be_nil
   end
+
+  it "lists orders by submitted date, so an older order with a higher id sits below a newer one" do
+    seed_job_statuses!
+    owner = create(:user, :regular_user)
+    newer = make_job_order!(owner: owner, status_key: :staff_approval)
+    # like an imported print order: created later in the database, so a higher id, but submitted years ago
+    imported = make_job_order!(owner: owner, status_key: :staff_approval)
+    newer.update!(created_at: 1.day.ago)
+    imported.update!(created_at: Time.zone.local(2022, 8, 15, 12))
+    expect(imported.id).to be > newer.id
+
+    log_in_as(admin, to: admin_job_orders_path)
+    expect(page).to have_css("tbody tr:nth-child(1)#job-order-row-#{newer.id}")
+    expect(page).to have_css("tbody tr:nth-child(2)#job-order-row-#{imported.id}")
+  end
 end

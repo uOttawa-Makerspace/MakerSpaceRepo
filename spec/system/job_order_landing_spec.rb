@@ -30,6 +30,8 @@ RSpec.describe "Job Orders browser flow", type: :system do
   end
 
   it "guides the Ready-to-Make choice from landing to wizard step 1" do
+    # Production has no "Ready to Make" job type (nor does seed_job_types!): the card is offered anyway and starts a
+    # typeless order.
     log_in_as(user, to: landing_job_orders_path)
 
     click_link "Start a Job Order"
@@ -50,9 +52,9 @@ RSpec.describe "Job Orders browser flow", type: :system do
     order = JobOrder.order(:id).last
     expect(order.user).to eq(user)
     expect(order.is_deleted).to be(false)
-    # the card carries the Ready to Make type (it is hidden when that type is missing),
-    # so the order is created with it; the first task is typeless until step 1 is filled in.
-    expect(order.job_type).to eq(JobType.ready_to_make)
+    # with no Ready to Make type the order starts with no job type; the first task is typeless
+    # until step 1 is filled in.
+    expect(order.job_type).to be_nil
     expect(order.job_tasks.first.title).to eq("Task #1")
     expect(order.job_tasks.first.job_type).to be_nil
   end
