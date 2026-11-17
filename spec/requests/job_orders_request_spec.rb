@@ -423,14 +423,24 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).to include(%(value="#{JobType.ready_to_make.id}"))
     end
 
-    it "hides the Ready to Make card when the type is missing, as it does for Design Help" do
+    it "still shows the Ready to Make card when the type is missing, and starts an order with no job type" do
       http_login!(owner)
+      seed_job_statuses!
       seed_job_types!
       JobType.where(name: "Ready to Make").delete_all
       get new_job_orders_path
       expect(response).to have_http_status(:ok)
-      expect(response.body).not_to include('name="redirect_step" id="redirect_step" value="1"')
+      expect(response.body).to include(I18n.t("job_orders.new.ready_to_make.title"))
+      expect(response.body).to include('name="redirect_step" id="redirect_step" value="1"')
       expect(response.body).to include('name="redirect_step" id="redirect_step" value="2"')
+
+      expect do
+        post job_orders_path, params: { job_order: { job_type_id: "" }, redirect_step: 1 }
+      end.to change(JobOrder, :count).by(1)
+      order = JobOrder.order(:id).last
+      expect(order.job_type).to be_nil
+      expect(order.job_tasks.sole.job_type).to be_nil
+      expect(response).to redirect_to(edit_job_order_job_task_path(order, order.job_tasks.sole, step: 1))
     end
   end
 
