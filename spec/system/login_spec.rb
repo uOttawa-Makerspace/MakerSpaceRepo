@@ -13,7 +13,7 @@ RSpec.describe "Login", type: :system do
     visit login_path
 
     # Login page shares the global chrome (header/footer)
-    expect(page).to have_css("nav.navbar.navbar-expand-xxxl")
+    expect(page).to have_css("nav.navbar.navbar-expand-xl")
     expect(page).to have_css("a.navbar-brand", text: "MakerRepo")
     expect(page).to have_css("input#username_email")
     expect(page).to have_css("input#password")
@@ -26,7 +26,7 @@ RSpec.describe "Login", type: :system do
 
     # Authenticated shell: navbar still present; user dropdown chip shows
     # the username; footer rendered
-    expect(page).to have_css("nav.navbar.navbar-expand-xxxl.shadow-lg")
+    expect(page).to have_css("nav.navbar.navbar-expand-xl.shadow-lg")
     expect(page).to have_text(user.username)
     expect(page).to have_css("footer")
   end

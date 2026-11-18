@@ -324,6 +324,24 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       expect(StaffUnavailability.exists?(lecture.id)).to be(false)
     end
 
+    # The dialog's opening transition is held until the test ends it, so the
+    # delete answers while the dialog is still opening.
+    it "closes the dialog when the delete answers before it has finished opening", js: true, skip_bullet: true do
+      open_page
+      page.execute_script(<<~JS)
+        const style = document.createElement("style");
+        style.textContent = "#unavailabilityModal .modal-dialog { transition-duration: 600s !important; }";
+        document.head.append(style);
+      JS
+      open_entry("Lecture")
+      click_button "Delete"
+      click_button "This event"
+      expect_flash("Unavailability deleted.")
+
+      page.execute_script("document.querySelector('#unavailabilityModal .modal-dialog').dispatchEvent(new Event('transitionend'))")
+      expect_saved_in_place
+    end
+
     it "keeps all-day entries locked to whole days when opened", js: true, skip_bullet: true do
       lecture.update!(title: "Away", start_time: eastern.local(2027, 3, 17, 0), end_time: eastern.local(2027, 3, 18, 0))
       open_page

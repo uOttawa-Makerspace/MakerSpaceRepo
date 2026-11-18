@@ -1200,15 +1200,14 @@ class User < ApplicationRecord
     staff_spaces.exists?
   end
 
-  # The spaces this user may switch the staff dashboard to: every space for an admin, otherwise only the
-  # spaces they are assigned to.
+  # The spaces this user may switch the staff dashboard to: every space for staff and admins, whatever spaces they
+  # are assigned to (assignments set calendar colours and shift lists, not where staff may work).
   def workable_spaces
-    admin? ? Space.all : Space.where(id: staff_spaces.select(:space_id))
+    staff? ? Space.all : Space.where(id: staff_spaces.select(:space_id))
   end
 
   # Whether this user may work in the space (switch to it, sign people in and out, open training sessions there):
-  # an admin in any space, otherwise only a space they are assigned to. The saved space (users.space_id) alone does
-  # not count. The staff dashboard, /api/v1, the kiosk and the shifts feed all ask this.
+  # staff and admins in any space. The staff dashboard, /api/v1, the kiosk and the shifts feed all ask this.
   def can_work_in?(space)
     workable_spaces.exists?(space.id)
   end
@@ -1219,14 +1218,12 @@ class User < ApplicationRecord
     workable_spaces.find_by(id: space_id) || workable_spaces.order(:id).first
   end
 
-  # Makes space_ids the spaces this staff member is assigned to: adds the missing ones and removes the others. A
-  # removed space that was their saved space is cleared too (admins keep theirs: they work in any space), so they are not left in a space they no longer work in.
+  # Makes space_ids the spaces this staff member is assigned to: adds the missing ones and removes the others. Their
+  # saved space is kept: staff and admins work in any space.
   def assign_spaces!(space_ids)
     transaction do
       space_ids.each { |id| StaffSpace.find_or_create_by(space_id: id, user: self) }
-      removed = staff_spaces.where.not(space_id: space_ids)
-      update_columns(space_id: nil) if space_id && !admin? && removed.exists?(space_id: space_id)
-      removed.destroy_all
+      staff_spaces.where.not(space_id: space_ids).destroy_all
     end
   end
 

@@ -317,24 +317,11 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       expect(staff.reload.space_id).to eq(space.id)
     end
 
-    it "refuses a space the staff member is not assigned to and keeps their current space" do
-      StaffSpace.where(user: staff).destroy_all
-      StaffSpace.create!(user: staff, space: space)
-      put "/staff_dashboard/change_space", params: { space_id: other_space.id }, as: :json
-      expect(response).to have_http_status(:not_found)
-      expect(json).to eq("status" => "error", "error" => "You are not assigned to that space")
-      expect(staff.reload.space_id).to eq(space.id)
-
-      put "/staff_dashboard/change_space", params: { space_id: other_space.id }
-      expect(flash[:alert]).to eq("You are not assigned to that space")
-      expect(staff.reload.space_id).to eq(space.id)
-    end
-
-    it "refuses every space for a staff member with no assignments" do
+    it "lets staff switch to a space they are not assigned to" do
       StaffSpace.where(user: staff).destroy_all
       put "/staff_dashboard/change_space", params: { space_id: other_space.id }, as: :json
-      expect(response).to have_http_status(:not_found)
-      expect(staff.reload.space_id).to eq(space.id)
+      expect(response).to have_http_status(:ok)
+      expect(staff.reload.space_id).to eq(other_space.id)
     end
 
     it "lets an admin switch to any space" do
@@ -344,14 +331,14 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       expect(admin.reload.space_id).to eq(other_space.id)
     end
 
-    it "offers only the assigned spaces in the picker and the JSON space_list" do
+    it "offers every space in the picker and the JSON space_list, whatever the staff member is assigned to" do
       StaffSpace.where(user: staff).destroy_all
       StaffSpace.create!(user: staff, space: space)
       get staff_dashboard_index_path
       options = Nokogiri::HTML(response.body).css("select#set_space_id option").map { |o| o["value"] }.compact_blank
-      expect(options).to eq([space.id.to_s])
+      expect(options.sort).to eq(Space.pluck(:id).map(&:to_s).sort)
       get "/staff_dashboard", as: :json
-      expect(json["space_list"]).to eq([[space.name, space.id]])
+      expect(json["space_list"]).to match_array(Space.pluck(:name, :id))
     end
 
     it "lists each of two different assigned spaces once" do
@@ -370,101 +357,45 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       expect(StaffSpace.where(user: staff, space: space).count).to eq(1)
     end
 
-    it "refuses switching to a saved space the staff member is no longer assigned to" do
-      StaffSpace.where(user: staff).destroy_all
-      put "/staff_dashboard/change_space", params: { space_id: space.id }, as: :json
-      expect(response).to have_http_status(:not_found)
-      expect(response.parsed_body["error"]).to eq("You are not assigned to that space")
-    end
-
-    it "tells a staff member with no assigned spaces to ask an admin" do
-      StaffSpace.where(user: staff).destroy_all
-      get staff_dashboard_index_path
-      expect(response.body).to include(I18n.t("common.no_assigned_spaces"))
-    end
-
     it "does not show the ask-an-admin message to an assigned staff member" do
       get staff_dashboard_index_path
       expect(response.body).not_to include(I18n.t("common.no_assigned_spaces"))
     end
-
-    it "refuses a staff member with no saved space and no assignments, even for the fallback space" do
-      loner = sign_in_as(:staff, space: nil)
-      expect(loner.reload.space_id).to be_nil
-      put "/staff_dashboard/change_space", params: { space_id: Space.first.id }, as: :json
-      expect(response).to have_http_status(:not_found)
-      expect(json["error"]).to eq("You are not assigned to that space")
-      expect(loner.reload.space_id).to be_nil
-
-      get staff_dashboard_index_path
-      expect(response.body).to include(I18n.t("common.no_assigned_spaces"))
-    end
   end
 
-  describe "a staff member whose saved space they are no longer assigned to" do
+  describe "a staff member who is not assigned to their saved space" do
     let!(:visitor_session) do
       create(:lab_session, user: visitor, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
     end
 
-    context "with no assignment at all" do
-      before { StaffSpace.where(user: staff).destroy_all }
+    before { StaffSpace.where(user: staff).destroy_all }
 
-      it "shows the no assigned spaces page instead of the dashboard, and the same in French" do
-        get staff_dashboard_index_path
-        expect(response).to have_http_status(:ok)
-        expect(response.body).to include(I18n.t("common.no_assigned_spaces"))
-        expect(response.body).not_to include("signed-in-table")
-        staff.update_columns(locale: "fr")
-        get staff_dashboard_index_path
-        expect(response.body).to include(I18n.t("common.no_assigned_spaces", locale: :fr))
-      end
+    it "works in the saved space: the dashboard, sign-in and sign-out" do
+      get "/staff_dashboard", as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json["space"]["id"]).to eq(space.id)
+      new_visitor = create(:user, :regular_user)
+      put "/staff_dashboard/add_users", params: { added_users: new_visitor.username }, as: :json
+      expect(LabSession.active.where(user: new_visitor).pluck(:space_id)).to eq([space.id])
+      put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json
+      expect(LabSession.active.where(user: visitor, space: space)).not_to exist
+    end
+  end
 
-      it "refuses to sign anyone in or out in the saved space, writing nothing" do
-        other_visitor = create(:user, :regular_user)
-        expect do
-          put "/staff_dashboard/add_users", params: { added_users: other_visitor.username }, as: :json
-          expect(response).to have_http_status(:forbidden)
-          put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json
-          expect(response).to have_http_status(:forbidden)
-          post "/staff_dashboard/sign_out_all_users"
-          expect(response).to have_http_status(:ok)
-        end.not_to change { LabSession.active.pluck(:user_id, :space_id).sort }
-        expect(LabSession.active.where(space: space, user: visitor)).to exist
-      end
-
-      it "refuses the JSON dashboard, the refresh and the search with a 403" do
-        get "/staff_dashboard", as: :json
-        expect(response).to have_http_status(:forbidden)
-        get "/staff_dashboard/refresh_tables", as: :json
-        expect(response).to have_http_status(:forbidden)
-        get "/staff_dashboard/search", params: { query: visitor.username }, as: :json
-        expect(response).to have_http_status(:forbidden)
-      end
-
-      it "lets an admin with no assignments use the dashboard in any space" do
-        sign_in_as(:admin)
-        get staff_dashboard_index_path
-        expect(response).to have_http_status(:ok)
-        expect(response.body).to include("signed-in-table")
-      end
+  describe "when no space exists at all" do
+    before do
+      User.update_all(space_id: nil)
+      LabSession.delete_all
+      Space.find_each { |s| s.destroy! }
     end
 
-    context "with another assigned space" do
-      before do
-        StaffSpace.where(user: staff).destroy_all
-        StaffSpace.create!(user: staff, space: other_space)
-      end
-
-      it "works in the assigned space, not the stale saved one" do
-        get "/staff_dashboard", as: :json
-        expect(json["space"]["id"]).to eq(other_space.id)
-        expect(json["space_users"]).to eq([])
-        new_visitor = create(:user, :regular_user)
-        put "/staff_dashboard/add_users", params: { added_users: new_visitor.username }, as: :json
-        expect(LabSession.active.where(user: new_visitor).pluck(:space_id)).to eq([other_space.id])
-        put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json
-        expect(LabSession.active.where(user: visitor, space: space)).to exist
-      end
+    it "shows the no space page and refuses the JSON dashboard with a 403" do
+      get staff_dashboard_index_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(I18n.t("common.no_assigned_spaces"))
+      expect(response.body).not_to include("signed-in-table")
+      get "/staff_dashboard", as: :json
+      expect(response).to have_http_status(:forbidden)
     end
   end
 end

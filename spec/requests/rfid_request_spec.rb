@@ -170,21 +170,11 @@ RSpec.describe "RFID endpoints", type: :request do
       end
     end
 
-    it "refuses a staff tap for a space the staff member is not assigned to, writing nothing" do
+    it "signs the card owner in for a staff tap in a space the staff member is not assigned to" do
       away = create(:space)
-      staff = assigned_staff
-      staff.update_columns(space_id: away.id)
-      expect { tap_as(bearer(staff), space_id: away.id) }.not_to change { [LabSession.count, Rfid.count] }
-      expect(response).to have_http_status(:forbidden)
-      expect(body).to eq(error: "You are not assigned to that space.")
-    end
-
-    it "refuses the unassigned space in French for a French-speaking staff member" do
-      staff = assigned_staff
-      staff.update_columns(locale: "fr")
-      tap_as(bearer(staff), space_id: create(:space).id)
-      expect(response).to have_http_status(:forbidden)
-      expect(body).to eq(error: "Vous n'êtes pas affecté à cet espace.")
+      expect { tap_as(bearer(assigned_staff), space_id: away.id) }
+        .to change { LabSession.where(user: owner, space: away).active.count }.by(1)
+      expect(response).to have_http_status(:ok)
     end
 
     it "lets an admin with no assignments tap in any space" do

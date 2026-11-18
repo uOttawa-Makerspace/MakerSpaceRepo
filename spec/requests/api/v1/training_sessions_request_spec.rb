@@ -104,28 +104,20 @@ RSpec.describe "/api/v1 training sessions", type: :request do
       expect(body["trainings"]).to eq([[training.id, training.name_en]])
     end
 
-    it "403s staff with no assignment when space_id is omitted, even with a saved space or a first space" do
-      loner = create(:user, :staff)
-      loner.update_columns(space_id: unassigned_space.id)
-      api_get "/api/v1/training_session_options", as: loner
-      expect(response).to have_http_status(:forbidden)
-      expect(error).to include("code" => "space_not_assigned", "message" => "You are not assigned to that space")
-    end
-
-    it "uses the first assigned space, not a saved space the caller is no longer assigned to" do
+    it "uses the saved space when space_id is omitted, even one the caller is not assigned to" do
       staff.update_columns(space_id: unassigned_space.id)
       training
-      create(:training, spaces: [unassigned_space])
+      unassigned_training = create(:training, spaces: [unassigned_space])
       api_get "/api/v1/training_session_options", as: staff
       expect(response).to have_http_status(:ok)
-      expect(body["trainings"]).to eq([[training.id, training.name_en]])
+      expect(body["trainings"]).to eq([[unassigned_training.id, unassigned_training.name_en]])
     end
 
-    it "403s staff asking for a space they are not assigned to; an admin gets any space" do
+    it "gives staff and an admin a space they are not assigned to" do
       unassigned_training = create(:training, spaces: [unassigned_space])
       api_get "/api/v1/training_session_options?space_id=#{unassigned_space.id}", as: staff
-      expect(response).to have_http_status(:forbidden)
-      expect(error).to include("code" => "space_not_assigned", "message" => "You are not assigned to that space")
+      expect(response).to have_http_status(:ok)
+      expect(body["trainings"]).to eq([[unassigned_training.id, unassigned_training.name_en]])
 
       api_get "/api/v1/training_session_options?space_id=#{unassigned_space.id}", as: admin
       expect(response).to have_http_status(:ok)
@@ -182,12 +174,11 @@ RSpec.describe "/api/v1 training sessions", type: :request do
       expect(response).to have_http_status(:forbidden)
     end
 
-    it "403s staff opening a session in a space they are not assigned to, creating nothing" do
+    it "lets staff open a session in a space they are not assigned to" do
       training.spaces << unassigned_space
-      expect { post_training_session payload.merge(space_id: unassigned_space.id), as: staff }
-        .not_to change(TrainingSession, :count)
-      expect(response).to have_http_status(:forbidden)
-      expect(error).to include("code" => "space_not_assigned", "message" => "You are not assigned to that space")
+      post_training_session payload.merge(space_id: unassigned_space.id), as: staff
+      expect(response).to have_http_status(:created)
+      expect(TrainingSession.find(body["id"]).space_id).to eq(unassigned_space.id)
     end
 
     it "lets an admin with no assignments open a session in any space" do
