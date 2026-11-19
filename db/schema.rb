@@ -290,6 +290,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
     t.boolean "is_live"
     t.string "sheet_key"
     t.boolean "show_floorplans", default: true
+    t.boolean "show_floorplans_day2", default: true
     t.index "(true)", name: "index_design_days_single_row", unique: true
   end
 

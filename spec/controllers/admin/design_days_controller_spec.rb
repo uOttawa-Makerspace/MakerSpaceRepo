@@ -37,7 +37,7 @@ RSpec.describe Admin::DesignDaysController, type: :controller do
       it "should update data to display" do
         patch :update, params: { design_day: @design_day_params }, as: :json
         # only one design day here
-        expect(response).to redirect_to DesignDay.instance
+        expect(response).to redirect_to admin_design_day_path(day: "1")
         expect(
           DesignDay.instance.attributes.symbolize_keys.except(:id)
         ).to include @design_day_params

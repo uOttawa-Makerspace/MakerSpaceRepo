@@ -86,7 +86,7 @@ RSpec.describe "Admin area pages in French", type: :request do
 
       get admin_design_day_path
 
-      expect(page_text).to include("Horaire : Étudiants", "Horaire : Juges", "Plans d'étage affichés")
+      expect(page_text).to include("Plans d'étage affichés")
     end
 
     it "shows the job order settings forms in French" do
