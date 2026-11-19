@@ -23,7 +23,7 @@ const load = (html) => {
 
 const FLOORPLAN = `<div data-floorplan-container></div>
   <button data-floorplan-add></button>
-  <div data-floorplan-template><input type="file"><button data-floorplan-delete></button></div>`;
+  <div data-floorplan-template><input type="hidden" data-floorplan-day-input><input type="file"><button data-floorplan-delete></button></div>`;
 
 beforeEach(() => {
   vi.spyOn(console, "log").mockImplementation(() => {});
@@ -227,7 +227,7 @@ describe("floorplans", () => {
         <div id="old"><input type="file"><button data-floorplan-delete id="del"></button></div>
       </div>
       <button data-floorplan-add></button>
-      <div data-floorplan-template><input type="file"><button data-floorplan-delete></button></div>`);
+      <div data-floorplan-template><input type="hidden" data-floorplan-day-input><input type="file"><button data-floorplan-delete></button></div>`);
     const event = new Event("click", { cancelable: true });
     $("del").dispatchEvent(event);
     expect(event.defaultPrevented).toBe(true);

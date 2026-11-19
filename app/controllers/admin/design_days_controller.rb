@@ -26,16 +26,20 @@ class Admin::DesignDaysController < AdminAreaController
 
   def update
     if @design_day.update(design_day_params)
+      titles = params[:design_day][:floorplan_title] || []
+      days = params[:design_day][:floorplan_day] || []
       @design_day.floorplans.each_with_index do |floorplan, index|
-        # Takes the title from the form and inserts it into activestorage metadata
         # Hopefully this doesn't get obliterated by some routine cleanup or post-processing?
-        title = params[:design_day][:floorplan_title][index]
         floorplan.blob.update(
-          metadata: floorplan.blob.metadata.merge(floorplan_title: title)
+          metadata:
+            floorplan.blob.metadata.merge(
+              floorplan_title: titles[index],
+              floorplan_day: days[index].presence || "1"
+            )
         )
       end
       flash[:notice] = I18n.t("admin_pages.design_days.flash.updated")
-      redirect_to @design_day
+      redirect_to admin_design_day_path(day: selected_day)
     else
       flash[:alert] = I18n.t("admin_pages.design_days.flash.not_updated")
       render :show, status: :unprocessable_content
@@ -44,6 +48,10 @@ class Admin::DesignDaysController < AdminAreaController
 
   private
 
+  def selected_day
+    (params[:selected_day] || params[:day]).presence_in(%w[1 2]) || "1"
+  end
+
   # The public read never creates the row.
   def load_current_design_day
     @design_day = DesignDay.current
@@ -51,6 +59,7 @@ class Admin::DesignDaysController < AdminAreaController
 
   def make_variables
     @design_day ||= DesignDay.instance
+    @selected_day = selected_day
     @design_day_schedules =
       @design_day.design_day_schedules.group_by(&:event_for)
     DesignDaySchedule.event_fors.each_key do |t|
@@ -69,6 +78,7 @@ class Admin::DesignDaysController < AdminAreaController
       :is_live,
       :sheet_key,
       :show_floorplans,
+      :show_floorplans_day2,
       floorplans: [],
       design_day_schedules_attributes: %i[
         id

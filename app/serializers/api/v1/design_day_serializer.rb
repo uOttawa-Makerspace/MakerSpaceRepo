@@ -14,19 +14,10 @@ module Api
           day: design_day.day,
           sheet_key: design_day.sheet_key,
           show_floorplans: design_day.show_floorplans,
+          show_floorplans_day2: design_day.show_floorplans_day2,
           floorplan_urls: floorplans.map(&:url),
           floorplan_titles: floorplans.map { |f| f.metadata[:floorplan_title] },
-          schedules: design_day.design_day_schedules.map { |s| schedule(s) }
-        }
-      end
-
-      def schedule(schedule)
-        {
-          start: schedule.start,
-          end: schedule.end,
-          title_en: schedule.title_en,
-          title_fr: schedule.title_fr,
-          event_for: schedule.event_for
+          floorplan_days: design_day.floorplan_days || []
         }
       end
     end
