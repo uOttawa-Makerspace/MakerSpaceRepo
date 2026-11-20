@@ -67,6 +67,18 @@ RSpec.describe StaffDashboardChannel do
     expect { described_class.send_tap_out(create(:user, :regular_user), space.id) }.to expect_rows_for_three_signed_in_users
   end
 
+  # The broadcast is rendered outside any request, so the profile links must not carry a host.
+  it "links each row to the user's profile by a relative path" do
+    usernames = LabSession.where(space: space).joins(:user).pluck("users.username")
+    links = have_broadcasted_to(stream).from_channel(Turbo::StreamsChannel).with do |html|
+      hrefs = Nokogiri::HTML.fragment(html).css("tr[data-user-id] td:first-child a").map { |a| a["href"] }
+      expect(hrefs).to match_array(usernames.map { |username| "/#{username}" })
+      expect(html).not_to include("example.org")
+    end
+
+    expect { described_class.broadcast_table_updates(space.id) }.to links
+  end
+
   describe "subscribing to a space's tap-in events" do
     let(:assigned) { create(:user, :staff).tap { |u| StaffSpace.create!(user: u, space: space) } }
 
