@@ -3,7 +3,7 @@
 <% user = space_activity_row %>
 <tr data-user-id="<%= user.id %>" class="align-middle">
     <td>
-        <%= link_to(tag.drop_username(user.name), user_url(user.username), class: "align-middle") %>
+        <%= link_to(tag.drop_username(user.name), user_path(user.username), class: "align-middle") %>
         <% if user.has_active_membership? %>
             <p class="text-success">
                 <% if user.active_membership.faculty? %>
