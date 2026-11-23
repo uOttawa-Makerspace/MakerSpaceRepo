@@ -112,4 +112,45 @@ RSpec.describe HelpFilingJob, type: :job do
     expect(deliveries.map(&:to)).to eq([["uottawa.makerepo@gmail.com"], ["owner@example.com"]])
     expect(help.reload).to be_finished
   end
+
+  # The service answers with a fixed issue in test; here it goes through Octokit to a stubbed GitHub API, as in
+  # production.
+  context "when the issue is opened through the GitHub API" do
+    let(:installation_id) { Rails.application.credentials[:test].github.ceed_issues.installation_id }
+    let!(:token_call) do
+      stub_request(:post, "https://api.github.com/app/installations/#{installation_id}/access_tokens")
+        .to_return(status: 201, body: { token: "installation-token" }.to_json,
+                   headers: { "Content-Type" => "application/json" })
+    end
+    let!(:issue_call) do
+      stub_request(:post, "https://api.github.com/repos/uOttawa-Makerspace/CEED-Issues/issues")
+        .to_return(status: 201, body: { number: 7 }.to_json, headers: { "Content-Type" => "application/json" })
+    end
+
+    before { allow(Rails.env).to receive(:test?).and_return(false) }
+
+    it "mails the copies, opens the issue once and records both" do
+      help = help_request(subject: "Réservation échouée 🙂 @team #12", comments: "Ça ne marche pas: <b>GH-3</b>")
+      perform_enqueued_jobs { described_class.perform_now(help.id) }
+
+      expect(help.reload).to have_attributes(gh_issue_number: "7")
+      expect(help).to be_finished
+      expect(deliveries.size).to eq(1)
+      expect(token_call).to have_been_made.once
+      expect(issue_call.with { |req| JSON.parse(req.body)["title"].start_with?("Réservation échouée 🙂 @‍") })
+        .to have_been_made.once
+    end
+
+    it "files each waiting request once from the sweep" do
+      helps = travel_to(1.hour.ago) { [help_request, help_request(user: user, name: user.name, email: user.email)] }
+      perform_enqueued_jobs do
+        HelpFilingSweepJob.perform_now
+        HelpFilingSweepJob.perform_now
+      end
+
+      expect(helps.map(&:reload)).to all(be_finished)
+      expect(issue_call).to have_been_made.twice
+      expect(deliveries.size).to eq(3)
+    end
+  end
 end
