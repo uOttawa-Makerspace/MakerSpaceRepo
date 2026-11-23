@@ -25,11 +25,16 @@ RSpec.describe "config/recurring.yml" do
     end
   end
 
-  it "checks for failed and overdue jobs every 5 minutes in production and staging" do
-    %w[production staging].each do |env|
-      expect(config.dig(env, "job_alerts")).to include("class" => "JobAlertJob", "schedule" => "every 5 minutes")
+  it "mails nobody about background jobs: there is no job alert task in any environment" do
+    config.each_value do |tasks|
+      next unless tasks.is_a?(Hash)
+
+      expect(tasks).not_to have_key("job_alerts")
+      expect(tasks.values.grep(Hash).pluck("class")).not_to include("JobAlertJob")
     end
-    expect(Fugit.parse("every 5 minutes", multi: :fail)).to be_a(Fugit::Cron)
+    expect(defined?(JobAlert)).to be_nil
+    expect(defined?(JobAlertJob)).to be_nil
+    expect(defined?(JobAlertMailer)).to be_nil
   end
 
   it "holds the stale membership checkout expiry out of the schedule in every environment" do

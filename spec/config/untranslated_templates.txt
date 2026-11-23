@@ -40,7 +40,6 @@ app/views/faqs/index.html.erb
 app/views/faqs/new.html.erb
 app/views/help/create.html.erb
 app/views/help/show.html.erb
-app/views/job_alert_mailer/alert.html.erb
 app/views/job_orders/_admin_row.html.erb
 app/views/job_orders/_assign_staff.html.erb
 app/views/job_orders/_completed_email_modal.html.erb

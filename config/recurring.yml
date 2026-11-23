@@ -104,11 +104,6 @@ shared: &shared
     class: HelpFilingSweepJob
     schedule: every 15 minutes
 
-  # Mails the maintenance address about failed and overdue background jobs, once each (JobAlert).
-  job_alerts:
-    class: JobAlertJob
-    schedule: every 5 minutes
-
 production:
   <<: *shared
 
