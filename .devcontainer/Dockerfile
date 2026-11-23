@@ -1,5 +1,5 @@
 # syntax = docker/dockerfile:1
-ARG RUBY_VERSION=4.0.6
+ARG RUBY_VERSION=4.0.10
 FROM ruby:${RUBY_VERSION}-alpine3.24 AS base
 
 WORKDIR /rails

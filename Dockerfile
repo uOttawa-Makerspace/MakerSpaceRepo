@@ -1,5 +1,5 @@
 # syntax = docker/dockerfile:1
-ARG RUBY_VERSION=4.0.6
+ARG RUBY_VERSION=4.0.10
 FROM ruby:${RUBY_VERSION}-alpine3.24 AS base
 
 WORKDIR /rails
@@ -51,7 +51,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
     yarn
 
 # Install Gems & Safe Stripping
-COPY Gemfile Gemfile.lock ./
+COPY .ruby-version Gemfile Gemfile.lock ./
 RUN --mount=type=cache,target=/usr/local/bundle/cache \
     --mount=type=cache,target=/root/.bundle \
     bundle config set clean true && \
