@@ -87,7 +87,7 @@ SELECT max(version) FROM schema_migrations;      -- expected to be 2026110620000
 - [ ] Check that `web` came up (`docker compose -f docker-compose.production.yml ps`, and `logs web` for the migration output). The migrations of this release take under a minute on a copy of a recent backup.
 - [ ] Run `bookings:reconcile_statuses` exactly once, with `DEPLOYED_AT` set to the new `web` container's `Created` time, and read the list it prints (see "Deploy step: booking status column", step 2).
 - [ ] Reload the staff dashboards that were open before the deploy (also on kiosks and shared screens). Their live table updates use a stream name that now includes the language, so an open page stops getting updates until it is reloaded.
-- [ ] In the first hour, check the worker logs (`docker compose -f docker-compose.production.yml logs worker`) and the `job_alerts` inbox. The worker is recreated alongside `web`, so a scheduled job can run once before the migrations have finished and fail. Check that such a failure does not repeat after `web` is up.
+- [ ] In the first hour, check the worker logs (`docker compose -f docker-compose.production.yml logs worker`) and the failed jobs in the queue dashboard (`/solid_queue`). The worker is recreated alongside `web`, so a scheduled job can run once before the migrations have finished and fail. Check that such a failure does not repeat after `web` is up.
 - [ ] Check that `membership_expiry` is not loaded after the deploy: `SolidQueue::RecurringTask.where(key: "membership_expiry").exists?` in a console is false. The job is held in this release (see the `membership_expiry` note under "Scheduled tasks"), so no pending membership checkout is closed by it.
 - [ ] Create a training session and change space from the staff app.
 - [ ] Check that the cache database was created and is used (see "Deploy step: own cache database").
@@ -341,21 +341,15 @@ Order:
 
 To go back, set the old value again and restart.
 
-### Failed and overdue job alerts
+### Failed and stuck jobs
 
-The `job_alerts` task (`JobAlertJob`, every 5 minutes, production and staging) mails the maintenance address (the one set on the printer issues page, `Setting.maintenance_email`) when a background job needs attention. It reports, once each:
+Background jobs send no alert mail. Admins review failed and stuck jobs in the queue dashboard (Mission Control, `/solid_queue`):
 
-- a failed execution (job class, queue, error class and ids; never the error message, which is in the queue dashboard);
-- a scheduled execution still waiting 15 minutes after it was due (the dispatcher is not running);
-- a claimed execution that has been running for more than an hour (the job is probably hung).
+- a failed execution shows its job class, queue, error and backtrace, and is retried or discarded there;
+- a scheduled execution still waiting long after it was due means the dispatcher is not running (check the `worker` container);
+- a claimed execution running for much longer than usual is probably hung.
 
-Only the last 24 hours are looked at, and at most 50 items go in one mail (the rest follow on the next run), so setting the address does not mail the whole history. Job arguments are never in the mail. With no address set nothing is mailed and nothing is marked as reported, so the alerts start when an address is set. The mail points at the queue dashboard (`/solid_queue`), where a failed job is retried or discarded.
-
-Each item is marked as reported by a `settings` row, `job_alert:failed:<failed execution id>`, `job_alert:overdue:scheduled:<job id>` or `job_alert:overdue:claimed:<job id>`, with the value `sent`, so running twice, or two runs at once, mails nobody twice. A job that fails again after a retry is a new failed execution and is reported again. If the mail cannot be sent, the marks are removed and the task fails; the next run tries again. The rows are tiny and never pruned.
-
-- To silence the alerts, clear the maintenance address (printer issues page), or remove the `job_alerts` entry from `config/recurring.yml`.
-- To report an item again, delete its row: `Setting.where(key: "job_alert:failed:123").delete_all`. To report everything in the last 24 hours again: `Setting.where("key LIKE 'job_alert:%'").delete_all`.
-- To mark the current failures as reported without mailing them, insert their rows first (`SolidQueue::FailedExecution.pluck(:id).each { |id| Setting.claim("job_alert:failed:#{id}", "sent") }`) and then set the address.
+A failed execution stays in the dashboard until someone retries or discards it. The `settings` rows `job_alert:*` left by the old job alert mails are kept; nothing reads them any more.
 
 ### Bulk mail tasks run by hand
 
