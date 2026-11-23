@@ -18,33 +18,33 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   enable_extension "unaccent"
 
   create_table "action_text_rich_texts", force: :cascade do |t|
-    t.text "body"
-    t.datetime "created_at", null: false
     t.string "name", null: false
-    t.bigint "record_id", null: false
+    t.text "body"
     t.string "record_type", null: false
+    t.bigint "record_id", null: false
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["record_type", "record_id", "name"], name: "index_action_text_rich_texts_uniqueness", unique: true
   end
 
   create_table "active_storage_attachments", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "record_type", null: false
+    t.bigint "record_id", null: false
     t.bigint "blob_id", null: false
     t.datetime "created_at", precision: nil, null: false
-    t.string "name", null: false
-    t.bigint "record_id", null: false
-    t.string "record_type", null: false
     t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
     t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
   end
 
   create_table "active_storage_blobs", force: :cascade do |t|
+    t.string "key", null: false
+    t.string "filename", null: false
+    t.string "content_type"
+    t.text "metadata"
     t.bigint "byte_size", null: false
     t.string "checksum"
-    t.string "content_type"
     t.datetime "created_at", precision: nil, null: false
-    t.string "filename", null: false
-    t.string "key", null: false
-    t.text "metadata"
     t.string "service_name", null: false
     t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
   end
@@ -57,29 +57,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
 
   create_table "announcement_dismisses", force: :cascade do |t|
     t.bigint "announcement_id", null: false
+    t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id", null: false
     t.index ["announcement_id"], name: "index_announcement_dismisses_on_announcement_id"
     t.index ["user_id", "announcement_id"], name: "index_announcement_dismisses_on_user_id_and_announcement_id", unique: true
     t.index ["user_id"], name: "index_announcement_dismisses_on_user_id"
   end
 
   create_table "announcements", id: :serial, force: :cascade do |t|
+    t.text "description"
+    t.string "public_goal"
+    t.integer "user_id"
     t.boolean "active", default: true
     t.datetime "created_at", precision: nil, null: false
-    t.text "description"
-    t.date "end_date"
-    t.string "public_goal"
     t.datetime "updated_at", precision: nil, null: false
-    t.integer "user_id"
+    t.date "end_date"
     t.index ["user_id"], name: "index_announcements_on_user_id"
   end
 
   create_table "answers", id: :serial, force: :cascade do |t|
+    t.integer "question_id"
     t.boolean "correct", default: false
     t.datetime "created_at", precision: nil, null: false
-    t.integer "question_id"
     t.datetime "updated_at", precision: nil, null: false
     t.index ["question_id"], name: "index_answers_on_question_id"
   end
@@ -96,17 +96,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "api_refresh_tokens", force: :cascade do |t|
-    t.datetime "created_at", null: false
+    t.integer "user_id", null: false
+    t.string "token_digest", null: false
+    t.uuid "family_id", null: false
+    t.integer "token_version", default: 0, null: false
     t.datetime "expires_at", null: false
     t.datetime "family_expires_at", null: false
-    t.uuid "family_id", null: false
-    t.datetime "last_used_at"
-    t.bigint "replaced_by_id"
     t.datetime "revoked_at"
-    t.string "token_digest", null: false
-    t.integer "token_version", default: 0, null: false
+    t.bigint "replaced_by_id"
     t.string "user_agent"
-    t.integer "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "last_used_at"
     t.index ["family_id"], name: "index_api_refresh_tokens_on_family_id"
     t.index ["token_digest"], name: "index_api_refresh_tokens_on_token_digest", unique: true
     t.index ["user_id"], name: "index_api_refresh_tokens_on_user_id"
@@ -114,50 +114,50 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "area_options", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil, null: false
     t.string "name"
+    t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
   end
 
   create_table "booking_status_reconciliations", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.bigint "now_booking_status_id", null: false
-    t.datetime "restored_at"
     t.bigint "sub_space_booking_id", null: false
     t.bigint "was_booking_status_id"
+    t.bigint "now_booking_status_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "restored_at"
     t.index ["sub_space_booking_id"], name: "index_booking_status_reconciliations_on_sub_space_booking_id"
   end
 
   create_table "booking_statuses", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.text "description"
     t.string "name", null: false
+    t.text "description"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
   create_table "categories", id: :serial, force: :cascade do |t|
-    t.integer "category_option_id"
-    t.datetime "created_at", precision: nil, null: false
-    t.string "name"
-    t.integer "project_proposal_id"
     t.integer "repository_id"
+    t.string "name"
+    t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
+    t.integer "category_option_id"
+    t.integer "project_proposal_id"
     t.index ["category_option_id"], name: "index_categories_on_category_option_id"
     t.index ["project_proposal_id"], name: "index_categories_on_project_proposal_id"
     t.index ["repository_id"], name: "index_categories_on_repository_id"
   end
 
   create_table "category_options", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil, null: false
     t.string "name"
+    t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
   end
 
   create_table "cc_money_claim_email_resends", force: :cascade do |t|
-    t.integer "admin_id", null: false
     t.integer "cc_money_id", null: false
-    t.datetime "created_at", null: false
+    t.integer "admin_id", null: false
     t.string "email", null: false
+    t.datetime "created_at", null: false
     t.index ["admin_id"], name: "index_cc_money_claim_email_resends_on_admin_id"
     t.index ["cc_money_id"], name: "index_cc_money_claim_email_resends_on_cc_money_id"
   end
@@ -173,18 +173,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "cc_moneys", id: :serial, force: :cascade do |t|
-    t.integer "cc"
-    t.integer "claim_token_generation", default: 0, null: false
-    t.datetime "created_at", precision: nil, null: false
-    t.integer "discount_code_id"
-    t.boolean "legacy_duplicate", default: false, null: false
-    t.boolean "linked", default: true
-    t.integer "order_id"
-    t.integer "proficient_project_id"
-    t.string "purchaser_email"
-    t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
     t.integer "volunteer_task_id"
+    t.integer "cc"
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+    t.integer "proficient_project_id"
+    t.integer "order_id"
+    t.integer "discount_code_id"
+    t.boolean "linked", default: true
+    t.string "purchaser_email"
+    t.integer "claim_token_generation", default: 0, null: false
+    t.boolean "legacy_duplicate", default: false, null: false
     t.index ["discount_code_id"], name: "index_cc_moneys_on_discount_code_id"
     t.index ["order_id"], name: "index_cc_moneys_on_order_id"
     t.index ["proficient_project_id"], name: "index_cc_moneys_on_proficient_project_id"
@@ -194,14 +194,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "certifications", id: :serial, force: :cascade do |t|
-    t.boolean "active", default: true
+    t.integer "user_id"
     t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+    t.integer "training_session_id"
+    t.boolean "active", default: true
     t.string "demotion_reason"
     t.bigint "demotion_staff_id"
     t.string "level"
-    t.integer "training_session_id"
-    t.datetime "updated_at", precision: nil, null: false
-    t.integer "user_id"
     t.string "share_token"
     t.index ["demotion_staff_id"], name: "index_certifications_on_demotion_staff_id"
     t.index ["share_token"], name: "index_certifications_on_share_token", unique: true
@@ -210,148 +210,148 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "chat_messages", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.boolean "is_read", default: false
-    t.bigint "job_order_id"
     t.text "message"
+    t.bigint "job_order_id"
     t.bigint "sender_id"
+    t.boolean "is_read", default: false
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["job_order_id"], name: "index_chat_messages_on_job_order_id"
     t.index ["sender_id"], name: "index_chat_messages_on_sender_id"
   end
 
   create_table "comments", id: :serial, force: :cascade do |t|
-    t.text "content"
-    t.datetime "created_at", precision: nil, null: false
-    t.integer "repository_id"
-    t.datetime "updated_at", precision: nil, null: false
-    t.integer "upvote", default: 0
     t.integer "user_id"
+    t.integer "repository_id"
+    t.text "content"
+    t.integer "upvote", default: 0
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "username"
     t.index ["repository_id"], name: "index_comments_on_repository_id"
     t.index ["user_id"], name: "index_comments_on_user_id"
   end
 
   create_table "contact_infos", force: :cascade do |t|
-    t.string "address"
-    t.datetime "created_at", null: false
-    t.string "email"
     t.string "name"
+    t.string "email"
+    t.string "address"
     t.string "phone_number"
+    t.string "url"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.boolean "show_hours"
     t.bigint "space_id"
-    t.datetime "updated_at", null: false
-    t.string "url"
     t.index ["space_id"], name: "index_contact_infos_on_space_id"
   end
 
   create_table "counter_recount_corrections", force: :cascade do |t|
-    t.string "column_name", null: false
-    t.datetime "created_at", null: false
-    t.integer "new_value", null: false
-    t.integer "old_value"
-    t.bigint "row_id", null: false
-    t.datetime "run_at", null: false
     t.string "table_name", null: false
+    t.bigint "row_id", null: false
+    t.string "column_name", null: false
+    t.integer "old_value"
+    t.integer "new_value", null: false
+    t.datetime "run_at", null: false
+    t.datetime "created_at", null: false
     t.index ["table_name", "row_id"], name: "index_counter_recount_corrections_on_table_name_and_row_id"
-    t.check_constraint "table_name::text = ANY (ARRAY['repositories'::character varying, 'comments'::character varying]::text[])", name: "counter_recount_corrections_table_name_check"
+    t.check_constraint "table_name::text = ANY (ARRAY['repositories'::character varying::text, 'comments'::character varying::text])", name: "counter_recount_corrections_table_name_check"
   end
 
   create_table "coupon_codes", force: :cascade do |t|
-    t.integer "cc_cost", null: false
     t.string "code"
-    t.datetime "created_at", null: false
+    t.integer "cc_cost", null: false
     t.integer "dollar_cost"
-    t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_coupon_codes_on_user_id"
     t.check_constraint "cc_cost >= 0", name: "coupon_codes_cc_cost_non_negative"
   end
 
   create_table "course_names", force: :cascade do |t|
-    t.datetime "created_at", null: false
     t.string "name"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
   create_table "design_day_schedules", force: :cascade do |t|
     t.bigint "design_day_id"
-    t.time "end"
-    t.integer "event_for"
-    t.integer "ordering"
     t.time "start"
+    t.time "end"
+    t.integer "ordering"
     t.string "title_en"
     t.string "title_fr"
+    t.integer "event_for"
     t.index ["design_day_id"], name: "index_design_day_schedules_on_design_day_id"
   end
 
   create_table "design_days", force: :cascade do |t|
     t.date "day"
-    t.boolean "is_live"
     t.string "sheet_key"
+    t.boolean "is_live"
     t.boolean "show_floorplans", default: true
     t.boolean "show_floorplans_day2", default: true
     t.index "(true)", name: "index_design_days_single_row", unique: true
   end
 
   create_table "discount_codes", id: :serial, force: :cascade do |t|
-    t.string "code"
-    t.datetime "created_at", precision: nil, null: false
     t.integer "price_rule_id"
-    t.string "shopify_discount_code_id"
-    t.datetime "updated_at", precision: nil, null: false
-    t.integer "usage_count"
     t.integer "user_id"
+    t.string "shopify_discount_code_id"
+    t.string "code"
+    t.integer "usage_count"
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.index ["price_rule_id"], name: "index_discount_codes_on_price_rule_id"
     t.index ["user_id"], name: "index_discount_codes_on_user_id"
   end
 
   create_table "drop_off_locations", force: :cascade do |t|
-    t.datetime "created_at", null: false
     t.string "name"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
   create_table "equipment", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil, null: false
-    t.string "name"
     t.integer "repository_id"
+    t.string "name"
+    t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.index ["repository_id"], name: "index_equipment_on_repository_id"
   end
 
   create_table "equipment_options", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil, null: false
     t.string "name"
+    t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
   end
 
   create_table "event_assignments", force: :cascade do |t|
-    t.datetime "created_at", null: false
     t.bigint "event_id"
-    t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["event_id"], name: "index_event_assignments_on_event_id"
     t.index ["user_id"], name: "index_event_assignments_on_user_id"
   end
 
   create_table "events", force: :cascade do |t|
-    t.bigint "course_name_id"
-    t.datetime "created_at", null: false
     t.bigint "created_by_id"
-    t.text "description"
-    t.boolean "draft", default: true
-    t.datetime "end_time"
-    t.string "event_type"
-    t.string "google_calendar_id"
-    t.string "google_event_id"
-    t.string "language"
-    t.string "recurrence_rule"
     t.bigint "space_id"
-    t.datetime "start_time"
     t.string "title"
-    t.bigint "training_id"
+    t.text "description"
+    t.datetime "start_time"
+    t.datetime "end_time"
+    t.string "recurrence_rule"
+    t.boolean "draft", default: true
+    t.string "event_type"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "google_event_id"
+    t.bigint "training_id"
+    t.string "language"
+    t.bigint "course_name_id"
+    t.string "google_calendar_id"
     t.bigint "updated_by_id"
     t.index ["course_name_id"], name: "index_events_on_course_name_id"
     t.index ["created_by_id"], name: "index_events_on_created_by_id"
@@ -362,53 +362,53 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "exam_questions", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil, null: false
     t.integer "exam_id"
     t.integer "question_id"
+    t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.index ["exam_id"], name: "index_exam_questions_on_exam_id"
     t.index ["question_id"], name: "index_exam_questions_on_question_id"
   end
 
   create_table "exam_responses", id: :serial, force: :cascade do |t|
+    t.integer "exam_question_id"
     t.integer "answer_id"
     t.boolean "correct"
     t.datetime "created_at", precision: nil, null: false
-    t.integer "exam_question_id"
     t.datetime "updated_at", precision: nil, null: false
     t.index ["answer_id"], name: "index_exam_responses_on_answer_id"
     t.index ["exam_question_id"], name: "index_exam_responses_on_exam_question_id"
   end
 
   create_table "exams", id: :serial, force: :cascade do |t|
+    t.integer "user_id"
     t.string "category"
     t.datetime "created_at", precision: nil, null: false
-    t.datetime "expired_at", precision: nil
-    t.integer "score"
-    t.string "status", default: "not started"
-    t.integer "training_session_id"
     t.datetime "updated_at", precision: nil, null: false
-    t.integer "user_id"
+    t.string "status", default: "not started"
+    t.integer "score"
+    t.integer "training_session_id"
+    t.datetime "expired_at", precision: nil
     t.index ["training_session_id"], name: "index_exams_on_training_session_id"
     t.index ["user_id"], name: "index_exams_on_user_id"
   end
 
   create_table "faqs", force: :cascade do |t|
-    t.text "body_en"
-    t.text "body_fr"
-    t.datetime "created_at", null: false
-    t.integer "order"
     t.string "title_en"
     t.string "title_fr"
+    t.text "body_en"
+    t.text "body_fr"
+    t.integer "order"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
   create_table "friendly_id_slugs", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil
-    t.string "scope"
     t.string "slug", null: false
     t.integer "sluggable_id", null: false
     t.string "sluggable_type", limit: 50
+    t.string "scope"
+    t.datetime "created_at", precision: nil
     t.index ["slug", "sluggable_type", "scope"], name: "index_friendly_id_slugs_on_slug_and_sluggable_type_and_scope", unique: true
     t.index ["slug", "sluggable_type"], name: "index_friendly_id_slugs_on_slug_and_sluggable_type"
     t.index ["sluggable_id"], name: "index_friendly_id_slugs_on_sluggable_id"
@@ -417,146 +417,146 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
 
   create_table "google_calendar_channels", force: :cascade do |t|
     t.string "channel_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "expires_at", null: false
     t.string "resource_id", null: false
-    t.string "sync_token"
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "sync_token"
     t.index ["channel_id"], name: "index_google_calendar_channels_on_channel_id", unique: true
   end
 
   create_table "google_calendar_pending_changes", force: :cascade do |t|
     t.string "action", null: false
-    t.integer "attempts", default: 0, null: false
-    t.string "calendar_id"
-    t.datetime "created_at", null: false
     t.bigint "event_id"
     t.string "google_event_id"
-    t.bigint "shadowing_hour_id"
+    t.string "calendar_id"
+    t.integer "attempts", default: 0, null: false
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "shadowing_hour_id"
     t.index ["action", "event_id", "google_event_id", "shadowing_hour_id"], name: "index_google_calendar_pending_changes_identity", unique: true, nulls_not_distinct: true
     t.check_constraint "action::text = 'shadow_push'::text AND shadowing_hour_id IS NOT NULL AND event_id IS NULL OR action::text <> 'shadow_push'::text AND shadowing_hour_id IS NULL AND event_id IS NOT NULL", name: "google_calendar_pending_changes_subject_check"
-    t.check_constraint "action::text = ANY (ARRAY['push'::character varying, 'remove'::character varying, 'shadow_push'::character varying]::text[])", name: "google_calendar_pending_changes_action_check"
+    t.check_constraint "action::text = ANY (ARRAY['push'::character varying::text, 'remove'::character varying::text, 'shadow_push'::character varying::text])", name: "google_calendar_pending_changes_action_check"
   end
 
   create_table "helps", force: :cascade do |t|
-    t.string "app_version"
-    t.datetime "created_at", null: false
-    t.string "email"
-    t.datetime "filed_at"
-    t.datetime "filing_claimed_at"
     t.string "gh_issue_number"
-    t.datetime "mailed_at"
-    t.datetime "mailing_claimed_at"
-    t.string "name"
-    t.integer "resends", default: 0, null: false
-    t.boolean "share_email"
-    t.string "source"
-    t.string "subject"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.string "name"
+    t.string "email"
+    t.string "subject"
+    t.boolean "share_email"
+    t.string "app_version"
+    t.string "source"
+    t.datetime "filed_at"
+    t.datetime "mailed_at"
+    t.datetime "filing_claimed_at"
+    t.datetime "mailing_claimed_at"
+    t.integer "resends", default: 0, null: false
     t.index ["user_id"], name: "index_helps_on_user_id"
   end
 
   create_table "job_options", force: :cascade do |t|
-    t.datetime "created_at", null: false
+    t.string "name", null: false
     t.text "description"
+    t.boolean "need_files", default: false, null: false
     t.decimal "fee", precision: 10, scale: 2, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.boolean "is_deleted", default: false, null: false
     t.boolean "is_job_wide", default: false, null: false
-    t.string "name", null: false
-    t.boolean "need_files", default: false, null: false
-    t.datetime "updated_at", null: false
   end
 
   create_table "job_options_types", id: false, force: :cascade do |t|
-    t.bigint "job_option_id", null: false
     t.bigint "job_type_id", null: false
+    t.bigint "job_option_id", null: false
     t.index ["job_option_id"], name: "index_job_options_types_on_job_option_id"
     t.index ["job_type_id"], name: "index_job_options_types_on_job_type_id"
   end
 
   create_table "job_order_messages", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.text "message"
     t.text "name"
+    t.text "message"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
   create_table "job_order_options", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.bigint "job_option_id", null: false
     t.bigint "job_order_id", null: false
+    t.bigint "job_option_id", null: false
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["job_option_id"], name: "index_job_order_options_on_job_option_id"
     t.index ["job_order_id"], name: "index_job_order_options_on_job_order_id"
   end
 
   create_table "job_order_quote_options", force: :cascade do |t|
+    t.bigint "job_option_id", null: false
     t.integer "amount", null: false
     t.datetime "created_at", null: false
-    t.bigint "job_option_id", null: false
-    t.bigint "job_order_quote_id"
     t.datetime "updated_at", null: false
+    t.bigint "job_order_quote_id"
     t.index ["job_option_id"], name: "index_job_order_quote_options_on_job_option_id"
     t.index ["job_order_quote_id"], name: "index_job_order_quote_options_on_job_order_quote_id"
   end
 
   create_table "job_order_quote_services", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.bigint "job_order_quote_id"
     t.bigint "job_service_id", null: false
-    t.decimal "per_unit", precision: 10, scale: 2, null: false
     t.decimal "quantity", precision: 10, scale: 2, null: false
+    t.decimal "per_unit", precision: 10, scale: 2, null: false
+    t.bigint "job_order_quote_id"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["job_order_quote_id"], name: "index_job_order_quote_services_on_job_order_quote_id"
     t.index ["job_service_id"], name: "index_job_order_quote_services_on_job_service_id"
   end
 
   create_table "job_order_quote_type_extras", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.bigint "job_order_quote_id"
     t.bigint "job_type_extra_id"
+    t.bigint "job_order_quote_id"
     t.decimal "price", precision: 10, scale: 2
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["job_order_quote_id"], name: "index_job_order_quote_type_extras_on_job_order_quote_id"
     t.index ["job_type_extra_id"], name: "index_job_order_quote_type_extras_on_job_type_extra_id"
   end
 
   create_table "job_order_quotes", force: :cascade do |t|
-    t.datetime "created_at", null: false
     t.decimal "service_fee", precision: 10, scale: 2, null: false
-    t.string "stripe_transaction_id"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "stripe_transaction_id"
   end
 
   create_table "job_order_statuses", force: :cascade do |t|
-    t.datetime "created_at", null: false
     t.bigint "job_order_id"
     t.bigint "job_status_id"
-    t.string "reason"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.string "reason"
     t.index ["job_order_id"], name: "index_job_order_statuses_on_job_order_id"
     t.index ["job_status_id"], name: "index_job_order_statuses_on_job_status_id"
     t.index ["user_id"], name: "index_job_order_statuses_on_user_id"
   end
 
   create_table "job_orders", force: :cascade do |t|
-    t.bigint "assigned_staff_id"
-    t.text "comments"
-    t.datetime "created_at", null: false
-    t.boolean "is_deleted", default: false
-    t.bigint "job_order_quote_id"
-    t.bigint "job_service_group_id"
-    t.bigint "job_type_id"
-    t.bigint "legacy_print_order_id"
-    t.string "shopify_draft_order_fingerprint"
-    t.string "shopify_draft_order_id"
-    t.text "staff_comments"
-    t.datetime "updated_at", null: false
-    t.text "user_comments"
     t.bigint "user_id"
+    t.bigint "job_type_id"
+    t.bigint "job_order_quote_id"
+    t.text "staff_comments"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "job_service_group_id"
+    t.text "comments"
+    t.text "user_comments"
+    t.boolean "is_deleted", default: false
+    t.string "shopify_draft_order_id"
+    t.bigint "assigned_staff_id"
+    t.string "shopify_draft_order_fingerprint"
+    t.bigint "legacy_print_order_id"
     t.index ["assigned_staff_id"], name: "index_job_orders_on_assigned_staff_id"
     t.index ["job_order_quote_id"], name: "index_job_orders_on_job_order_quote_id"
     t.index ["job_service_group_id"], name: "index_job_orders_on_job_service_group_id"
@@ -573,66 +573,66 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "job_quote_line_items", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.string "description", null: false
     t.bigint "job_order_id", null: false
+    t.string "description", null: false
     t.decimal "price", precision: 10, scale: 2
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["job_order_id"], name: "index_job_quote_line_items_on_job_order_id"
   end
 
   create_table "job_service_groups", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.text "description"
-    t.boolean "is_deleted", default: false, null: false
-    t.bigint "job_type_id", null: false
-    t.boolean "multiple", default: false
     t.string "name", null: false
+    t.text "description"
+    t.boolean "multiple", default: false
     t.integer "text_field", default: 0
+    t.bigint "job_type_id", null: false
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "is_deleted", default: false, null: false
     t.index ["job_type_id"], name: "index_job_service_groups_on_job_type_id"
   end
 
   create_table "job_services", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.text "description"
-    t.decimal "external_price", precision: 10, scale: 2
-    t.decimal "internal_price", precision: 10, scale: 2
-    t.boolean "is_deleted", default: false, null: false
-    t.bigint "job_order_id"
-    t.bigint "job_service_group_id", null: false
     t.string "name", null: false
-    t.boolean "required", default: false, null: false
+    t.text "description"
     t.string "unit"
+    t.boolean "required", default: false, null: false
+    t.decimal "internal_price", precision: 10, scale: 2
+    t.decimal "external_price", precision: 10, scale: 2
+    t.bigint "job_service_group_id", null: false
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "job_order_id"
     t.boolean "user_created", default: false
+    t.boolean "is_deleted", default: false, null: false
     t.index ["job_order_id"], name: "index_job_services_on_job_order_id"
     t.index ["job_service_group_id"], name: "index_job_services_on_job_service_group_id"
   end
 
   create_table "job_statuses", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.text "description"
-    t.string "description_fr"
     t.string "name", null: false
-    t.string "name_fr"
+    t.text "description"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "name_fr"
+    t.string "description_fr"
   end
 
   create_table "job_task_options", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.bigint "job_option_id", null: false
     t.bigint "job_task_id", null: false
+    t.bigint "job_option_id", null: false
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["job_option_id"], name: "index_job_task_options_on_job_option_id"
     t.index ["job_task_id"], name: "index_job_task_options_on_job_task_id"
   end
 
   create_table "job_task_quote_options", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.bigint "job_option_id", null: false
     t.bigint "job_task_quote_id", null: false
+    t.bigint "job_option_id", null: false
     t.decimal "price", precision: 10, scale: 2
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["job_option_id"], name: "index_job_task_quote_options_on_job_option_id"
     t.index ["job_task_quote_id", "job_option_id"], name: "index_job_task_quote_options_on_quote_and_option", unique: true
@@ -640,37 +640,37 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "job_task_quote_repairs", primary_key: "job_task_quote_id", force: :cascade do |t|
-    t.datetime "archived_at", default: -> { "now()" }, null: false
-    t.decimal "new_service_price", precision: 10, scale: 2
-    t.decimal "new_service_quantity", precision: 10, scale: 4
     t.decimal "old_service_price", precision: 10, scale: 2
     t.decimal "old_service_quantity", precision: 10, scale: 4
+    t.decimal "new_service_price", precision: 10, scale: 2
+    t.decimal "new_service_quantity", precision: 10, scale: 4
     t.jsonb "row_data", null: false
+    t.datetime "archived_at", default: -> { "now()" }, null: false
   end
 
   create_table "job_task_quotes", force: :cascade do |t|
-    t.datetime "created_at", null: false
     t.bigint "job_task_id", null: false
     t.decimal "price", precision: 10, scale: 2
-    t.decimal "service_price", precision: 10, scale: 2
     t.decimal "service_quantity", precision: 10, scale: 4, default: "1.0"
+    t.decimal "service_price", precision: 10, scale: 2
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["job_task_id"], name: "index_job_task_quotes_on_job_task_id"
   end
 
   create_table "job_task_restorations", primary_key: "job_task_id", id: :bigint, default: nil, force: :cascade do |t|
-    t.datetime "archived_at", default: -> { "now()" }, null: false
     t.bigint "job_task_quote_id"
-    t.jsonb "quote_row"
     t.jsonb "task_row", null: false
+    t.jsonb "quote_row"
+    t.datetime "archived_at", default: -> { "now()" }, null: false
   end
 
   create_table "job_tasks", force: :cascade do |t|
-    t.datetime "created_at", null: false
     t.bigint "job_order_id", null: false
-    t.bigint "job_service_id"
     t.bigint "job_type_id"
+    t.bigint "job_service_id"
     t.string "title", default: ""
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["job_order_id"], name: "index_job_tasks_on_job_order_id"
     t.index ["job_service_id"], name: "index_job_tasks_on_job_service_id"
@@ -678,48 +678,47 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "job_type_extras", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.string "description"
     t.bigint "job_type_id"
     t.string "name"
     t.decimal "price", precision: 10, scale: 2
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "description"
     t.index ["job_type_id"], name: "index_job_type_extras_on_job_type_id"
   end
 
   create_table "job_types", force: :cascade do |t|
-    t.text "comments"
-    t.datetime "created_at", null: false
-    t.text "description"
-    t.text "file_description"
-    t.string "file_label", default: "File"
-    t.boolean "is_deleted", default: false, null: false
-    t.boolean "multiple_files", default: false, null: false
     t.string "name", null: false
+    t.text "description"
+    t.text "comments"
+    t.boolean "multiple_files", default: false, null: false
+    t.string "file_label", default: "File"
+    t.text "file_description"
     t.decimal "service_fee", precision: 10, scale: 2
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "is_deleted", default: false, null: false
   end
 
   create_table "key_certifications", force: :cascade do |t|
+    t.bigint "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id"
     t.index ["user_id"], name: "index_key_certifications_on_user_id"
   end
 
   create_table "key_requests", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.text "denial_reason"
-    t.string "emergency_contact"
-    t.string "emergency_contact_phone_number"
-    t.string "emergency_contact_relation"
+    t.bigint "user_id"
+    t.bigint "supervisor_id"
+    t.bigint "space_id"
+    t.string "student_number"
     t.string "phone_number"
+    t.string "emergency_contact"
+    t.string "emergency_contact_relation"
+    t.string "emergency_contact_phone_number"
+    t.integer "user_status"
+    t.integer "status"
     t.string "question_1"
-    t.string "question_10"
-    t.string "question_11"
-    t.string "question_12"
-    t.string "question_13"
-    t.string "question_14"
     t.string "question_2"
     t.string "question_3"
     t.string "question_4"
@@ -728,60 +727,49 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
     t.string "question_7"
     t.string "question_8"
     t.string "question_9"
-    t.boolean "read_agreement", default: false, null: false
+    t.string "question_10"
+    t.string "question_11"
+    t.string "question_12"
+    t.string "question_13"
+    t.string "question_14"
     t.boolean "read_lab_rules", default: false, null: false
     t.boolean "read_policies", default: false, null: false
-    t.bigint "space_id"
-    t.integer "status"
-    t.string "student_number"
-    t.bigint "supervisor_id"
+    t.boolean "read_agreement", default: false, null: false
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id"
-    t.integer "user_status"
+    t.text "denial_reason"
     t.index ["space_id"], name: "index_key_requests_on_space_id"
     t.index ["supervisor_id"], name: "index_key_requests_on_supervisor_id"
     t.index ["user_id"], name: "index_key_requests_on_user_id"
   end
 
   create_table "key_transactions", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.decimal "deposit_amount", precision: 5, scale: 2
-    t.date "deposit_return_date"
+    t.bigint "user_id"
     t.bigint "key_id"
     t.date "return_date"
+    t.date "deposit_return_date"
+    t.decimal "deposit_amount", precision: 5, scale: 2
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id"
     t.index ["key_id"], name: "index_key_transactions_on_key_id"
     t.index ["key_id"], name: "index_key_transactions_on_key_id_open", unique: true, where: "(return_date IS NULL)"
     t.index ["user_id"], name: "index_key_transactions_on_user_id"
   end
 
   create_table "keys", force: :cascade do |t|
-    t.string "additional_info", default: ""
-    t.datetime "created_at", null: false
-    t.string "custom_keycode"
-    t.integer "key_type", default: 0
-    t.string "number"
-    t.bigint "space_id"
-    t.integer "status", default: 0
-    t.bigint "supervisor_id"
-    t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.bigint "supervisor_id"
+    t.bigint "space_id"
+    t.string "number"
+    t.string "custom_keycode"
+    t.integer "status", default: 0
+    t.integer "key_type", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "additional_info", default: ""
     t.index ["space_id"], name: "index_keys_on_space_id"
     t.index ["supervisor_id"], name: "index_keys_on_supervisor_id"
     t.index ["user_id"], name: "index_keys_on_user_id"
-  end
-
-  create_table "lab_sessions", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil, null: false
-    t.string "mac_address"
-    t.datetime "sign_in_time", precision: nil
-    t.datetime "sign_out_time", precision: nil
-    t.integer "space_id"
-    t.datetime "updated_at", precision: nil, null: false
-    t.integer "user_id"
-    t.index ["space_id"], name: "index_lab_sessions_on_space_id"
-    t.index ["user_id"], name: "index_lab_sessions_on_user_id"
   end
 
   create_table "kiosk_sign_events", force: :cascade do |t|
@@ -794,44 +782,56 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
     t.index ["created_at"], name: "index_kiosk_sign_events_on_created_at"
     t.index ["space_id"], name: "index_kiosk_sign_events_on_space_id"
     t.index ["visitor_id"], name: "index_kiosk_sign_events_on_visitor_id"
-    t.check_constraint "action::text = ANY (ARRAY['sign_in'::character varying, 'sign_out'::character varying]::text[])", name: "kiosk_sign_events_action_check"
+    t.check_constraint "action::text = ANY (ARRAY['sign_in'::character varying::text, 'sign_out'::character varying::text])", name: "kiosk_sign_events_action_check"
+  end
+
+  create_table "lab_sessions", id: :serial, force: :cascade do |t|
+    t.integer "user_id"
+    t.datetime "sign_in_time", precision: nil
+    t.datetime "sign_out_time", precision: nil
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+    t.string "mac_address"
+    t.integer "space_id"
+    t.index ["space_id"], name: "index_lab_sessions_on_space_id"
+    t.index ["user_id"], name: "index_lab_sessions_on_user_id"
   end
 
   create_table "learning_module_tracks", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.bigint "learning_module_id"
-    t.jsonb "scorm_state"
     t.string "status", default: "In progress"
-    t.datetime "updated_at", null: false
+    t.bigint "learning_module_id"
     t.bigint "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.jsonb "scorm_state"
     t.index ["learning_module_id"], name: "index_learning_module_tracks_on_learning_module_id"
     t.index ["user_id", "learning_module_id"], name: "index_learning_module_tracks_on_user_and_learning_module", unique: true
   end
 
   create_table "learning_module_tracks_merged", force: :cascade do |t|
-    t.datetime "archived_at", default: -> { "now()" }, null: false
-    t.jsonb "keeper_after", null: false
-    t.jsonb "keeper_before", null: false
-    t.bigint "keeper_id", null: false
     t.bigint "merged_id", null: false
-    t.jsonb "row_data", null: false
+    t.bigint "keeper_id", null: false
     t.text "source", null: false
+    t.jsonb "row_data", null: false
+    t.jsonb "keeper_before", null: false
+    t.jsonb "keeper_after", null: false
+    t.datetime "archived_at", default: -> { "now()" }, null: false
     t.index ["merged_id"], name: "index_learning_module_tracks_merged_on_merged_id", unique: true
   end
 
   create_table "learning_modules", force: :cascade do |t|
-    t.datetime "created_at", null: false
+    t.integer "training_id"
+    t.string "title"
     t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.string "level", default: "Beginner"
     t.integer "order"
-    t.string "scorm_entry_point"
     t.string "scorm_prefix"
+    t.string "scorm_entry_point"
     t.integer "scorm_status", default: 0
-    t.string "shortcut_name"
     t.string "subskill"
-    t.string "title"
-    t.integer "training_id"
-    t.datetime "updated_at", null: false
+    t.string "shortcut_name"
     t.datetime "scorm_status_changed_at"
     t.string "scorm_error"
     t.index ["shortcut_name"], name: "index_learning_modules_on_shortcut_name", unique: true
@@ -839,35 +839,35 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "likes", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil, null: false
-    t.integer "repository_id"
-    t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.integer "repository_id"
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.index ["repository_id"], name: "index_likes_on_repository_id"
-    t.index ["user_id"], name: "index_likes_on_user_id"
     t.index ["user_id", "repository_id"], name: "index_likes_on_user_id_and_repository_id", unique: true
+    t.index ["user_id"], name: "index_likes_on_user_id"
   end
 
   create_table "locker_options", force: :cascade do |t|
-    t.datetime "created_at", null: false
     t.string "name"
-    t.datetime "updated_at", null: false
     t.string "value"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "locker_payments", force: :cascade do |t|
-    t.decimal "amount", precision: 10, scale: 2
-    t.datetime "created_at", null: false
-    t.string "currency"
-    t.string "hold_reason"
     t.bigint "locker_rental_id", null: false
-    t.decimal "order_total", precision: 10, scale: 2
+    t.string "shopify_order_id", null: false
     t.datetime "paid_at", null: false
-    t.string "resolution_note"
+    t.decimal "amount", precision: 10, scale: 2
+    t.decimal "order_total", precision: 10, scale: 2
+    t.string "currency"
+    t.string "status", null: false
+    t.string "hold_reason"
     t.datetime "resolved_at"
     t.bigint "resolved_by_id"
-    t.string "shopify_order_id", null: false
-    t.string "status", null: false
+    t.string "resolution_note"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "ledger_entry_id"
     t.datetime "reversed_at"
@@ -877,165 +877,165 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
     t.index ["resolved_by_id"], name: "index_locker_payments_on_resolved_by_id"
     t.index ["shopify_order_id"], name: "index_locker_payments_on_shopify_order_id", unique: true
     t.check_constraint "(status::text = 'held'::text) = (resolved_at IS NULL)", name: "locker_payments_resolved_unless_held_check"
-    t.check_constraint "hold_reason IS NULL OR (hold_reason::text = ANY (ARRAY['renter_ineligible'::character varying, 'rental_cancelled'::character varying, 'not_activatable'::character varying, 'already_paid'::character varying]::text[]))", name: "locker_payments_hold_reason_check"
+    t.check_constraint "hold_reason IS NULL OR (hold_reason::text = ANY (ARRAY['renter_ineligible'::character varying::text, 'rental_cancelled'::character varying::text, 'not_activatable'::character varying::text, 'already_paid'::character varying::text]))", name: "locker_payments_hold_reason_check"
     t.check_constraint "status::text <> 'held'::text OR hold_reason IS NOT NULL", name: "locker_payments_held_has_reason_check"
-    t.check_constraint "status::text = ANY (ARRAY['applied'::character varying, 'held'::character varying, 'refunded'::character varying, 'dismissed'::character varying]::text[])", name: "locker_payments_status_check"
+    t.check_constraint "status::text = ANY (ARRAY['applied'::character varying::text, 'held'::character varying::text, 'refunded'::character varying::text, 'dismissed'::character varying::text])", name: "locker_payments_status_check"
   end
 
   create_table "locker_rentals", force: :cascade do |t|
-    t.datetime "cancelled_at"
-    t.boolean "contacted_for_clearance", default: false, null: false
-    t.bigint "course_name_id"
+    t.bigint "rented_by_id"
+    t.string "state"
+    t.string "notes"
+    t.datetime "owned_until"
     t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "shopify_draft_order_id"
+    t.string "requested_as"
+    t.datetime "paid_at"
     t.bigint "decided_by_id"
     t.bigint "locker_id"
-    t.string "notes"
-    t.datetime "notified_of_cancellation_at"
-    t.datetime "owned_until"
-    t.datetime "paid_at"
-    t.bigint "preferred_locker_id"
-    t.bigint "rented_by_id"
-    t.string "requested_as"
+    t.bigint "course_name_id"
     t.string "section_name"
-    t.datetime "sent_to_checkout_at"
-    t.string "shopify_draft_order_id"
-    t.string "staff_notes"
-    t.string "state"
     t.string "team_name"
-    t.datetime "updated_at", null: false
+    t.bigint "preferred_locker_id"
+    t.datetime "cancelled_at"
+    t.datetime "sent_to_checkout_at"
+    t.datetime "notified_of_cancellation_at"
+    t.string "staff_notes"
+    t.boolean "contacted_for_clearance", default: false, null: false
     t.index ["course_name_id"], name: "index_locker_rentals_on_course_name_id"
     t.index ["decided_by_id"], name: "index_locker_rentals_on_decided_by_id"
     t.index ["locker_id"], name: "index_locker_rentals_on_locker_id"
-    t.index ["locker_id"], name: "index_locker_rentals_on_locker_id_reserved", unique: true, where: "((state)::text = ANY ((ARRAY['await_payment'::character varying, 'active'::character varying])::text[]))"
+    t.index ["locker_id"], name: "index_locker_rentals_on_locker_id_reserved", unique: true, where: "((state)::text = ANY (ARRAY[('await_payment'::character varying)::text, ('active'::character varying)::text]))"
     t.index ["preferred_locker_id"], name: "index_locker_rentals_on_preferred_locker_id"
     t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"
   end
 
   create_table "locker_sizes", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.string "shopify_gid"
     t.string "size"
+    t.string "shopify_gid"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
   create_table "lockers", force: :cascade do |t|
-    t.string "audience", default: "general"
+    t.string "specifier"
     t.boolean "available", default: true, null: false
     t.datetime "created_at", null: false
-    t.bigint "locker_size_id"
-    t.text "notes"
-    t.string "specifier"
-    t.boolean "staff_only"
     t.datetime "updated_at", null: false
+    t.bigint "locker_size_id"
+    t.boolean "staff_only"
+    t.text "notes"
+    t.string "audience", default: "general"
     t.index ["locker_size_id"], name: "index_lockers_on_locker_size_id"
     t.index ["specifier"], name: "index_lockers_on_specifier"
   end
 
   create_table "membership_duplicate_closures", force: :cascade do |t|
-    t.datetime "closed_at", default: -> { "now()" }, null: false
-    t.bigint "kept_membership_id", null: false
     t.bigint "membership_id", null: false
-    t.datetime "marked_updated_at", null: false
+    t.bigint "kept_membership_id", null: false
+    t.string "shopify_draft_order_id"
     t.string "previous_status", null: false
     t.datetime "previous_updated_at", null: false
+    t.datetime "marked_updated_at", null: false
+    t.datetime "closed_at", default: -> { "now()" }, null: false
     t.datetime "restored_at"
-    t.string "shopify_draft_order_id"
     t.index ["kept_membership_id"], name: "index_membership_duplicate_closures_on_kept_membership_id"
     t.index ["membership_id"], name: "index_membership_duplicate_closures_open", unique: true, where: "(restored_at IS NULL)"
   end
 
   create_table "membership_tiers", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.integer "duration", null: false
-    t.decimal "external_price", precision: 8, scale: 2, default: "0.0", null: false
-    t.boolean "hidden", default: false, null: false
-    t.decimal "internal_price", precision: 8, scale: 2, default: "0.0", null: false
     t.string "title_en", null: false
     t.string "title_fr", null: false
+    t.integer "duration", null: false
+    t.decimal "internal_price", precision: 8, scale: 2, default: "0.0", null: false
+    t.decimal "external_price", precision: 8, scale: 2, default: "0.0", null: false
+    t.boolean "hidden", default: false, null: false
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
   create_table "memberships", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "end_date"
-    t.bigint "membership_tier_id"
-    t.string "shopify_draft_order_id"
-    t.datetime "start_date"
-    t.string "status", default: "pending"
-    t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.datetime "start_date"
+    t.datetime "end_date"
+    t.string "shopify_draft_order_id"
+    t.string "status", default: "pending"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "membership_tier_id"
     t.index ["membership_tier_id"], name: "index_memberships_on_membership_tier_id"
     t.index ["user_id"], name: "index_memberships_on_user_id"
   end
 
   create_table "nullified_references", force: :cascade do |t|
-    t.datetime "archived_at", default: -> { "now()" }, null: false
-    t.text "column_name", null: false
     t.text "migration_version", null: false
-    t.bigint "new_value"
-    t.bigint "old_value"
-    t.jsonb "row_data", null: false
-    t.bigint "row_id"
     t.text "table_name", null: false
+    t.bigint "row_id"
+    t.text "column_name", null: false
+    t.bigint "old_value"
+    t.bigint "new_value"
+    t.jsonb "row_data", null: false
+    t.datetime "archived_at", default: -> { "now()" }, null: false
   end
 
   create_table "opening_hours", force: :cascade do |t|
-    t.integer "closed_all_week", default: 0
     t.bigint "contact_info_id"
     t.datetime "created_at", null: false
-    t.integer "friday_closed_all_day", default: 0
-    t.time "friday_closing"
-    t.time "friday_opening"
-    t.integer "monday_closed_all_day", default: 0
-    t.time "monday_closing"
-    t.time "monday_opening"
-    t.text "notes_en"
-    t.text "notes_fr"
-    t.integer "saturday_closed_all_day", default: 0
-    t.time "saturday_closing"
-    t.time "saturday_opening"
-    t.integer "sunday_closed_all_day", default: 0
-    t.time "sunday_closing"
-    t.time "sunday_opening"
+    t.datetime "updated_at", null: false
     t.string "target_en"
     t.string "target_fr"
-    t.integer "thursday_closed_all_day", default: 0
-    t.time "thursday_closing"
-    t.time "thursday_opening"
-    t.integer "tuesday_closed_all_day", default: 0
-    t.time "tuesday_closing"
+    t.time "sunday_opening"
+    t.time "sunday_closing"
+    t.integer "sunday_closed_all_day", default: 0
+    t.time "monday_opening"
+    t.time "monday_closing"
+    t.integer "monday_closed_all_day", default: 0
     t.time "tuesday_opening"
-    t.datetime "updated_at", null: false
-    t.integer "wednesday_closed_all_day", default: 0
-    t.time "wednesday_closing"
+    t.time "tuesday_closing"
+    t.integer "tuesday_closed_all_day", default: 0
     t.time "wednesday_opening"
+    t.time "wednesday_closing"
+    t.integer "wednesday_closed_all_day", default: 0
+    t.time "thursday_opening"
+    t.time "thursday_closing"
+    t.integer "thursday_closed_all_day", default: 0
+    t.time "friday_opening"
+    t.time "friday_closing"
+    t.integer "friday_closed_all_day", default: 0
+    t.time "saturday_opening"
+    t.time "saturday_closing"
+    t.integer "saturday_closed_all_day", default: 0
+    t.integer "closed_all_week", default: 0
+    t.text "notes_en"
+    t.text "notes_fr"
     t.index ["contact_info_id"], name: "index_opening_hours_on_contact_info_id"
   end
 
   create_table "order_items", id: :serial, force: :cascade do |t|
-    t.text "admin_comments", default: ""
-    t.datetime "created_at", precision: nil, null: false
-    t.integer "order_id"
     t.integer "proficient_project_id"
-    t.integer "quantity"
-    t.string "status", default: "In progress"
-    t.decimal "total_price", precision: 12, scale: 3
+    t.integer "order_id"
     t.decimal "unit_price", precision: 12, scale: 3
+    t.decimal "total_price", precision: 12, scale: 3
+    t.integer "quantity"
+    t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
+    t.string "status", default: "In progress"
     t.text "user_comments", default: ""
+    t.text "admin_comments", default: ""
   end
 
   create_table "order_statuses", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil, null: false
     t.string "name"
+    t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
   end
 
   create_table "orders", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil, null: false
     t.integer "order_status_id"
     t.decimal "subtotal", precision: 12, scale: 3
     t.decimal "total", precision: 12, scale: 3
+    t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
     t.index ["user_id"], name: "index_orders_on_user_id"
@@ -1061,7 +1061,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
     t.index ["reference_type", "reference_id"], name: "index_payment_checkouts_on_reference"
     t.index ["reference_type", "reference_id"], name: "index_payment_checkouts_one_open_per_reference", unique: true, where: "((status)::text = 'open'::text)"
     t.check_constraint "status::text <> 'paid'::text OR provider_id IS NOT NULL", name: "payment_checkouts_paid_has_provider_id_check"
-    t.check_constraint "status::text = ANY (ARRAY['open'::character varying, 'paid'::character varying, 'void'::character varying]::text[])", name: "payment_checkouts_status_check"
+    t.check_constraint "status::text = ANY (ARRAY['open'::character varying::text, 'paid'::character varying::text, 'void'::character varying::text])", name: "payment_checkouts_status_check"
   end
 
   create_table "payment_ledger_backfills", primary_key: "payment_ledger_entry_id", id: :bigint, default: nil, force: :cascade do |t|
@@ -1084,24 +1084,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
     t.index ["reversed_entry_id"], name: "index_payment_ledger_entries_on_reversed_entry_id", unique: true
     t.check_constraint "(kind::text = 'reversal'::text) = (reversed_entry_id IS NOT NULL)", name: "payment_ledger_entries_reversal_has_entry_check"
     t.check_constraint "amount IS NULL OR amount >= 0::numeric", name: "payment_ledger_entries_amount_check"
-    t.check_constraint "kind::text = ANY (ARRAY['payment'::character varying, 'reversal'::character varying]::text[])", name: "payment_ledger_entries_kind_check"
+    t.check_constraint "kind::text = ANY (ARRAY['payment'::character varying::text, 'reversal'::character varying::text])", name: "payment_ledger_entries_kind_check"
   end
 
   create_table "photos", id: :serial, force: :cascade do |t|
+    t.integer "repository_id"
     t.datetime "created_at", precision: nil, null: false
-    t.integer "height"
-    t.string "image_content_type"
+    t.datetime "updated_at", precision: nil, null: false
     t.string "image_file_name"
+    t.string "image_content_type"
     t.integer "image_file_size"
     t.datetime "image_updated_at", precision: nil
-    t.bigint "learning_module_id"
-    t.integer "position", default: 0, null: false
-    t.integer "proficient_project_id"
-    t.integer "project_proposal_id"
-    t.integer "repository_id"
-    t.datetime "updated_at", precision: nil, null: false
-    t.integer "volunteer_task_id"
+    t.integer "height"
     t.integer "width"
+    t.integer "proficient_project_id"
+    t.bigint "learning_module_id"
+    t.integer "project_proposal_id"
+    t.integer "volunteer_task_id"
+    t.integer "position", default: 0, null: false
     t.index ["learning_module_id"], name: "index_photos_on_learning_module_id"
     t.index ["proficient_project_id"], name: "index_photos_on_proficient_project_id"
     t.index ["project_proposal_id"], name: "index_photos_on_project_proposal_id"
@@ -1110,86 +1110,86 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "pi_readers", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil, null: false
-    t.string "pi_location"
     t.string "pi_mac_address"
-    t.integer "space_id"
+    t.string "pi_location"
+    t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
+    t.integer "space_id"
     t.index ["space_id"], name: "index_pi_readers_on_space_id"
   end
 
   create_table "popular_hours", force: :cascade do |t|
+    t.bigint "space_id"
+    t.float "mean", default: 0.0
+    t.integer "hour"
+    t.integer "day"
     t.integer "count", default: 0
     t.datetime "created_at", null: false
-    t.integer "day"
-    t.integer "hour"
-    t.float "mean", default: 0.0
-    t.float "previous_mean", default: 0.0
-    t.bigint "space_id"
     t.datetime "updated_at", null: false
+    t.float "previous_mean", default: 0.0
     t.index ["space_id"], name: "index_popular_hours_on_space_id"
   end
 
   create_table "price_rules", id: :serial, force: :cascade do |t|
-    t.integer "cc"
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "expired_at", precision: nil
     t.string "shopify_price_rule_id"
     t.string "title"
-    t.datetime "updated_at", precision: nil, null: false
-    t.integer "usage_limit"
     t.integer "value"
+    t.integer "cc"
+    t.integer "usage_limit"
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "expired_at", precision: nil
   end
 
   create_table "print_orders", id: :serial, force: :cascade do |t|
+    t.integer "user_id"
     t.boolean "approved"
-    t.boolean "clean_part"
+    t.boolean "printed"
     t.text "comments"
-    t.string "comments_box"
-    t.string "comments_for_staff"
     t.datetime "created_at", precision: nil, null: false
-    t.boolean "expedited"
-    t.string "file_content_type"
+    t.datetime "updated_at", precision: nil, null: false
     t.string "file_file_name"
+    t.string "file_content_type"
     t.integer "file_file_size"
     t.datetime "file_updated_at", precision: nil
-    t.string "final_file_content_type"
+    t.float "quote"
+    t.integer "staff_id"
+    t.boolean "user_approval"
+    t.text "staff_comments"
+    t.boolean "expedited"
+    t.integer "order_type", default: 0
+    t.datetime "timestamp_approved", precision: nil
     t.string "final_file_file_name"
+    t.string "final_file_content_type"
     t.integer "final_file_file_size"
     t.datetime "final_file_updated_at", precision: nil
     t.float "grams"
-    t.float "grams_carbonfiber", default: 0.0
-    t.float "grams_fiberglass", default: 0.0
-    t.float "hours"
-    t.text "material"
+    t.float "service_charge"
+    t.float "price_per_hour"
+    t.float "price_per_gram"
     t.float "material_cost"
-    t.integer "order_type", default: 0
+    t.boolean "sst"
+    t.text "material"
+    t.float "hours"
+    t.string "comments_for_staff"
+    t.float "grams_fiberglass", default: 0.0
+    t.float "price_per_gram_fiberglass", default: 0.0
+    t.float "grams_carbonfiber", default: 0.0
+    t.float "price_per_gram_carbonfiber", default: 0.0
     t.boolean "payed"
     t.boolean "picked_up"
-    t.float "price_per_gram"
-    t.float "price_per_gram_carbonfiber", default: 0.0
-    t.float "price_per_gram_fiberglass", default: 0.0
-    t.float "price_per_hour"
-    t.boolean "printed"
-    t.float "quote"
-    t.float "service_charge"
-    t.boolean "sst"
-    t.text "staff_comments"
-    t.integer "staff_id"
-    t.datetime "timestamp_approved", precision: nil
+    t.boolean "clean_part"
     t.datetime "timestamp_printed", precision: nil
-    t.datetime "updated_at", precision: nil, null: false
-    t.boolean "user_approval"
-    t.integer "user_id"
+    t.string "comments_box"
   end
 
   create_table "printer_issues", force: :cascade do |t|
+    t.bigint "printer_id", null: false
+    t.string "summary", null: false
+    t.string "description"
+    t.bigint "reporter_id", null: false
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
-    t.string "description"
-    t.bigint "printer_id", null: false
-    t.bigint "reporter_id", null: false
-    t.string "summary", null: false
     t.datetime "updated_at", null: false
     t.index ["printer_id"], name: "index_printer_issues_on_printer_id"
     t.index ["reporter_id"], name: "index_printer_issues_on_reporter_id"
@@ -1197,144 +1197,144 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
 
   create_table "printer_sessions", id: :serial, force: :cascade do |t|
     t.datetime "created_at", precision: nil, null: false
-    t.boolean "in_use", default: false
-    t.integer "printer_id", null: false
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.integer "printer_id", null: false
+    t.boolean "in_use", default: false
     t.index ["printer_id"], name: "index_printer_sessions_on_printer_id"
     t.index ["user_id"], name: "index_printer_sessions_on_user_id"
   end
 
   create_table "printer_types", force: :cascade do |t|
-    t.boolean "available", default: true
-    t.datetime "created_at", null: false
     t.string "name"
     t.string "short_form", default: ""
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "available", default: true
   end
 
   create_table "printers", id: :serial, force: :cascade do |t|
     t.datetime "created_at", precision: nil, null: false
-    t.boolean "maintenance", default: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "number"
     t.bigint "printer_type_id"
-    t.datetime "updated_at", precision: nil, null: false
+    t.boolean "maintenance", default: false
     t.index ["printer_type_id"], name: "index_printers_on_printer_type_id"
   end
 
   create_table "processed_orders", force: :cascade do |t|
-    t.datetime "applied_at"
-    t.integer "attempts", default: 0, null: false
-    t.datetime "created_at", null: false
-    t.string "last_error"
-    t.datetime "leased_until"
-    t.datetime "next_attempt_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
-    t.string "order_name"
-    t.jsonb "payload", null: false
     t.string "provider", null: false
     t.string "provider_ref", null: false
-    t.datetime "reported_at"
-    t.string "status", default: "received", null: false
     t.string "topic", null: false
+    t.string "order_name"
+    t.jsonb "payload", null: false
+    t.string "status", default: "received", null: false
+    t.integer "attempts", default: 0, null: false
+    t.string "last_error"
+    t.datetime "applied_at"
+    t.datetime "next_attempt_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.datetime "leased_until"
+    t.datetime "reported_at"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["provider", "provider_ref"], name: "index_processed_orders_on_provider_and_provider_ref", unique: true
     t.index ["status", "next_attempt_at"], name: "index_processed_orders_on_status_and_next_attempt_at"
-    t.check_constraint "status::text = ANY (ARRAY['received'::character varying, 'applied'::character varying, 'failed'::character varying]::text[])", name: "processed_orders_status_check"
+    t.check_constraint "status::text = ANY (ARRAY['received'::character varying::text, 'applied'::character varying::text, 'failed'::character varying::text])", name: "processed_orders_status_check"
   end
 
   create_table "proficient_project_sessions", force: :cascade do |t|
     t.bigint "certification_id"
-    t.datetime "created_at", null: false
-    t.string "level"
     t.bigint "proficient_project_id"
-    t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.string "level"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["certification_id"], name: "index_proficient_project_sessions_on_certification_id"
     t.index ["proficient_project_id"], name: "index_proficient_project_sessions_on_proficient_project_id"
     t.index ["user_id"], name: "index_proficient_project_sessions_on_user_id"
   end
 
   create_table "proficient_projects", id: :serial, force: :cascade do |t|
-    t.integer "cc", default: 0
-    t.datetime "created_at", precision: nil, null: false
-    t.text "description"
-    t.bigint "drop_off_location_id"
-    t.boolean "has_project_kit"
-    t.boolean "is_virtual", default: false
-    t.string "level", default: "Beginner"
-    t.string "title"
     t.integer "training_id"
+    t.string "title"
+    t.text "description"
+    t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
+    t.string "level", default: "Beginner"
+    t.integer "cc", default: 0
+    t.boolean "has_project_kit"
+    t.bigint "drop_off_location_id"
+    t.boolean "is_virtual", default: false
     t.index ["drop_off_location_id"], name: "index_proficient_projects_on_drop_off_location_id"
     t.index ["training_id"], name: "index_proficient_projects_on_training_id"
     t.check_constraint "cc >= 0", name: "proficient_projects_cc_non_negative"
   end
 
   create_table "proficient_projects_users", id: false, force: :cascade do |t|
-    t.integer "proficient_project_id", null: false
     t.integer "user_id", null: false
+    t.integer "proficient_project_id", null: false
     t.index ["proficient_project_id"], name: "index_proficient_projects_users_on_proficient_project_id"
     t.index ["user_id"], name: "index_proficient_projects_users_on_user_id"
   end
 
   create_table "programs", id: :serial, force: :cascade do |t|
-    t.boolean "active", default: true
-    t.datetime "created_at", precision: nil, null: false
-    t.string "program_type"
-    t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.string "program_type"
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+    t.boolean "active", default: true
     t.index ["user_id", "program_type"], name: "index_programs_on_user_id_and_program_type", unique: true
     t.index ["user_id"], name: "index_programs_on_user_id"
   end
 
   create_table "project_joins", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil, null: false
-    t.integer "project_proposal_id"
-    t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.integer "project_proposal_id"
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.index ["project_proposal_id"], name: "index_project_joins_on_project_proposal_id"
     t.index ["user_id"], name: "index_project_joins_on_user_id"
   end
 
   create_table "project_kits", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.boolean "delivered", default: false
-    t.bigint "learning_module_id"
-    t.string "name"
-    t.bigint "proficient_project_id"
-    t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.bigint "proficient_project_id"
+    t.string "name"
+    t.boolean "delivered", default: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "learning_module_id"
     t.index ["learning_module_id"], name: "index_project_kits_on_learning_module_id"
     t.index ["proficient_project_id"], name: "index_project_kits_on_proficient_project_id"
     t.index ["user_id"], name: "index_project_kits_on_user_id"
   end
 
   create_table "project_proposals", id: :serial, force: :cascade do |t|
+    t.integer "user_id"
     t.integer "admin_id"
     t.integer "approved"
-    t.string "area", default: [], array: true
-    t.string "client"
-    t.string "client_background"
-    t.string "client_interest"
-    t.string "client_type"
-    t.datetime "created_at", precision: nil, null: false
+    t.string "title"
     t.text "description"
+    t.string "youtube_link"
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+    t.string "username"
     t.string "email"
+    t.string "client"
+    t.string "area", default: [], array: true
+    t.string "client_type"
+    t.string "client_interest"
+    t.string "client_background"
+    t.string "supervisor_background"
     t.text "equipments", default: "Not informed / Pas informé"
-    t.bigint "linked_project_proposal_id"
-    t.string "past_experiences"
-    t.integer "project_cost"
     t.string "project_type"
+    t.integer "project_cost"
+    t.string "past_experiences"
+    t.string "slug"
+    t.bigint "linked_project_proposal_id"
     t.integer "prototype_cost"
     t.integer "season"
-    t.string "slug"
-    t.string "supervisor_background"
-    t.string "title"
-    t.datetime "updated_at", precision: nil, null: false
-    t.integer "user_id"
-    t.string "username"
     t.integer "year"
-    t.string "youtube_link"
     t.index ["admin_id"], name: "index_project_proposals_on_admin_id"
     t.index ["linked_project_proposal_id"], name: "index_project_proposals_on_linked_project_proposal_id"
     t.index ["title"], name: "index_project_proposals_on_title", opclass: :gin_trgm_ops, using: :gin
@@ -1343,25 +1343,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "project_requirements", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil, null: false
     t.integer "proficient_project_id"
     t.integer "required_project_id"
+    t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.index ["proficient_project_id"], name: "index_project_requirements_on_proficient_project_id"
     t.index ["required_project_id"], name: "index_project_requirements_on_required_project_id"
   end
 
   create_table "questions", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil, null: false
+    t.integer "user_id"
     t.text "description"
-    t.string "image_content_type"
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.string "image_file_name"
+    t.string "image_content_type"
     t.integer "image_file_size"
     t.datetime "image_updated_at", precision: nil
-    t.string "level", default: "Beginner"
     t.integer "training_id"
-    t.datetime "updated_at", precision: nil, null: false
-    t.integer "user_id"
+    t.string "level", default: "Beginner"
     t.index ["user_id"], name: "index_questions_on_user_id"
   end
 
@@ -1373,11 +1373,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "quick_access_links", force: :cascade do |t|
-    t.datetime "created_at", null: false
     t.string "name"
     t.string "path"
-    t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_quick_access_links_on_user_id"
   end
 
@@ -1388,12 +1388,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "recurrence_rule_rewrites", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.text "migration_version", null: false
-    t.text "new_rule", null: false
-    t.text "old_rule", null: false
-    t.bigint "record_id", null: false
     t.string "table_name", null: false
+    t.bigint "record_id", null: false
+    t.text "old_rule", null: false
+    t.text "new_rule", null: false
+    t.text "migration_version", null: false
+    t.datetime "created_at", null: false
     t.index ["table_name", "record_id", "migration_version"], name: "index_recurrence_rule_rewrites_once", unique: true
   end
 
@@ -1403,16 +1403,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "repo_files", id: :serial, force: :cascade do |t|
+    t.integer "repository_id"
     t.datetime "created_at", precision: nil, null: false
-    t.string "file_content_type"
+    t.datetime "updated_at", precision: nil, null: false
     t.string "file_file_name"
+    t.string "file_content_type"
     t.integer "file_file_size"
     t.datetime "file_updated_at", precision: nil
-    t.bigint "learning_module_id"
     t.integer "proficient_project_id"
+    t.bigint "learning_module_id"
     t.integer "project_proposal_id"
-    t.integer "repository_id"
-    t.datetime "updated_at", precision: nil, null: false
     t.index ["learning_module_id"], name: "index_repo_files_on_learning_module_id"
     t.index ["proficient_project_id"], name: "index_repo_files_on_proficient_project_id"
     t.index ["project_proposal_id"], name: "index_repo_files_on_project_proposal_id"
@@ -1420,25 +1420,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "repositories", id: :serial, force: :cascade do |t|
-    t.string "category"
-    t.datetime "created_at", precision: nil, null: false
-    t.boolean "deleted"
+    t.integer "user_id"
+    t.string "title"
     t.string "description"
-    t.boolean "featured", default: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+    t.string "category"
+    t.string "license"
     t.string "github"
     t.string "github_url"
-    t.string "license"
     t.integer "like", default: 0
-    t.integer "make", default: 0
     t.integer "make_id"
-    t.string "password"
-    t.integer "project_proposal_id"
-    t.string "share_type"
+    t.integer "make", default: 0
     t.string "slug"
-    t.string "title"
-    t.datetime "updated_at", precision: nil, null: false
-    t.integer "user_id"
+    t.string "share_type"
+    t.string "password"
+    t.boolean "featured", default: false
     t.string "youtube_link"
+    t.integer "project_proposal_id"
+    t.boolean "deleted"
     t.integer "hidden_reason"
     t.index ["category"], name: "index_repositories_on_category", opclass: :gin_trgm_ops, using: :gin
     t.index ["description"], name: "index_repositories_on_description", opclass: :gin_trgm_ops, using: :gin
@@ -1451,76 +1451,76 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "repositories_users", id: false, force: :cascade do |t|
-    t.integer "repository_id", null: false
     t.integer "user_id", null: false
+    t.integer "repository_id", null: false
     t.index ["repository_id"], name: "index_repositories_users_on_repository_id"
     t.index ["user_id"], name: "index_repositories_users_on_user_id"
   end
 
   create_table "require_trainings", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil, null: false
-    t.integer "training_id"
-    t.datetime "updated_at", precision: nil, null: false
     t.integer "volunteer_task_id"
+    t.integer "training_id"
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.index ["training_id"], name: "index_require_trainings_on_training_id"
     t.index ["volunteer_task_id"], name: "index_require_trainings_on_volunteer_task_id"
   end
 
   create_table "restored_rows", force: :cascade do |t|
-    t.datetime "archived_at", default: -> { "now()" }, null: false
-    t.integer "category_option_id"
     t.text "migration_version", null: false
-    t.text "name"
-    t.bigint "parent_id", null: false
-    t.text "parent_type", null: false
-    t.bigint "row_id", null: false
-    t.datetime "row_updated_at"
     t.text "table_name", null: false
+    t.bigint "row_id", null: false
+    t.text "parent_type", null: false
+    t.bigint "parent_id", null: false
+    t.text "name"
+    t.integer "category_option_id"
+    t.datetime "row_updated_at"
+    t.datetime "archived_at", default: -> { "now()" }, null: false
   end
 
   create_table "rfids", id: :serial, force: :cascade do |t|
+    t.integer "user_id"
     t.string "card_number", null: false
     t.datetime "created_at", precision: nil, null: false
-    t.string "mac_address"
     t.datetime "updated_at", precision: nil, null: false
-    t.integer "user_id"
+    t.string "mac_address"
     t.index ["card_number"], name: "index_rfids_on_card_number", unique: true
     t.index ["user_id"], name: "index_rfids_on_user_id"
     t.check_constraint "card_number IS NOT NULL AND card_number::text ~ '\\S'::text", name: "rfids_card_number_present_check"
   end
 
   create_table "settings", force: :cascade do |t|
-    t.datetime "created_at", null: false
     t.string "key", null: false
-    t.datetime "updated_at", null: false
     t.string "value"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["key"], name: "index_settings_on_key", unique: true
   end
 
   create_table "shadowing_hours", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "end_time", precision: nil
-    t.string "event_id"
-    t.bigint "space_id"
-    t.datetime "start_time", precision: nil
-    t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.string "event_id"
+    t.datetime "start_time", precision: nil
+    t.datetime "end_time", precision: nil
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "space_id"
     t.index ["space_id"], name: "index_shadowing_hours_on_space_id"
     t.index ["user_id"], name: "index_shadowing_hours_on_user_id"
   end
 
   create_table "shifts", force: :cascade do |t|
-    t.string "course"
-    t.datetime "created_at", null: false
-    t.datetime "end_datetime", precision: nil
-    t.string "google_event_id"
-    t.string "language"
-    t.boolean "pending", default: true
     t.text "reason"
     t.bigint "space_id"
     t.datetime "start_datetime", precision: nil
-    t.bigint "training_id"
+    t.datetime "end_datetime", precision: nil
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "google_event_id"
+    t.boolean "pending", default: true
+    t.bigint "training_id"
+    t.string "language"
+    t.string "course"
     t.index ["space_id"], name: "index_shifts_on_space_id"
     t.index ["training_id"], name: "index_shifts_on_training_id"
   end
@@ -1533,27 +1533,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "skills", force: :cascade do |t|
-    t.datetime "created_at", null: false
     t.text "name"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
   create_table "space_manager_joins", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.bigint "space_id", null: false
-    t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.bigint "space_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["space_id"], name: "index_space_manager_joins_on_space_id"
     t.index ["user_id"], name: "index_space_manager_joins_on_user_id"
   end
 
   create_table "spaces", id: :serial, force: :cascade do |t|
+    t.string "name"
     t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+    t.integer "max_capacity"
     t.integer "destroy_admin_id"
     t.string "keycode", default: ""
-    t.integer "max_capacity"
-    t.string "name"
-    t.datetime "updated_at", precision: nil, null: false
     t.index "lower((name)::text)", name: "index_spaces_on_lower_name", unique: true
   end
 
@@ -1565,96 +1565,96 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "staff_availabilities", force: :cascade do |t|
-    t.datetime "created_at", null: false
+    t.bigint "user_id"
     t.string "day"
-    t.datetime "end_datetime"
+    t.time "start_time"
     t.time "end_time"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "time_period_id"
     t.boolean "recurring", default: true
     t.datetime "start_datetime"
-    t.time "start_time"
-    t.bigint "time_period_id"
-    t.datetime "updated_at", null: false
-    t.bigint "user_id"
+    t.datetime "end_datetime"
     t.index ["time_period_id"], name: "index_staff_availabilities_on_time_period_id"
     t.index ["user_id"], name: "index_staff_availabilities_on_user_id"
   end
 
   create_table "staff_availability_exceptions", force: :cascade do |t|
-    t.integer "covers", default: 0
     t.bigint "staff_availability_id"
     t.datetime "start_at"
+    t.integer "covers", default: 0
     t.index ["staff_availability_id"], name: "index_staff_availability_exceptions_on_staff_availability_id"
   end
 
   create_table "staff_external_unavailabilities", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.string "ics_url"
-    t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.string "ics_url"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_staff_external_unavailabilities_on_user_id"
   end
 
   create_table "staff_needed_calendars", force: :cascade do |t|
     t.string "calendar_url", null: false
     t.string "color"
+    t.bigint "space_id"
     t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.string "name"
     t.string "role"
-    t.bigint "space_id"
-    t.datetime "updated_at", null: false
     t.index ["space_id"], name: "index_staff_needed_calendars_on_space_id"
     t.index ["space_id"], name: "index_unique_open_hours_per_space", unique: true, where: "((role)::text = 'open_hours'::text)"
   end
 
   create_table "staff_spaces", force: :cascade do |t|
-    t.string "color"
-    t.datetime "created_at", null: false
-    t.bigint "space_id"
-    t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.bigint "space_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "color"
     t.index ["space_id", "user_id"], name: "idx_staff_spaces_space_user"
     t.index ["user_id", "space_id"], name: "index_staff_spaces_on_user_id_and_space_id", unique: true
     t.index ["user_id"], name: "index_staff_spaces_on_user_id"
   end
 
   create_table "staff_unavailabilities", force: :cascade do |t|
-    t.datetime "created_at", null: false
+    t.bigint "user_id"
+    t.string "title"
     t.text "description"
+    t.datetime "start_time"
     t.datetime "end_time"
     t.string "recurrence_rule"
-    t.datetime "start_time"
-    t.string "title"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id"
     t.index ["user_id"], name: "index_staff_unavailabilities_on_user_id"
   end
 
   create_table "sub_space_booking_statuses", force: :cascade do |t|
-    t.bigint "booking_status_id"
-    t.datetime "created_at", null: false
     t.bigint "sub_space_booking_id"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "booking_status_id"
     t.index ["booking_status_id"], name: "index_sub_space_booking_statuses_on_booking_status_id"
     t.index ["sub_space_booking_id"], name: "index_sub_space_booking_statuses_on_sub_space_booking_id"
   end
 
   create_table "sub_space_bookings", force: :cascade do |t|
-    t.datetime "approved_at"
-    t.bigint "approved_by_id"
-    t.boolean "blocking", default: false
-    t.bigint "booking_status_id"
-    t.datetime "created_at", null: false
-    t.string "description"
-    t.datetime "end_time", precision: nil
-    t.string "google_booking_id"
     t.string "name"
-    t.boolean "public", default: false
-    t.bigint "recurring_booking_id"
+    t.string "description"
     t.datetime "start_time", precision: nil
-    t.bigint "sub_space_booking_status_id"
-    t.bigint "sub_space_id"
-    t.datetime "updated_at", null: false
+    t.datetime "end_time", precision: nil
     t.bigint "user_id"
+    t.bigint "sub_space_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "sub_space_booking_status_id"
+    t.boolean "public", default: false
+    t.boolean "blocking", default: false
+    t.bigint "approved_by_id"
+    t.datetime "approved_at"
+    t.bigint "recurring_booking_id"
+    t.string "google_booking_id"
+    t.bigint "booking_status_id"
     t.index ["approved_by_id"], name: "index_sub_space_bookings_on_approved_by_id"
     t.index ["booking_status_id"], name: "index_sub_space_bookings_on_booking_status_id"
     t.index ["google_booking_id"], name: "index_sub_space_bookings_on_google_booking_id", unique: true, where: "((google_booking_id IS NOT NULL) AND ((google_booking_id)::text <> ''::text))"
@@ -1665,28 +1665,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "sub_spaces", force: :cascade do |t|
-    t.boolean "approval_required", default: false
-    t.datetime "created_at", null: false
-    t.boolean "default_public", default: false
-    t.integer "max_automatic_approval_hour"
-    t.integer "maximum_booking_duration"
-    t.integer "maximum_booking_hours_per_week"
     t.string "name"
     t.bigint "space_id"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "approval_required", default: false
+    t.integer "maximum_booking_duration"
+    t.integer "maximum_booking_hours_per_week"
+    t.boolean "default_public", default: false
+    t.integer "max_automatic_approval_hour"
     t.index ["space_id"], name: "index_sub_spaces_on_space_id"
   end
 
   create_table "tap_box_logs", force: :cascade do |t|
-    t.string "card_number"
-    t.datetime "created_at", null: false
-    t.json "details", default: {}
     t.string "event_type", null: false
+    t.string "card_number"
+    t.bigint "user_id"
+    t.bigint "space_id"
     t.string "mac_address"
     t.text "message", null: false
-    t.bigint "space_id"
+    t.json "details", default: {}
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id"
     t.index ["card_number"], name: "index_tap_box_logs_on_card_number"
     t.index ["created_at"], name: "index_tap_box_logs_on_created_at"
     t.index ["event_type"], name: "index_tap_box_logs_on_event_type"
@@ -1695,48 +1695,48 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "team_memberships", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.integer "role", default: 0
-    t.bigint "team_id"
-    t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.bigint "team_id"
+    t.integer "role", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["team_id"], name: "index_team_memberships_on_team_id"
     t.index ["user_id"], name: "index_team_memberships_on_user_id"
   end
 
   create_table "teams", force: :cascade do |t|
-    t.datetime "created_at", null: false
     t.string "name"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
   create_table "time_periods", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.date "end_date"
     t.string "name"
     t.date "start_date"
+    t.date "end_date"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
   create_table "training_requirements", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.string "level"
-    t.bigint "proficient_project_id"
     t.bigint "training_id"
+    t.bigint "proficient_project_id"
+    t.string "level"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["proficient_project_id"], name: "index_training_requirements_on_proficient_project_id"
     t.index ["training_id"], name: "index_training_requirements_on_training_id"
   end
 
   create_table "training_sessions", id: :serial, force: :cascade do |t|
-    t.string "course"
-    t.bigint "course_name_id"
-    t.datetime "created_at", precision: nil, null: false
-    t.string "level", default: "Beginner"
-    t.integer "space_id"
     t.integer "training_id"
-    t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+    t.string "course"
+    t.integer "space_id"
+    t.string "level", default: "Beginner"
+    t.bigint "course_name_id"
     t.index ["course_name_id"], name: "index_training_sessions_on_course_name_id"
     t.index ["space_id"], name: "index_training_sessions_on_space_id"
     t.index ["training_id"], name: "index_training_sessions_on_training_id"
@@ -1761,27 +1761,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "trainings", id: :serial, force: :cascade do |t|
+    t.string "name_en"
     t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+    t.integer "space_id"
+    t.bigint "skill_id"
     t.string "description_en"
-    t.string "description_fr"
+    t.string "name_fr"
     t.boolean "has_badge", default: true
+    t.string "description_fr"
     t.string "list_of_skills_en"
     t.string "list_of_skills_fr"
-    t.string "name_en"
-    t.string "name_fr"
-    t.bigint "skill_id"
-    t.integer "space_id"
-    t.datetime "updated_at", precision: nil, null: false
     t.index ["skill_id"], name: "index_trainings_on_skill_id"
     t.index ["space_id"], name: "index_trainings_on_space_id"
   end
 
   create_table "uni_programs", id: false, force: :cascade do |t|
-    t.boolean "active", default: true, null: false
-    t.string "department", null: false
+    t.string "program", null: false
     t.string "faculty", null: false
     t.string "level", null: false
-    t.string "program", null: false
+    t.string "department", null: false
+    t.boolean "active", default: true, null: false
     t.index ["program", "level", "faculty"], name: "index_uni_programs_on_program_level_faculty_active", unique: true, where: "active"
     t.index ["program"], name: "index_uni_programs_on_program"
   end
@@ -1800,101 +1800,101 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_uoeng_profiles_on_user_id", unique: true
-    t.check_constraint "level::text = ANY (ARRAY['undergrad'::character varying, 'grad'::character varying]::text[])", name: "uoeng_profiles_level_known"
-    t.check_constraint "source::text = ANY (ARRAY['student_number'::character varying, 'email'::character varying]::text[])", name: "uoeng_profiles_source_known"
+    t.check_constraint "level::text = ANY (ARRAY['undergrad'::character varying::text, 'grad'::character varying::text])", name: "uoeng_profiles_level_known"
+    t.check_constraint "source::text = ANY (ARRAY['student_number'::character varying::text, 'email'::character varying::text])", name: "uoeng_profiles_source_known"
   end
 
   create_table "upvotes", id: :serial, force: :cascade do |t|
+    t.integer "user_id"
     t.integer "comment_id"
     t.datetime "created_at", precision: nil, null: false
-    t.boolean "downvote"
     t.datetime "updated_at", precision: nil, null: false
-    t.integer "user_id"
+    t.boolean "downvote"
     t.index ["comment_id"], name: "index_upvotes_on_comment_id"
-    t.index ["user_id"], name: "index_upvotes_on_user_id"
     t.index ["user_id", "comment_id"], name: "index_upvotes_on_user_id_and_comment_id", unique: true
+    t.index ["user_id"], name: "index_upvotes_on_user_id"
   end
 
   create_table "user_booking_approvals", force: :cascade do |t|
-    t.boolean "approved"
-    t.string "comments"
-    t.datetime "created_at", null: false
-    t.date "date"
-    t.datetime "decided_at"
-    t.bigint "decided_by_id"
-    t.string "identity"
-    t.text "reason"
-    t.bigint "staff_id"
-    t.string "status", default: "pending", null: false
-    t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.date "date"
+    t.string "comments"
+    t.bigint "staff_id"
+    t.boolean "approved"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "identity"
+    t.string "status", default: "pending", null: false
+    t.bigint "decided_by_id"
+    t.datetime "decided_at"
+    t.text "reason"
     t.index ["decided_by_id"], name: "index_user_booking_approvals_on_decided_by_id"
     t.index ["staff_id"], name: "index_user_booking_approvals_on_staff_id"
     t.index ["status"], name: "index_user_booking_approvals_on_status"
     t.index ["user_id"], name: "index_user_booking_approvals_on_user_id"
-    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'approved'::character varying, 'declined'::character varying, 'revoked'::character varying]::text[])", name: "user_booking_approvals_status_check"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying::text, 'approved'::character varying::text, 'declined'::character varying::text, 'revoked'::character varying::text])", name: "user_booking_approvals_status_check"
   end
 
   create_table "users", id: :serial, force: :cascade do |t|
-    t.string "access_token"
-    t.boolean "active", default: true
-    t.integer "auth_attempts", default: 0
-    t.string "avatar_content_type"
-    t.string "avatar_file_name"
-    t.integer "avatar_file_size"
-    t.datetime "avatar_updated_at", precision: nil
-    t.boolean "booking_approval", default: false
-    t.boolean "confirmed", default: false
+    t.citext "username"
+    t.string "password"
+    t.string "url"
     t.datetime "created_at", precision: nil, null: false
-    t.datetime "deactivated_at"
-    t.boolean "deleted", default: false, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.text "description"
     t.citext "email"
-    t.string "faculty"
-    t.string "flag_message", default: ""
-    t.boolean "flagged"
-    t.string "gender"
-    t.string "how_heard_about_us"
-    t.string "identity"
-    t.datetime "last_seen_at", precision: nil
-    t.datetime "last_signed_in_time", precision: nil
-    t.string "locale"
-    t.boolean "locked", default: false
-    t.datetime "locked_until", precision: nil
+    t.string "avatar_file_name"
+    t.string "avatar_content_type"
+    t.integer "avatar_file_size"
+    t.datetime "avatar_updated_at", precision: nil
+    t.string "access_token"
     t.string "name"
-    t.string "password"
-    t.string "program"
-    t.boolean "read_and_accepted_waiver_form", default: false
+    t.string "gender"
+    t.string "faculty"
+    t.string "use"
     t.integer "reputation", default: 0
     t.string "role", default: "regular_user"
-    t.bigint "space_id"
-    t.string "student_id"
     t.boolean "terms_and_conditions"
-    t.integer "token_version", default: 0, null: false
-    t.datetime "updated_at", precision: nil, null: false
-    t.string "url"
-    t.string "use"
-    t.citext "username"
-    t.integer "wallet", default: 0
+    t.string "program"
+    t.string "how_heard_about_us"
+    t.string "identity"
     t.string "year_of_study"
+    t.boolean "read_and_accepted_waiver_form", default: false
+    t.boolean "active", default: true
+    t.datetime "last_seen_at", precision: nil
+    t.integer "wallet", default: 0
+    t.boolean "flagged"
+    t.string "flag_message", default: ""
+    t.boolean "confirmed", default: false
+    t.bigint "space_id"
+    t.datetime "last_signed_in_time", precision: nil
+    t.boolean "deleted", default: false, null: false
+    t.boolean "booking_approval", default: false
+    t.boolean "locked", default: false
+    t.datetime "locked_until", precision: nil
+    t.integer "auth_attempts", default: 0
+    t.string "student_id"
+    t.integer "token_version", default: 0, null: false
+    t.datetime "deactivated_at"
+    t.string "locale"
     t.string "year_of_study_entered"
-    t.string "year_of_study_set_by", default: "entered", null: false
     t.date "year_of_study_set_on", default: -> { "((now() AT TIME ZONE 'America/New_York'::text))::date" }, null: false
+    t.string "year_of_study_set_by", default: "entered", null: false
     t.index "lower((email)::text)", name: "index_users_on_lowercase_email", unique: true
     t.index "lower((username)::text)", name: "index_users_on_lowercase_username", unique: true
     t.index ["name"], name: "index_users_on_name", opclass: :gin_trgm_ops, using: :gin
     t.index ["space_id"], name: "index_users_on_space_id"
     t.index ["username"], name: "index_users_on_username", opclass: :gin_trgm_ops, using: :gin
-    t.check_constraint "locale::text = ANY (ARRAY['en'::character varying, 'fr'::character varying]::text[])", name: "users_locale_supported"
-    t.check_constraint "year_of_study_set_by::text = ANY (ARRAY['entered'::character varying, 'backfill_last_run'::character varying, 'backfill_marked_inactive'::character varying]::text[])", name: "users_year_of_study_set_by_known"
+    t.check_constraint "locale::text = ANY (ARRAY['en'::character varying::text, 'fr'::character varying::text])", name: "users_locale_supported"
+    t.check_constraint "year_of_study_set_by::text = ANY (ARRAY['entered'::character varying::text, 'backfill_last_run'::character varying::text, 'backfill_marked_inactive'::character varying::text])", name: "users_year_of_study_set_by_known"
   end
 
   create_table "videos", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil, null: false
-    t.bigint "learning_module_id"
-    t.boolean "processed", default: false, null: false
     t.integer "proficient_project_id"
+    t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
+    t.boolean "processed", default: false, null: false
+    t.bigint "learning_module_id"
     t.index ["learning_module_id"], name: "index_videos_on_learning_module_id"
     t.index ["proficient_project_id"], name: "index_videos_on_proficient_project_id"
   end
@@ -1905,13 +1905,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "volunteer_hours", id: :serial, force: :cascade do |t|
-    t.boolean "approval"
-    t.datetime "created_at", precision: nil, null: false
+    t.integer "volunteer_task_id", null: false
+    t.integer "user_id", null: false
     t.datetime "date_of_task", precision: nil
     t.decimal "total_time", precision: 9, scale: 2, default: "0.0"
+    t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
-    t.integer "user_id", null: false
-    t.integer "volunteer_task_id", null: false
+    t.boolean "approval"
     t.index ["user_id", "volunteer_task_id", "date_of_task", "total_time"], name: "index_volunteer_hours_on_pending_submission", unique: true, where: "(approval IS NULL)"
     t.index ["user_id"], name: "index_volunteer_hours_on_user_id"
     t.index ["volunteer_task_id"], name: "index_volunteer_hours_on_volunteer_task_id"
@@ -1944,65 +1944,65 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   end
 
   create_table "volunteer_task_joins", id: :serial, force: :cascade do |t|
-    t.boolean "active", default: true
+    t.integer "user_id"
+    t.integer "volunteer_task_id"
+    t.string "user_type", default: "Volunteer"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
-    t.integer "user_id"
-    t.string "user_type", default: "Volunteer"
-    t.integer "volunteer_task_id"
+    t.boolean "active", default: true
     t.string "state", default: "joined", null: false
     t.datetime "state_changed_at"
     t.bigint "state_changed_by_id"
     t.index ["state_changed_by_id"], name: "index_volunteer_task_joins_on_state_changed_by_id"
-    t.index ["volunteer_task_id", "user_id"], name: "index_volunteer_task_joins_on_task_and_user_when_joined", unique: true, where: "((state)::text = 'joined'::text)"
     t.index ["user_id"], name: "index_volunteer_task_joins_on_user_id"
-    t.index ["volunteer_task_id"], name: "index_volunteer_task_joins_on_volunteer_task_id"
     t.index ["volunteer_task_id", "state"], name: "index_volunteer_task_joins_on_volunteer_task_id_and_state"
-    t.check_constraint "state::text = ANY (ARRAY['joined'::character varying, 'completed'::character varying, 'left'::character varying, 'removed'::character varying]::text[])", name: "volunteer_task_joins_state_check"
+    t.index ["volunteer_task_id", "user_id"], name: "index_volunteer_task_joins_on_task_and_user_when_joined", unique: true, where: "((state)::text = 'joined'::text)"
+    t.index ["volunteer_task_id"], name: "index_volunteer_task_joins_on_volunteer_task_id"
+    t.check_constraint "state::text = ANY (ARRAY['joined'::character varying::text, 'completed'::character varying::text, 'left'::character varying::text, 'removed'::character varying::text])", name: "volunteer_task_joins_state_check"
   end
 
   create_table "volunteer_task_requests", id: :serial, force: :cascade do |t|
+    t.integer "user_id"
+    t.integer "volunteer_task_id"
     t.boolean "approval"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
-    t.integer "user_id"
-    t.integer "volunteer_task_id"
     t.index ["user_id"], name: "index_volunteer_task_requests_on_user_id"
     t.index ["volunteer_task_id"], name: "index_volunteer_task_requests_on_volunteer_task_id"
   end
 
   create_table "volunteer_tasks", id: :serial, force: :cascade do |t|
+    t.string "title", default: ""
+    t.text "description", default: ""
+    t.integer "user_id"
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+    t.string "status", default: "open"
+    t.integer "space_id"
+    t.integer "joins", default: 1
     t.string "category", default: "Other"
     t.integer "cc", default: 0
-    t.datetime "created_at", precision: nil, null: false
-    t.text "description", default: ""
     t.decimal "hours", precision: 5, scale: 2, default: "0.0"
-    t.integer "joins", default: 1
-    t.integer "space_id"
-    t.string "status", default: "open"
-    t.string "title", default: ""
-    t.datetime "updated_at", precision: nil, null: false
-    t.integer "user_id"
     t.index ["space_id"], name: "index_volunteer_tasks_on_space_id"
     t.index ["user_id"], name: "index_volunteer_tasks_on_user_id"
   end
 
   create_table "walk_in_safety_sheets", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.string "emergency_contact_name"
-    t.string "emergency_contact_telephone"
-    t.string "guardian_signature"
-    t.string "guardian_telephone_at_home"
-    t.string "guardian_telephone_at_work"
+    t.bigint "user_id", null: false
+    t.bigint "space_id"
     t.boolean "is_minor"
-    t.string "minor_participant_name"
     t.string "participant_signature"
     t.string "participant_telephone_at_home"
-    t.bigint "space_id"
-    t.string "supervisor_contacts"
+    t.string "guardian_signature"
+    t.string "minor_participant_name"
+    t.string "guardian_telephone_at_home"
+    t.string "guardian_telephone_at_work"
+    t.string "emergency_contact_name"
+    t.string "emergency_contact_telephone"
     t.string "supervisor_names"
+    t.string "supervisor_contacts"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id", null: false
     t.index ["space_id"], name: "index_walk_in_safety_sheets_on_space_id"
     t.index ["user_id", "space_id"], name: "index_walk_in_safety_sheets_on_user_id_and_space_id", unique: true
     t.index ["user_id"], name: "index_walk_in_safety_sheets_on_user_id"
@@ -2098,11 +2098,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
   add_foreign_key "keys", "spaces", on_delete: :nullify
   add_foreign_key "keys", "users"
   add_foreign_key "keys", "users", column: "supervisor_id"
-  add_foreign_key "lab_sessions", "spaces"
-  add_foreign_key "lab_sessions", "users"
   add_foreign_key "kiosk_sign_events", "spaces"
   add_foreign_key "kiosk_sign_events", "users", column: "actor_id"
   add_foreign_key "kiosk_sign_events", "users", column: "visitor_id"
+  add_foreign_key "lab_sessions", "spaces"
+  add_foreign_key "lab_sessions", "users"
   add_foreign_key "learning_module_tracks", "learning_modules"
   add_foreign_key "learning_module_tracks", "users"
   add_foreign_key "learning_modules", "trainings"
@@ -2236,7 +2236,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
       SELECT users.id AS user_id,
           CASE
               WHEN ((moves.n = 0) OR (users.year_of_study_entered IS NULL) OR ((users.year_of_study_entered)::text = 'Alumni'::text)) THEN users.year_of_study_entered
-              WHEN (((entered.year >= (1)::numeric) AND (entered.year <= (7)::numeric)) AND ((entered.year + (moves.n)::numeric) <= (8)::numeric)) THEN (((entered.year + (moves.n)::numeric))::text)::character varying
+              WHEN ((entered.year >= (1)::numeric) AND (entered.year <= (7)::numeric) AND ((entered.year + (moves.n)::numeric) <= (8)::numeric)) THEN (((entered.year + (moves.n)::numeric))::text)::character varying
               ELSE 'Alumni'::character varying
           END AS year_of_study,
       users.year_of_study_entered,
@@ -2247,7 +2247,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_160000) do
               ((now() AT TIME ZONE 'America/New_York'::text))::date AS today) here)
        CROSS JOIN LATERAL ( SELECT
                   CASE
-                      WHEN ((users.identity)::text = ANY ((ARRAY['grad'::character varying, 'undergrad'::character varying, 'international_grad'::character varying, 'international_undergrad'::character varying])::text[])) THEN GREATEST(0, ((((EXTRACT(year FROM here.today))::integer -
+                      WHEN ((users.identity)::text = ANY (ARRAY[('grad'::character varying)::text, ('undergrad'::character varying)::text, ('international_grad'::character varying)::text, ('international_undergrad'::character varying)::text])) THEN GREATEST(0, ((((EXTRACT(year FROM here.today))::integer -
                       CASE
                           WHEN (EXTRACT(month FROM here.created) > EXTRACT(month FROM here.today)) THEN 1
                           ELSE 0
