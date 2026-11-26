@@ -162,6 +162,7 @@ main
   :is(p, li, td)
   a:not(.btn, .badge, .page-link, .navbar-brand):not(
     :is(
+        .fc,
         nav,
         .nav,
         .tags,

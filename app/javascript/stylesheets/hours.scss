@@ -19,6 +19,11 @@
     }
   }
 
+  .fc a {
+    --bs-link-decoration: none;
+    text-decoration: none;
+  }
+
   p {
     margin: 2rem 0;
     padding: 1rem;

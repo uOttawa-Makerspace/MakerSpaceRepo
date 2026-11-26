@@ -93,6 +93,10 @@ section#home {
   }
 
   #home-hours {
+    .fc a {
+      --bs-link-decoration: none;
+      text-decoration: none;
+    }
     img {
       border-radius: 0.5rem;
       object-fit: cover;
